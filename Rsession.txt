@@ -1,0 +1,33 @@
+R version 3.5.1 (2018-07-02)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 14393)
+
+Matrix products: default
+
+attached base packages:
+ [1] stats4    parallel  grid      stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] e1071_1.7-3          AnnotationDbi_1.44.0 IRanges_2.16.0       S4Vectors_0.20.1     Biobase_2.42.0       png_0.1-7           
+ [7] graph_1.60.0         BiocGenerics_0.28.0  KEGGgraph_1.42.0     XML_3.99-0.3         visNetwork_2.0.9     openxlsx_4.1.4      
+[13] factoextra_1.0.6     VennDiagram_1.6.20   futile.logger_1.4.3  colourpicker_1.0     rgl_0.100.47         pheatmap_1.0.12     
+[19] RColorBrewer_1.1-2   DT_0.12              ggrepel_0.8.1        gridExtra_2.3        ggpubr_0.2.999       magrittr_1.5        
+[25] gplots_3.0.1.2       tibble_2.1.3         tidyr_1.0.2          dplyr_0.8.4          reshape2_1.4.3       plotly_4.9.1        
+[31] ggplot2_3.2.1        shinythemes_1.1.2    shiny_1.4.0         
+
+loaded via a namespace (and not attached):
+ [1] nlme_3.1-144            bitops_1.0-6            bit64_0.9-7             webshot_0.5.2           httr_1.4.1             
+ [6] ggsci_2.9               tools_3.5.1             R6_2.4.1                KernSmooth_2.23-16      mgcv_1.8-31            
+[11] DBI_1.1.0               lazyeval_0.2.2          colorspace_1.4-1        manipulateWidget_0.10.0 withr_2.1.2            
+[16] tidyselect_1.0.0        bit_1.1-15.2            compiler_3.5.1          cli_2.0.1               formatR_1.7            
+[21] labeling_0.3            caTools_1.17.1.2        scales_1.1.0            stringr_1.4.0           digest_0.6.24          
+[26] rmarkdown_2.1           pkgconfig_2.0.3         htmltools_0.4.0         fastmap_1.0.1           htmlwidgets_1.5.1      
+[31] rlang_0.4.4             rstudioapi_0.11         RSQLite_2.2.0           farver_2.0.3            jsonlite_1.6.1         
+[36] crosstalk_1.0.0         gtools_3.8.1            dendextend_1.13.3       zip_2.0.4               Matrix_1.2-18          
+[41] fansi_0.4.1             Rcpp_1.0.3              munsell_0.5.0           viridis_0.5.1           lifecycle_0.1.0        
+[46] yaml_2.2.1              stringi_1.4.5           plyr_1.8.5              blob_1.2.1              gdata_2.18.0           
+[51] promises_1.1.0          crayon_1.3.4            lattice_0.20-38         miniUI_0.1.1.1          splines_3.5.1          
+[56] knitr_1.28              pillar_1.4.3            futile.options_1.0.1    glue_1.3.1              evaluate_0.14          
+[61] lambda.r_1.2.4          data.table_1.12.8       vctrs_0.2.2             httpuv_1.5.2            gtable_0.3.0           
+[66] purrr_0.3.3             assertthat_0.2.1        xfun_0.12               mime_0.9                xtable_1.8-4           
+[71] later_1.0.0             class_7.3-15            viridisLite_0.3.0       memoise_1.1.0          

@@ -1,0 +1,486 @@
+###########################################################################################################
+## Proteomics Visualization R Shiny App
+##
+##This software belongs to Biogen Inc. All right reserved.
+##
+##@file: ui.R
+##@Developer : Benbo Gao (benbo.gao@Biogen.com)
+##@Date : 9/6/2019
+##@version 3.0
+###########################################################################################################
+
+fluidPage(theme = shinytheme("cerulean"),
+          windowTitle = 'Proteomics Result Visualization',
+          titlePanel(div(h1(strong('Proteomics Result Visualization'), align = 'center')), 
+                     windowTitle = 'Proteomics Result Visualization'),
+navbarPage(title = textOutput('project'), 
+	
+##########################################################################################################
+## Select Dataset
+##########################################################################################################
+tabPanel("Data Result Table",
+	fluidRow(
+				  tabsetPanel(id="Tables",
+					#tabPanel(title="Introduction",htmlOutput('intro')),
+					#tabPanel(title="Project Table", DT::dataTableOutput('projecttable')),
+					tabPanel(title="Sample Table", actionButton("sample", "Save to output"), dataTableOutput('sample')),
+					tabPanel(title="Result Table", actionButton("results", "Save to output"), dataTableOutput('results')),
+					tabPanel(title="Data Table", actionButton("data_wide", "Save to output"), dataTableOutput('data_wide')),
+					tabPanel(title="Protein Gene Names", actionButton("ProteinGeneName", "Save to output"), dataTableOutput('ProteinGeneName')),
+					tabPanel(title="Help", htmlOutput('help_input'))
+				  )
+		)
+	),
+
+##########################################################################################################
+## QC Plots
+##########################################################################################################
+tabPanel("QC Plots",
+	fluidRow(
+		column(3,
+			wellPanel(
+				selectizeInput("QC_groups", label="Select Groups", choices=NULL, multiple=TRUE),
+				selectizeInput("QC_samples", label="Select Samples", choices=NULL,multiple=TRUE),
+				conditionalPanel("input.groupplot_tabset=='PCA Plot'",
+					selectizeInput("pcnum",label="Select Principal Components", choices=1:5, multiple=TRUE, selected=1:2, options = list(maxItems = 2)),
+					radioButtons("ellipsoid", label="Plot Ellipsoid (>3 per Group)", inline = TRUE, choices = c("No" = "No","Yes" = "Yes")),
+					selectInput("PCAcolpalette", label= "Select palette", choices=c("Accent"="Accent","Dark2"="Dark2","Paired"="Paired","Pastel1"="Pastel1","Pastel2"="Pastel2","Set1"="Set1","Set2"="Set2","Set3"="Set3"), selected="Dark2"),
+					sliderInput("PCAfontsize", "Label Font Size:", min = 1, max = 20, step = 2, value = 10),
+					sliderInput("PCAdotsize", "Dot Size:", min = 1, max = 20, step = 2, value = 4)
+				),
+				conditionalPanel("input.groupplot_tabset=='PCA 3D Plot'",
+				                 radioButtons("ellipsoid3d", label="Plot Ellipsoid (>3 per Group)", inline = TRUE, choices = c("No" = "No","Yes" = "Yes")),
+				                 radioButtons("dotlabel", label="Dot Label", inline = TRUE, choices =  c("No" = "No","Yes" = "Yes"))
+				                 
+				),
+				conditionalPanel("input.groupplot_tabset=='Dendrograms'",
+					sliderInput("DendroCut", label="tree cut number:", min = 2, max = 10, step = 1, value = 4),
+					sliderInput("DendroFont", label= "Label Font Size:", min = 0.5, max = 4, step = 0.5, value = 1),
+					radioButtons("dendroformat", label="Select Plot Format", inline = TRUE, choices = c("tree" = "tree","horizontal" = "horiz", "circular" = "circular"), selected="circular")
+				)
+				
+			)
+		),
+		column(9,
+			tabsetPanel(id="groupplot_tabset",
+				tabPanel(title="Dendrograms",actionButton("Dendrograms", "Save to output"), plotOutput("Dendrograms",height = 800)),
+				tabPanel(title="PCA Plot", actionButton("pcaplot", "Save to output"), plotOutput("pcaplot",height = 800)),
+				tabPanel(title="PCA 3D Plot", rglwidgetOutput("plot3d",  width = 1200, height = 1200)),
+				tabPanel(title="PCA 3D Interactive", plotlyOutput("plotly3d",  width = 1200, height = 1200)),
+				tabPanel(title="Sample-sample Distance",actionButton("SampleDistance", "Save to output"), plotOutput("pheatmap",height = 800)),
+				tabPanel(title="Box Plot", actionButton("QCboxplot", "Save to output"), plotOutput("QCboxplot",height = 800)),
+				tabPanel(title="CV Distribution", actionButton("histplot", "Save to output"), plotOutput("histplot",height = 800)),
+				tabPanel(title="Order Groups"),
+				tabPanel(title="Help", htmlOutput('help_QC'))
+			)
+		)
+	)
+), 
+
+##########################################################################################################
+## Volcano Plot
+##########################################################################################################
+tabPanel("Volcano Plot",
+	fluidRow(
+		column(3,
+			wellPanel(
+				selectInput("valcano_test", label="Select Comparsion Groups for Volcano Plot", choices=NULL),
+				column(width=6,selectInput("valcano_FCcut", label= "Choose Fold Change Cutoff", choices= c("1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263)),
+	 			column(width=6,selectInput("valcano_pvalcut", label= "Choose P Value Cutoff", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05),selected=0.01)),
+  			radioButtons("valcano_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+  				conditionalPanel( "input.valcano_tabset=='Volcano Plot (Static)'",
+					sliderInput("lfontsize", "Label Font Size:", min = 1, max = 10, step = 1, value = 4),
+					sliderInput("yfontsize", "Legend Font Size:", min = 8, max = 24, step = 4, value = 16),
+					radioButtons("valcano_label",label="Select Gene Label",inline = TRUE, choices="")
+					),
+					textOutput("valcano_filteredgene"),
+				  tags$head(tags$style("#valcano_filteredgene{color: red; font-size: 20px; font-style: italic; }" ))
+			)
+		),
+		column(9,
+			tabsetPanel(id="valcano_tabset",
+				tabPanel(title="Volcano Plot (Static)",actionButton("valcano", "Save to output"), plotOutput("volcanoplotstatic", height=800)),
+				tabPanel(title="Volcano Plot (Interactive)", plotlyOutput("volcanoplot", height=800)),
+				tabPanel(title="Data Table", DT::dataTableOutput("valcanoData")),
+				tabPanel(title="Help", htmlOutput('help_volcano'))
+			)
+		)
+	)
+), 
+
+##########################################################################################################
+## Heat Map
+##########################################################################################################
+tabPanel("Heat Map",
+	fluidRow(
+		column(3,
+			wellPanel(
+				#actionButton("action_heatmaps","Generate Interactive Heatmap"),
+				selectizeInput("heatmap_groups", label="Select Groups", choices=NULL, multiple=TRUE),
+				selectizeInput("heatmap_samples", label="Select Samples", choices=NULL, multiple=TRUE),
+				radioButtons("heatmap_subset",label="Use all genes or upload your own subset?", choices=c("all","subset","upload genes"),inline = TRUE, selected="all"),
+				conditionalPanel("input.heatmap_subset=='upload genes'", textAreaInput("heatmap_list", "list", "", cols = 5, rows=6)),
+				conditionalPanel("input.heatmap_subset=='all'",	numericInput("maxgenes",label="Choose Gene Number", min=1, max= 5000, value=100, step=1)), 
+				conditionalPanel("input.heatmap_subset=='subset'",
+					selectInput("heatmap_test", label="Select Test for Volcano Plot", choices=NULL),
+					column(width=6,selectInput("heatmap_fccut", label= "Fold Change Cutoff", choices= c("1"=0, "1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263)),
+					column(width=6,selectInput("heatmap_pvalcut", label= "P Value Cutoff", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05), selected=0.01)),
+					radioButtons("heatmap_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+					column(width=12,textOutput("heatmapfilteredgene"),
+					tags$head(tags$style("#heatmapfilteredgene{color: red; font-size: 20px; font-style: italic; }")))
+					), 
+				column(width=3,colourInput("lowColor", "Low_Value", "blue")),
+				column(width=3,colourInput("midColor", "Mid_Value", "white")),
+				column(width=3,colourInput("highColor", "High_Value", "red")),
+				column(width=5,selectInput("dendrogram", "Apply Clustering:", c("both" ,"none", "row", "column"))),
+				column(width=5,selectInput("distanceMethod", "Distance Metric:", c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski"))),
+				column(width=5,selectInput("agglomerationMethod", "Linkage Algorithm:", c("complete", "single", "average", "centroid", "median", "mcquitty", "ward.D", "ward.D2"))),
+				column(width=5,selectInput("scale", "Apply Scaling:", c("none","row", "column"),selected="row")),
+				column(width=5,sliderInput("cutreerows", "cutree_rows:", min = 0, max = 8, step = 1, value = 0)),
+				column(width=5,sliderInput("cutreecols", "cutree_cols:", min = 0, max = 8, step = 1, value = 0)),
+				conditionalPanel( "input.heatmap_tabset=='Static Heatmap'",
+					column(width=5,selectInput("key", "Color Key:", c("TRUE", "FALSE"))),
+					column(width=5,selectInput("srtCol", "angle of label", c("45", "60","90"))),
+					column(width=5,sliderInput("hxfontsize", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
+					column(width=5,sliderInput("hyfontsize", "Row Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
+					column(width=5,sliderInput("right", "Set Margin Width", min = 0, max = 20, value = 5)),
+					column(width=5,sliderInput("bottom", "Set Margin Height", min = 0, max = 20, value = 5))
+				),
+				conditionalPanel( "input.heatmap_tabset=='Interactive Heatmap'",
+					column(width=5,selectInput("key", "Color Key:", c("TRUE", "FALSE"))),
+					column(width=5,selectInput("srtCol", "angle of label", c("45", "60","90"))),
+					column(width=5,sliderInput("hxfontsizei", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
+					column(width=5,sliderInput("hyfontsizei", "Row Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
+					column(width=5,sliderInput("l", "Set Margin Width", min = 0, max = 200, value = 120)),
+					column(width=5,	sliderInput("b", "Set Margin Height", min = 0, max = 200, value = 120))
+				),
+				conditionalPanel("input.heatmap_tabset=='Static PHeatmap'",
+					column(width=5,sliderInput("hxfontsizep", "Column Font Size:", min = 0, max = 20, step = 1, value = 10)),
+					column(width=5,sliderInput("hyfontsizep", "Row Font Size:", min = 0, max = 20, step = 1, value = 10))
+				)
+			)
+		),
+		column(9,
+			tabsetPanel(id="heatmap_tabset",
+				tabPanel(title="Static Heatmap Layout 1",actionButton("pheatmap2", "Save to output"), plotOutput("pheatmap2", height = 800)),
+				tabPanel(title="Static Heatmap Layout 2", actionButton("staticheatmap", "Save to output"), plotOutput("staticheatmap", height = 800)),
+				tabPanel(title="Interactive Heatmap",textOutput("text"), p(), plotlyOutput("interactiveheatmap", height = 800)),
+				tabPanel(title="Help", htmlOutput('help_heatmap'))
+			)
+		)
+	)
+),
+
+
+##########################################################################################################
+## Protein Expression Plot
+##########################################################################################################
+tabPanel("Protein Expression Plot",
+	fluidRow(
+		column(3,
+			wellPanel(
+				conditionalPanel("input.expression_tabset=='Searched Protein Expression' || input.expression_tabset=='Data Output' ",
+					selectizeInput("sel_gene",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search')),
+					radioButtons("SeparateOnePlot", label="Separate or One Plot", inline = TRUE, choices = c("Separate" = "Separate", "OnePlot" = "OnePlot"))
+					),
+				conditionalPanel("input.expression_tabset=='Browsing'",
+					column(width=6,selectInput("expression_fccut", label= "Choose Fold Change Threshold", choices= c("all"=0,"1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263)),
+					column(width=6,selectInput("expression_pvalcut", label= "Choose P-value Threshold", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05,"all"=1),selected=0.01)),
+					radioButtons("expression_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+					selectInput("expression_test", label="Select Test", choices=NULL),
+					textOutput("expfilteredgene"),
+					tags$head(tags$style("#expfilteredgene{color: red; font-size: 20px; font-style: italic;}")),
+					column(width=6,selectInput("sel_page",	label="Select Page",	choices = NULL,	selected=1)),
+					column(width=6,selectInput("numperpage", label= "Plot Number per Page", choices= c("4"=4,"6"=6,"9"=9), selected=6))
+				),
+				selectizeInput("sel_group", label="Select Groups (u can re-order)", choices=NULL, multiple=TRUE),
+				radioButtons("sel_geneid",label="Select Gene Label",inline = TRUE, choices=""),
+				radioButtons("plotformat", label="Select Plot Format", inline = TRUE, choices = c("Box Plot" = "boxplot","Bar Plot" = "barplot", "violin" = "violin","line" = "line")),
+				radioButtons("IndividualPoint", label="Show Individual Point?", inline = TRUE, choices = c("YES" = "YES","NO" = "NO")),
+				radioButtons("ColPattern", label="Bar Colors", inline = TRUE, choices = c("palette" = "palette", "Single" = "Single")),
+				colourInput("barcol", "Select colour", "#0000FF", palette = "limited"),
+				selectInput("colpalette", label= "Select palette", choices=c("Accent"="Accent","Dark2"="Dark2","Paired"="Paired","Pastel1"="Pastel1","Pastel2"="Pastel2","Set1"="Set1","Set2"="Set2","Set3"="Set3"), selected="Dark2"),
+				sliderInput("expression_axisfontsize", "Axis Font Size:", min = 12, max = 28, step = 4, value = 16),
+				sliderInput("expression_titlefontsize", "Title Font Size:", min = 12, max = 28, step = 4, value = 16),
+				textInput("Ylab", "Y label", width = "100%"),
+				textInput("Xlab", "X label", width = "100%"),
+				sliderInput("Xangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45)
+				
+				
+			)
+		),
+		column(9,
+			tabsetPanel(id="expression_tabset",
+				tabPanel(title="Browsing",actionButton("browsing", "Save to output"),plotOutput("browsing", height=800)),
+				tabPanel(title="Searched Protein Expression",actionButton("boxplot", "Save to output"),plotOutput("boxplot", height=800)),
+				tabPanel(title="Data Table",	DT::dataTableOutput("dat_dotplot")),
+				tabPanel(title="Result Table",	DT::dataTableOutput("res_dotplot")),
+				tabPanel(title="Help", htmlOutput('help_expression'))
+			)
+		)
+	)
+),
+
+##########################################################################################################
+## Gene Set Enrichment
+##########################################################################################################
+tabPanel("Gene Set Enrichment",
+	fluidRow(
+		column(3,
+			wellPanel(
+				selectInput("geneset_test", label="Select Comparison for Gene Set analysis", choices=NULL),
+				column(width=6,selectInput("geneset_FCcut", label= "Choose Fold Change Cutoff", choices= c("all"=0,"1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected=0)),
+				column(width=6,selectInput("geneset_pvalcut", label= "Choose P Value Cutoff", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05),selected=0.01)),
+				radioButtons("geneset_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+				textOutput("geneset_filteredgene"),
+				tags$head(tags$style("#geneset_filteredgene{color: red; font-size: 20px; font-style: italic;}")),
+				conditionalPanel("input.geneset_tabset=='Gene Set Enrichment'",
+					radioButtons("MSigDB", label= "MSigDB Collections",
+						choices= c("KEGG Pathway" = "KEGG",
+							"c2.cgp (chemical and genetic perturbations)" = "c2.cgp.v6.1",
+							"c2.cp.biocarta" = "c2.cp.biocarta.v6.1",
+							"c2.cp.reactome" =  "c2.cp.reactome.v6.1",
+							"c2.cp (Canonical pathways)" = "c2.cp.v6.1",
+							"c3.all (motif gene sets)" = "c3.all.v6.1",
+							"c3.tft (transcription factor targets)" = "c3.tft.v6.1",
+							"c5.bp (GO biological process)" = "c5.bp.v6.1",
+							"c5.cc (GO cellular component)" = "c5.cc.v6.1",
+							"c5.mf (GO molecular function)" = "c5.mf.v6.1",
+							"c6.all (oncogenic signatures)" = "c6.all.v6.1",
+							"c7.all (immunologic signatures)" = "c7.all.v6.1",
+						"h.all.v6.1 (hallmark gene sets)" = "h.all.v6.1"), selected = "KEGG")
+					)
+				)
+			),
+			column(9,
+				tabsetPanel(id="geneset_tabset",
+					tabPanel(title="Gene Set Enrichment", DT::dataTableOutput("MSigDB")),
+					tabPanel(title="Gene Expression",textInput('x1', 'Row ID'),  DT::dataTableOutput("Expression")),
+					tabPanel(title="Gene Set Heat Map", textInput('x2', 'Row ID'), plotOutput('SetHeatMap',height="auto", width = 900)),
+					tabPanel(title="KEGG Pathway View", textInput('x3', 'Row ID'), plotOutput('keggView')),
+					tabPanel(title="Help", htmlOutput('help_geneset'))
+			)
+			)
+		)
+	), 
+	
+##########################################################################################################
+## Pattern Clustering
+##########################################################################################################
+tabPanel("Pattern Clustering",
+	fluidRow(
+		column(3,
+			wellPanel(
+				column(width=6,selectInput("pattern_fccut", label= "Choose Fold Change Threshold", choices= c("all"=0,"1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263)),
+				column(width=6,selectInput("pattern_pvalcut", label= "Choose P-value Threshold", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05,"all"=1),selected=0.01)),
+				radioButtons("pattern_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+				textOutput("patternfilteredgene"),
+				tags$head(tags$style("#patternfilteredgene{color: red; font-size: 20px; font-style: italic; }")),
+				selectizeInput("pattern_group", label="Select Groups (u can re-order)", choices=NULL, multiple=TRUE),
+				radioButtons("ClusterMehtod", label="Cluster Mehtod", inline = FALSE, choices = c("Soft Clustering" = "mfuzz", "K-means" = "kmeans", "Partitioning Around Medoids (disabled)" = "pam")),
+				sliderInput("k", "Cluster Number:", min = 3, max = 12, step = 1, value = 6),
+				conditionalPanel("input.ClusterMehtod=='kmeans'",
+				                 sliderInput("pattern_font", "Font Size:", min = 12, max = 24, step = 2, value = 14),
+				                 sliderInput("pattern_Xangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45)
+				                 
+				                 ),
+				conditionalPanel("input.Pattern_tabset=='Data Table'",
+				                 radioButtons("DataFormat", label="Data Output Format:", inline = TRUE, choices = c("Wide Format" = "wide","Long Format" = "long"))             
+				)
+			)
+		),
+		column(9,
+			tabsetPanel(id="Pattern_tabset",
+				#tabPanel(title="Optimal Number of Clusters", plotOutput("nbclust", height=800)),
+				tabPanel(title="Clustering of Centroid Profiles",actionButton("pattern", "Save to output"),plotOutput("pattern", height=800)),
+				#tabPanel(title="Data Table",actionButton("Pattern_data", "Save to output"), DT::dataTableOutput("dat_pattern")),
+				tabPanel(title="Data Table", DT::dataTableOutput("dat_pattern")),
+				tabPanel(title="Help", htmlOutput('help_pattern'))
+			)
+		)
+	)
+),
+
+##########################################################################################################
+## Correlation Network
+##########################################################################################################
+tabPanel("Correlation Network",
+	fluidRow(
+		column(3,
+			wellPanel(
+				selectizeInput("sel_net_gene",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search')),
+				sliderInput("network_rcut", label= "Choose r Cutoff",  min = 0.7, max = 1, value = 0.9, step=0.02),
+	 			selectInput("network_pcut", label= "Choose P Value Cutoff", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05),selected=0.01),
+       	textOutput("networkstat"),
+        uiOutput("myTabUI")
+			)
+		),
+		column(9,
+			tabsetPanel(id="Network_tabset",
+			tabPanel("visNetwork", visNetworkOutput("visnetwork", height="800px"), style = "background-color: #eeeeee;"),
+			tabPanel("networkD3(disabled)"), #forceNetworkOutput("networkD3", height="800px"), style = "background-color: #eeeeee;"),
+     	tabPanel(title="Data Table",	DT::dataTableOutput("dat_network")),
+			tabPanel(title="Help", htmlOutput('help_network'))
+			)
+		)
+	)
+),  
+
+
+
+##########################################################################################################
+## Venn Diagram
+##########################################################################################################
+tabPanel("Venn Diagram",
+	fluidRow(
+		column(2,
+			wellPanel(
+				column(width=6,selectInput("venn_fccut", label= "Choose Fold Change Cutoff", choices= c("1"=0,"1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263)),
+				column(width=6,selectInput("venn_pvalcut", label= "Choose P value Cutoff", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05), selected=0.01)),
+				radioButtons("venn_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+				radioButtons("venn_updown", label= "All, Up or Down?", choices= c("All"="All","Up"="Up","Down"="Down"),inline = TRUE),
+				selectInput("venn_test1", label="Select List 1", choices=NULL),
+				conditionalPanel("input.venn_tabset=='vennDiagram'",
+				colourInput("col1", "Select colour", "#0000FF",palette = "limited")
+				),
+
+				selectInput("venn_test2", label="Select List 2", choices=NULL),
+				conditionalPanel("input.venn_tabset=='vennDiagram'",
+				colourInput("col2", "Select colour", "#FF7F00",palette = "limited")
+				),
+
+				selectInput("venn_test3", label="Select List 3", choices=NULL),
+				conditionalPanel("input.venn_tabset=='vennDiagram'",
+				colourInput("col3", "Select colour", "#00FF00",palette = "limited")
+				),
+
+				selectInput("venn_test4", label="Select List 4", choices=NULL),
+				conditionalPanel("input.venn_tabset=='vennDiagram'",
+				colourInput("col4", "Select colour", "#FF00FF",palette = "limited")
+				),
+
+				selectInput("venn_test5", label="Select List 5", choices=NULL),
+				conditionalPanel("input.venn_tabset=='vennDiagram'",
+				colourInput("col5", "Select colour", "#FFFF00", palette = "limited")
+				),
+				conditionalPanel("input.venn_tabset=='Intersection Output'",
+				radioButtons("vennlistname", label= "Label name", choices= c("Gene"="Gene","AC Number"="AC", "UniqueID"="UniqueID"),inline = TRUE, selected = "Gene"))
+				) 
+			),
+			column(10,
+				tabsetPanel(id="venn_tabset",
+					tabPanel(title="vennDiagram",
+						column(9,
+							actionButton("vennDiagram", "Save to output"),plotOutput("vennDiagram", height = 800)
+						),
+						column(3,
+							textInput("title", "Title", width = "100%"),
+							sliderInput("maincex", "Title Size", min = 0, max = 6, value = 3, width = "100%"),
+							sliderInput("alpha", "Opacity", min = 0, max = 1, value = 0.4, width = "100%"),
+							sliderInput("lwd", "line thick", min = 1, max = 4, value = 1, width = "100%"),
+							sliderInput("lty", "line type", min = 1, max = 6, value = 1, width = "100%"),
+							radioButtons("fontface","Number Font face",list("plain", "bold", "italic"),selected = "plain",	inline = TRUE),
+							sliderInput("cex", "Font size", min = 1, max = 4, value = 2, width = "100%"),
+							radioButtons("catfontface","Label Font face",list("plain", "bold", "italic"),	selected = "plain", inline = TRUE),
+							sliderInput("catcex", "Font size", min = 1, max = 2, step=0.5, value = 2, width = "100%")
+						)
+					),
+					tabPanel(title="VennDiagram(black & white)", plotOutput("SvennDiagram",height = 800, width = 800)),
+					tabPanel(title="Intersection Output", htmlOutput("vennHTML")),
+					tabPanel(title="Help", htmlOutput('help_venn'))
+				)
+			)
+		)
+),
+
+
+##########################################################################################################
+## Venn Across Projects
+##########################################################################################################
+tabPanel("Venn Across Projects",
+	fluidRow(
+		column(3,
+			wellPanel(
+				selectInput("vennP_fccut", label= "Choose Fold Change Cutoff", choices= c("all"=0,"1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263),
+				radioButtons("vennP_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+				selectInput("vennP_pvalcut", label= "Choose P value Cutoff", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05,"all"=1), selected=0.01),
+
+				selectInput("dataset1", "Data set1", choices=NULL),
+				selectInput("vennP_test1", label="Select List 1", choices=NULL),
+				conditionalPanel("input.vennP_tabset=='vennDiagram'",
+				colourInput("vennPcol1", "Select colour", "#0000FF",palette = "limited")
+				),
+				selectInput("dataset2", "Data set2", choices=NULL),
+				selectInput("vennP_test2", label="Select List 2", choices=NULL),
+				conditionalPanel("input.vennP_tabset=='vennDiagram'",
+				colourInput("vennPcol2", "Select colour", "#FF7F00",palette = "limited")
+				),
+				selectInput("dataset3", "Data set3", choices=NULL),
+				selectInput("vennP_test3", label="Select List 3", choices=NULL),
+				conditionalPanel("input.vennP_tabset=='vennDiagram'",
+				colourInput("vennPcol3", "Select colour", "#00FF00",palette = "limited")
+				),
+				selectInput("dataset4", "Data set4", choices=NULL),
+				selectInput("vennP_test4", label="Select List 4", choices=NULL),
+				conditionalPanel("input.vennP_tabset=='vennDiagram'",
+					colourInput("vennPcol4", "Select colour", "#FF00FF",palette = "limited")
+				),
+				selectInput("dataset5", "Data set5", choices=NULL),
+				selectInput("vennP_test5", label="Select List 5", choices=NULL),
+				conditionalPanel("input.vennP_tabset=='vennDiagram'",
+				colourInput("vennPcol5", "Select colour", "#FFFF00", palette = "limited")
+				)
+			) 
+		), 
+		column(9,
+			tabsetPanel(id="vennP_tabset",
+				tabPanel(title="vennDiagram",
+					column(9,
+						plotOutput("vennPDiagram", height = 800)
+					),
+					column(3,
+						textInput("vennPtitle", "Title", width = "100%"),
+						sliderInput("vennPmaincex", "Title Size", min = 0, max = 6, value = 3, width = "100%"),
+						sliderInput("vennPalpha", "Opacity", min = 0, max = 1, value = 0.4, width = "100%"),
+						sliderInput("vennPlwd", "line thick", min = 1, max = 4, value = 1, width = "100%"),
+						sliderInput("vennPlty", "line type", min = 1, max = 6, value = 1, width = "100%"),
+						radioButtons("vennPfontface",	"Number Font face", list("plain", "bold", "italic"),	selected = "plain",	inline = TRUE),
+						sliderInput("vennPcex", "Font size", min = 1, max = 4, value = 2, width = "100%"),
+						radioButtons("vennPcatfontface", "Label Font face", list("plain", "bold", "italic"),	selected = "plain",	inline = TRUE),
+						sliderInput("vennPcatcex", "Font size", min = 1, max = 2, step=0.5, value = 2, width = "100%")
+					)
+				),
+				tabPanel(title="VennDiagram(black & white)", plotOutput("SvennPDiagram",height = 800,width = 800)),
+				tabPanel(title="Intersection Output", htmlOutput("vennPHTML")),
+				tabPanel(title="Help", htmlOutput('help_vennp'))
+			)
+		)
+	)
+),
+
+##########################################################################################################
+## Output
+##########################################################################################################
+
+tabPanel("Output",
+	downloadButton('downloadPDF', 'Download PDF'),
+	downloadButton('downloadXLSX', 'Download tables in .xlsx')
+	),
+
+
+##########################################################################################################
+## footer
+##########################################################################################################
+
+footer= HTML('
+	<hr>
+	<div align="center">
+	<font size=3>Developed by: <a href="mailto:benbo.gao@biogen.com?Subject=PtxVis%20Question" target="_top">
+	Benbo Gao</a>, <a href="http://www.biogen.com"> Biogen Inc.</a> 2018 </font>
+	</div>
+')
+
+
+)
+)
+
