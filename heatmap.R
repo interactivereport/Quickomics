@@ -17,8 +17,11 @@ observe({
 	tests = DataIn$tests
 	allgroups = DataIn$groups
 	updateSelectizeInput(session,'heatmap_groups', choices=allgroups, selected=groups)
+	#cat("show all samples", length(samples), length(groups), "\n") #debug
 	updateSelectizeInput(session,'heatmap_samples', choices=samples, selected=samples)
 	updateSelectizeInput(session,'heatmap_test',choices=tests, selected=tests[1])
+	ProteinGeneName = DataIn$ProteinGeneName
+	updateRadioButtons(session,'heatmap_label', inline = TRUE, choices=colnames(ProteinGeneName)[-1])
 })
 
 observe({
@@ -26,18 +29,42 @@ observe({
 	tmpgroups = input$heatmap_groups
 	tmpdat = DataIn$MetaData %>% filter(group %in% tmpgroups)
 	tmpsamples = as.character(tmpdat$sampleid)
+	#cat("update samples", length(tmpsamples), length(tmpgroups), "\n") #debug
 	updateSelectizeInput(session,'heatmap_samples', choices=tmpsamples, selected=tmpsamples)
 })
 
 
+filteredGene=reactive({
+  heatmap_test = input$heatmap_test
+  heatmap_fccut = as.numeric(input$heatmap_fccut)
+  heatmap_pvalcut = as.numeric(input$heatmap_pvalcut)
+  DataIn = DataReactive()
+  results_long = DataIn$results_long
+  
+  if (input$heatmap_psel == "Padj") {
+    filteredGene = results_long %>% filter(test %in% heatmap_test & abs(logFC) > heatmap_fccut & Adj.P.Value < heatmap_pvalcut) %>%
+      dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
+  } else {
+    filteredGene = results_long %>% filter(test %in% heatmap_test & abs(logFC) > heatmap_fccut & P.Value < heatmap_pvalcut) %>%
+      dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
+  }
+   #cat("Selected Genes:",length(filteredGene), "\n") #debug
+  return(filteredGene)
+})
+
+output$heatmapfilteredgene <- renderText({ paste("Selected Genes:",length(filteredGene()),sep="")})
+
+
 DataHeatMapReactive <- reactive({
+  validate(need(input$heatmap_groups, FALSE))
+  validate(need(input$heatmap_samples, FALSE))
 	DataIn = DataReactive()
 	results_long = DataIn$results_long
 	ProteinGeneName = DataIn$ProteinGeneName
 	MetaData = DataIn$MetaData
-
+  #cat("work on Data for Heatmap", date(), "\n") #debug
 	tmpgroups = input$heatmap_groups
-	group_order(input$heatmap_groups)
+	#group_order(input$heatmap_groups)
 	tmpsamples = input$heatmap_samples
 	tmpkeep = which((MetaData$group %in% tmpgroups)&(MetaData$sampleid %in% tmpsamples))
 
@@ -59,29 +86,23 @@ DataHeatMapReactive <- reactive({
 	}
 
 	if (input$heatmap_subset == "subset") {
-		heatmap_test = input$heatmap_test
-		heatmap_fccut = as.numeric(input$heatmap_fccut)
-		heatmap_pvalcut = as.numeric(input$heatmap_pvalcut)
-
-		if (input$heatmap_psel == "Padj") {
-			filteredGene = results_long %>% filter(test %in% heatmap_test & abs(logFC) > heatmap_fccut & Adj.P.Value < heatmap_pvalcut) %>%
-			dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
-		} else {
-			filteredGene = results_long %>% filter(test %in% heatmap_test & abs(logFC) > heatmap_fccut & P.Value < heatmap_pvalcut) %>%
-			dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
-		}
-
-		output$heatmapfilteredgene <- renderText({ paste("Selected Genes:",length(filteredGene),sep="")})
-
-		if(length(filteredGene)>0) {
-			tmpdat  <-  tmpdat[filteredGene,]
+		if(length(filteredGene())>0) {
+			tmpdat  <-  tmpdat[filteredGene(),]
 		}
 	}
 
 	if (input$heatmap_subset == "all") {
-		#tmpdat=tmpdat[sample(1:nrow(tmpdat), input$maxgenes),]
-		tmpdat <- tmpdat %>% sample_n(input$maxgenes)
-		
+	  if (nrow(tmpdat)>input$maxgenes) {
+  	  if (input$heatmap_submethod=="Random") {
+  		tmpdat=tmpdat[sample(1:nrow(tmpdat), input$maxgenes),] #this will keep rownames
+  		#tmpdat <- tmpdat %>% sample_n(input$maxgenes) #this will remove rownames
+  	  } else {
+  	    dataSD=apply(tmpdat, 1, function(x) sd(x,na.rm=T))
+  	    dataM=rowMeans(tmpdat)
+  	    diff=dataSD/(dataM+median(dataM)) #SD/mean, added median value to penalized lower expressed genes
+  	    tmpdat=tmpdat[order(diff, decreasing=TRUE)[1:input$maxgenes], ]	    
+  	  }
+	  }
 	}
 
 	if (input$heatmap_subset == "upload genes") {
@@ -100,84 +121,103 @@ DataHeatMapReactive <- reactive({
 		uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% heatmap_list) | (Protein.ID %in% heatmap_list) | (Gene.Name %in% heatmap_list))  %>%
 		dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
 		tmpdat  <-  tmpdat[uploadlist,]
-		
-		
-		
 	}
 
+	if (nrow(tmpdat)>5000 ) {tmpdat=tmpdat[sample(1:nrow(tmpdat), 5000),]; cat("Reduce data pionts to 5K\n")} #Use at most 5000 genes so the App won't crash
 
 	df <- data.matrix(tmpdat)
+    #use selected gene label
+		sel=match(rownames(df), ProteinGeneName$UniqueID)
+	selCol=match(input$heatmap_label, names(ProteinGeneName))
+	if (sum(is.na(sel))==0 & sum(is.na(selCol)==0)) {rownames(df)=ProteinGeneName[sel, selCol]
+	} else {cat("gene lables no updated",sum(is.na(sel)), sum(is.na(selCol)), "\n")}
+	
 	return(list("df"=df, "annotation"=annotation))
 })
 
-pheatmap2_out <- reactive({
-	withProgress(message = 'Making static heatmap:', value = 0, {
-		DataHeatMap <- DataHeatMapReactive()
-		data.in <- DataHeatMap$df
-		annotation <- DataHeatMap$annotation
-
-		cluster_rows = 	cluster_cols = FALSE
-		if (input$dendrogram == "both" | input$dendrogram == "row")
-		cluster_rows = TRUE
-		if (input$dendrogram == "both" | input$dendrogram == "column")
-		cluster_cols = TRUE
-
-		cexRow = as.numeric(as.character(input$hyfontsizep))
-		cexCol = as.numeric(as.character(input$hxfontsizep))
-
-		labCol = TRUE
-		labRow = TRUE
-
-		if (cexRow  == 0 | nrow(data.in) > 50) {
-			labRow = FALSE
-			cexRow = 5
-		}
-		if (cexCol == 0) {
-			labCol = FALSE
-			cexCol  = 5
-		}
-
-		cutree_rows = input$cutreerows
-		cutree_cols = input$cutreecols
-
-		if (cutree_rows == 0)
-		cutree_rows = NA
-		if (cutree_cols == 0)
-		cutree_cols = NA
-
-		p <- pheatmap(data.in,
-			color = colorpanel (32, low = input$lowColor,mid = input$midColor, high = input$highColor),
-			kmeans_k = NA, breaks = NA, border_color = "grey60",
-			cellwidth = NA, cellheight = NA,
-			scale = input$scale,
-			cluster_rows = cluster_rows,
-			cluster_cols = cluster_cols,
-			clustering_distance_rows = input$distanceMethod,
-			clustering_distance_cols = input$distanceMethod,
-			clustering_method = input$agglomerationMethod,
-			cutree_rows = cutree_rows,
-			cutree_cols = cutree_cols,
-			legend = TRUE, legend_breaks = NA,
-			legend_labels = NA, annotation_row = NA, annotation_col = annotation,
-			annotation_names_row = TRUE, annotation_names_col = TRUE,
-			drop_levels = TRUE,
-			show_rownames = labRow,
-			show_colnames = labCol,
-			main = NA,
-			fontsize = 10,
-			fontsize_row = cexRow,
-			fontsize_col = cexCol,
-			display_numbers = F, number_format = "%.2f", number_color = "grey30",
-			labels_row = NULL, labels_col = NULL, filename = NA,
-		silent = FALSE)
-		return(p)
-	})
-})
 
 
-output$pheatmap2 <- renderPlot({
-	grid.draw(pheatmap2_out()$gtable)
-})
+
+  pheatmap2_out <- eventReactive(input$plot_heatmap, {
+    withProgress(message = 'Making static heatmap 1:', value = 0, {
+      DataHeatMap <- DataHeatMapReactive()
+      data.in <- DataHeatMap$df
+      annotation <- DataHeatMap$annotation
+      
+      cluster_rows = 	cluster_cols = FALSE
+      if (input$dendrogram == "both" | input$dendrogram == "row")
+        cluster_rows = TRUE
+      if (input$dendrogram == "both" | input$dendrogram == "column")
+        cluster_cols = TRUE
+      
+      cexRow = as.numeric(as.character(input$hyfontsizep))
+      cexCol = as.numeric(as.character(input$hxfontsizep))
+      
+      labCol = TRUE
+      labRow = TRUE
+     # cat("pheatmap ", dim(data.in), date(), "\n") #debug
+      if (cexRow  == 0 | nrow(data.in) > 100) {
+        labRow = FALSE
+        cexRow = 5
+      }
+      if (cexCol == 0) {
+        labCol = FALSE
+        cexCol  = 5
+      }
+      
+      cutree_rows = input$cutreerows
+      cutree_cols = input$cutreecols
+      
+      if (cutree_rows == 0)
+        cutree_rows = NA
+      if (cutree_cols == 0)
+        cutree_cols = NA
+      
+      #clean up SD=0 rows and columns
+      if (input$scale=="row") {
+        row_SD=apply(data.in, 1, function(x) sd(x,na.rm=T))
+        data.in=data.in[row_SD!=0, ]
+      }
+      if (input$scale=="column") {
+        col_SD=apply(data.in, 2, function(x) sd(x,na.rm=T))
+        data.in=data.in[, col_SD!=0]
+      }	
+      p <- pheatmap(data.in,
+                    color = colorpanel (32, low = input$lowColor,mid = input$midColor, high = input$highColor),
+                    kmeans_k = NA, breaks = NA, border_color = "grey60",
+                    cellwidth = NA, cellheight = NA,
+                    scale = input$scale,
+                    cluster_rows = cluster_rows,
+                    cluster_cols = cluster_cols,
+                    clustering_distance_rows = input$distanceMethod,
+                    clustering_distance_cols = input$distanceMethod,
+                    clustering_method = input$agglomerationMethod,
+                    cutree_rows = cutree_rows,
+                    cutree_cols = cutree_cols,
+                    legend = TRUE, legend_breaks = NA,
+                    legend_labels = NA, annotation_row = NA, annotation_col = annotation,
+                    annotation_names_row = TRUE, annotation_names_col = TRUE,
+                    drop_levels = TRUE,
+                    show_rownames = labRow,
+                    show_colnames = labCol,
+                    main = NA,
+                    fontsize = 10,
+                    fontsize_row = cexRow,
+                    fontsize_col = cexCol,
+                    display_numbers = F, number_format = "%.2f", number_color = "grey30",
+                    labels_row = NULL, labels_col = NULL, filename = NA,
+                    silent = FALSE)
+      output$pheatmap2 <- renderPlot({
+        grid.draw(p$gtable)})
+      return(p)
+    })
+  })
+
+
+observeEvent(input$plot_heatmap, {  
+  output$pheatmap2 <- renderPlot({
+    grid.draw(pheatmap2_out()$gtable)})
+  })
 
 observeEvent(input$pheatmap2, {
 	saved_plots$pheatmap2 <- pheatmap2_out()$gtable
@@ -185,7 +225,7 @@ observeEvent(input$pheatmap2, {
 )
 
 staticheatmap_out <- reactive({
-	withProgress(message = 'Making static heatmap:', value = 0, {
+	withProgress(message = 'Making static heatmap 2:', value = 0, {
 		DataHeatMap <- DataHeatMapReactive()
 		data.in <- DataHeatMap$df
 		annotation <- DataHeatMap$annotation
@@ -204,7 +244,7 @@ staticheatmap_out <- reactive({
 		dend_c <- t(data.in) %>% dist(method = input$distanceMethod) %>% hclust(method = input$agglomerationMethod) %>% as.dendrogram 
 		#%>% ladderize %>% color_branches(k=cutree_cols)
 
-
+  #  cat(date(), dim(data.in), "layout 2\n") #debug
 		cexRow = as.numeric(as.character(input$hyfontsize))
 		cexCol = as.numeric(as.character(input$hxfontsize))
 

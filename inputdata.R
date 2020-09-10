@@ -23,7 +23,7 @@ observe({
     })
   } else {
     output$project <- renderText({
-      "sample project"
+      "Cx3cr1-Deficient Mouse Microglia RNA-Seq Demo Data"
     })
   }
 })
@@ -38,10 +38,13 @@ DataReactive <- reactive({
                  if (!is.null(query[['project']])) {
                    ProjectID = query[['project']]
                  } else {
-                   ProjectID = "RNASeqJan_PtxVis"
+                   ProjectID = "Mouse_microglia_RNA-Seq"
                  }
                  #setwd('H:/Rcode/ptxvisv3')
-                 RDataFile <- paste("data/", ProjectID, ".RData", sep = "")
+               RDataFile <- paste("data/", ProjectID, ".RData", sep = "")
+               #  RDataFile <- ("D:/Test/temp/Mouse_microglia_RNA/data/Mouse_microglia_RNA-Seq.RData")   
+               #  RDataFile <- ("D:/Test/temp/Mouse_microglia_RNA/data/2019_XH_OGA_iPSC_Neuron.RData")   
+                 
                  load(RDataFile)
                  
                  results_long <-

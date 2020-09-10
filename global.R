@@ -19,6 +19,7 @@ suppressPackageStartupMessages({
 	library(dplyr)
 	library(tidyr)
 	library(tibble)
+  library(stringr)
 	library(ggplot2)
 	library(gplots)
 	library(ggpubr)
@@ -84,3 +85,8 @@ ORAEnrichment <- function(deGenes,universe, gsets, logFC){
 	ora.stats = cbind(Rank=seq(1, nrow(ora.stats)),ora.stats)
 	return(ora.stats)
 }
+
+mycss <- "select ~ .selectize-control .selectize-input {
+        max-height: 100px;
+        overflow-y: auto;
+        }"

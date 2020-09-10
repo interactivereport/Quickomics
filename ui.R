@@ -8,12 +8,19 @@
 ##@Date : 9/6/2019
 ##@version 3.0
 ###########################################################################################################
-
+tagList(tags$head(tags$style(type = 'text/css','.navbar-brand{display:none;}')),
 fluidPage(theme = shinytheme("cerulean"),
-          windowTitle = 'Proteomics Result Visualization',
-          titlePanel(div(h1(strong('Proteomics Result Visualization'), align = 'center')), 
-                     windowTitle = 'Proteomics Result Visualization'),
-navbarPage(title = textOutput('project'), 
+          windowTitle = "Quickomics",
+          titlePanel(
+            fluidRow(
+              column(4, img(height =75 , src = "Quickomics.png")), 
+              column(8,  h2(strong(textOutput('project')), align = 'left'))
+            ),
+              windowTitle = "Quickomics" ),
+            
+            
+          
+navbarPage(title ="", 
 	
 ##########################################################################################################
 ## Select Dataset
@@ -39,6 +46,7 @@ tabPanel("QC Plots",
 	fluidRow(
 		column(3,
 			wellPanel(
+			  tags$style(mycss),
 				selectizeInput("QC_groups", label="Select Groups", choices=NULL, multiple=TRUE),
 				selectizeInput("QC_samples", label="Select Samples", choices=NULL,multiple=TRUE),
 				conditionalPanel("input.groupplot_tabset=='PCA Plot'",
@@ -78,29 +86,39 @@ tabPanel("QC Plots",
 ), 
 
 ##########################################################################################################
-## Volcano Plot
+## Volcano Plot #updatd by Xinmin
 ##########################################################################################################
 tabPanel("Volcano Plot",
 	fluidRow(
 		column(3,
 			wellPanel(
-				selectInput("valcano_test", label="Select Comparsion Groups for Volcano Plot", choices=NULL),
-				column(width=6,selectInput("valcano_FCcut", label= "Choose Fold Change Cutoff", choices= c("1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263)),
-	 			column(width=6,selectInput("valcano_pvalcut", label= "Choose P Value Cutoff", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05),selected=0.01)),
+			  conditionalPanel( "input.valcano_tabset!='DEGs in Two Comparisons'",
+				selectInput("valcano_test", label="Select Comparison Groups for Volcano Plot", choices=NULL)),
+				conditionalPanel( "input.valcano_tabset=='DEGs in Two Comparisons'",
+				selectInput("valcano_test1", label="1st Comparison (X-axis)", choices=NULL),
+				selectInput("valcano_test2", label="2nd Comparison (Y-aixs)", choices=NULL)),
+				selectInput("valcano_FCcut", label= "Choose Fold Change Cutoff", choices= c("1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263),
+				numericInput("Max_logFC", label= "Max log(logFC) in plot (use 0 for full range)", value=0, min=0),
+        selectInput("valcano_pvalcut", label= "Choose P Value Cutoff", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05),selected=0.01),
+				conditionalPanel( "input.valcano_tabset!='DEGs in Two Comparisons'",
+				numericInput("Max_Pvalue", label= "Max -log10(Stat Value) in plot (use 0 for full range)", value=0, min=0) ),
   			radioButtons("valcano_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
-  				conditionalPanel( "input.valcano_tabset=='Volcano Plot (Static)'",
+  				conditionalPanel( "input.valcano_tabset!='Volcano Plot (Interactive)'",
 					sliderInput("lfontsize", "Label Font Size:", min = 1, max = 10, step = 1, value = 4),
-					sliderInput("yfontsize", "Legend Font Size:", min = 8, max = 24, step = 4, value = 16),
-					radioButtons("valcano_label",label="Select Gene Label",inline = TRUE, choices="")
+					sliderInput("yfontsize", "Legend Font Size:", min = 8, max = 24, step = 1, value = 14),
+					radioButtons("valcano_label",label="Select Gene Label",inline = TRUE, choices=""),
+					sliderInput("Ngenes", "# of Genes to Label", min = 10, max = 150, step = 5, value = 50)
 					),
+				conditionalPanel( "input.valcano_tabset!='DEGs in Two Comparisons'",		
 					textOutput("valcano_filteredgene"),
-				  tags$head(tags$style("#valcano_filteredgene{color: red; font-size: 20px; font-style: italic; }" ))
+				  tags$head(tags$style("#valcano_filteredgene{color: red; font-size: 20px; font-style: italic; }" )))
 			)
 		),
 		column(9,
 			tabsetPanel(id="valcano_tabset",
 				tabPanel(title="Volcano Plot (Static)",actionButton("valcano", "Save to output"), plotOutput("volcanoplotstatic", height=800)),
 				tabPanel(title="Volcano Plot (Interactive)", plotlyOutput("volcanoplot", height=800)),
+			  tabPanel(title="DEGs in Two Comparisons",actionButton("DEG_comp", "Save to output"), plotOutput("DEG_Compare", height=800)),
 				tabPanel(title="Data Table", DT::dataTableOutput("valcanoData")),
 				tabPanel(title="Help", htmlOutput('help_volcano'))
 			)
@@ -120,25 +138,27 @@ tabPanel("Heat Map",
 				selectizeInput("heatmap_samples", label="Select Samples", choices=NULL, multiple=TRUE),
 				radioButtons("heatmap_subset",label="Use all genes or upload your own subset?", choices=c("all","subset","upload genes"),inline = TRUE, selected="all"),
 				conditionalPanel("input.heatmap_subset=='upload genes'", textAreaInput("heatmap_list", "list", "", cols = 5, rows=6)),
-				conditionalPanel("input.heatmap_subset=='all'",	numericInput("maxgenes",label="Choose Gene Number", min=1, max= 5000, value=100, step=1)), 
+				conditionalPanel("input.heatmap_subset=='all'",	
+          radioButtons("heatmap_submethod", label= "Plot Random Genes or Variable Genes", choices= c("Random"="Random","Variable"="Variable"),inline = TRUE),
+				  numericInput("maxgenes",label="Choose Gene Number", min=1, max= 5000, value=100, step=1)), 
 				conditionalPanel("input.heatmap_subset=='subset'",
-					selectInput("heatmap_test", label="Select Test for Volcano Plot", choices=NULL),
+					selectInput("heatmap_test", label="Select Test to Select genes", choices=NULL),
 					column(width=6,selectInput("heatmap_fccut", label= "Fold Change Cutoff", choices= c("1"=0, "1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263)),
 					column(width=6,selectInput("heatmap_pvalcut", label= "P Value Cutoff", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05), selected=0.01)),
 					radioButtons("heatmap_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
 					column(width=12,textOutput("heatmapfilteredgene"),
 					tags$head(tags$style("#heatmapfilteredgene{color: red; font-size: 20px; font-style: italic; }")))
 					), 
-				column(width=3,colourInput("lowColor", "Low_Value", "blue")),
-				column(width=3,colourInput("midColor", "Mid_Value", "white")),
-				column(width=3,colourInput("highColor", "High_Value", "red")),
+				column(width=3,colourInput("lowColor", "Low", "blue")),
+				column(width=3,colourInput("midColor", "Mid", "white")),
+				column(width=3,colourInput("highColor", "High", "red")),
 				column(width=5,selectInput("dendrogram", "Apply Clustering:", c("both" ,"none", "row", "column"))),
 				column(width=5,selectInput("distanceMethod", "Distance Metric:", c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski"))),
 				column(width=5,selectInput("agglomerationMethod", "Linkage Algorithm:", c("complete", "single", "average", "centroid", "median", "mcquitty", "ward.D", "ward.D2"))),
 				column(width=5,selectInput("scale", "Apply Scaling:", c("none","row", "column"),selected="row")),
 				column(width=5,sliderInput("cutreerows", "cutree_rows:", min = 0, max = 8, step = 1, value = 0)),
 				column(width=5,sliderInput("cutreecols", "cutree_cols:", min = 0, max = 8, step = 1, value = 0)),
-				conditionalPanel( "input.heatmap_tabset=='Static Heatmap'",
+				conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 2'",
 					column(width=5,selectInput("key", "Color Key:", c("TRUE", "FALSE"))),
 					column(width=5,selectInput("srtCol", "angle of label", c("45", "60","90"))),
 					column(width=5,sliderInput("hxfontsize", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
@@ -154,15 +174,19 @@ tabPanel("Heat Map",
 					column(width=5,sliderInput("l", "Set Margin Width", min = 0, max = 200, value = 120)),
 					column(width=5,	sliderInput("b", "Set Margin Height", min = 0, max = 200, value = 120))
 				),
-				conditionalPanel("input.heatmap_tabset=='Static PHeatmap'",
-					column(width=5,sliderInput("hxfontsizep", "Column Font Size:", min = 0, max = 20, step = 1, value = 10)),
-					column(width=5,sliderInput("hyfontsizep", "Row Font Size:", min = 0, max = 20, step = 1, value = 10))
-				)
+				conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
+				  column(width=5,sliderInput("hxfontsizep", "Column Font Size:", min = 0, max = 20, step = 1, value = 10)),
+					column(width=5,sliderInput("hyfontsizep", "Row Font Size:", min = 0, max = 20, step = 1, value = 7)),
+					#tags$h5("Click Plot/Refresh Button to generate heatmap.")
+				),
+				radioButtons("heatmap_label",label="Gene Label (shown when <=100 genes in heatmap)",inline = TRUE, choices="")
 			)
 		),
 		column(9,
 			tabsetPanel(id="heatmap_tabset",
-				tabPanel(title="Static Heatmap Layout 1",actionButton("pheatmap2", "Save to output"), plotOutput("pheatmap2", height = 800)),
+				tabPanel(title="Static Heatmap Layout 1",actionButton("pheatmap2", "Save to output"),  
+				         actionButton("plot_heatmap", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"), 
+				         plotOutput("pheatmap2", height = 800)),
 				tabPanel(title="Static Heatmap Layout 2", actionButton("staticheatmap", "Save to output"), plotOutput("staticheatmap", height = 800)),
 				tabPanel(title="Interactive Heatmap",textOutput("text"), p(), plotlyOutput("interactiveheatmap", height = 800)),
 				tabPanel(title="Help", htmlOutput('help_heatmap'))
@@ -175,11 +199,11 @@ tabPanel("Heat Map",
 ##########################################################################################################
 ## Protein Expression Plot
 ##########################################################################################################
-tabPanel("Protein Expression Plot",
+tabPanel("Expression Plot",
 	fluidRow(
 		column(3,
 			wellPanel(
-				conditionalPanel("input.expression_tabset=='Searched Protein Expression' || input.expression_tabset=='Data Output' ",
+				conditionalPanel("input.expression_tabset=='Searched Expression Data' || input.expression_tabset=='Data Output' ",
 					selectizeInput("sel_gene",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search')),
 					radioButtons("SeparateOnePlot", label="Separate or One Plot", inline = TRUE, choices = c("Separate" = "Separate", "OnePlot" = "OnePlot"))
 					),
@@ -212,7 +236,7 @@ tabPanel("Protein Expression Plot",
 		column(9,
 			tabsetPanel(id="expression_tabset",
 				tabPanel(title="Browsing",actionButton("browsing", "Save to output"),plotOutput("browsing", height=800)),
-				tabPanel(title="Searched Protein Expression",actionButton("boxplot", "Save to output"),plotOutput("boxplot", height=800)),
+				tabPanel(title="Searched Expression Data",actionButton("boxplot", "Save to output"),plotOutput("boxplot", height=800)),
 				tabPanel(title="Data Table",	DT::dataTableOutput("dat_dotplot")),
 				tabPanel(title="Result Table",	DT::dataTableOutput("res_dotplot")),
 				tabPanel(title="Help", htmlOutput('help_expression'))
@@ -476,11 +500,11 @@ footer= HTML('
 	<hr>
 	<div align="center">
 	<font size=3>Developed by: <a href="mailto:benbo.gao@biogen.com?Subject=PtxVis%20Question" target="_top">
-	Benbo Gao</a>, <a href="http://www.biogen.com"> Biogen Inc.</a> 2018 </font>
+	Benbo Gao</a>, <a href="http://www.biogen.com"> Biogen Inc.</a></font>
 	</div>
 ')
 
 
 )
 )
-
+) #for tagList
