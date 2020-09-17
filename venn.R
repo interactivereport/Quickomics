@@ -102,7 +102,7 @@ vennDiagram_out <- reactive({
 	SetNum = length(vennlist)
 	futile.logger::flog.threshold(futile.logger::ERROR, name = "VennDiagramLogger")
 	venn.plot <- venn.diagram(x = vennlist,
-		fill=fillcor,
+		fill=fillcor, margin=input$margin,
 		lty=input$lty, lwd=input$lwd, alpha=input$alpha,
 		cex=input$cex, cat.cex=input$catcex,
 		fontface = input$fontface, cat.fontface=input$catfontface,

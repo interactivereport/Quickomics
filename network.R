@@ -9,12 +9,14 @@
 ##@version 1.0
 ###########################################################################################################
 
-
 observe({
-	DataIn = DataReactive()
-	ProteinGeneName = DataIn$ProteinGeneName
-	DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
-	updateSelectizeInput(session,'sel_net_gene', choices= DataIngenes, server=TRUE)
+  DataIn = DataReactive()
+  ProteinGeneName = DataIn$ProteinGeneName
+  if (input$network_label=="UniqueID") {
+    DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
+  } else 
+  {DataIngenes <- ProteinGeneName %>% dplyr::select(Gene.Name) %>% collect %>% .[["Gene.Name"]] %>%	as.character()}
+  updateSelectizeInput(session,'sel_net_gene', choices= DataIngenes, server=TRUE)
 })
 
 

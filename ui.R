@@ -25,19 +25,32 @@ navbarPage(title ="",
 ##########################################################################################################
 ## Select Dataset
 ##########################################################################################################
-tabPanel("Data Result Table",
-	fluidRow(
-				  tabsetPanel(id="Tables",
-					#tabPanel(title="Introduction",htmlOutput('intro')),
-					#tabPanel(title="Project Table", DT::dataTableOutput('projecttable')),
-					tabPanel(title="Sample Table", actionButton("sample", "Save to output"), dataTableOutput('sample')),
-					tabPanel(title="Result Table", actionButton("results", "Save to output"), dataTableOutput('results')),
-					tabPanel(title="Data Table", actionButton("data_wide", "Save to output"), dataTableOutput('data_wide')),
-					tabPanel(title="Protein Gene Names", actionButton("ProteinGeneName", "Save to output"), dataTableOutput('ProteinGeneName')),
-					tabPanel(title="Help", htmlOutput('help_input'))
-				  )
-		)
-	),
+tabPanel("Select Dataset",
+         fluidRow(
+           column(3,
+                  wellPanel(
+                    radioButtons("select_dataset",label="Select data set", choices=c("Saved Projects","Upload RData File"),inline = F, selected="Saved Projects"),
+                    conditionalPanel("input.select_dataset=='Saved Projects'",
+                                     selectInput("sel_project", label="Available Dataset", 
+                                                 choices=c("", projects), selected=NULL)),
+                    conditionalPanel("input.select_dataset=='Upload RData File'",
+                                     fileInput("file1", "Choose a file"),
+                                     uiOutput('ui.action') )
+                  )
+           ),
+           column(9,
+                  tabsetPanel(id="Tables",
+                              #tabPanel(title="Introduction",htmlOutput('intro')),
+                              #tabPanel(title="Project Table", DT::dataTableOutput('projecttable')),
+                              tabPanel(title="Sample Table", actionButton("sample", "Save to output"), dataTableOutput('sample')),
+                              tabPanel(title="Result Table", actionButton("results", "Save to output"), dataTableOutput('results')),
+                              tabPanel(title="Data Table", actionButton("data_wide", "Save to output"), dataTableOutput('data_wide')),
+                              tabPanel(title="Protein Gene Names", actionButton("ProteinGeneName", "Save to output"), dataTableOutput('ProteinGeneName')),
+                              tabPanel(title="Help", htmlOutput('help_input'))
+                  )
+           )
+         )
+), 
 
 ##########################################################################################################
 ## QC Plots
@@ -49,9 +62,13 @@ tabPanel("QC Plots",
 			  tags$style(mycss),
 				selectizeInput("QC_groups", label="Select Groups", choices=NULL, multiple=TRUE),
 				selectizeInput("QC_samples", label="Select Samples", choices=NULL,multiple=TRUE),
+				selectInput("PCAcolorby", label="Color By", choices=NULL),
+				selectInput("PCAshapeby", label="Shape By", choices=NULL),
 				conditionalPanel("input.groupplot_tabset=='PCA Plot'",
 					selectizeInput("pcnum",label="Select Principal Components", choices=1:5, multiple=TRUE, selected=1:2, options = list(maxItems = 2)),
-					radioButtons("ellipsoid", label="Plot Ellipsoid (>3 per Group)", inline = TRUE, choices = c("No" = "No","Yes" = "Yes")),
+					radioButtons("ellipsoid", label="Plot Ellipsoid (>3 per Group)", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE)),
+					radioButtons("mean_point", label="Show Mean Point", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE)),
+					radioButtons("rug", label="Show Marginal Rugs", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE)),
 					selectInput("PCAcolpalette", label= "Select palette", choices=c("Accent"="Accent","Dark2"="Dark2","Paired"="Paired","Pastel1"="Pastel1","Pastel2"="Pastel2","Set1"="Set1","Set2"="Set2","Set3"="Set3"), selected="Dark2"),
 					sliderInput("PCAfontsize", "Label Font Size:", min = 1, max = 20, step = 2, value = 10),
 					sliderInput("PCAdotsize", "Dot Size:", min = 1, max = 20, step = 2, value = 4)
@@ -86,7 +103,7 @@ tabPanel("QC Plots",
 ), 
 
 ##########################################################################################################
-## Volcano Plot #updatd by Xinmin
+## Volcano Plot
 ##########################################################################################################
 tabPanel("Volcano Plot",
 	fluidRow(
@@ -332,6 +349,7 @@ tabPanel("Correlation Network",
 	fluidRow(
 		column(3,
 			wellPanel(
+			  radioButtons("network_label",label="Select Gene Label",inline = TRUE, choices=c("UniqueID", "Gene.Name"), selected="Gene.Name"),
 				selectizeInput("sel_net_gene",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search')),
 				sliderInput("network_rcut", label= "Choose r Cutoff",  min = 0.7, max = 1, value = 0.9, step=0.02),
 	 			selectInput("network_pcut", label= "Choose P Value Cutoff", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05),selected=0.01),
@@ -406,7 +424,8 @@ tabPanel("Venn Diagram",
 							radioButtons("fontface","Number Font face",list("plain", "bold", "italic"),selected = "plain",	inline = TRUE),
 							sliderInput("cex", "Font size", min = 1, max = 4, value = 2, width = "100%"),
 							radioButtons("catfontface","Label Font face",list("plain", "bold", "italic"),	selected = "plain", inline = TRUE),
-							sliderInput("catcex", "Font size", min = 1, max = 2, step=0.5, value = 2, width = "100%")
+							sliderInput("catcex", "Font size", min = 1, max = 2, step=0.1, value = 1.8, width = "100%"),
+							sliderInput("margin", "Margin", min = 0, max = 1, step=0.05, value = 0.1, width = "100%")
 						)
 					),
 					tabPanel(title="VennDiagram(black & white)", plotOutput("SvennDiagram",height = 800, width = 800)),
@@ -471,7 +490,8 @@ tabPanel("Venn Across Projects",
 						radioButtons("vennPfontface",	"Number Font face", list("plain", "bold", "italic"),	selected = "plain",	inline = TRUE),
 						sliderInput("vennPcex", "Font size", min = 1, max = 4, value = 2, width = "100%"),
 						radioButtons("vennPcatfontface", "Label Font face", list("plain", "bold", "italic"),	selected = "plain",	inline = TRUE),
-						sliderInput("vennPcatcex", "Font size", min = 1, max = 2, step=0.5, value = 2, width = "100%")
+						sliderInput("vennPcatcex", "Font size", min = 1, max = 2, step=0.1, value = 1.8, width = "100%"),
+						sliderInput("vennPmargin", "Margin", min = 0, max = 1, step=0.05, value = 0.2, width = "100%")
 					)
 				),
 				tabPanel(title="VennDiagram(black & white)", plotOutput("SvennPDiagram",height = 800,width = 800)),

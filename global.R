@@ -8,7 +8,7 @@
 ##@Date : 5/16/2018
 ##@version 1.0
 ###########################################################################################################
-
+options(stringsAsFactors=F)
 
 suppressPackageStartupMessages({
 	library(shiny)
@@ -86,7 +86,20 @@ ORAEnrichment <- function(deGenes,universe, gsets, logFC){
 	return(ora.stats)
 }
 
+options(shiny.maxRequestSize = 30*1024^2)  #upload file up to 30 Mb
+
+
 mycss <- "select ~ .selectize-control .selectize-input {
         max-height: 100px;
         overflow-y: auto;
-        }"
+        }
+    .shiny-notification{
+    position: fixed;
+    top: 33%;
+    left: 33%;
+    right: 33%;
+    }"
+
+saved_projects = read.csv("data/saved_projects.csv")
+projects = saved_projects$ProjectID
+names(projects) = saved_projects$ShortNames

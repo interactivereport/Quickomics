@@ -18,6 +18,10 @@ observe({
 	samples <- as.character(samples[order(match(DataIn$MetaData$group,groups))])
 	updateSelectizeInput(session,'QC_groups', choices=allgroups, selected=groups)
 	updateSelectizeInput(session,'QC_samples', choices=samples, selected=samples)
+	attributes=setdiff(colnames(DataIn$MetaData), c("sampleid", "Order", "ComparePairs") )
+	updateSelectInput(session, "PCAcolorby", choices=attributes, selected="group")
+	updateSelectInput(session, "PCAshapeby", choices=c("none", attributes), selected="none")
+	
 })
 	
 observe({
@@ -48,7 +52,7 @@ DataQCReactive <- reactive({
 	tmp_group = MetaData$group[input_keep]
 	tmp_sampleid = MetaData$sampleid[input_keep]
 
-	return(list('tmp_data_wide'=tmp_data_wide,'tmp_data_long'=tmp_data_long,'tmp_group' = tmp_group, 'tmp_sampleid'=tmp_sampleid ))
+	return(list('tmp_data_wide'=tmp_data_wide,'tmp_data_long'=tmp_data_long,'tmp_group' = tmp_group, 'tmp_sampleid'=tmp_sampleid, "MetaData"=MetaData[input_keep, ] ))
 })
 
 DataPCAReactive <- reactive({
@@ -63,6 +67,10 @@ DataPCAReactive <- reactive({
 	scores <- as.data.frame(pca$x)
 	rownames(scores) <- tmp_sampleid
 	scores$group <- factor(tmp_group, levels = group_order())
+	attributes=setdiff(colnames(DataQC$MetaData), c("sampleid", "Order", "ComparePairs", "group") )
+	MetaData=DataQC$MetaData
+	colsel=match(attributes, colnames(MetaData) )
+	scores=cbind(scores, MetaData[, colsel])
 	return(list('scores'=scores,'percentVar'=percentVar))
 })
 
@@ -118,25 +126,18 @@ pcaplot_out <- reactive({
 	PC1 <- paste("PC",pcnum[1],sep="")
 	PC2 <- paste("PC",pcnum[2],sep="")
 
-	n <- length(levels(unlist(scores$group)))
+	n <- length(unique(as.character(unlist(scores[, colnames(scores)==input$PCAcolorby]))))
 	#colorpal = topo.colors(n, alpha = 1)
 	#colorpal = get_palette("Dark2", n)
 	colorpal = colorRampPalette(brewer.pal(8, input$PCAcolpalette))(n)
 	
-	if (input$ellipsoid == "Yes") {
-	  ellipsoid = TRUE
-	} else {
-	  ellipsoid = FALSE 
-	}
-	
 	#if (all(table(tmp_group))<4)
 	#  ellipsoid = FALSE 
-	
-	
-	
-	p <- ggpubr::ggscatter(scores,x =PC1, y=PC2, color ="group", size = input$PCAdotsize, palette= colorpal, ellipse = ellipsoid, mean.point = TRUE, rug = TRUE,
-		label =rownames(scores), font.label = input$PCAfontsize, repel = TRUE,  ggtheme = theme_bw(base_size = 20)
-	)
+
+	if (input$PCAshapeby=="none") {shape_by=19} else {shape_by=input$PCAshapeby}
+#	browser() #debug	
+	p <- ggpubr::ggscatter(scores,x =PC1, y=PC2, color =input$PCAcolorby, shape=shape_by, size = input$PCAdotsize, palette= colorpal, ellipse = input$ellipsoid, mean.point = input$mean_point, rug = input$rug,
+	                       label =rownames(scores), font.label = input$PCAfontsize, repel = TRUE,  ggtheme = theme_bw(base_size = 20) )
 	p <- ggpubr::ggpar(p, legend.title ="", xlab = xlabel, ylab = ylabel, legend = "bottom")
 	return(p)
 })

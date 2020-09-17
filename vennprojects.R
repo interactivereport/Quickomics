@@ -11,8 +11,8 @@
 
 
 observe({
-	data_sets <- list.files(path = "./data", pattern = "\\.RData$", full.names = FALSE) %>% gsub("\\.RData$","",.)
-	data_sets  <- c("empty",data_sets)
+	#data_sets <- list.files(path = "./data", pattern = "\\.RData$", full.names = FALSE) %>% gsub("\\.RData$","",.)
+	data_sets  <- c("empty",projects)
 	for (i in 1:length(data_sets)){
 		dataset <- paste("dataset",i,sep="")
 		updateSelectizeInput(session, dataset, choices=data_sets, selected="empty")
@@ -112,12 +112,12 @@ DataVennPReactive <- reactive({
 		dplyr::left_join(.,ProteinGeneName,by="UniqueID") %>%
 		dplyr::select(Gene.Name) %>%	collect %>%	.[["Gene.Name"]] %>% as.character()%>% unique()
 
-		listname1 <- paste(input$dataset1,input$vennP_test1,sep="_" )
+		listname1 <- paste(input$dataset1,input$vennP_test1,sep="\n" )
 		fill[[listname1]] <- input$col1
 		vennlist[[listname1]]  <- list1
 	}
 
-	if (input$vennP_test2 != "Empty List" & input$vennP_test2 != "") {
+	if (input$dataset2 != "empty" & input$dataset2 != ""& input$vennP_test2 != "Empty List" & input$vennP_test2 != "") {
 		RDataFile <- paste("data/",input$dataset2,".RData", sep="")
 		load(RDataFile)
 
@@ -131,12 +131,12 @@ DataVennPReactive <- reactive({
 		filter(test == input$vennP_test2) %>%
 		dplyr::left_join(.,ProteinGeneName,by="UniqueID") %>%
 		dplyr::select(Gene.Name) %>%	collect %>%	.[["Gene.Name"]] %>% as.character()%>% unique()
-		listname2 <- paste(input$dataset2,input$vennP_test2,sep="_" )
+		listname2 <- paste(input$dataset2,input$vennP_test2,sep="\n" )
 		fill[[listname2]] <- input$col2
 		vennlist[[listname2]]  <- list2
 	}
 
-	if (input$vennP_test3 != "Empty List" & input$vennP_test3 != "") {
+	if (input$dataset3 != "empty" & input$dataset3 != ""& input$vennP_test3 != "Empty List" & input$vennP_test3 != "") {
 		RDataFile <- paste("data/",input$dataset3,".RData", sep="")
 		load(RDataFile)
 
@@ -150,12 +150,12 @@ DataVennPReactive <- reactive({
 		filter(test == input$vennP_test3) %>%
 		dplyr::left_join(.,ProteinGeneName,by="UniqueID") %>%
 		dplyr::select(Gene.Name) %>%	collect %>%	.[["Gene.Name"]] %>% as.character()%>% unique()
-		listname3 <- paste(input$dataset3,input$vennP_test3,sep="_" )
+		listname3 <- paste(input$dataset3,input$vennP_test3,sep="\n" )
 		fill[[listname3]] <- input$col3
 		vennlist[[listname3]]  <- list3
 	}
 
-	if (input$vennP_test4 != "Empty List" & input$vennP_test4 != "") {
+	if (input$dataset4 != "empty" & input$dataset4 != ""& input$vennP_test4 != "Empty List" & input$vennP_test4 != "") {
 		RDataFile <- paste("data/",input$dataset4,".RData", sep="")
 		load(RDataFile)
 
@@ -169,12 +169,12 @@ DataVennPReactive <- reactive({
 		filter(test == input$vennP_test4) %>%
 		dplyr::left_join(.,ProteinGeneName,by="UniqueID") %>%
 		dplyr::select(Gene.Name) %>%	collect %>%	.[["Gene.Name"]] %>% as.character()%>% unique()
-		listname4 <- paste(input$dataset4,input$vennP_test4,sep="_" )
+		listname4 <- paste(input$dataset4,input$vennP_test4,sep="\n" )
 		fill[[listname4]] <- input$col4
 		vennlist[[listname4]]  <- list4
 	}
 
-	if (input$vennP_test5 != "Empty List" & input$vennP_test5 != "") {
+	if (input$dataset5 != "empty" & input$dataset5 != ""& input$vennP_test5 != "Empty List" & input$vennP_test5 != "") {
 		RDataFile <- paste("data/",input$dataset5,".RData", sep="")
 		load(RDataFile)
 
@@ -188,7 +188,7 @@ DataVennPReactive <- reactive({
 		filter(test == input$vennP_test5) %>%
 		dplyr::left_join(.,ProteinGeneName,by="UniqueID") %>%
 		dplyr::select(Gene.Name) %>%	collect %>%	.[["Gene.Name"]] %>% as.character()%>% unique()
-		listname5 <- paste(input$dataset5,input$vennP_test5,sep="_" )
+		listname5 <- paste(input$dataset5,input$vennP_test5,sep="\n" )
 		fill[[listname5]] <- input$col5
 		vennlist[[listname5]]  <- list5
 	}
@@ -208,7 +208,7 @@ output$vennPDiagram <- renderPlot({
 	venn.plot <- venn.diagram(x = vennlist,
 		fill=fillcor,
 		lty=input$vennPlty, lwd=input$vennPlwd, alpha=input$vennPalpha,
-		cex=input$vennPcex, cat.cex=input$vennPcatcex,
+		cex=input$vennPcex, cat.cex=input$vennPcatcex, margin=input$vennPmargin,
 		fontface = input$vennPfontface, cat.fontface=input$vennPcatfontface,
 		main = input$vennPtitle, main.cex = input$vennPmaincex, main.pos = c(0.5, 1.1), main.fontface = "bold",
 	filename = NULL);

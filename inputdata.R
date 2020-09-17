@@ -13,19 +13,26 @@ saved_table <- reactiveValues()
 group_order <- reactiveVal()
 #saved_palette <- reactiveVal()
 
+ProjectInfo<-reactive({
+  req(input$sel_project)
+  ProjectID=input$sel_project
+  Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
+  Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
+  return(list(ProjectID=ProjectID, Name=Name, Species=Species))
+  }) #later on can use customer uploaded data
 
-observe({
-  query <- parseQueryString(session$clientData$url_search)
-  if (!is.null(query[['project']])) {
-    ProjectID = query[['project']]
-    output$project <- renderText({
-      ProjectID
-    })
-  } else {
-    output$project <- renderText({
-      "Cx3cr1-Deficient Mouse Microglia RNA-Seq Demo Data"
-    })
-  }
+output$project <- renderText({
+  if (input$sel_project==""){"Please select or upload a date set"} else {ProjectInfo()$Name}
+  })
+
+
+output$ui.action <- renderUI({
+  if (is.null(input$file1)) return()
+  tagList(
+  textInput("projet_name", label="Rename Project", value=input$file1$name),
+  radioButtons("species",label="Select species", choices=c("human","mouse", "rat"), inline = F, selected="human"),
+  actionButton("customData", "Submit Data")
+  )
 })
 
 
@@ -34,14 +41,9 @@ DataReactive <- reactive({
                detail = 'This may take a while...',
                value = 0,
                {
-                 query <- parseQueryString(session$clientData$url_search)
-                 if (!is.null(query[['project']])) {
-                   ProjectID = query[['project']]
-                 } else {
-                   ProjectID = "Mouse_microglia_RNA-Seq"
-                 }
+                 Pinfo=ProjectInfo()
                  #setwd('H:/Rcode/ptxvisv3')
-               RDataFile <- paste("data/", ProjectID, ".RData", sep = "")
+               RDataFile <- paste("data/",  Pinfo$ProjectID, ".RData", sep = "")
                #  RDataFile <- ("D:/Test/temp/Mouse_microglia_RNA/data/Mouse_microglia_RNA-Seq.RData")   
                #  RDataFile <- ("D:/Test/temp/Mouse_microglia_RNA/data/2019_XH_OGA_iPSC_Neuron.RData")   
                  
@@ -85,14 +87,10 @@ DataNetworkReactive <- reactive({
   ProteinGeneName <- DataIn$ProteinGeneName
   
   query <- parseQueryString(session$clientData$url_search)
-  if (!is.null(query[['project']])) {
-    ProjectID = query[['project']]
-  } else {
-    ProjectID = "ACG"
-  }
+
   
-  
-  CorResFile <- paste("networkdata/", ProjectID, ".RData", sep = "")
+  Pinfo=ProjectInfo()
+  CorResFile <- paste("networkdata/", Pinfo$ProjectID, ".RData", sep = "")
   if (file.exists(CorResFile)) {
     load(CorResFile)
   } else {
