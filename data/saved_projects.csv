@@ -1,0 +1,5 @@
+Names,ShortNames,ProjectID,Species
+Cx3cr1-Deficient Mouse Microglia RNA-Seq Demo Data,Mouse Microglia RNA,Mouse_microglia_RNA-Seq,mouse
+Human Brain Proteome in AD and PD,AD/PD Brain Proteome,AD_PD_Proteomics_data,human
+LRRK2 Neuron Transcriptome,LRRK2 Neuron RNA,LRRK2_Neuron_RNA,human
+LRRK2 Neuron Proteome,LRRK2 Neuron Proteome,LRRK2_Neuron_Protein,human
