@@ -13,7 +13,7 @@ observe({
   DataIn = DataReactive()
   tests = DataIn$tests
   ProteinGeneName = DataIn$ProteinGeneName
-  updateRadioButtons(session,'valcano_label', inline = TRUE, choices=colnames(ProteinGeneName)[-1])
+  updateRadioButtons(session,'valcano_label', inline = TRUE, choices=colnames(ProteinGeneName)[-1], selected="Gene.Name")
   updateSelectizeInput(session,'valcano_test',choices=tests, selected=tests[1])
   updateSelectizeInput(session,'valcano_test1',choices=tests, selected=tests[1])
   if (length(tests)>1) {	updateSelectizeInput(session,'valcano_test2',choices=tests, selected=tests[2])}
@@ -32,7 +32,13 @@ observe({
   } else {
     tmpdat = results_long %>% filter(test==test_sel & P.Value < pvalcut & abs(logFC) > FCcut) 
   }
-  output$valcano_filteredgene <- renderText({paste("Selected Genes:",nrow(tmpdat),sep="")})
+  output$valcano_filteredgene <- renderText({paste("Genes pass cutoff (DEGs):",nrow(tmpdat),sep="")})
+  #browser()#debug
+  DEGs=tmpdat$UniqueID
+  if (nrow(tmpdat)>input$Ngenes) {
+    DEGs=sample(DEGs, input$Ngenes)
+  }
+  updateTextAreaInput(session, "volcano_gene_list", value=paste(DEGs, collapse="\n"))
 })
 
 
@@ -189,6 +195,8 @@ output$volcanoplot <- renderPlotly({
 
 volcanoplotstatic_out <- reactive({
   res = DataValcanoReactive()
+  DataIn = DataReactive()
+  ProteinGeneName = DataIn$ProteinGeneName
   test_sel = input$valcano_test
   FCcut = as.numeric(input$valcano_FCcut)
   pvalcut = as.numeric(input$valcano_pvalcut)
@@ -213,6 +221,24 @@ volcanoplotstatic_out <- reactive({
     ylab <- "-log10(P.Value)"
   }
   
+  if (input$volcano_label=="Upload") {
+    req(input$volcano_gene_list)
+    volcano_gene_list <- input$volcano_gene_list
+    if(grepl("\n",volcano_gene_list)) {
+      volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
+    } else if(grepl(",",volcano_gene_list)) {
+      volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
+    }
+    volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
+    volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
+    uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | (Gene.Name %in% volcano_gene_list))  %>%
+      dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
+    validate(need(length(uploadlist)>0, message = "input gene list"))
+    if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
+    data.label<-res%>%filter(UniqueID %in% uploadlist)
+    
+  }
+  
   p <- p	+
     scale_color_manual(values = c("grey", "green2","red2")) +
     geom_point(aes(color = color)) +
@@ -221,8 +247,10 @@ volcanoplotstatic_out <- reactive({
     geom_vline(xintercept = c(-FCcut,0,FCcut), colour="grey") +
     ylab(ylab) + xlab("log2 Fold Change") +
     ggtitle(test_sel) +
-    theme(legend.position = "bottom", legend.text=element_text(size=input$yfontsize)) +
-    geom_text_repel(data = data.label,  aes(label=labelgeneid),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	point.padding = unit(0.3, "lines"))
+    theme(legend.position = "bottom", legend.text=element_text(size=input$yfontsize))
+  if (input$volcano_label!="None") {
+    p=p+geom_text_repel(data = data.label,  aes(label=labelgeneid),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	point.padding = unit(0.3, "lines"))
+  }
   return(p)
 })
 
@@ -233,6 +261,8 @@ output$volcanoplotstatic <- renderPlot({
 DEG_Compare <- reactive({
   res = DataValcanoReactive1()
   res2=DataValcanoReactive2()
+  DataIn = DataReactive()
+  ProteinGeneName = DataIn$ProteinGeneName  
   test_sel = input$valcano_test1
   test_sel2 = input$valcano_test2	
   FCcut = as.numeric(input$valcano_FCcut)
@@ -258,11 +288,37 @@ DEG_Compare <- reactive({
       labs(color='Significance',size='-log10 min P.Value',
            title=cor_string) 
   }
+  if (input$volcano_label=="Upload") {
+    req(input$volcano_gene_list)
+    volcano_gene_list <- input$volcano_gene_list
+    if(grepl("\n",volcano_gene_list)) {
+      volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
+    } else if(grepl(",",volcano_gene_list)) {
+      volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
+    }
+    volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
+    volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
+    uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | (Gene.Name %in% volcano_gene_list))  %>%
+      dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
+    validate(need(length(uploadlist)>0, message = "input gene list"))
+    if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
+    data.label<-plotdata%>%filter(UniqueID %in% uploadlist)
+    
+  }
+  
+
   p<-p+ scale_color_manual(values=c('X_sig Y_sig'='blue3','X_sig Y_notsig'='green3',
                                     'X_notsig Y_sig'='orange','X_notsig Y_notsig'='#00000022')) + 
-    theme(legend.position = "bottom", legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1))+
-    geom_text_repel(data = data.label,  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
-                    point.padding = unit(0.3, "lines"))
+    theme(legend.position = "bottom", legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1))
+  
+  if (input$volcano_label=="Upload") {
+    p=p+ geom_text_repel(data = data.label,  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
+                         color="coral3",  point.padding = unit(0.3, "lines"))
+  } #uploaded list use a different color. The DEGs colors are hard to see for un-sig genes.
+  if (input$volcano_label=="DEGs") {
+    p=p+ geom_text_repel(data = data.label,  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
+                         point.padding = unit(0.3, "lines"))
+  }  
   return(p)
 })
 
@@ -280,13 +336,25 @@ observeEvent(input$DEG_comp, {
   saved_plots$volcano[[test_sel]] <- DEG_Compare()
 })
 
-output$valcanoData <- DT::renderDataTable({
+DEG_data <-reactive ({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   test_sel = input$valcano_test
   FCcut = as.numeric(input$valcano_FCcut)
   pvalcut = as.numeric(input$valcano_pvalcut)
-  tmpdat = results_long %>% filter(test==test_sel & P.Value < pvalcut & abs(logFC) > FCcut)
+  if (input$valcano_psel == "Padj") {
+    tmpdat = results_long %>% filter(test==test_sel & Adj.P.Value < pvalcut & abs(logFC) > FCcut) 
+  } else {
+    tmpdat = results_long %>% filter(test==test_sel & P.Value < pvalcut & abs(logFC) > FCcut) 
+  }
   tmpdat[,sapply(tmpdat,is.numeric)] <- signif(tmpdat[,sapply(tmpdat,is.numeric)],3)
-  DT::datatable(tmpdat)
+  return(tmpdat)
 })
+output$valcanoData <- DT::renderDataTable({
+  DT::datatable(DEG_data())
+})
+
+observeEvent(input$DEG_data, {
+  saved_table$DEG_data <- DEG_data()
+})
+

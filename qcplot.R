@@ -21,16 +21,28 @@ observe({
 	attributes=setdiff(colnames(DataIn$MetaData), c("sampleid", "Order", "ComparePairs") )
 	updateSelectInput(session, "PCAcolorby", choices=attributes, selected="group")
 	updateSelectInput(session, "PCAshapeby", choices=c("none", attributes), selected="none")
-	
+	updateSelectInput(session, "PCAsizeby", choices=c("none", attributes), selected="none")
+	sampleIDs=setdiff(colnames(DataIn$MetaData), c("Order", "ComparePairs") )
+	updateRadioButtons(session,'PCA_label', inline = TRUE, choices=sampleIDs, selected="sampleid")
+	updateTextAreaInput(session, "PCA_list", value=paste(samples, collapse="\n"))
 })
 	
 observe({
+  req(input$QC_groups)
 	DataIn = DataReactive()
 	tmpgroups = input$QC_groups
 	tmpdat = DataIn$MetaData %>% filter(group %in% tmpgroups)
 	tmpsamples = as.character(tmpdat$sampleid)
 	updateSelectizeInput(session,'QC_samples', choices=tmpsamples, selected=tmpsamples)
+	updateTextAreaInput(session, "PCA_list", value=paste(tmpsamples, collapse="\n"))
 })
+
+observeEvent(input$PCA_refresh_sample, {  
+  tmpsamples = input$QC_samples
+  updateTextAreaInput(session, "PCA_list", value=paste(tmpsamples, collapse="\n"))
+})
+
+
 
 DataQCReactive <- reactive({
 	DataIn = DataReactive()
@@ -41,7 +53,7 @@ DataQCReactive <- reactive({
 	data_wide = DataIn$data_wide
 
 	input_groups = input$QC_groups
-	group_order(input$QC_groups)
+	#group_order(input$QC_groups)
 	input_samples = input$QC_samples
 	input_keep = which((MetaData$group %in% input_groups) & (MetaData$sampleid %in% input_samples))
 	data_wide  <- data_wide[apply(data_wide, 1, function(x) sum(length(which(x==0 | is.na(x)))) < 3),]
@@ -67,10 +79,10 @@ DataPCAReactive <- reactive({
 	scores <- as.data.frame(pca$x)
 	rownames(scores) <- tmp_sampleid
 	scores$group <- factor(tmp_group, levels = group_order())
-	attributes=setdiff(colnames(DataQC$MetaData), c("sampleid", "Order", "ComparePairs", "group") )
+	attributes=setdiff(colnames(DataQC$MetaData), c("Order", "ComparePairs", "group") )
 	MetaData=DataQC$MetaData
 	colsel=match(attributes, colnames(MetaData) )
-	scores=cbind(scores, MetaData[, colsel])
+	scores=cbind(scores, MetaData[, colsel, drop=F])
 	return(list('scores'=scores,'percentVar'=percentVar))
 })
 
@@ -110,6 +122,7 @@ observeEvent(input$QCboxplot, {
 
 ######## PCA
 pcaplot_out <- reactive({
+  req(DataPCAReactive())
 	pcnum=as.numeric(input$pcnum)
 	validate(need(length(pcnum)==2, message = "Select 2 Prinical Components."))
 
@@ -119,6 +132,7 @@ pcaplot_out <- reactive({
 	PCAlist <- DataPCAReactive()
 	scores <- PCAlist$scores
 	percentVar <- PCAlist$percentVar
+	samples=scores$sampleid
 
 	xlabel <- paste("PC",pcnum[1],"(",round(percentVar[pcnum[1]]),"%)",sep="")
 	ylabel <- paste("PC",pcnum[2],"(",round(percentVar[pcnum[2]]),"%)",sep="")
@@ -134,11 +148,31 @@ pcaplot_out <- reactive({
 	#if (all(table(tmp_group))<4)
 	#  ellipsoid = FALSE 
 
+	if (input$PCA_subsample=="None" ) {labels=NULL
+	} else {
+	  label_sel=match(input$PCA_label, names(scores))
+	 # browser() #debug
+	  labels=unlist(scores[, label_sel])	
+	  if (input$PCA_subsample=="Subset") {
+	    PCA_list=str_split(input$PCA_list, "\n")[[1]]
+	    N_sel=match(PCA_list, samples)
+	    N_sel=N_sel[!is.na(N_sel)]
+	    validate(need(length(N_sel)>0, message = "Enter at least one valid sampleid to label"))
+	    keep_s=rep(FALSE, length(labels))
+	    keep_s[N_sel]=TRUE
+	    labels[!keep_s]=""
+	    #browser() #debug
+	  }
+	}
+
 	if (input$PCAshapeby=="none") {shape_by=19} else {shape_by=input$PCAshapeby}
-#	browser() #debug	
-	p <- ggpubr::ggscatter(scores,x =PC1, y=PC2, color =input$PCAcolorby, shape=shape_by, size = input$PCAdotsize, palette= colorpal, ellipse = input$ellipsoid, mean.point = input$mean_point, rug = input$rug,
-	                       label =rownames(scores), font.label = input$PCAfontsize, repel = TRUE,  ggtheme = theme_bw(base_size = 20) )
-	p <- ggpubr::ggpar(p, legend.title ="", xlab = xlabel, ylab = ylabel, legend = "bottom")
+	if (input$PCAsizeby=="none") {size_by=input$PCAdotsize} else {size_by=input$PCAsizeby}	
+	
+	p <- ggpubr::ggscatter(scores,x =PC1, y=PC2, color =input$PCAcolorby, shape=shape_by, size =size_by , palette= colorpal, ellipse = input$ellipsoid, mean.point = input$mean_point, rug = input$rug,
+	                       label =labels, font.label = input$PCAfontsize, repel = TRUE,  ggtheme = theme_bw(base_size = 20) )
+	p <- ggpubr::ggpar(p, xlab = xlabel, ylab = ylabel)
+	#	browser() #debug	
+	#	p <- ggpubr::ggpar(p, legend.title ="", xlab = xlabel, ylab = ylabel, legend = "bottom") #works only when use color by. 
 	return(p)
 })
 
@@ -151,15 +185,22 @@ observeEvent(input$pcaplot, {
 }
 )
 
+output$pca_legend <- renderPlot({
+  PCAlist <- DataPCAReactive()
+  scores <- PCAlist$scores
+  color_by=input$PCAcolorby
+  tmp_group=as.character(unlist(scores[, colnames(scores)==color_by]))
+  n <- length(unique(tmp_group))
+  colorpal = colorRampPalette(brewer.pal(8, input$PCAcolpalette))(n)
+  tmp_plot<-ggplot(scores, aes_string(x="PC1", y="PC2", color=color_by))+geom_point()+scale_color_manual(values=colorpal)+ theme_cowplot(12)
+  legend_only <- get_legend(tmp_plot +theme(legend.position = "bottom",  legend.title = element_text(size = 16),
+                                            legend.text = element_text(size = 14))+guides(color = guide_legend(override.aes = list(size=8))))
+  plot_grid(legend_only)
+})
+
 ######## PCA 3D
 output$plot3d <- renderRglwidget({
-  DataQC <-  DataQCReactive()
-  tmp_group = DataQC$tmp_group
-
- 
-  
-  
-	PCAlist <- DataPCAReactive()
+ 	PCAlist <- DataPCAReactive()
 	scores <- PCAlist$scores
 	percentVar <- PCAlist$percentVar
 
@@ -168,10 +209,15 @@ output$plot3d <- renderRglwidget({
 	zlabel <- paste("PC3(",round(percentVar[3]),"%)",sep="")
 
 	sampleid <- rownames(scores)
-	n <- length(levels(unlist(scores$group)))
-	colorpal = topo.colors(n, alpha = 1)
-	colorpal = get_palette("Dark2", n)
+	
+	tmp_group=as.character(unlist(scores[, colnames(scores)==input$PCAcolorby]))
+	n <- length(unique(tmp_group))
+	#colorpal = topo.colors(n, alpha = 1)
+	#colorpal = get_palette("Dark2", n)
+	colorpal = colorRampPalette(brewer.pal(8, input$PCAcolpalette))(n)
+	scores$tmp_group=as.factor(tmp_group)
 
+	
 	#rgl.open(useNULL=T)
 	options(rgl.useNULL=TRUE)
 	if (input$ellipsoid3d == "Yes") {
@@ -192,7 +238,7 @@ output$plot3d <- renderRglwidget({
 	  dotlabel=FALSE
 	}
 
-	scatter3d(PC3 ~ PC1 + PC2 | group, data= scores,
+	scatter3d(PC3 ~ PC1 + PC2 | tmp_group, data= scores,
 	          axis.col= c("black", "black", "black"),
 	          xlab=xlabel, ylab=ylabel,  zlab=zlabel, labels = as.factor(sampleid), id=dotlabel, id.n=length(sampleid),
 	          axis.scales=FALSE,  axis.ticks=FALSE,
@@ -200,28 +246,37 @@ output$plot3d <- renderRglwidget({
 	          surface=FALSE, grid = FALSE,
 	          cex.lab=3,
 	          surface.col = colorpal)
-	
-
-
 	rglwidget(width = 800, height = 800)
 })
 
 output$plotly3d <- renderPlotly({
 	PCAlist <- DataPCAReactive()
 	scores <- PCAlist$scores
+	scores<-scores%>%mutate_if(is_character, as.factor)
 	percentVar <- PCAlist$percentVar
-
+	symbol_list=rep(c('circle', 'square',  'diamond',  'circle-open','square-open','diamond-open'), 2) #symbols which work with plotly scatter3d
+	plot_symbols=symbol_list[unique(as.numeric(unlist(scores[, colnames(scores)==input$PCAshapeby])))]
+	
 	xlabel <- paste("PC1(",round(percentVar[1]),"%)",sep="")
 	ylabel <- paste("PC2(",round(percentVar[2]),"%)",sep="")
 	zlabel <- paste("PC3(",round(percentVar[3]),"%)",sep="")
 
-	sampleid <- rownames(scores)
-	n <- length(levels(unlist(scores$group)))
-	#colorpal = topo.colors(n, alpha = 1)
-	colorpal = get_palette("Dark2", n)
-	p <- plot_ly(scores, x = ~PC1, y = ~PC2, z = ~PC3, color = ~group, colors = colorpal,text = sampleid) %>%
+	sampleid <- str_c(scores$sampleid, "\n", scores$group)
+	n <- length(unique(as.character(unlist(scores[, colnames(scores)==input$PCAcolorby]))))
+	colorpal = colorRampPalette(brewer.pal(8, input$PCAcolpalette))(n)
+	if (input$PCAshapeby=="none"){
+	  p <- plot_ly(scores, x = ~PC1, y = ~PC2, z = ~PC3, color = as.formula(paste0("~", input$PCAcolorby)), 
+	               colors = colorpal,text = sampleid) %>%
+	    add_markers() %>%
+	    layout(scene = list(xaxis = list(title = xlabel), yaxis = list(title = ylabel),  zaxis = list(title = zlabel)))
+	  
+	} else{
+	p <- plot_ly(scores, x = ~PC1, y = ~PC2, z = ~PC3, color = as.formula(paste0("~", input$PCAcolorby)), 
+	              symbol=as.formula(paste0("~", input$PCAshapeby)),symbols=plot_symbols, 
+	             colors = colorpal,text = sampleid) %>%
 	add_markers() %>%
 	layout(scene = list(xaxis = list(title = xlabel), yaxis = list(title = ylabel),  zaxis = list(title = zlabel)))
+	}
 	p$elementId <- NULL
 	p
 })

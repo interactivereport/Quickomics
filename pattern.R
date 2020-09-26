@@ -34,7 +34,7 @@ observe({
 		dplyr::filter(abs(logFC) > pattern_fccut & P.Value < pattern_pvalcut) %>%
 		dplyr::select(UniqueID) %>% collect %>%	.[["UniqueID"]] %>%	as.character() %>% unique()
 	}
-	output$patternfilteredgene <- renderText({paste("Selected Genes:",length(filteredgene1),sep="")})
+	output$patternfilteredgene <- renderText({paste("Selected Genes (DEGs):",length(filteredgene1),sep="")})
 })
 
 DatapatternReactive <- reactive({
@@ -43,12 +43,14 @@ DatapatternReactive <- reactive({
 	pattern_fccut = as.numeric(input$pattern_fccut)
 	pattern_pvalcut = as.numeric(input$pattern_pvalcut)
 	sel_group = input$pattern_group
+	ProteinGeneName = DataIn$ProteinGeneName  
 
 	group_order(input$pattern_group)
 
 	results_long <- DataIn$results_long
 	data_long <- DataIn$data_long
-
+  
+	if (input$pattern_options=="DEGs"){
 	if (input$pattern_psel == "Padj") {
 		filteredgene = results_long %>%
 		dplyr::filter(abs(logFC) > pattern_fccut & Adj.P.Value < pattern_pvalcut) %>%
@@ -60,6 +62,24 @@ DatapatternReactive <- reactive({
 		dplyr::select(UniqueID) %>% collect %>%	.[["UniqueID"]] %>%	as.character()
 
 	}
+	} else {
+	  req(input$pattern_gene_list)
+	  pattern_gene_list <- input$pattern_gene_list
+	  if(grepl("\n",pattern_gene_list)) {
+	    pattern_gene_list <-  stringr::str_split(pattern_gene_list, "\n")[[1]]
+	  } else if(grepl(",",pattern_gene_list)) {
+	    pattern_gene_list <-  stringr::str_split(pattern_gene_list, ",")[[1]]
+	  }
+	  pattern_gene_list <- gsub(" ", "", pattern_gene_list, fixed = TRUE)
+	  pattern_gene_list <- unique(pattern_gene_list[pattern_gene_list != ""])
+	  filteredgene<- dplyr::filter(ProteinGeneName, (UniqueID %in% pattern_gene_list) | (Protein.ID %in% pattern_gene_list) | (Gene.Name %in% pattern_gene_list))  %>%
+	    dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
+	  validate(need(length(filteredgene)>=5, message = "Please enter at least 5 valid genes"))
+	  output$pattern_uploaded_genes <- renderText({paste("Uploaded genes matching dataset:",length(filteredgene),sep="")})
+	  
+	}
+	
+
 
 	subdatlong <- dplyr::filter(data_long, (group %in% sel_group) & (UniqueID %in% filteredgene)) %>%
 	group_by(., group, UniqueID) %>%
@@ -96,7 +116,7 @@ pattern_out <- reactive({withProgress(message = 'Processing...', value = 0, {
 		subdatlong$group = factor(subdatlong$group,levels = sel_group)
 
 		p <- ggplot(subdatlong, aes(x=group, y=mean)) +
-		facet_wrap(~ cluster,scales = "free", ncol = 3) +
+		facet_wrap(~ cluster,scales = "free", ncol = input$pattern_Ncol) +
 		geom_line(aes(group=UniqueID, color="UniqueID")) +
 		stat_summary(aes(color="red", group=1), fun.y=mean, geom="line", size=1.2, group=1)
 		p <- p +	theme_bw(base_size = input$pattern_font) + ylab("expr") + xlab(" ") +
@@ -123,14 +143,8 @@ pattern_out <- reactive({withProgress(message = 'Processing...', value = 0, {
 		tmp_expr <- new('ExpressionSet', exprs = as.matrix(subdatwide))
 		m1 <- mestimate(tmp_expr)
 		cl <- mfuzz(tmp_expr, c = k, m = m1, iter.max = 200)
-		if (k <= 6) {
-			nrow = 2
-		} else if (k <= 9) {
-			nrow = 3
-		} else if (k <= 12) {
-			nrow = 4
-		}
-		mfuzz.plot(tmp_expr, cl = cl, mfrow = c(nrow, 3), min.mem=0.4, time.labels=colnames(subdatwide),new.window = FALSE)
+		nrow=ceiling(k/input$pattern_Ncol)
+		mfuzz.plot(tmp_expr, cl = cl, mfrow = c(nrow, input$pattern_Ncol), min.mem=0.4, time.labels=colnames(subdatwide),new.window = FALSE)
 		p = recordPlot()
 		return(p)
 	}
