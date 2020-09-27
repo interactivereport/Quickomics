@@ -18,7 +18,6 @@ fluidPage(theme = shinytheme("cerulean"),
             ),
               windowTitle = "Quickomics" ),
             
-            
           
 navbarPage(title ="", 
 	
@@ -132,9 +131,22 @@ tabPanel("Volcano Plot",
 					radioButtons("valcano_label",label="Select Gene Label",inline = TRUE, choices=""),
 					radioButtons("volcano_label", label="Label Genes:", inline = TRUE, choices = c("DEGs","None", "Upload"), selected = "DEGs"),
 					conditionalPanel("input.volcano_label!='None'",
-					     sliderInput("Ngenes", "# of Genes to Label", min = 10, max = 200, step = 5, value = 50)),
-					conditionalPanel("input.volcano_label=='Upload'",					
-					     textAreaInput("volcano_gene_list", "List of genes to label\n(UniqueID, Gene.Name or Protein.ID)", "", cols = 5, rows=6))	
+					    sliderInput("Ngenes", "# of Genes to Label", min = 10, max = 200, step = 5, value = 50)),
+					conditionalPanel("input.volcano_label=='Upload'",
+						HTML('
+						  <div id="div_geneset3" class="div_geneset">
+					        <div class="my-3 dropdown btn-group">
+					            <input style="width: 30rem;" id="Geneset_Name1" name="Geneset_Name1" placeholder="Start typing to enter or select a geneset" type="text" class="form-control form-control-sm geneset_name" />
+					            <a href="Javascript: void(0);" class="btn btn-sm btn-primary btn_browse_geneset"><i class="fas fa-search"></i></a>
+					            <div id="Dropdown1" class="geneset_dropdown dropdown-menu"></div>
+					        </div>
+					        <input class="geneset_id" type="hidden" id="Geneset_ID1" name="Geneset_ID1" />
+                            <label class="control-label" for="volcano_gene_list">List of genes to label (UniqueID, Gene.Name or Protein.ID)</label>
+                            <textarea id="volcano_gene_list" name="volcano_gene_list" class="form-control shiny-bound-input geneset_genes my-3" rows="6" cols="5"></textarea>
+						  </div>
+						')
+#					    textAreaInput("volcano_gene_list", "List of genes to label\n(UniqueID, Gene.Name or Protein.ID)", "", cols = 5, rows=6)
+						)	
 					),
 				radioButtons("more_options", label="Show More Options", inline = TRUE, choices = c("Yes","No"), selected = "No"),
 				conditionalPanel("input.more_options=='Yes'",
@@ -541,6 +553,13 @@ tabPanel("Output",
 ##########################################################################################################
 
 footer= HTML('
+	<link  href="http://bxngs.com/bxomics/api/genesets.css" rel="stylesheet">
+	<script>var GENESET_ACTION_URL = "http://bxngs.com/bxomics/api/genesets.php"; var MY_SECRET_ID = ""; </script>
+    <link   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" rel="stylesheet" type="text/css">
+    <link  href="http://bxngs.com/bxomics/bxaf_lite/library/datatables/datatables.min.css" rel="stylesheet">
+    <script src="http://bxngs.com/bxomics/bxaf_lite/library/datatables/datatables.min.js"></script>
+	<script src="http://bxngs.com/bxomics/api/genesets.js"></script>
+	<script src="http://bxngs.com/bxomics/bxaf_lite/library/jquery/bootbox.min.js"></script>
 	<hr>
 	<div align="center">
 	<font size=3>Developed by: <a href="mailto:benbo.gao@biogen.com?Subject=PtxVis%20Question" target="_top">
