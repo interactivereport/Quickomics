@@ -553,13 +553,18 @@ tabPanel("Output",
 ##########################################################################################################
 
 footer= HTML('
-	<link  href="http://bxngs.com/bxomics/api2/genesets3.css" rel="stylesheet">
-	<script>var GENESET_ACTION_URL = "http://bxngs.com/bxomics/api2/genesets3.php"; var MY_SECRET_ID = ""; </script>
-    <link   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" rel="stylesheet" type="text/css">
-    <link  href="http://bxngs.com/bxomics/bxaf_lite/library/datatables/datatables.min.css" rel="stylesheet">
-    <script src="http://bxngs.com/bxomics/bxaf_lite/library/datatables/datatables.min.js"></script>
+    <link href="http://bxngs.com/bxomics/api2/bootstrap-3/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<script src="http://bxngs.com/bxomics/api2/bootstrap-3/js/bootstrap.min.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="http://bxngs.com/bxomics/api2/datatables/datatables.min.css"/>
+	<script type="text/javascript" src="http://bxngs.com/bxomics/api2/datatables/datatables.min.js"></script>
+
+	<script>
+		var GENESET_ACTION_URL = "http://bxngs.com/bxomics/api2/genesets3.php";
+		var MY_SECRET_ID = /PHPSESSID=([^;]+)/i.test(document.cookie) ? RegExp.$1 : false;
+	</script>
+	<link href="http://bxngs.com/bxomics/api2/genesets3.css" rel="stylesheet">
 	<script src="http://bxngs.com/bxomics/api2/genesets3.js"></script>
-	<script src="http://bxngs.com/bxomics/bxaf_lite/library/jquery/bootbox.min.js"></script>
 	<hr>
 	<div align="center">
 	<font size=3>Developed by: <a href="mailto:benbo.gao@biogen.com?Subject=PtxVis%20Question" target="_top">
