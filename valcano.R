@@ -115,6 +115,9 @@ DataValcanoReactive1 <- reactive({
       res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
     }
   }
+  if (input$Max_logFC>0) {
+    res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
+  }
   return(res)
 })
 
@@ -239,6 +242,25 @@ volcanoplotstatic_out <- reactive({
     
   }
   
+  if (input$volcano_label=="Geneset") {
+    req(input$geneset_list)
+    volcano_gene_list <- input$geneset_list
+    if(grepl("\n",volcano_gene_list)) {
+      volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
+    } else if(grepl(",",volcano_gene_list)) {
+      volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
+    }
+    volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
+    volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
+    
+    uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | (toupper(Gene.Name) %in% toupper(volcano_gene_list)) )  %>%
+      dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
+    validate(need(length(uploadlist)>0, message = "Please select at least one valid gene."))
+    if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
+    data.label<-res%>%filter(UniqueID %in% uploadlist)
+  }
+  
+  
   p <- p	+
     scale_color_manual(values = c("grey", "green2","red2")) +
     geom_point(aes(color = color)) +
@@ -300,10 +322,28 @@ DEG_Compare <- reactive({
     volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
     uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | (Gene.Name %in% volcano_gene_list))  %>%
       dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
-    validate(need(length(uploadlist)>0, message = "input gene list"))
+    validate(need(length(uploadlist)>0, message = "Please enter at least one valid gene."))
     if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
     data.label<-plotdata%>%filter(UniqueID %in% uploadlist)
     
+  }
+  
+  if (input$volcano_label=="Geneset") {
+    req(input$geneset_list)
+    volcano_gene_list <- input$geneset_list
+    if(grepl("\n",volcano_gene_list)) {
+      volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
+    } else if(grepl(",",volcano_gene_list)) {
+      volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
+    }
+    volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
+    volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
+    uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | 
+                                  (toupper(Gene.Name) %in% toupper(volcano_gene_list)))  %>%
+      dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
+    validate(need(length(uploadlist)>0, message = "Please select at least one valid gene."))
+    if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
+    data.label<-plotdata%>%filter(UniqueID %in% uploadlist)
   }
   
 
@@ -311,7 +351,7 @@ DEG_Compare <- reactive({
                                     'X_notsig Y_sig'='orange','X_notsig Y_notsig'='#00000022')) + 
     theme(legend.position = "bottom", legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1))
   
-  if (input$volcano_label=="Upload") {
+  if (input$volcano_label=="Upload" || input$volcano_label=="Geneset" ) {
     p=p+ geom_text_repel(data = data.label,  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
                          color="coral3",  point.padding = unit(0.3, "lines"))
   } #uploaded list use a different color. The DEGs colors are hard to see for un-sig genes.
@@ -351,7 +391,8 @@ DEG_data <-reactive ({
   return(tmpdat)
 })
 output$valcanoData <- DT::renderDataTable({
-  DT::datatable(DEG_data())
+  DT::datatable(DEG_data(),extensions = 'Buttons',  options = list(
+    dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), pageLength = 20), rownames= FALSE)
 })
 
 observeEvent(input$DEG_data, {

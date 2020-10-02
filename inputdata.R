@@ -18,13 +18,35 @@ ProjectInfo<-reactive({
   ProjectID=input$sel_project
   Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
   Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
-  return(list(ProjectID=ProjectID, Name=Name, Species=Species))
+  ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
+  return(list(ProjectID=ProjectID, Name=Name, Species=Species, ShortName=ShortName))
   }) #later on can use customer uploaded data
 
 output$project <- renderText({
   if (input$sel_project==""){"Please select or upload a date set"} else {ProjectInfo()$Name}
   })
 
+html_geneset<-reactive({
+  req(ProjectInfo())
+  Species=ProjectInfo()$Species
+  string=str_replace(html_geneset0, "human", Species)
+ # cat(string, "\n") #debug
+  return(string)
+})
+output$html_geneset=renderUI({
+  HTML(html_geneset())
+})
+
+html_geneset_hm<-reactive({
+  req(ProjectInfo())
+  Species=ProjectInfo()$Species
+  string=str_replace(html_geneset_hm0, "human", Species)
+ # cat(string, "\n") #debug
+  return(string)
+})
+output$html_geneset_hm=renderUI({
+  HTML(html_geneset_hm())
+})
 
 output$ui.action <- renderUI({
   if (is.null(input$file1)) return()
@@ -42,11 +64,8 @@ DataReactive <- reactive({
                value = 0,
                {
                  Pinfo=ProjectInfo()
-                 #setwd('H:/Rcode/ptxvisv3')
                RDataFile <- paste("data/",  Pinfo$ProjectID, ".RData", sep = "")
-               #  RDataFile <- ("D:/Test/temp/Mouse_microglia_RNA/data/Mouse_microglia_RNA-Seq.RData")   
-               #  RDataFile <- ("D:/Test/temp/Mouse_microglia_RNA/data/2019_XH_OGA_iPSC_Neuron.RData")   
-                 
+ 
                  load(RDataFile)
                  
                  results_long <-
@@ -80,6 +99,39 @@ DataReactive <- reactive({
                })
   
 })
+
+project_summary<-reactive({
+  req(DataReactive())
+  DataIn = DataReactive()
+  groups=DataIn$groups
+  tests=DataIn$tests
+  summary=str_c('<style type="text/css">
+.disc {
+ list-style-type: disc;
+}
+.square {
+ list-style-type: square;
+ margin-left: -2em;
+ font-size: small
+}
+</style>',
+"<h2>Project ", ProjectInfo()$ShortName, "</h2><br>",
+    '<ul class="disc"><li>Species: ', ProjectInfo()$Species, "</li>",
+    "<li>Number of Samples: ", nrow(DataIn$MetaData), "</li>",
+    "<li>Number of Groups: ", length(groups), " (please see group table below)</li>",  
+"<li>Number of Comparison Tests: ", length(tests), "</li>",
+'<ul class="square">', paste(str_c("<li>", tests, "</li>"), collapse=""), "</ul></li></ul><br><hr>",
+"<h4>Number of Samples in Each Group</h4>")
+})
+output$summary=renderText(project_summary())
+
+group_info<-reactive({
+  DataIn <- DataReactive()
+  group_info<-DataIn$MetaData%>%group_by(group)%>%count()
+  return(t(group_info))
+})
+output$group_table=renderTable(group_info(), colnames=F)
+
 
 
 DataNetworkReactive <- reactive({
@@ -140,30 +192,36 @@ output$results <- DT::renderDataTable({
 	results <- DataIn$data_results %>%
 	dplyr::select(-one_of(c("Fasta.headers","UniqueID","id")))
 	results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
-	DT::datatable(results, 
+	DT::datatable(results,  extensions = 'Buttons',
   options = list(
+    dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
   	pageLength = 15
-  ),rownames= FALSE)
+  ),rownames= T)
 })
 
 output$sample <- DT::renderDataTable({
-	DT::datatable(DataReactive()$MetaData, options = list(pageLength = 15))
+  meta<-DataReactive()$MetaData%>%dplyr::select(-Order, -ComparePairs)
+	DT::datatable(meta,  extensions = 'Buttons',  options = list(
+	  dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), pageLength = 15))
 	
 })
 
 output$data_wide <- DT::renderDataTable({
-	DT::datatable(DataReactive()$data_wide, 
-	              extensions = 'FixedColumns',
+  data_w<-DataReactive()$data_wide
+  data_w=round(data_w*1000)/1000
+	DT::datatable(data_w, extensions = c('FixedColumns', 'Buttons'),
   options = list(
   	pageLength = 15,
-    dom = 't',
+  	dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
     scrollX = TRUE,
     fixedColumns = list(leftColumns = 1)
   ))
 })
 
 output$ProteinGeneName <- DT::renderDataTable({
-	DT::datatable(DataReactive()$ProteinGeneName, options = list(pageLength = 15),rownames= FALSE)
+	DT::datatable(DataReactive()$ProteinGeneName, extensions = 'Buttons', options = list(
+	  dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+	  pageLength = 15),rownames= FALSE)
 })
 
 observeEvent(input$results, {

@@ -42,6 +42,7 @@ tabPanel("Select Dataset",
                               #tabPanel(title="Introduction",htmlOutput('intro')),
                               #tabPanel(title="Project Table", DT::dataTableOutput('projecttable')),
                               tabPanel(title="Sample Table", actionButton("sample", "Save to output"), dataTableOutput('sample')),
+                              tabPanel(title="Project Overview", htmlOutput("summary"), tableOutput('group_table')),                              
                               tabPanel(title="Result Table", actionButton("results", "Save to output"), dataTableOutput('results')),
                               tabPanel(title="Data Table", actionButton("data_wide", "Save to output"), dataTableOutput('data_wide')),
                               tabPanel(title="Protein Gene Names", actionButton("ProteinGeneName", "Save to output"), dataTableOutput('ProteinGeneName')),
@@ -66,7 +67,7 @@ tabPanel("QC Plots",
 				                 selectInput("PCAshapeby", label="Shape By", choices=NULL)),
 				conditionalPanel("input.groupplot_tabset=='PCA Plot'",
 				  selectInput("PCAsizeby", label="Size By", choices=NULL),
-					selectizeInput("pcnum",label="Select Principal Components", choices=1:3, multiple=TRUE, selected=1:2, options = list(maxItems = 2)),
+					selectizeInput("pcnum",label="Select Principal Components", choices=1:10, multiple=TRUE, selected=1:2, options = list(maxItems = 2)),
 					radioButtons("ellipsoid", label="Plot Ellipsoid (>3 per Group)", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE)),
 					radioButtons("mean_point", label="Show Mean Point", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE)),
 					radioButtons("rug", label="Show Marginal Rugs", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE)),
@@ -96,6 +97,7 @@ tabPanel("QC Plots",
 		column(9,
 			tabsetPanel(id="groupplot_tabset",
 				tabPanel(title="PCA Plot", actionButton("pcaplot", "Save to output"), plotOutput("pcaplot",height = 800)),
+				tabPanel(title="Eigenvalues",  plotOutput("Eigenvalues",height = 650)),
 				tabPanel(title="PCA 3D Plot",  plotOutput("pca_legend",height = 100), rglwidgetOutput("plot3d",  width = 1000, height = 1000)),
 				tabPanel(title="PCA 3D Interactive", plotlyOutput("plotly3d",  width = 1000, height = 1000)),
 				tabPanel(title="Sample-sample Distance",actionButton("SampleDistance", "Save to output"), plotOutput("pheatmap",height = 800)),
@@ -129,24 +131,14 @@ tabPanel("Volcano Plot",
 				  tags$head(tags$style("#valcano_filteredgene{color: red; font-size: 20px; font-style: italic; }" ))),
 				conditionalPanel( "input.valcano_tabset!='Volcano Plot (Interactive)'",
 					radioButtons("valcano_label",label="Select Gene Label",inline = TRUE, choices=""),
-					radioButtons("volcano_label", label="Label Genes:", inline = TRUE, choices = c("DEGs","None", "Upload"), selected = "DEGs"),
+					radioButtons("volcano_label", label="Label Genes:", inline = TRUE, choices = c("DEGs","None", "Upload", "Geneset"), selected = "DEGs"),
 					conditionalPanel("input.volcano_label!='None'",
 					    sliderInput("Ngenes", "# of Genes to Label", min = 10, max = 200, step = 5, value = 50)),
 					conditionalPanel("input.volcano_label=='Upload'",
-						HTML('
-						  <div id="div_geneset3" class="div_geneset">
-					        <div class="my-3 dropdown btn-group">
-					            <input style="width: 30rem;" id="Geneset_Name1" name="Geneset_Name1" placeholder="Start typing to enter or select a geneset" type="text" class="form-control form-control-sm geneset_name" />
-					            <a href="Javascript: void(0);" class="btn btn-sm btn-primary btn_browse_geneset"><i class="fas fa-search"></i></a>
-					            <div id="Dropdown1" class="geneset_dropdown dropdown-menu"></div>
-					        </div>
-					        <input class="geneset_id" type="hidden" id="Geneset_ID1" name="Geneset_ID1" />
-                            <label class="control-label" for="volcano_gene_list">List of genes to label (UniqueID, Gene.Name or Protein.ID)</label>
-                            <textarea id="volcano_gene_list" name="volcano_gene_list" class="form-control shiny-bound-input geneset_genes my-3" rows="6" cols="5"></textarea>
-						  </div>
-						')
-#					    textAreaInput("volcano_gene_list", "List of genes to label\n(UniqueID, Gene.Name or Protein.ID)", "", cols = 5, rows=6)
-						)	
+					    textAreaInput("volcano_gene_list", "List of genes to label\n(UniqueID, Gene.Name or Protein.ID)", "", cols = 5, rows=6)
+						),
+          conditionalPanel("input.volcano_label=='Geneset'",
+              uiOutput("html_geneset") )	
 					),
 				radioButtons("more_options", label="Show More Options", inline = TRUE, choices = c("Yes","No"), selected = "No"),
 				conditionalPanel("input.more_options=='Yes'",
@@ -181,8 +173,9 @@ tabPanel("Heat Map",
 				#actionButton("action_heatmaps","Generate Interactive Heatmap"),
 				selectizeInput("heatmap_groups", label="Select Groups", choices=NULL, multiple=TRUE),
 				selectizeInput("heatmap_samples", label="Select Samples", choices=NULL, multiple=TRUE),
-				radioButtons("heatmap_subset",label="Use all genes or upload your own subset?", choices=c("all","subset","upload genes"),inline = TRUE, selected="all"),
+				radioButtons("heatmap_subset",label="Genes used for heatmap", choices=c("all","subset","upload genes", "Geneset"),inline = TRUE, selected="all"),
 				conditionalPanel("input.heatmap_subset=='upload genes'", textAreaInput("heatmap_list", "list", "", cols = 5, rows=6)),
+				conditionalPanel("input.heatmap_subset=='Geneset'",   uiOutput("html_geneset_hm") ),
 				conditionalPanel("input.heatmap_subset=='all'",	
           radioButtons("heatmap_submethod", label= "Plot Random Genes or Variable Genes", choices= c("Random"="Random","Variable"="Variable"),inline = TRUE),
 				  numericInput("maxgenes",label="Choose Gene Number", min=1, max= 5000, value=100, step=1)), 
@@ -194,6 +187,8 @@ tabPanel("Heat Map",
 					column(width=12,textOutput("heatmapfilteredgene"),
 					tags$head(tags$style("#heatmapfilteredgene{color: red; font-size: 20px; font-style: italic; }")))
 					), 
+				conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
+				                  selectizeInput("heatmap_annot", label="Annotate Samples", choices=NULL, multiple = TRUE)),			                  
 				column(width=3,colourInput("lowColor", "Low", "blue")),
 				column(width=3,colourInput("midColor", "Mid", "white")),
 				column(width=3,colourInput("highColor", "High", "red")),
@@ -221,10 +216,13 @@ tabPanel("Heat Map",
 				),
 				conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
 				  column(width=5,sliderInput("hxfontsizep", "Column Font Size:", min = 0, max = 20, step = 1, value = 10)),
-					column(width=5,sliderInput("hyfontsizep", "Row Font Size:", min = 0, max = 20, step = 1, value = 7)),
-					#tags$h5("Click Plot/Refresh Button to generate heatmap.")
+					column(width=5,sliderInput("hyfontsizep", "Row Font Size:", min = 0, max = 20, step = 1, value = 7))
 				),
-				radioButtons("heatmap_label",label="Gene Label (shown when <=100 genes in heatmap)",inline = TRUE, choices="")
+				radioButtons("heatmap_label",label="Gene Label (shown when <=100 genes in heatmap)",inline = TRUE, choices=""),
+				conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
+				h5("After changing parameters, please click Plot/Refresh button in the plot panel to generate heatmap."),
+				textAreaInput("heatmap_annot_gene", "Annotate Genes", "", cols = 5, rows=6)
+				)			
 			)
 		),
 		column(9,
@@ -303,6 +301,8 @@ tabPanel("Gene Set Enrichment",
 				radioButtons("geneset_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
 				textOutput("geneset_filteredgene"),
 				tags$head(tags$style("#geneset_filteredgene{color: red; font-size: 20px; font-style: italic;}")),
+				conditionalPanel("input.geneset_tabset=='Gene Set Heat Map'",
+				radioButtons("gs_heatmap_label",label="Gene Label",inline = TRUE, choices=c("UniqueID", "Gene.Name"), selected="Gene.Name")),
 				conditionalPanel("input.geneset_tabset=='Gene Set Enrichment'",
 					radioButtons("MSigDB", label= "MSigDB Collections",
 						choices= c("KEGG Pathway" = "KEGG",
@@ -552,25 +552,7 @@ tabPanel("Output",
 ## footer
 ##########################################################################################################
 
-footer= HTML('
-    <link href="http://bxngs.com/bxomics/api2/bootstrap-3/css/bootstrap.min.css" rel="stylesheet" type="text/css">
-	<script src="http://bxngs.com/bxomics/api2/bootstrap-3/js/bootstrap.min.js"></script>
-
-	<link rel="stylesheet" type="text/css" href="http://bxngs.com/bxomics/api2/datatables/datatables.min.css"/>
-	<script type="text/javascript" src="http://bxngs.com/bxomics/api2/datatables/datatables.min.js"></script>
-
-	<script>
-		var GENESET_ACTION_URL = "http://bxngs.com/bxomics/api2/genesets3.php";
-		var MY_SECRET_ID = /PHPSESSID=([^;]+)/i.test(document.cookie) ? RegExp.$1 : false;
-	</script>
-	<link href="http://bxngs.com/bxomics/api2/genesets3.css" rel="stylesheet">
-	<script src="http://bxngs.com/bxomics/api2/genesets3.js"></script>
-	<hr>
-	<div align="center">
-	<font size=3>Developed by: <a href="mailto:benbo.gao@biogen.com?Subject=PtxVis%20Question" target="_top">
-	Benbo Gao</a>, <a href="http://www.biogen.com"> Biogen Inc.</a></font>
-	</div>
-')
+footer= HTML(footer_text)
 
 
 )

@@ -146,20 +146,19 @@ output$SetHeatMap = renderPlot({
 
 	terminalsdf.set <- dplyr::filter(terminals.df, entrez_id %in% GenesetSig)
 
-	terminals_id <- dplyr::filter(ProteinGeneName, Gene.Name %in% terminalsdf.set$symbol)  %>%
+	terminals_id <- dplyr::filter(ProteinGeneName, toupper(Gene.Name) %in% terminalsdf.set$symbol)  %>%
 	dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
 
 	subdatlong <- dplyr::filter(data_long, UniqueID %in% terminals_id ) %>%
 	group_by(., group, UniqueID) %>%
 	dplyr::summarise(mean=mean(expr, na.rm = TRUE))
-
+	subdatlong<-subdatlong%>%left_join(ProteinGeneName)
 	subdatwide <- subdatlong  %>%
 	tidyr::spread(.,group, mean, fill = 0) %>%
 	as.data.frame() %>%
 	remove_rownames(.) %>%
-	column_to_rownames(.,var="UniqueID") %>%
+	column_to_rownames(.,var=input$gs_heatmap_label) %>%
 	dplyr::select(one_of(as.character(group_order())))
-
 	pheatmap(as.matrix(subdatwide),	scale = "row", color = colorpanel (64, low = "blue",mid = "white", high = "red"),filename=NA)
 }, height=800) ## need to change
 

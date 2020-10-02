@@ -74,7 +74,7 @@ DataPCAReactive <- reactive({
 	tmp_group = DataQC$tmp_group
 
 	tmp_data_wide[is.na(tmp_data_wide)] <- 0 
-	pca <- 	prcomp(t(tmp_data_wide),rank. = 3, scale = FALSE)
+	pca <- 	prcomp(t(tmp_data_wide),rank. = 10, scale = FALSE)
 	percentVar <- 	round((pca$sdev)^2/sum(pca$sdev^2), 3) * 100
 	scores <- as.data.frame(pca$x)
 	rownames(scores) <- tmp_sampleid
@@ -85,6 +85,23 @@ DataPCAReactive <- reactive({
 	scores=cbind(scores, MetaData[, colsel, drop=F])
 	return(list('scores'=scores,'percentVar'=percentVar))
 })
+
+#Eigenvalue bar chart
+Eigenvalues_plot<-reactive({
+  req(DataPCAReactive())
+  PCAlist <- DataPCAReactive()
+  scores <- PCAlist$scores
+  percentVar <- PCAlist$percentVar
+  plotdata<-data.frame(PC=names(scores)[1:10], perVar=percentVar[1:10])
+  plotdata$PC=factor(plotdata$PC, levels=plotdata$PC)
+  p<-ggplot(plotdata, aes(x=PC, y=perVar))+geom_bar(stat="identity", fill="blue4")+
+    labs(x="Principle Components", y="Percentage of Variance")+theme_cowplot()
+  return(p)
+})
+output$Eigenvalues <- renderPlot({
+  Eigenvalues_plot()
+})
+
 
 ########## boxplot
 QCboxplot_out <- reactive({
