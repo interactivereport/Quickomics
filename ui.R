@@ -33,7 +33,8 @@ tabPanel("Select Dataset",
                                      selectInput("sel_project", label="Available Dataset", 
                                                  choices=c("", projects), selected=NULL)),
                     conditionalPanel("input.select_dataset=='Upload RData File'",
-                                     fileInput("file1", "Choose a file"),
+                                     fileInput("file1", "Choose data file"),
+                                     fileInput("file2", "Choose network file"),                                     
                                      uiOutput('ui.action') )
                   )
            ),

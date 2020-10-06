@@ -117,50 +117,36 @@ var GENESET_DEFAULT_MAX = 500;
 </script>
 
 <div id="div_geneset3" class="div_geneset">
-<div class="my-3 dropdown btn-group">
-<input style="display: none;" id="Geneset_Name1" name="Geneset_Name1" placeholder="Start typing to enter or select a geneset" type="text" class="form-control form-control-sm geneset_name" />
-<a href="Javascript: void(0);" class="btn btn-sm btn-primary btn_browse_geneset"><i class="fas fa-search"></i> Select Geneset</a>
-<div id="Dropdown1" class="geneset_dropdown dropdown-menu"></div>
+<div class="my-3 dropdown input-group">
+<input id="Geneset_Name1" name="Geneset_Name1" placeholder="enter geneset name" type="text" class="form-control geneset_name dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" />
+<a href="Javascript: void(0);" class="input-group-addon btn btn-primary btn_browse_geneset"><i class="fas fa-search"></i></a>
+<div id="Dropdown1" class="geneset_dropdown dropdown-menu" aria-labelledby="Geneset_Name1"></div>
 </div>
+
 <input class="geneset_id" type="hidden" id="Geneset_ID1" name="Geneset_ID1" />
-<label class="control-label" for="geneset_list">Type Enter after any line in the gene set box to make it effective</label>
+<label class="control-label" for="geneset_list">List of genes to label (UniqueID, Gene.Name or Protein.ID)</label>
 <textarea id="geneset_list" name="geneset_list" class="form-control shiny-bound-input geneset_genes my-3" rows="6" cols="5"></textarea>
 </div>
 '
 
-html_geneset_hm0 =  '
-<script>
-var GENESET_DEFAULT_TABLE = "";
-var GENESET_DEFAULT_SPECIES = "human";
-var GENESET_DEFAULT_MIN = 10;
-var GENESET_DEFAULT_MAX = 500;
-</script>
+html_geneset_hm0 =str_replace_all(html_geneset0, "geneset_list", "geneset_list_hm")
 
-<div id="div_geneset3" class="div_geneset">
-<div class="my-3 dropdown btn-group">
-<input style="display: none;" id="Geneset_Name1" name="Geneset_Name1" placeholder="Start typing to enter or select a geneset" type="text" class="form-control form-control-sm geneset_name" />
-<a href="Javascript: void(0);" class="btn btn-sm btn-primary btn_browse_geneset"><i class="fas fa-search"></i> Select Geneset</a>
-<div id="Dropdown1" class="geneset_dropdown dropdown-menu"></div>
-</div>
-<input class="geneset_id" type="hidden" id="Geneset_ID1" name="Geneset_ID1" />
-<label class="control-label" for="geneset_list_hm">Type Enter after any line in the gene set box to make it effective</label>
-<textarea id="geneset_list_hm" name="geneset_list_hm" class="form-control shiny-bound-input geneset_genes my-3" rows="6" cols="5"></textarea>
-</div>
-'
+
 
 footer_text = '
-<link rel="stylesheet" type="text/css" href="http://bxngs.com/bxomics/api2/datatables/datatables.min.css"/>
-<script type="text/javascript" src="http://bxngs.com/bxomics/api2/datatables/datatables.min.js"></script>
+<link rel="stylesheet" type="text/css" href="http://bxngs.com/bxomics/api/datatables/datatables.min.css"/>
+<script type="text/javascript" src="http://bxngs.com/bxomics/api/datatables/datatables.min.js"></script>
+<script type="text/javascript" src="url-input-binding.js"></script>
+
 <script>
-var GENESET_ACTION_URL = "http://bxngs.com/bxomics/api2/genesets3.php";
+var GENESET_ACTION_URL = "http://bxngs.com/bxomics/api/genesets3.php";
 var MY_SECRET_ID = /PHPSESSID=([^;]+)/i.test(document.cookie) ? RegExp.$1 : false;
 </script>
-<link href="http://bxngs.com/bxomics/api2/genesets3.css" rel="stylesheet">
-<script src="http://bxngs.com/bxomics/api2/genesets3.js"></script>
+<link href="http://bxngs.com/bxomics/api/genesets3.css" rel="stylesheet">
+<script src="http://bxngs.com/bxomics/api/genesets3.js"></script>
 <hr>
 <div align="center">
 <font size=3>Developed by: <a href="mailto:benbo.gao@biogen.com?Subject=PtxVis%20Question" target="_top">
 Benbo Gao</a>, <a href="http://www.biogen.com"> Biogen Inc.</a></font>
 </div>
 '
-

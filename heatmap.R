@@ -75,6 +75,7 @@ DataHeatMapReactive <- reactive({
   annotation = data.frame("group" = tmp_group, sampleid=tmp_sampleid)
   rownames(annotation) <- tmp_sampleid
   annotation<-annotation%>%left_join(MetaData)
+  annotation$group = factor(tmp_group, levels=group_order() )
   if(length(tmpkeep)>0) {
     y <- input$heatmap_groups
     x= MetaData$group[tmpkeep]
@@ -152,7 +153,9 @@ DataHeatMapReactive <- reactive({
   
   if (sum(is.na(sel))==0 & sum(is.na(selCol)==0)) {rownames(df)=unlist(ProteinGeneName[sel, selCol])
   } else {cat("gene lables not updated",sum(is.na(sel)), sum(is.na(selCol)), "\n")}
-  
+  #match sampleid order
+  new_order=match(colnames(df), annotation$sampleid)
+  annotation=annotation[new_order, ]
   return(list("df"=df, "annotation"=annotation))
 })
 
@@ -165,7 +168,7 @@ pheatmap2_out <- eventReactive(input$plot_heatmap, {
     data.in <- DataHeatMap$df
     annotation <- DataHeatMap$annotation
     sel_col=match(input$heatmap_annot, names(annotation))
-    df_annot=annotation[, sel_col]
+    df_annot=annotation[, sel_col, drop=FALSE]
     cluster_rows = 	cluster_cols = FALSE
     if (input$dendrogram == "both" | input$dendrogram == "row")
       cluster_rows = TRUE
@@ -216,7 +219,7 @@ pheatmap2_out <- eventReactive(input$plot_heatmap, {
     if (cluster_cols==F) {cutree_cols=0}
  
     
-  # browser() #debug
+   #browser() #debug
     p<-Heatmap(data.in, col=col_fun, cluster_rows = cluster_rows, cluster_columns = cluster_cols, 
                 clustering_distance_rows=input$distanceMethod, clustering_distance_columns=input$distanceMethod,
                 clustering_method_rows=input$agglomerationMethod, clustering_method_columns=input$agglomerationMethod,

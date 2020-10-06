@@ -392,7 +392,7 @@ DEG_data <-reactive ({
 })
 output$valcanoData <- DT::renderDataTable({
   DT::datatable(DEG_data(),extensions = 'Buttons',  options = list(
-    dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), pageLength = 20), rownames= FALSE)
+    dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 20), rownames= FALSE)
 })
 
 observeEvent(input$DEG_data, {

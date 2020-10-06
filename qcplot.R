@@ -94,8 +94,11 @@ Eigenvalues_plot<-reactive({
   percentVar <- PCAlist$percentVar
   plotdata<-data.frame(PC=names(scores)[1:10], perVar=percentVar[1:10])
   plotdata$PC=factor(plotdata$PC, levels=plotdata$PC)
-  p<-ggplot(plotdata, aes(x=PC, y=perVar))+geom_bar(stat="identity", fill="blue4")+
-    labs(x="Principle Components", y="Percentage of Variance")+theme_cowplot()
+  plotdata<-plotdata%>%mutate(TotalVar=cumsum(perVar))
+  adj.factor=max(plotdata$TotalVar)/max(plotdata$perVar)*0.9
+  p<-ggplot(plotdata, aes(x=PC) )+geom_bar(aes(y=perVar), stat="identity", fill="blue4")+
+    geom_line(aes(y=TotalVar/adj.factor), size=1.5, color="red4", group=1)+geom_point(aes(y=TotalVar/adj.factor), size=3, color="red4")+
+    labs(x="Principle Components")+scale_y_continuous(name="Percentage of Variance", sec.axis=sec_axis(~.*adj.factor, name="Total Variance") ) +theme_cowplot()
   return(p)
 })
 output$Eigenvalues <- renderPlot({

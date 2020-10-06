@@ -12,25 +12,43 @@ saved_plots <- reactiveValues()
 saved_table <- reactiveValues() 
 group_order <- reactiveVal()
 #saved_palette <- reactiveVal()
+ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL)
 
-ProjectInfo<-reactive({
-  req(input$sel_project)
+observe({
+query <- parseQueryString(session$clientData$url_search)
+if (!is.null(query[['project']])) {
+  ProjectID = query[['project']]
+  validate(need(ProjectID %in% saved_projects$ProjectID , message = "Please pass a valid ProjectID from URL."))
+  ProjectInfo$ProjectID=ProjectID
+  ProjectInfo$Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
+  ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
+  ProjectInfo$ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
+  ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
+  ProjectInfo$file2= paste("networkdata/", ProjectID, ".RData", sep = "") #Correlation results
+}
+})
+
+observe({
+if (input$sel_project!="") {
   ProjectID=input$sel_project
-  Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
-  Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
-  ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
-  return(list(ProjectID=ProjectID, Name=Name, Species=Species, ShortName=ShortName))
-  }) #later on can use customer uploaded data
+  ProjectInfo$ProjectID=ProjectID
+  ProjectInfo$Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
+  ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
+  ProjectInfo$ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
+  ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
+  ProjectInfo$file2= paste("networkdata/", ProjectID, ".RData", sep = "") #Correlation results
+}
+})
 
 output$project <- renderText({
-  if (input$sel_project==""){"Please select or upload a date set"} else {ProjectInfo()$Name}
-  })
+  if (is.null(ProjectInfo$Name)){"Please select or upload a date set"} else {ProjectInfo$Name}
+})
 
 html_geneset<-reactive({
-  req(ProjectInfo())
-  Species=ProjectInfo()$Species
+  req(ProjectInfo)
+  Species=ProjectInfo$Species
   string=str_replace(html_geneset0, "human", Species)
- # cat(string, "\n") #debug
+ cat(string, "\n") #debug
   return(string)
 })
 output$html_geneset=renderUI({
@@ -38,10 +56,10 @@ output$html_geneset=renderUI({
 })
 
 html_geneset_hm<-reactive({
-  req(ProjectInfo())
-  Species=ProjectInfo()$Species
+  req(ProjectInfo)
+  Species=ProjectInfo$Species
   string=str_replace(html_geneset_hm0, "human", Species)
- # cat(string, "\n") #debug
+  cat(string, "\n") #debug
   return(string)
 })
 output$html_geneset_hm=renderUI({
@@ -49,22 +67,33 @@ output$html_geneset_hm=renderUI({
 })
 
 output$ui.action <- renderUI({
-  if (is.null(input$file1)) return()
+  if (is.null(input$file1) || is.null(input$file2)) return()
   tagList(
-  textInput("projet_name", label="Rename Project", value=input$file1$name),
+  textInput("project_name", label="Rename Project", value=input$file1$name),
   radioButtons("species",label="Select species", choices=c("human","mouse", "rat"), inline = F, selected="human"),
   actionButton("customData", "Submit Data")
   )
 })
 
 
+observeEvent(input$customData, {  
+  ProjectInfo$ProjectID=str_replace(input$file1$name,  regex(".RData", ignore_case = TRUE), "")
+  ProjectInfo$Name=input$project_name
+  ProjectInfo$Species=input$species
+  ProjectInfo$ShortName=input$project_name
+  ProjectInfo$file1=input$file1$datapath; ProjectInfo$file2=input$file2$datapath
+  #browser() #debug
+})
+
+
 DataReactive <- reactive({
+  req(ProjectInfo$ProjectID)
   withProgress(message = 'Fetching data.',
                detail = 'This may take a while...',
                value = 0,
                {
-                 Pinfo=ProjectInfo()
-               RDataFile <- paste("data/",  Pinfo$ProjectID, ".RData", sep = "")
+ 
+               RDataFile <- ProjectInfo$file1
  
                  load(RDataFile)
                  
@@ -115,10 +144,12 @@ project_summary<-reactive({
  font-size: small
 }
 </style>',
-"<h2>Project ", ProjectInfo()$ShortName, "</h2><br>",
-    '<ul class="disc"><li>Species: ', ProjectInfo()$Species, "</li>",
+"<h2>Project ", ProjectInfo$ShortName, "</h2><br>",
+    '<ul class="disc"><li>Species: ', ProjectInfo$Species, "</li>",
+"<li>Description: ", ProjectInfo$Name, "</li>",
     "<li>Number of Samples: ", nrow(DataIn$MetaData), "</li>",
     "<li>Number of Groups: ", length(groups), " (please see group table below)</li>",  
+"<li>Number of Genes/Proteins: ", nrow(DataIn$data_wide), "</li>",
 "<li>Number of Comparison Tests: ", length(tests), "</li>",
 '<ul class="square">', paste(str_c("<li>", tests, "</li>"), collapse=""), "</ul></li></ul><br><hr>",
 "<h4>Number of Samples in Each Group</h4>")
@@ -137,15 +168,16 @@ output$group_table=renderTable(group_info(), colnames=F)
 DataNetworkReactive <- reactive({
   DataIn = DataReactive()
   ProteinGeneName <- DataIn$ProteinGeneName
-  
-  query <- parseQueryString(session$clientData$url_search)
-
-  
-  Pinfo=ProjectInfo()
-  CorResFile <- paste("networkdata/", Pinfo$ProjectID, ".RData", sep = "")
+  #query <- parseQueryString(session$clientData$url_search)
+  Pinfo=ProjectInfo
+  CorResFile <- ProjectInfo$file2
   if (file.exists(CorResFile)) {
     load(CorResFile)
   } else {
+    withProgress(message = 'Compute correlation network data.',
+                 detail = 'This may take a few minutes...',
+                 value = 0,
+                 {
     data_wide <- DataIn$data_wide
     cor_res <- Hmisc::rcorr(as.matrix(t(data_wide)))
     cormat <- cor_res$r
@@ -161,7 +193,8 @@ DataNetworkReactive <- reactive({
     network <- network %>% mutate_if(is.factor, as.character) %>%
       dplyr::filter(!is.na(cor) & abs(cor) > 0.7 & p < 0.05)
     save(network,
-         file =  paste("networkdata/", ProjectID, ".RData", sep = ""))
+         file =  paste("networkdata/", Pinfo$ProjectID, ".RData", sep = ""))
+    })
   }
   
   sel_gene = input$sel_net_gene
@@ -194,7 +227,7 @@ output$results <- DT::renderDataTable({
 	results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
 	DT::datatable(results,  extensions = 'Buttons',
   options = list(
-    dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
   	pageLength = 15
   ),rownames= T)
 })
@@ -202,7 +235,7 @@ output$results <- DT::renderDataTable({
 output$sample <- DT::renderDataTable({
   meta<-DataReactive()$MetaData%>%dplyr::select(-Order, -ComparePairs)
 	DT::datatable(meta,  extensions = 'Buttons',  options = list(
-	  dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), pageLength = 15))
+	  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
 	
 })
 
@@ -212,7 +245,7 @@ output$data_wide <- DT::renderDataTable({
 	DT::datatable(data_w, extensions = c('FixedColumns', 'Buttons'),
   options = list(
   	pageLength = 15,
-  	dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+  	dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
     scrollX = TRUE,
     fixedColumns = list(leftColumns = 1)
   ))
@@ -220,7 +253,7 @@ output$data_wide <- DT::renderDataTable({
 
 output$ProteinGeneName <- DT::renderDataTable({
 	DT::datatable(DataReactive()$ProteinGeneName, extensions = 'Buttons', options = list(
-	  dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+	  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
 	  pageLength = 15),rownames= FALSE)
 })
 
