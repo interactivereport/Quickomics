@@ -40,6 +40,22 @@ if (input$sel_project!="") {
 }
 })
 
+observeEvent(ProjectInfo$ProjectID, {
+  #cat("load file UI for", ProjectInfo$ProjectID, "\n")
+  updateRadioButtons(session, "heatmap_subset",  selected="All")
+  output$gene_highlight_file=renderUI({
+    tagList(fileInput("file_gene_highlight", "Highlight Genes (csv with headers like Genes, Pathways, Color)"))
+  })
+  updateRadioButtons(session, "heatmap_highlight",  selected="No")
+  output$gene_annot_file=renderUI({
+    tagList(fileInput("file_gene_annot", "Choose gene annotation file (csv with headers like Genes, Pathways, Color)"))
+  })
+  updateRadioButtons(session, "custom_color",  selected="No")
+  output$annot_color_file=renderUI({
+    tagList(fileInput("annot_color_file", "Upload annotation Colors (csv with 3 headers: Attribute, Value and Color)"))
+  })
+})
+
 output$project <- renderText({
   if (is.null(ProjectInfo$Name)){"Please select or upload a date set"} else {ProjectInfo$Name}
 })
@@ -48,7 +64,7 @@ html_geneset<-reactive({
   req(ProjectInfo)
   Species=ProjectInfo$Species
   string=str_replace(html_geneset0, "human", Species)
- cat(string, "\n") #debug
+ #cat(string, "\n") #debug
   return(string)
 })
 output$html_geneset=renderUI({
@@ -59,7 +75,7 @@ html_geneset_hm<-reactive({
   req(ProjectInfo)
   Species=ProjectInfo$Species
   string=str_replace(html_geneset_hm0, "human", Species)
-  cat(string, "\n") #debug
+  #cat(string, "\n") #debug
   return(string)
 })
 output$html_geneset_hm=renderUI({

@@ -24,26 +24,12 @@ DataGenesetReactive <- reactive({
 	test_sel = input$geneset_test
 	absFCcut = as.numeric(input$geneset_FCcut)
 	pvalcut = as.numeric(input$geneset_pvalcut)
-
-
-	if (input$geneset_psel == "Padj") {
-		filteredgene = results_long %>%
-		dplyr::filter(abs(logFC) >= absFCcut & Adj.P.Value < pvalcut) %>%
-		dplyr::filter(test == test_sel) %>%
-		dplyr::filter(!is.na(`Gene.Name`)) %>%
+	filteredgene <- results_long %>%  mutate(P.stat=ifelse(rep(input$geneset_psel == "Padj", nrow(results_long)),  Adj.P.Value,  P.Value)) %>%
+	  dplyr::filter(test == test_sel) %>%dplyr::filter(!is.na(`Gene.Name`))%>%
+	  dplyr::filter(abs(logFC) >= absFCcut & P.stat < pvalcut) %>%
 		dplyr::select(one_of(c("Gene.Name","logFC"))) %>%
 		dplyr::mutate_at(.vars = vars(Gene.Name), .funs = toupper) %>%
 		dplyr::distinct(., Gene.Name,.keep_all = TRUE)
-	} else {
-		filteredgene = results_long %>%
-		dplyr::filter(abs(logFC) >= absFCcut & P.Value < pvalcut) %>%
-		dplyr::filter(test == test_sel) %>%
-		dplyr::filter(!is.na(`Gene.Name`)) %>%
-		dplyr::select(one_of(c("Gene.Name","logFC"))) %>%
-		dplyr::mutate_at(.vars = vars(Gene.Name), .funs = toupper) %>%
-		dplyr::distinct(., Gene.Name,.keep_all = TRUE)
-
-	}
 
 	terminals.df <- dplyr::inner_join(hgnc,filteredgene, by=c("symbol"="Gene.Name"))
 
@@ -56,8 +42,16 @@ DataGenesetReactive <- reactive({
 
 	sig_genes <- as.numeric(as.data.frame(terminals.df)[,3])
 	names(sig_genes) <- as.data.frame(terminals.df)[,2]
-
-	output$geneset_filteredgene <- renderText({ paste("Selected Genes:",nrow(filteredgene), sep="")})
+	
+	sig_genes_Dir=sig_genes
+	if (input$geneset_direction=="Up") {
+	  sig_genes_Dir=sig_genes[terminals.df$logFC>0]
+	} else if (input$geneset_direction=="Down") {
+	  sig_genes_Dir=sig_genes[terminals.df$logFC<0]
+	} 
+	
+	output$geneset_filteredgene <- renderText({ paste("Selected Genes:",length(sig_genes_Dir), " (",input$geneset_direction, " Direction)",  sep="")})
+#	browser()#debug
 	return(list("sig_genes" = sig_genes,"all_genes" = all_genes, "terminals.df"=terminals.df ))
 })
 
@@ -71,7 +65,7 @@ output$MSigDB <- DT::renderDataTable({ withProgress(message = 'Processing...', v
 	} else {
 		gsets <- gmtlist[[input$MSigDB]]
 	}
-	gsa <- ORAEnrichment (deGenes=names(sig_genes),universe=all_genes, gsets, logFC =sig_genes  )
+	gsa <- ORAEnrichment (deGenes=names(sig_genes),universe=all_genes, gsets, logFC =sig_genes, Dir=input$geneset_direction  )
 	res <- 	gsa %>%
 	#add_rownames(., var = "ID") %>%
 	rownames_to_column(var="ID") %>%
@@ -79,7 +73,8 @@ output$MSigDB <- DT::renderDataTable({ withProgress(message = 'Processing...', v
 
 	res[,sapply(res,is.numeric)] <- signif(res[,sapply(res,is.numeric)],3)
 	DT::datatable(
-		res, selection = 'none', class = 'cell-border strip hover', options = list(pageLength = 15)
+		res,  extensions = 'Buttons', selection = 'none', class = 'cell-border strip hover', 
+		options = list( dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15)
 	)  %>% formatStyle(1, cursor = 'pointer',color='blue')
 	})
 })
@@ -157,9 +152,21 @@ output$SetHeatMap = renderPlot({
 	tidyr::spread(.,group, mean, fill = 0) %>%
 	as.data.frame() %>%
 	remove_rownames(.) %>%
-	column_to_rownames(.,var=input$gs_heatmap_label) %>%
+	column_to_rownames(.,var="UniqueID") %>%
 	dplyr::select(one_of(as.character(group_order())))
-	pheatmap(as.matrix(subdatwide),	scale = "row", color = colorpanel (64, low = "blue",mid = "white", high = "red"),filename=NA)
+	subdatwide=data.matrix(subdatwide)
+	if (input$gs_heatmap_label=="Gene.Name") {
+	  sel_col=match(rownames(subdatwide), ProteinGeneName$UniqueID)
+	  rownames(subdatwide)=ProteinGeneName$Gene.Name[sel_col]
+	}
+
+	#remove rows with same values across all samples, which can cause hcluster error
+	row_SD=apply(subdatwide, 1, function(x) sd(x,na.rm=T))
+	subdatwide=subdatwide[row_SD!=0, ]	
+	scaled_data=t(scale(t(subdatwide))); scaled_data=pmin(scaled_data, 3); scaled_data=pmax(scaled_data, -3)
+	p<-Heatmap(scaled_data, cluster_columns =F, heatmap_legend_param = list(title = "Scaled Value", color_bar = "continuous") )
+	#pheatmap(as.matrix(subdatwide),	scale = "row", color = colorpanel (64, low = "blue",mid = "white", high = "red"),filename=NA)
+	draw(p)
 }, height=800) ## need to change
 
 
@@ -179,5 +186,5 @@ output$Expression <- DT::renderDataTable({
 	terminalsdf.set <- dplyr::filter(terminals.df, entrez_id %in% GenesetSig)
 	terminalsdf.set[,sapply(terminalsdf.set,is.numeric)] <- signif(terminalsdf.set[,sapply(terminalsdf.set,is.numeric)],3)
 
-	DT::datatable(terminalsdf.set, options = list(pageLength = 15))
+	DT::datatable(terminalsdf.set,  extensions = 'Buttons', options = list( dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
 })

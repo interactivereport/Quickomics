@@ -15,7 +15,7 @@ output$downloadPDF <- downloadHandler(
 		paste("output_",Sys.Date(),".pdf", sep="")
 	},
 	content = function(file) { withProgress(message = 'This takes a minute or two',{ 
-		pdf(file = file, width=12, height=8)
+		pdf(file = file, width=input$pdf_width, height=input$pdf_height)
 		Title <- paste("","Data Analysis Report",sep=" ")
 		today <- Sys.Date() %>%	format(format="%m/%d/%Y")
 
@@ -53,7 +53,7 @@ output$downloadPDF <- downloadHandler(
 		}
 		## Heatmap
 		if (!is.null(saved_plots$pheatmap2)){
-			grid.draw(saved_plots$pheatmap2)
+			draw(saved_plots$pheatmap2, merge_legend=T,auto_adjust = FALSE)
 		}
 		## Heatmap
 		if (!is.null(saved_plots$staticheatmap)){

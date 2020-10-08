@@ -62,20 +62,25 @@ source("pathviewfun.R",local = TRUE)
 source("mfuzzfun.R",local = TRUE)
 
 	
-ORAEnrichment <- function(deGenes,universe, gsets, logFC){
-	deGenes = deGenes[which(deGenes %in% universe)]
-	tmp = rep(NA, length(gsets))
-	ora.stats = data.frame(p.value=tmp, p.adj = tmp, DeGeneNum=tmp,UpGene= tmp, DownGene=tmp, SetNum = tmp)
-	totalDE = length(deGenes)
-	n = length(universe) - totalDE
-
-	for (j in 1:length(gsets)){
-		gset = gsets[[j]]
-		DEinS = intersect(gset, deGenes)
-		logFCinS = logFC[DEinS]
-		totalDEinS = length(intersect(gset, deGenes))
-		totalSinUniverse = length(intersect(gset, universe))
-		ora.stats[j, "p.value"] = phyper(q = totalDEinS- 0.5, m=totalDE, n = n, k = totalSinUniverse, lower.tail = FALSE)
+ORAEnrichment <- function(deGenes,universe, gsets, logFC, Dir="Both"){
+  deGenes = deGenes[which(deGenes %in% universe)]
+  tmp = rep(NA, length(gsets))
+  ora.stats = data.frame(p.value=tmp, p.adj = tmp, DeGeneNum=tmp,UpGene= tmp, DownGene=tmp, SetNum = tmp)
+  totalDE = length(deGenes)
+  n = length(universe) - totalDE
+  
+  for (j in 1:length(gsets)){
+    gset = gsets[[j]]
+    DEinS = intersect(gset, deGenes)
+    logFCinS = logFC[DEinS]
+    totalDEinS = length(intersect(gset, deGenes))
+    totalSinUniverse = length(intersect(gset, universe))
+    
+    N_q=totalDEinS- 0.5
+    if (Dir=="Up") {N_q=length(logFCinS[logFCinS > 0])-0.5 
+		} else if (Dir=="Down") {N_q=length(logFCinS[logFCinS < 0])-0.5}
+		
+		ora.stats[j, "p.value"] = phyper(q = N_q, m=totalDE, n = n, k = totalSinUniverse, lower.tail = FALSE)
 		ora.stats[j, "DeGeneNum"] = totalDEinS
 		ora.stats[j, "SetNum"] = length(gset)
 		ora.stats[j, "UpGene"] = length(logFCinS[logFCinS > 0])
@@ -90,7 +95,7 @@ ORAEnrichment <- function(deGenes,universe, gsets, logFC){
 	return(ora.stats)
 }
 
-options(shiny.maxRequestSize = 30*1024^2)  #upload file up to 30 Mb
+options(shiny.maxRequestSize = 30*1024^2)  #upload files up to 30 Mb
 
 
 mycss <- "select ~ .selectize-control .selectize-input {
