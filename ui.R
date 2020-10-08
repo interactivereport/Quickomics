@@ -356,6 +356,7 @@ tabPanel("Gene Set Enrichment",
 ##########################################################################################################
 ## Pattern Clustering
 ##########################################################################################################
+## 10/08/2020
 ## eidted by bgao, add gene upload box and more plotting options	   
 tabPanel("Pattern Clustering",
 	fluidRow(
