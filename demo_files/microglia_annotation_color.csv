@@ -1,0 +1,9 @@
+Attribute,Value,Color
+Age,2mo,lightgray
+Age,1yr,orange
+Age,2yr,tan4
+Genotype,WT,#619CFF
+Genotype,Het,#F8766D
+Genotype,KO,#00BA38
+Gender,F,palegreen4
+Gender,M,salmon4

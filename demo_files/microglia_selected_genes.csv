@@ -1,0 +1,22 @@
+﻿gene_name,Pathways,Color
+Tnf,Other immune genes,blue
+Cd34,Other noteworthy genes,red
+H2-DMa,MHCII Genes,darkgreen
+H2-DMb2,MHCII Genes,darkgreen
+H2-Q10,MHCII Genes,darkgreen
+H2-Ab1,MHCII Genes,darkgreen
+H2-Aa,MHCII Genes,darkgreen
+H2-Eb1,MHCII Genes,darkgreen
+Mmp9,Proteases,hotpink
+Adora1,Other noteworthy genes,red
+Lyz2,Other immune genes,blue
+Ccr3,Chemokines and chemokine receptors,green
+Ccr5,Chemokines and chemokine receptors,green
+Ccr1l1,Chemokines and chemokine receptors,green
+C3,Other immune genes,blue
+Fcrls,Other immune genes,blue
+Lilra5,Other immune genes,blue
+Lilra6,Other immune genes,blue
+S100a6,Other immune genes,blue
+Msx1,Other immune genes,blue
+Clu,Other noteworthy genes,red
