@@ -356,34 +356,34 @@ tabPanel("Gene Set Enrichment",
 ##########################################################################################################
 ## Pattern Clustering
 ##########################################################################################################
+## eidted by bgao, add gene upload box and more plotting options	   
 tabPanel("Pattern Clustering",
 	fluidRow(
 		column(3,
 			wellPanel(
-			  radioButtons("pattern_options", label="Genes Used in Clustering", inline = TRUE, choices = c("DEGs","Upload"), selected = "DEGs"),
-			  conditionalPanel("input.pattern_options=='DEGs'",
-				  column(width=6,selectInput("pattern_fccut", label= "Choose Fold Change Threshold", choices= c("all"=0,"1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263)),
-				  column(width=6,selectInput("pattern_pvalcut", label= "Choose P-value Threshold", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05,"all"=1),selected=0.01)),
-				  radioButtons("pattern_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
-				  textOutput("patternfilteredgene"),
-				  tags$head(tags$style("#patternfilteredgene{color: red; font-size: 20px; font-style: italic; }"))
-			  ),
-			  conditionalPanel("input.pattern_options=='Upload'",
-			    textAreaInput("pattern_gene_list", "List of genes to label\n(UniqueID, Gene.Name or Protein.ID)", "", cols = 5, rows=6),
-			    textOutput("pattern_uploaded_genes"),
-			    tags$head(tags$style("#pattern_uploaded_genes{color: red; font-size: 20px; font-style: italic; }"))			    
-			  ),			
+
+			  radioButtons("pattern_subset",label="Use subset genes or upload your own subset?", choices=c("subset","upload genes"),inline = TRUE, selected="subset"),
+				conditionalPanel("input.pattern_subset=='subset'",
+				                 column(width=6,selectInput("pattern_fccut", label= "Choose Fold Change Threshold", choices= c("all"=0,"1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263)),
+				                 column(width=6,selectInput("pattern_pvalcut", label= "Choose P-value Threshold", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05,"all"=1),selected=0.01)),
+				                 radioButtons("pattern_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+				                 textOutput("patternfilteredgene")
+				),
+				conditionalPanel("input.pattern_subset=='upload genes'", textAreaInput("pattern_list", "list", "", cols = 5, rows=6)),
+				
+				tags$head(tags$style("#patternfilteredgene{color: red; font-size: 20px; font-style: italic; }")),
 				selectizeInput("pattern_group", label="Select Groups (u can re-order)", choices=NULL, multiple=TRUE),
 				radioButtons("ClusterMehtod", label="Cluster Mehtod", inline = FALSE, choices = c("Soft Clustering" = "mfuzz", "K-means" = "kmeans", "Partitioning Around Medoids (disabled)" = "pam")),
 				sliderInput("k", "Cluster Number:", min = 3, max = 12, step = 1, value = 6),
 				conditionalPanel("input.ClusterMehtod=='kmeans'",
 				                 sliderInput("pattern_font", "Font Size:", min = 12, max = 24, step = 2, value = 14),
-				                 sliderInput("pattern_Xangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45)
+				                 sliderInput("pattern_Xangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45),
+				                 sliderInput("pattern_ncol", label= "Column Number", min = 2, max = 6, step = 1, value = 3)
+				                 
 				                 ),
 				conditionalPanel("input.Pattern_tabset=='Data Table'",
-				                 radioButtons("DataFormat", label="Data Output Format:", inline = TRUE, choices = c("Wide Format" = "wide","Long Format" = "long"))
-				),
-				sliderInput("pattern_Ncol", "# of Plots per Row", min = 1, max = 5, step = 1, value = 3)	
+				                 radioButtons("DataFormat", label="Data Output Format:", inline = TRUE, choices = c("Wide Format" = "wide","Long Format" = "long"))             
+				)
 			)
 		),
 		column(9,
