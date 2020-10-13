@@ -122,7 +122,7 @@ pattern_out <- reactive({withProgress(message = 'Processing...', value = 0, {
 		p <- ggplot(subdatlong, aes(x=group, y=mean)) +
 		facet_wrap(~ cluster,scales = "free", ncol = input$pattern_ncol) +
 		geom_line(aes(group=UniqueID, color="UniqueID")) +
-		stat_summary(aes(color="red", group=1), fun.y=mean, geom="line", size=1.2, group=1)
+		stat_summary(aes(color="red", group=1), fun=mean, geom="line", size=1.2, group=1)
 		p <- p +	theme_bw(base_size = input$pattern_font) + ylab("expr") + xlab(" ") +
 		theme (plot.margin = unit(c(1,1,1,1), "cm"), axis.text.x = element_text(angle = input$pattern_Xangle),legend.position="none")
 		return(p)
@@ -138,7 +138,7 @@ pattern_out <- reactive({withProgress(message = 'Processing...', value = 0, {
 	#	p <- ggplot(subdatlong, aes(x=group, y=mean)) +
 	#	facet_wrap(~ cluster,scales = "free", ncol = 3) +
 	#	geom_line(aes(group=UniqueID, color="UniqueID")) +
-	#	stat_summary(aes(color="red", group=1), fun.y=mean, geom="line", size=1.2, group=1)
+	#	stat_summary(aes(color="red", group=1), fun=mean, geom="line", size=1.2, group=1)
 	#	p <- p + theme_bw(base_size = 14) + ylab("expr") + xlab(" ") +
 	#	theme (plot.margin = unit(c(1,1,1,1), "cm"), axis.text.x = element_text(angle = 45),legend.position="none")
 	#	return(p)
@@ -147,14 +147,8 @@ pattern_out <- reactive({withProgress(message = 'Processing...', value = 0, {
 		tmp_expr <- new('ExpressionSet', exprs = as.matrix(subdatwide))
 		m1 <- mestimate(tmp_expr)
 		cl <- mfuzz(tmp_expr, c = k, m = m1, iter.max = 200)
-		if (k <= 6) {
-			nrow = 2
-		} else if (k <= 9) {
-			nrow = 3
-		} else if (k <= 12) {
-			nrow = 4
-		}
-		mfuzz.plot(tmp_expr, cl = cl, mfrow = c(nrow, 3), min.mem=0.4, time.labels=colnames(subdatwide),new.window = FALSE)
+		nrow=ceiling(k/input$pattern_ncol)
+		mfuzz.plot(tmp_expr, cl = cl, mfrow = c(nrow, input$pattern_ncol), min.mem=0.4, time.labels=colnames(subdatwide),new.window = FALSE)
 		p = recordPlot()
 		return(p)
 	}

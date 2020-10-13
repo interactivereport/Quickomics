@@ -374,14 +374,12 @@ tabPanel("Pattern Clustering",
 				
 				tags$head(tags$style("#patternfilteredgene{color: red; font-size: 20px; font-style: italic; }")),
 				selectizeInput("pattern_group", label="Select Groups (u can re-order)", choices=NULL, multiple=TRUE),
-				radioButtons("ClusterMehtod", label="Cluster Mehtod", inline = FALSE, choices = c("Soft Clustering" = "mfuzz", "K-means" = "kmeans", "Partitioning Around Medoids (disabled)" = "pam")),
+				radioButtons("ClusterMehtod", label="Cluster Method", inline = FALSE, choices = c("Soft Clustering" = "mfuzz", "K-means" = "kmeans", "Partitioning Around Medoids (disabled)" = "pam")),
 				sliderInput("k", "Cluster Number:", min = 3, max = 12, step = 1, value = 6),
 				conditionalPanel("input.ClusterMehtod=='kmeans'",
-				                 sliderInput("pattern_font", "Font Size:", min = 12, max = 24, step = 2, value = 14),
-				                 sliderInput("pattern_Xangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45),
-				                 sliderInput("pattern_ncol", label= "Column Number", min = 2, max = 6, step = 1, value = 3)
-				                 
-				                 ),
+				                 sliderInput("pattern_font", "Font Size:", min = 12, max = 24, step = 1, value = 14),
+				                 sliderInput("pattern_Xangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45)),
+				sliderInput("pattern_ncol", label= "Column Number", min = 1, max = 6, step = 1, value = 3), 	                 
 				conditionalPanel("input.Pattern_tabset=='Data Table'",
 				                 radioButtons("DataFormat", label="Data Output Format:", inline = TRUE, choices = c("Wide Format" = "wide","Long Format" = "long"))             
 				)
