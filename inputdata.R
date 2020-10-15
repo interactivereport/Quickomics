@@ -82,6 +82,17 @@ output$html_geneset_hm=renderUI({
   HTML(html_geneset_hm())
 })
 
+html_geneset_exp<-reactive({
+  req(ProjectInfo)
+  Species=ProjectInfo$Species
+  string=str_replace(html_geneset_exp0, "human", Species)
+  return(string)
+})
+output$html_geneset_exp=renderUI({
+  HTML(html_geneset_exp())
+})
+
+
 output$ui.action <- renderUI({
   if (is.null(input$file1) || is.null(input$file2)) return()
   tagList(

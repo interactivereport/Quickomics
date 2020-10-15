@@ -46,6 +46,7 @@ suppressPackageStartupMessages({
   library(cowplot)
   library(circlize)
   library(ComplexHeatmap)
+  library(svglite)
 	#library(networkD3)
 	#library(Hmisc)
 })
@@ -122,10 +123,10 @@ var GENESET_DEFAULT_MAX = 500;
 </script>
 
 <div id="div_geneset3" class="div_geneset">
-<div class="my-3 dropdown input-group">
-<input id="Geneset_Name1" name="Geneset_Name1" placeholder="enter geneset name" type="text" class="form-control geneset_name dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" />
-<a href="Javascript: void(0);" class="input-group-addon btn btn-primary btn_browse_geneset"><i class="fas fa-search"></i></a>
-<div id="Dropdown1" class="geneset_dropdown dropdown-menu" aria-labelledby="Geneset_Name1"></div>
+<div class="my-3 dropdown btn-group">
+<input style="display: none;" id="Geneset_Name1" name="Geneset_Name1" placeholder="Start typing to enter or select a geneset" type="text" class="form-control form-control-sm geneset_name" />
+<a href="Javascript: void(0);" class="btn btn-primary btn_browse_geneset"><i class="fas fa-search"></i> Select Geneset</a>
+<div id="Dropdown1" class="geneset_dropdown dropdown-menu"></div>
 </div>
 
 <input class="geneset_id" type="hidden" id="Geneset_ID1" name="Geneset_ID1" />
@@ -135,6 +136,7 @@ var GENESET_DEFAULT_MAX = 500;
 '
 
 html_geneset_hm0 =str_replace_all(html_geneset0, "geneset_list", "geneset_list_hm")
+html_geneset_exp0 =str_replace_all(html_geneset0, "geneset_list", "geneset_list_exp")
 
 
 

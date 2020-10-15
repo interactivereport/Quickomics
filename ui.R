@@ -262,49 +262,55 @@ tabPanel("Heat Map",
 ## Protein Expression Plot
 ##########################################################################################################
 tabPanel("Expression Plot",
-	fluidRow(
-		column(3,
-			wellPanel(
-				conditionalPanel("input.expression_tabset=='Searched Expression Data' || input.expression_tabset=='Data Output' ",
-					selectizeInput("sel_gene",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search')),
-					radioButtons("SeparateOnePlot", label="Separate or One Plot", inline = TRUE, choices = c("Separate" = "Separate", "OnePlot" = "OnePlot"))
-					),
-				conditionalPanel("input.expression_tabset=='Browsing'",
-					column(width=6,selectInput("expression_fccut", label= "Choose Fold Change Threshold", choices= c("all"=0,"1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263)),
-					column(width=6,selectInput("expression_pvalcut", label= "Choose P-value Threshold", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05,"all"=1),selected=0.01)),
-					radioButtons("expression_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
-					selectInput("expression_test", label="Select Test", choices=NULL),
-					textOutput("expfilteredgene"),
-					tags$head(tags$style("#expfilteredgene{color: red; font-size: 20px; font-style: italic;}")),
-					column(width=6,selectInput("sel_page",	label="Select Page",	choices = NULL,	selected=1)),
-					column(width=6,selectInput("numperpage", label= "Plot Number per Page", choices= c("4"=4,"6"=6,"9"=9), selected=6))
-				),
-				selectizeInput("sel_group", label="Select Groups (u can re-order)", choices=NULL, multiple=TRUE),
-				radioButtons("sel_geneid",label="Select Gene Label",inline = TRUE, choices=""),
-				radioButtons("plotformat", label="Select Plot Format", inline = TRUE, choices = c("Box Plot" = "boxplot","Bar Plot" = "barplot", "violin" = "violin","line" = "line")),
-				radioButtons("IndividualPoint", label="Show Individual Point?", inline = TRUE, choices = c("YES" = "YES","NO" = "NO")),
-				radioButtons("ColPattern", label="Bar Colors", inline = TRUE, choices = c("palette" = "palette", "Single" = "Single")),
-				colourInput("barcol", "Select colour", "#0000FF", palette = "limited"),
-				selectInput("colpalette", label= "Select palette", choices=c("Accent"="Accent","Dark2"="Dark2","Paired"="Paired","Pastel1"="Pastel1","Pastel2"="Pastel2","Set1"="Set1","Set2"="Set2","Set3"="Set3"), selected="Dark2"),
-				sliderInput("expression_axisfontsize", "Axis Font Size:", min = 12, max = 28, step = 4, value = 16),
-				sliderInput("expression_titlefontsize", "Title Font Size:", min = 12, max = 28, step = 4, value = 16),
-				textInput("Ylab", "Y label", width = "100%"),
-				textInput("Xlab", "X label", width = "100%"),
-				sliderInput("Xangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45)
-				
-				
-			)
-		),
-		column(9,
-			tabsetPanel(id="expression_tabset",
-				tabPanel(title="Browsing",actionButton("browsing", "Save to output"),plotOutput("browsing", height=800)),
-				tabPanel(title="Searched Expression Data",actionButton("boxplot", "Save to output"),plotOutput("boxplot", height=800)),
-				tabPanel(title="Data Table",	DT::dataTableOutput("dat_dotplot")),
-				tabPanel(title="Result Table",	DT::dataTableOutput("res_dotplot")),
-				tabPanel(title="Help", htmlOutput('help_expression'))
-			)
-		)
-	)
+         fluidRow(
+           column(3,
+                  wellPanel(
+                    conditionalPanel("input.expression_tabset=='Searched Expression Data' || input.expression_tabset=='Data Output' ",
+                                    radioButtons("exp_subset",label="Genes used in plot", choices=c("Select", "Upload Genes", "Geneset"),inline = TRUE, selected="Select"),
+                                    conditionalPanel("input.exp_subset=='Upload Genes'", 
+                                        textAreaInput("exp_list", "Enter Gene List", "", cols = 5, rows=6)),
+                                    conditionalPanel("input.exp_subset=='Select'", 
+                                        selectizeInput("sel_gene",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search'))),
+                                    conditionalPanel("input.exp_subset=='Geneset'",   uiOutput("html_geneset_exp") ),  
+                                    radioButtons("SeparateOnePlot", label="Separate or One Plot", inline = TRUE, choices = c("Separate" = "Separate", "OnePlot" = "OnePlot"))),
+                    conditionalPanel("input.expression_tabset=='Browsing'",
+                                     column(width=6,selectInput("expression_fccut", label= "Choose Fold Change Threshold", choices= c("all"=0,"1.2"=0.263,"1.5"=0.584,"2"=1,"3"=1.585,"4"=2), selected = 0.263)),
+                                     column(width=6,selectInput("expression_pvalcut", label= "Choose P-value Threshold", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05,"all"=1),selected=0.01)),
+                                     radioButtons("expression_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+                                     selectInput("expression_test", label="Select Test", choices=NULL),
+                                     textOutput("expfilteredgene"),
+                                     tags$head(tags$style("#expfilteredgene{color: red; font-size: 20px; font-style: italic;}")),
+                                     column(width=6,selectInput("sel_page",	label="Select Page",	choices = NULL,	selected=1)),
+                                     column(width=6,selectInput("numperpage", label= "Plot Number per Page", choices= c("4"=4,"6"=6,"9"=9), selected=6))
+                    ),
+                    selectizeInput("sel_group", label="Select Groups (u can re-order)", choices=NULL, multiple=TRUE),
+                    radioButtons("sel_geneid",label="Select Gene Label",inline = TRUE, choices=""),
+                    radioButtons("plotformat", label="Select Plot Format", inline = TRUE, choices = c("Box Plot" = "boxplot","Bar Plot" = "barplot", "violin" = "violin","line" = "line")),
+                    radioButtons("IndividualPoint", label="Show Individual Point?", inline = TRUE, choices = c("YES" = "YES","NO" = "NO")),
+                    radioButtons("ColPattern", label="Bar Colors", inline = TRUE, choices = c("Palette" = "Palette", "Single" = "Single")),
+                    conditionalPanel("input.ColPattern=='Single'",
+                                     colourInput("barcol", "Select colour", "#1E90FF", palette = "limited")),
+                    conditionalPanel("input.ColPattern=='Palette'",
+                                     selectInput("colpalette", label= "Select palette", choices=c("Accent"="Accent","Dark2"="Dark2","Paired"="Paired","Pastel1"="Pastel1","Pastel2"="Pastel2","Set1"="Set1","Set2"="Set2","Set3"="Set3"), selected="Dark2")),
+                    sliderInput("expression_axisfontsize", "Axis Font Size:", min = 10, max = 28, step = 1, value = 16),
+                    sliderInput("expression_titlefontsize", "Title Font Size:", min = 12, max = 28, step = 1, value = 16),
+                    textInput("Ylab", "Y label", width = "100%"),
+                    textInput("Xlab", "X label", width = "100%"),
+                    sliderInput("Xangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45)
+                    #sliderInput("hjust", label= "hjust", min = 0, max = 1, step = 0.1, value = 1),
+                    #sliderInput("vjust", label= "vjust", min = 0, max = 1, step = 0.1, value = 0.5)
+                  )
+           ),
+           column(9,
+                  tabsetPanel(id="expression_tabset",
+                              tabPanel(title="Browsing",actionButton("browsing", "Save to output"),plotOutput("browsing", height=800)),
+                              tabPanel(title="Searched Expression Data",actionButton("boxplot", "Save to output"),uiOutput("plot.exp")),
+                              tabPanel(title="Data Table",	DT::dataTableOutput("dat_dotplot")),
+                              tabPanel(title="Result Table",	DT::dataTableOutput("res_dotplot")),
+                              tabPanel(title="Help", htmlOutput('help_expression'))
+                  )
+           )
+         )
 ),
 
 ##########################################################################################################
@@ -562,9 +568,14 @@ tabPanel("Venn Across Projects",
 ##########################################################################################################
 
 tabPanel("Output",
-  sliderInput("pdf_width", "Plot PDF File Page Width", min = 3, max = 30, step = 1, value = 12),
-  sliderInput("pdf_height", "Plot PDF File Page Height", min = 3, max = 50, step = 1, value = 8),
+  sliderInput("pdf_width", "Plot File Page Width", min = 3, max = 30, step = 1, value = 12),
+  sliderInput("pdf_height", "Plot File Page Height", min = 3, max = 50, step = 1, value = 8),
+  actionButton("clear_saved_plots", "Clear all saved plots"),
+  tags$br(),
+  htmlOutput("saved_plot_list"),
 	downloadButton('downloadPDF', 'Download PDF'),
+  downloadButton('downloadSVG', 'Download SVG (only for the first plot)'),
+  tags$br(),tags$hr(),
 	downloadButton('downloadXLSX', 'Download tables in .xlsx')
 	),
 
