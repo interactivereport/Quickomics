@@ -23,7 +23,7 @@ observe({
 	ProteinGeneName = DataIn$ProteinGeneName
 	results_long = DataIn$results_long
 	pattern_test = input$pattern_test
-	pattern_fccut = as.numeric(input$pattern_fccut)
+	pattern_fccut = log2(as.numeric(input$pattern_fccut))
 	pattern_pvalcut = as.numeric(input$pattern_pvalcut)
 
 	if (input$pattern_psel == "Padj") {
@@ -42,7 +42,7 @@ DatapatternReactive <- reactive({
 	DataIn = DataReactive()
 	ProteinGeneName = DataIn$ProteinGeneName
 	sample_group <- DataIn$sample_group
-	pattern_fccut = as.numeric(input$pattern_fccut)
+	pattern_fccut = log2(as.numeric(input$pattern_fccut))
 	pattern_pvalcut = as.numeric(input$pattern_pvalcut)
 	sel_group = input$pattern_group
 

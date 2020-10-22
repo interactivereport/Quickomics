@@ -47,6 +47,8 @@ suppressPackageStartupMessages({
   library(circlize)
   library(ComplexHeatmap)
   library(svglite)
+  library(pathview)
+  library(shinyjqui)
 	#library(networkD3)
 	#library(Hmisc)
 })
@@ -55,11 +57,11 @@ suppressPackageStartupMessages({
 load("db/hgnc.RData")
 load("db/kegg.pathways.RData")
 load("db/gmtlist.RData")
-
+load("db/mouse_rat_genes_map2_human.RData")
 
 
 source("scatter3d.R",local = TRUE)
-source("pathviewfun.R",local = TRUE)
+#source("pathviewfun.R",local = TRUE)
 source("mfuzzfun.R",local = TRUE)
 
 	

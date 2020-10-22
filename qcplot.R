@@ -43,6 +43,26 @@ observeEvent(input$PCA_refresh_sample, {
 })
 
 
+output$reorder_group=renderUI({
+  req(group_order())
+  orderInput(inputId = 'order_groups', label = 'Drag and Drop to Reorder Groups. (Use Select Groups at left menu to delete or add groups.)', items =group_order(), width="900px", item_class = 'primary' )
+})
+
+
+observeEvent(input$order_groups_order, {  
+  group_order(input$order_groups_order)
+})
+observeEvent(input$QC_groups, {  
+  group_order(input$QC_groups)
+})
+
+observeEvent(input$reset_group, {
+  DataIn = DataReactive()
+  allgroups = DataIn$groups
+  group_order(allgroups)
+})
+
+
 
 DataQCReactive <- reactive({
 	DataIn = DataReactive()

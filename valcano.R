@@ -25,7 +25,7 @@ observe({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   test_sel = input$valcano_test
-  FCcut = as.numeric(input$valcano_FCcut)
+  FCcut = log2(as.numeric(input$valcano_FCcut))
   pvalcut = as.numeric(input$valcano_pvalcut)
   if (input$valcano_psel == "Padj") {
     tmpdat = results_long %>% filter(test==test_sel & Adj.P.Value < pvalcut & abs(logFC) > FCcut) 
@@ -47,7 +47,7 @@ DataValcanoReactive <- reactive({
   results_long = DataIn$results_long
   
   test_sel = input$valcano_test
-  FCcut = as.numeric(input$valcano_FCcut)
+  FCcut = log2(as.numeric(input$valcano_FCcut))
   pvalcut = as.numeric(input$valcano_pvalcut)
   valcano_label = input$valcano_label
   
@@ -87,7 +87,7 @@ DataValcanoReactive1 <- reactive({
   results_long = DataIn$results_long
   
   test_sel = input$valcano_test1
-  FCcut = as.numeric(input$valcano_FCcut)
+  FCcut = log2(as.numeric(input$valcano_FCcut))
   pvalcut = as.numeric(input$valcano_pvalcut)
   valcano_label = input$valcano_label
   
@@ -126,7 +126,7 @@ DataValcanoReactive2 <- reactive({
   results_long = DataIn$results_long
   
   test_sel = input$valcano_test2
-  FCcut = as.numeric(input$valcano_FCcut)
+  FCcut = log2(as.numeric(input$valcano_FCcut))
   pvalcut = as.numeric(input$valcano_pvalcut)
   valcano_label = input$valcano_label
   
@@ -169,7 +169,7 @@ DataValcanoReactive2 <- reactive({
 output$volcanoplot <- renderPlotly({
   res = DataValcanoReactive()
   test_sel = input$valcano_test
-  FCcut = as.numeric(input$valcano_FCcut)
+  FCcut = log2(as.numeric(input$valcano_FCcut))
   pvalcut = as.numeric(input$valcano_pvalcut)
   if (input$valcano_psel == "Padj") {
     p <- ggplot(res, aes(x = logFC, y =-log10(Adj.P.Value), text=UniqueID))
@@ -201,7 +201,7 @@ volcanoplotstatic_out <- reactive({
   DataIn = DataReactive()
   ProteinGeneName = DataIn$ProteinGeneName
   test_sel = input$valcano_test
-  FCcut = as.numeric(input$valcano_FCcut)
+  FCcut = log2(as.numeric(input$valcano_FCcut))
   pvalcut = as.numeric(input$valcano_pvalcut)
   
   if (input$valcano_psel == "Padj") {
@@ -287,7 +287,7 @@ DEG_Compare <- reactive({
   ProteinGeneName = DataIn$ProteinGeneName  
   test_sel = input$valcano_test1
   test_sel2 = input$valcano_test2	
-  FCcut = as.numeric(input$valcano_FCcut)
+  FCcut = log2(as.numeric(input$valcano_FCcut))
   pvalcut = as.numeric(input$valcano_pvalcut)
   plotdata=merge(res, res2, by="UniqueID")
   plotdata<-plotdata%>%mutate(color1=paste(Sig.x, Sig.y))
@@ -306,7 +306,7 @@ DEG_Compare <- reactive({
   } else {
     p<-ggplot(plotdata, aes(x=logFC.x, y=logFC.y, color=color1,
                             size=-pmin(log10(P.Value.x),log10(P.Value.y)))) +
-      geom_point() +theme_bw(base_size = 20) +	  ylab(test_sel2) + xlab(test_sel)+
+      geom_point() +theme_bw(base_size = 20) +	  ylab(str_c("log2FC in ", test_sel2)) + xlab(str_c("log2FC in ", test_sel))+
       labs(color='Significance',size='-log10 min P.Value',
            title=cor_string) 
   }
@@ -359,6 +359,12 @@ DEG_Compare <- reactive({
     p=p+ geom_text_repel(data = data.label,  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
                          point.padding = unit(0.3, "lines"))
   }  
+  #browser() #debug
+  if (input$DEG_comp_XY=="Yes"){
+    XY_min=min(min(plotdata$logFC.x), min(plotdata$logFC.y))
+    XY_max=max(max(plotdata$logFC.x), max(plotdata$logFC.y))
+    p<-p+xlim(XY_min, XY_max)+ylim(XY_min, XY_max)
+  }
   return(p)
 })
 
@@ -380,7 +386,7 @@ DEG_data <-reactive ({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   test_sel = input$valcano_test
-  FCcut = as.numeric(input$valcano_FCcut)
+  FCcut = log2(as.numeric(input$valcano_FCcut))
   pvalcut = as.numeric(input$valcano_pvalcut)
   if (input$valcano_psel == "Padj") {
     tmpdat = results_long %>% filter(test==test_sel & Adj.P.Value < pvalcut & abs(logFC) > FCcut) 

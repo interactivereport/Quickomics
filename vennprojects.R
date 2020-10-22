@@ -91,7 +91,7 @@ observe({
 })
 
 DataVennPReactive <- reactive({
-	vennP_fccut =input$vennP_fccut
+	vennP_fccut =log2(input$vennP_fccut)
 	vennP_pvalcut = input$vennP_pvalcut
 	vennlist <- list()
 	fill <- list()

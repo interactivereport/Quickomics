@@ -8,238 +8,317 @@
 ##@Date : 5/16/2018
 ##@version 1.0
 ###########################################################################################################
-
+saved_plot_list<- reactiveVal()
 
 output$downloadPDF <- downloadHandler(
 	filename = function() {
 		paste("output_",Sys.Date(),".pdf", sep="")
 	},
 	content = function(file) { withProgress(message = 'This takes a minute or two',{ 
-		pdf(file = file, width=input$pdf_width, height=input$pdf_height)
+	  plots_checked=input$plots_checked
+	  validate(need(length(plots_checked)>0, message = "Please choose at least one saved plot."))
+	  Np=0
+	  pdf(file = file, width=input$pdf_width, height=input$pdf_height)
 		Title <- paste("","Data Analysis Report",sep=" ")
 		today <- Sys.Date() %>%	format(format="%m/%d/%Y")
 
-		
 		### Boxplot
-		if (!is.null(saved_plots$QCboxplot)){
-		print(saved_plots$QCboxplot)
+		if (!is.null(saved_plots$QCboxplot) & ("QC Boxplot" %in% plots_checked)){
+		  print(saved_plots$QCboxplot)
+		  Np=Np+1
 		}
 
 		## PCA
-		if (!is.null(saved_plots$pcaplot)){
+		if (!is.null(saved_plots$pcaplot) & ("PCA Plot" %in% plots_checked)){
 			print(saved_plots$pcaplot)
+		  Np=Np+1
 		}
 		#sample-to-sample distances
-		if (!is.null(saved_plots$SampleDistance)){
+		if (!is.null(saved_plots$SampleDistance) & ("Sample Distance Plot" %in% plots_checked) ){
 		  plot.new()
 			grid.draw(saved_plots$SampleDistance)
+			Np=Np+1
 		}
 		#Dendrograms
-		if (!is.null(saved_plots$Dendrograms)){
+		if (!is.null(saved_plots$Dendrograms) & ("Sample Dendrogram" %in% plots_checked)){
 			print(saved_plots$Dendrograms)
+		  Np=Np+1
 		}
 		###CV distribution
-		if (!is.null(saved_plots$histplot)){
+		if (!is.null(saved_plots$histplot) & ("CV Distribution" %in% plots_checked)){
 			print(saved_plots$histplot)
+		  Np=Np+1
 		}
 		### volcano plot
 		if (!is.null(saved_plots$volcano)){
 			for (i in 1:length(names(saved_plots$volcano))) {
 				p.name <- names(saved_plots$volcano)[i]
 				title_tmp <- paste("Volcano Plot (",p.name,")",sep="")
-			print(saved_plots$volcano[[p.name]])
+				if (title_tmp %in% plots_checked) {
+			    print(saved_plots$volcano[[p.name]])
+				  Np=Np+1
+				}
 			}
 		}
 		## Heatmap
-		if (!is.null(saved_plots$pheatmap2)){
+		if (!is.null(saved_plots$pheatmap2) & ("Heatmap" %in% plots_checked)){
 			draw(saved_plots$pheatmap2, merge_legend=T,auto_adjust = FALSE)
+		  Np=Np+1
 		}
 		## Heatmap
-		if (!is.null(saved_plots$staticheatmap)){
+		if (!is.null(saved_plots$staticheatmap)  & ("Heatmap layout2" %in% plots_checked)){
 			replayPlot(saved_plots$staticheatmap)
+		  Np=Np+1
 		}
 		### boxplot plot
 		if (!is.null(saved_plots$boxplot)){
 			for (i in 1:length(saved_plots$boxplot)) {
 				title_tmp <- paste("boxplot (",i,")",sep="")
-				print(saved_plots$boxplot[[i]])
+				if (title_tmp %in% plots_checked) {
+				  print(saved_plots$boxplot[[i]])
+				  Np=Np+1
+				}
 			}
 		}
 		### browing plot
 		if (!is.null(saved_plots$browsing)){
 			for (i in 1:length(saved_plots$browsing)) {
 				title_tmp <- paste("Browsing Plot (",i,")",sep="")
-				print(saved_plots$browsing[[i]])
+				if (title_tmp %in% plots_checked) {
+				  print(saved_plots$browsing[[i]])
+				  Np=Np+1
+				}
 			}
 		}
 		###vennDiagram
 		if (!is.null(saved_plots$vennDiagram)){
 			for (i in 1:length(saved_plots$vennDiagram)) {
 				title_tmp <- paste("vennDiagram (",i,")",sep="")
-				plot.new()
-				grid.draw(saved_plots$vennDiagram[[i]])
+				if (title_tmp %in% plots_checked) {
+				  plot.new()
+				  grid.draw(saved_plots$vennDiagram[[i]])
+				  Np=Np+1
+				}
 			}
 		}
 		## pattern
-		if (!is.null(saved_plots$patternkmeans)){
+		if (!is.null(saved_plots$patternkmeans) & ("attern Clustering (K-means)" %in% plots_checked)){
 			print(saved_plots$patternkmeans)
+		  Np=Np+1
 		}
-		if (!is.null(saved_plots$patternpam)){
+		if (!is.null(saved_plots$patternpam) & ("Pattern Clustering (PAM)" %in% plots_checked)){
 			print(saved_plots$patternpam)
+		  Np=Np+1
 		}
-		if (!is.null(saved_plots$patternmfuzz)){
+		if (!is.null(saved_plots$patternmfuzz) & ("Pattern Clustering (Soft Clustering)" %in% plots_checked)){
 			replayPlot(saved_plots$patternmfuzz)
+		  Np=Np+1
 		}
-
 		dev.off()
+		cat("Saved to PDF", Np, "graphs.\n")
 	})
 	},contentType = "application/pdf"
 
 )
 
 observeEvent(input$clear_saved_plots, {  
-  #cat("clear saved plots\n")
-  lapply(X = names(saved_plots), FUN = function(x) { saved_plots[[x]] <- NULL }) 
+  cat("clear saved plots\n")
+  lapply(X = names(saved_plots), FUN = function(x) { saved_plots[[x]] <- NULL })
+  #saved_plot_list(NULL)
+  #updateCheckboxGroupInput(session, "plots_checked", choices=saved_plot_list(), selected=saved_plot_list() )
 })
 
 #list all saved plots
-saved_plot_list<-reactive({
+observe({
   req(saved_plots)
- 
-  summary=str_c('<style type="text/css">
-.disc {
- list-style-type: disc;
-}
-</style>',
-"<h4>Saved Plots for Project: ", ProjectInfo$ShortName, "</h4><br>", '<ul class="disc">')
-  
-  ### Boxplot
+  summary=NULL
+
   if (!is.null(saved_plots$QCboxplot)){
-   summary=str_c(summary, '<li>QC Boxplot</li>')
+   summary=c(summary, 'QC Boxplot')
   }
   ## PCA
   if (!is.null(saved_plots$pcaplot)){
-    summary=str_c(summary, '<li>PCA Plot</li>')
+    summary=c(summary, 'PCA Plot')
   }
   #sample-to-sample distances
   if (!is.null(saved_plots$SampleDistance)){
-    summary=str_c(summary, '<li>Sample Distance Plot</li>')
+    summary=c(summary, 'Sample Distance Plot')
   }
   #Dendrograms
   if (!is.null(saved_plots$Dendrograms)){
-    summary=str_c(summary, '<li>Sample Dendrogram</li>')
+    summary=c(summary, 'Sample Dendrogram')
   }
   ###CV distribution
   if (!is.null(saved_plots$histplot)){
-    summary=str_c(summary, '<li>CV Distribution</li>')
+    summary=c(summary, 'CV Distribution')
   }
   ### volcano plot
   if (!is.null(saved_plots$volcano)){
     for (i in 1:length(names(saved_plots$volcano))) {
       p.name <- names(saved_plots$volcano)[i]
       title_tmp <- paste("Volcano Plot (",p.name,")",sep="")
-      summary=str_c(summary, '<li>', title_tmp, '</li>')
+      summary=c(summary,  title_tmp)
     }
   }
   ## Heatmap
   if (!is.null(saved_plots$pheatmap2)){
-    summary=str_c(summary, '<li>Heatmap</li>')
+    summary=c(summary, 'Heatmap')
   }
   ## Heatmap
   if (!is.null(saved_plots$staticheatmap)){
-    summary=str_c(summary, '<li>Heatmap layout2</li>')
+    summary=c(summary, 'Heatmap layout2')
   }
   ### boxplot plot
   if (!is.null(saved_plots$boxplot)){
     for (i in 1:length(saved_plots$boxplot)) {
       title_tmp <- paste("boxplot (",i,")",sep="")
-      summary=str_c(summary, '<li>', title_tmp, '</li>')
+      summary=c(summary, title_tmp)
     }
   }
   ### browing plot
   if (!is.null(saved_plots$browsing)){
     for (i in 1:length(saved_plots$browsing)) {
       title_tmp <- paste("Browsing Plot (",i,")",sep="")
-      summary=str_c(summary, '<li>', title_tmp, '</li>')
+      summary=c(summary, title_tmp)
     }
   }
   ###vennDiagram
   if (!is.null(saved_plots$vennDiagram)){
     for (i in 1:length(saved_plots$vennDiagram)) {
       title_tmp <- paste("vennDiagram (",i,")",sep="")
-      summary=str_c(summary, '<li>', title_tmp, '</li>')
+      summary=c(summary, title_tmp)
     }
   }
   ## pattern
   if (!is.null(saved_plots$patternkmeans)){
-    summary=str_c(summary, '<li>Pattern Clustering (K-means)</li>')
+    summary=c(summary, 'Pattern Clustering (K-means)')
   }
   if (!is.null(saved_plots$patternpam)){
-    summary=str_c(summary, '<li>Pattern Clustering (PAM)</li>')
+    summary=c(summary, 'Pattern Clustering (PAM)')
     
   }
   if (!is.null(saved_plots$patternmfuzz)){
-    summary=str_c(summary, '<li>Pattern Clustering (Soft Clustering)</li>')
+    summary=c(summary, 'Pattern Clustering (Soft Clustering)')
   }
-summary=str_c(summary, "</ul><br><hr>")
+  #cat("saved plots are:", summary, "\n")
+  saved_plot_list(summary)
+  if (is.null(summary)) {saved_plot_list(character(0))}
 })
-output$saved_plot_list=renderText(saved_plot_list())
+
+#output$saved_plot_list=renderText(saved_plot_list())
+observe({
+  #cat("update list in input", saved_plot_list(), "\n")
+  updateCheckboxGroupInput(session, "plots_checked", choices=saved_plot_list(), selected=saved_plot_list() )
+})
 
 
-
-##Product SVG for first Graph
+##Product SVG for first selected Graph
 output$downloadSVG <- downloadHandler(
   filename = function() {
     paste("output_",Sys.Date(),".svg", sep="")
   },
   content = function(file) { withProgress(message = 'This takes a minute or two',{ 
+    plots_checked=input$plots_checked
+    validate(need(length(plots_checked)>0, message = "Please choose at least one saved plot."))
+    Np=0
     svglite(file = file, width=input$pdf_width, height=input$pdf_height)
     Title <- paste("","Data Analysis Report",sep=" ")
     today <- Sys.Date() %>%	format(format="%m/%d/%Y")
-    
     ### Boxplot
-    if (!is.null(saved_plots$QCboxplot)){
+    if (!is.null(saved_plots$QCboxplot) & ("QC Boxplot" %in% plots_checked)){
       print(saved_plots$QCboxplot)
-    } else   if (!is.null(saved_plots$pcaplot)){
-      print(saved_plots$pcaplot)
-    } else if (!is.null(saved_plots$SampleDistance)){
-     # plot.new()
-      grid.draw(saved_plots$SampleDistance)
-    } else  if (!is.null(saved_plots$Dendrograms)){
-      print(saved_plots$Dendrograms)
-    } else if (!is.null(saved_plots$histplot)){
-      print(saved_plots$histplot)
-    } else if (!is.null(saved_plots$volcano)){
-        i=1
-        p.name <- names(saved_plots$volcano)[i]
-        title_tmp <- paste("Volcano Plot (",p.name,")",sep="")
-        print(saved_plots$volcano[[p.name]])
-    } else if (!is.null(saved_plots$pheatmap2)){
-      draw(saved_plots$pheatmap2, merge_legend=T,auto_adjust = FALSE)
-    } else if (!is.null(saved_plots$staticheatmap)){
-      replayPlot(saved_plots$staticheatmap)
-    } else if (!is.null(saved_plots$boxplot)){
-        i=1
-        title_tmp <- paste("boxplot (",i,")",sep="")
-        print(saved_plots$boxplot[[i]])
-    } else if (!is.null(saved_plots$browsing)){
-        i=1
-        title_tmp <- paste("Browsing Plot (",i,")",sep="")
-        print(saved_plots$browsing[[i]])
-    } else if (!is.null(saved_plots$vennDiagram)){
-        i=1
-        title_tmp <- paste("vennDiagram (",i,")",sep="")
-        #plot.new()
-        grid.draw(saved_plots$vennDiagram[[i]])
-    } else if (!is.null(saved_plots$patternkmeans)){
-      print(saved_plots$patternkmeans)
-    }  else if (!is.null(saved_plots$patternpam)){
-      print(saved_plots$patternpam)
-    } else if (!is.null(saved_plots$patternmfuzz)){
-      replayPlot(saved_plots$patternmfuzz)
+      Np=Np+1
     }
     
+    ## PCA
+    if (Np==0 & !is.null(saved_plots$pcaplot) & ("PCA Plot" %in% plots_checked)){
+      print(saved_plots$pcaplot)
+      Np=Np+1
+    }
+    #sample-to-sample distances
+    if (Np==0 & !is.null(saved_plots$SampleDistance) & ("Sample Distance Plot" %in% plots_checked) ){
+      plot.new()
+      grid.draw(saved_plots$SampleDistance)
+      Np=Np+1
+    }
+    #Dendrograms
+    if (Np==0 & !is.null(saved_plots$Dendrograms) & ("Sample Dendrogram" %in% plots_checked)){
+      print(saved_plots$Dendrograms)
+      Np=Np+1
+    }
+    ###CV distribution
+    if (Np==0 & !is.null(saved_plots$histplot) & ("CV Distribution" %in% plots_checked)){
+      print(saved_plots$histplot)
+      Np=Np+1
+    }
+    ### volcano plot
+    if (Np==0 & !is.null(saved_plots$volcano)){
+      for (i in 1:length(names(saved_plots$volcano))) {
+        p.name <- names(saved_plots$volcano)[i]
+        title_tmp <- paste("Volcano Plot (",p.name,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          print(saved_plots$volcano[[p.name]])
+          Np=Np+1
+        }
+      }
+    }
+    ## Heatmap
+    if (Np==0 & !is.null(saved_plots$pheatmap2) & ("Heatmap" %in% plots_checked)){
+      draw(saved_plots$pheatmap2, merge_legend=T,auto_adjust = FALSE)
+      Np=Np+1
+    }
+    ## Heatmap
+    if (Np==0 & !is.null(saved_plots$staticheatmap)  & ("Heatmap layout2" %in% plots_checked)){
+      replayPlot(saved_plots$staticheatmap)
+      Np=Np+1
+    }
+    ### boxplot plot
+    if (Np==0 & !is.null(saved_plots$boxplot)){
+      for (i in 1:length(saved_plots$boxplot)) {
+        title_tmp <- paste("boxplot (",i,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          print(saved_plots$boxplot[[i]])
+          Np=Np+1
+        }
+      }
+    }
+    ### browing plot
+    if (Np==0 & !is.null(saved_plots$browsing)){
+      for (i in 1:length(saved_plots$browsing)) {
+        title_tmp <- paste("Browsing Plot (",i,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          print(saved_plots$browsing[[i]])
+          Np=Np+1
+        }
+      }
+    }
+    ###vennDiagram
+    if (Np==0 & !is.null(saved_plots$vennDiagram)){
+      for (i in 1:length(saved_plots$vennDiagram)) {
+        title_tmp <- paste("vennDiagram (",i,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          plot.new()
+          grid.draw(saved_plots$vennDiagram[[i]])
+          Np=Np+1
+        }
+      }
+    }
+    ## pattern
+    if (Np==0 & !is.null(saved_plots$patternkmeans) & ("attern Clustering (K-means)" %in% plots_checked)){
+      print(saved_plots$patternkmeans)
+      Np=Np+1
+    }
+    if (Np==0 & !is.null(saved_plots$patternpam) & ("Pattern Clustering (PAM)" %in% plots_checked)){
+      print(saved_plots$patternpam)
+      Np=Np+1
+    }
+    if (Np==0 & !is.null(saved_plots$patternmfuzz) & ("Pattern Clustering (Soft Clustering)" %in% plots_checked)){
+      replayPlot(saved_plots$patternmfuzz)
+      Np=Np+1
+    }
     dev.off()
+    
+ 
   })
   },contentType = "application/svg"
   

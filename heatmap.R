@@ -42,7 +42,7 @@ output$plot.heatmap=renderUI({
 
 filteredGene=reactive({
   heatmap_test = input$heatmap_test
-  heatmap_fccut = as.numeric(input$heatmap_fccut)
+  heatmap_fccut =log2(as.numeric(input$heatmap_fccut))
   heatmap_pvalcut = as.numeric(input$heatmap_pvalcut)
   DataIn = DataReactive()
   results_long = DataIn$results_long
@@ -59,6 +59,10 @@ filteredGene=reactive({
 })
 
 output$heatmapfilteredgene <- renderText({ paste("Selected Genes:",length(filteredGene()),sep="")})
+
+observeEvent(input$heatmap_groups, {  
+  group_order(input$heatmap_groups)
+})
 
 
 DataHeatMapReactive <- reactive({

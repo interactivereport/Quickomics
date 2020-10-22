@@ -185,7 +185,8 @@ output$summary=renderText(project_summary())
 
 group_info<-reactive({
   DataIn <- DataReactive()
-  group_info<-DataIn$MetaData%>%group_by(group)%>%count()
+  group_info<-DataIn$MetaData%>%group_by(group)%>%dplyr::count()
+  #browser() #bebug
   return(t(group_info))
 })
 output$group_table=renderTable(group_info(), colnames=F)

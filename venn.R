@@ -31,7 +31,7 @@ observe({
 DataVennReactive <- reactive({
 	DataIn = DataReactive()
 	results_long = DataIn$results_long
-	venn_fccut = as.numeric(input$venn_fccut)
+	venn_fccut = log2(as.numeric(input$venn_fccut))
 	venn_pvalcut = as.numeric(input$venn_pvalcut)
 	
 	if (input$venn_psel == "Padj") {
@@ -114,6 +114,29 @@ vennDiagram_out <- reactive({
 
 output$vennDiagram <- renderPlot({
 	grid.draw(vennDiagram_out())
+})
+
+#show all DEGs from selected comparisons
+output$venn_DEG_Data <- DT::renderDataTable({
+  venndata <- DataVennReactive()
+  vennlist <- venndata$vennlist
+  allIDs=unique(unlist(vennlist))
+  dataIn=DataReactive()
+  data_results=dataIn$data_results
+  all_names=names(data_results)
+  tests=names(vennlist)
+  selCol=NULL
+  for (i in 1:length(tests)) {
+    sel_i=which(str_detect(all_names, regex(str_c("^", tests[i]), ignore_case=T)))
+    if (length(sel_i)>0) {selCol=c(selCol, sel_i)}
+  }
+  name_col=which(all_names %in% c("UniqueID", "Gene.Name") )
+  sel_row=which(data_results$UniqueID %in% allIDs)
+  #browser()#debug
+  DEG_outdata=data_results[sel_row, c(name_col, selCol)]
+  DEG_outdata[,sapply(DEG_outdata,is.numeric)] <- signif(DEG_outdata[,sapply(DEG_outdata,is.numeric)],3)
+  DT::datatable(DEG_outdata,extensions = 'Buttons',  options = list(
+    dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 20), rownames= FALSE)
 })
 
 observeEvent(input$vennDiagram, {

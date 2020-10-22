@@ -34,7 +34,7 @@ observe({
 	DataIn = DataReactive()
 	results_long = DataIn$results_long
 	expression_test =input$expression_test
-	expression_fccut = as.numeric(input$expression_fccut)
+	expression_fccut = log2(as.numeric(input$expression_fccut))
 	expression_pvalcut =  as.numeric(input$expression_pvalcut)
 	numperpage = as.numeric(input$numperpage)
 
@@ -111,17 +111,6 @@ DataExpReactive <- reactive({
 	return(list("data_long_tmp"=data_long_tmp,"result_long_tmp"= result_long_tmp, "tmpids"=tmpids))
 	     
 })
-
-output$plot.exp=renderUI({
-  req(DataExpReactive())
-  graph_height=800
-  if (input$SeparateOnePlot=="Separate") {
-    graph_height=max(800, ceiling(length(DataExpReactive()$tmpids)/3)*300 )
-    #cat("nrow: ", length(DataExpReactive()$tmpids), "\nheight: ", graph_height, "\n")
-  }
-  plotOutput("boxplot", height =graph_height)
-})
-
 
 output$dat_dotplot <- DT::renderDataTable({
 	data_long_tmp <- DataExpReactive()$data_long_tmp
@@ -215,15 +204,32 @@ boxplot_out <- reactive({
              axis.text.x = element_text(angle = input$Xangle, hjust=0.5, vjust=0.5),
              strip.text.x = element_text(size=input$expression_titlefontsize))
   }
-
+  if (input$exp_plot_Y_scale=="Manual") {
+    p <- p + ylim(input$exp_plot_Ymin, input$exp_plot_Ymax)
+  }
   p
-  
-  
 })
 
-output$boxplot <- renderPlot({
-boxplot_out()
-})
+observeEvent(input$plot_exp, {
+  #cat("output plots now\n")
+  withProgress(message = 'Making Expression Plot. It may take a while...', value = 0, {
+  output$plot.exp=renderUI({
+    D_exp<-isolate(DataExpReactive())
+    graph_height=800
+    if (input$SeparateOnePlot=="Separate") {
+      graph_height=max(800, ceiling(length(D_exp$tmpids)/3)*300 )
+   #   cat("nrow: ", length(D_exp$tmpids), "\nheight: ", graph_height, "\n")
+    }
+    plotOutput("boxplot", height =graph_height)
+  })
+  p_boxplot=isolate(boxplot_out())
+  output$boxplot <- renderPlot({
+    p_boxplot
+    })
+  })
+}) 
+
+
 
 observeEvent(input$boxplot, {
 	saved.num <- length(saved_plots$boxplot) + 1
@@ -242,7 +248,7 @@ browsing_out <- reactive({
 	sel_group=input$sel_group
 	group_order(sel_group)
 	expression_test = input$expression_test
-	expression_fccut =as.numeric(input$expression_fccut)
+	expression_fccut =log2(as.numeric(input$expression_fccut))
 	expression_pvalcut = as.numeric(input$expression_pvalcut)
 	numperpage = as.numeric(input$numperpage)
 
@@ -319,6 +325,9 @@ browsing_out <- reactive({
 	         axis.text.x = element_text(angle = input$Xangle, hjust=0.5, vjust=0.5),
 	         legend.position="none", 
 	         strip.text.x = element_text(size=input$expression_titlefontsize))
+	if (input$exp_plot_Y_scale=="Manual") {
+	  p <- p + ylim(input$exp_plot_Ymin, input$exp_plot_Ymax)
+	}
 	p
 
 })
