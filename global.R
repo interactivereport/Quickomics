@@ -32,14 +32,14 @@ suppressPackageStartupMessages({
 	library(RColorBrewer)
 	library(pheatmap)
 	library(rgl)
-	#library(car)
+	library(car)
 	library(colourpicker)
 	library(VennDiagram)
 	#library(pathview)
 	library(factoextra)
 	#library(cluster)
 	#library(NbClust)
-	#library(Mfuzz)
+	library(Mfuzz)
 	library(openxlsx)
 	#library(rmarkdown)
 	library(visNetwork)
@@ -60,9 +60,9 @@ load("db/gmtlist.RData")
 load("db/mouse_rat_genes_map2_human.RData")
 
 
-source("scatter3d.R",local = TRUE)
+#source("scatter3d.R",local = TRUE)
 #source("pathviewfun.R",local = TRUE)
-source("mfuzzfun.R",local = TRUE)
+#source("mfuzzfun.R",local = TRUE)
 
 	
 ORAEnrichment <- function(deGenes,universe, gsets, logFC, Dir="Both"){

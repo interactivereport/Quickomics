@@ -39,7 +39,7 @@ DataGenesetReactive <- reactive({
 	  filteredgene<-filteredgene%>%dplyr::mutate_at(.vars = vars(Gene.Name), .funs = toupper)
 	  terminals.df <- dplyr::inner_join(hgnc,filteredgene, by=c("symbol"="Gene.Name"))
 	  all_genes <- dplyr::filter(ProteinGeneName, !is.na(`Gene.Name`)) %>%
-	  dplyr::mutate_at(.vars = vars(Gene.Name), funs(toupper)) %>%
+	  dplyr::mutate(Gene.Name=toupper(Gene.Name)) %>%
 	  dplyr::select(one_of(c("Gene.Name"))) %>%
 	  dplyr::inner_join(hgnc,., by=c("symbol"="Gene.Name")) %>%
 	  dplyr::select(one_of(c("entrez_id"))) %>% collect %>%
