@@ -26,10 +26,11 @@ git clone https://github.com/YOUR-USERNAME/YOUR-REPOSITORY
 see more at https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/cloning-a-repository
 
 3) Launch the R Shiny App
+Check the follwing web links on various options to launch the app. 
 https://shiny.rstudio.com/articles/running.html
 https://shiny.rstudio.com/deploy/
 
-#Prepare your own data
+# Prepare your own data
 Two files are needed for each data set, one contains the main data, the other contains network information. For the pre-loaded datasets, the main data files are located in the data/ folder, while the network files are located at networkdata/ folder. 
 To prepare the main data files, you need to get the following
 1) 
