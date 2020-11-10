@@ -143,19 +143,18 @@ html_geneset_exp0 =str_replace_all(html_geneset0, "geneset_list", "geneset_list_
 
 
 footer_text = '
-<link rel="stylesheet" type="text/css" href="http://bxngs.com/bxomics/api/datatables/datatables.min.css"/>
-<script type="text/javascript" src="http://bxngs.com/bxomics/api/datatables/datatables.min.js"></script>
+<link rel="stylesheet" type="text/css" href="//bxngs.com/bxomics/api/datatables/datatables.min.css"/>
+<script type="text/javascript" src="//bxngs.com/bxomics/api/datatables/datatables.min.js"></script>
 <script type="text/javascript" src="url-input-binding.js"></script>
 
 <script>
-var GENESET_ACTION_URL = "http://bxngs.com/bxomics/api/genesets3.php";
+var GENESET_ACTION_URL = "//bxngs.com/bxomics/api/genesets3.php";
 var MY_SECRET_ID = /PHPSESSID=([^;]+)/i.test(document.cookie) ? RegExp.$1 : false;
 </script>
-<link href="http://bxngs.com/bxomics/api/genesets3.css" rel="stylesheet">
-<script src="http://bxngs.com/bxomics/api/genesets3.js"></script>
+<link href="//bxngs.com/bxomics/api/genesets3.css" rel="stylesheet">
+<script src="//bxngs.com/bxomics/api/genesets3.js"></script>
 <hr>
-<div align="center">
-<font size=3>Developed by: <a href="mailto:benbo.gao@biogen.com?Subject=PtxVis%20Question" target="_top">
-Benbo Gao</a>, <a href="http://www.biogen.com"> Biogen Inc.</a></font>
+<div align="center" style="font-size:11px">QuickOmics ver1.0 Developed by:
+Benbo Gao and Xinmin Zhang<br><a href="https://github.com/interactivereport/Quickomics/">More information at GitHub</a>
 </div>
 '
