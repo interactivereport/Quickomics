@@ -1,0 +1,13 @@
+num	den
+2mo_Het	2mo_WT
+2mo_KO	2mo_WT
+1yr_Het	1yr_WT
+1yr_KO	1yr_WT
+2yr_Het	2yr_WT
+2yr_KO	2yr_WT
+MG_Sal_KO	MG_Sal_WT
+MG_LPS_KO	MG_LPS_WT
+MG_LPS_Het	MG_LPS_WT
+PC_Sal_KO	PC_Sal_WT
+PC_LPS_KO	PC_LPS_WT
+PC_LPS_Het	PC_LPS_WT
