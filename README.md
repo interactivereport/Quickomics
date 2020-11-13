@@ -42,8 +42,8 @@ To prepare the main data files, you need to get the following R data frame objec
 
 The network data file can be computed from data_wide using Hmisc package. See the example R code mentioned below. 
 
-## R codes to preare Rdata file for RNA-Seq results
-We have provided the example input file (TPM and count matrix, sample grouping, comprisons to run) and the R code to generate the main data and network data files. These files are located at demo_files/Example_RNA_Seq_data/
+## R codes to preare Rdata file from RNA-Seq results
+We have provided the example input files (TPM and count matrix files, sample grouping file, comprisons list file) and the R code to generate the main data and network data files. These files are located at demo_files/Example_RNA_Seq_data/
 * rsem_TPM.txt The TPM matrix. One can also use RPKM matrix if needed. 
 * rsem_expected_count.txt  The gene count matrix. We used RSEM counts in this case, but gene count results from other packages (like kallisto, salmon, featureCount) can be used as well. 
 * grpID.txt This file lists the group information for each sample
