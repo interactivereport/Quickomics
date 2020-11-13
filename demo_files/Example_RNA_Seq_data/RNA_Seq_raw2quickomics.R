@@ -52,7 +52,7 @@ COM <- read.table(strCOM,header=T,sep="\t",as.is=T)
 Grp<-Grp[1:93] #only use first 93 samplses
 TPM<-TPM[, 1:93]
 rawC<-rawC[, 1:93]
-COM<-COM[1:6, ] #only choose the between genotype comparisons.
+COM<-COM[1:9, ] #only choose the between genotype comparisons.
 
 
 rownames(TPM) <- rownames(rawC) <- sapply(strsplit(rownames(rawC),"\\."),head,1) #remove version in Enesmbl geneID
