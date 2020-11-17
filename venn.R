@@ -144,6 +144,26 @@ observeEvent(input$vennDiagram, {
 	saved_plots$vennDiagram[[saved.num]] <- vennDiagram_out()
 })
 
+observeEvent(input$venn_DEG_data, {
+  venndata <- DataVennReactive()
+  vennlist <- venndata$vennlist
+  allIDs=unique(unlist(vennlist))
+  dataIn=DataReactive()
+  data_results=dataIn$data_results
+  all_names=names(data_results)
+  tests=names(vennlist)
+  selCol=NULL
+  for (i in 1:length(tests)) {
+    sel_i=which(str_detect(all_names, regex(str_c("^", tests[i]), ignore_case=T)))
+    if (length(sel_i)>0) {selCol=c(selCol, sel_i)}
+  }
+  name_col=which(all_names %in% c("UniqueID", "Gene.Name") )
+  sel_row=which(data_results$UniqueID %in% allIDs)
+  #browser()#debug
+  DEG_outdata=data_results[sel_row, c(name_col, selCol)]
+  saved_table$DEG_outdata_Venn <- DEG_outdata
+})
+
 
 output$SvennDiagram <- renderPlot({
 	print("drawing Venn diagram 2")

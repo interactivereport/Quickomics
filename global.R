@@ -98,7 +98,7 @@ ORAEnrichment <- function(deGenes,universe, gsets, logFC, Dir="Both"){
 	return(ora.stats)
 }
 
-options(shiny.maxRequestSize = 30*1024^2)  #upload files up to 30 Mb
+options(shiny.maxRequestSize = 40*1024^2)  #upload files up to 30 Mb
 
 
 mycss <- "select ~ .selectize-control .selectize-input {
