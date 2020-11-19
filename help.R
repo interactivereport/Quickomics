@@ -33,7 +33,7 @@ output$help_QC <- renderText({
 	<li>PCA Plot:  you can select principal components (up to 5) to visualize. The size of the concentration ellipse in normal probability is 95%</li>
 	<li>PCA 3D Plot: This plot can be captured by print screen from keyboard</li>
 	<li>PCA 3D Interactive: you can save this plot from upper-right menu</li>
-	<li>Sample-sample Distance:</li>
+	<li>Sample-sample Distance: the Euclidean distance computed from expression values of the samples</li>
 	<li>Box Plot: The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five number summary: minimum, first quartile, median, third quartile, and maximum</li>
 	<li>CV Distribution:  show the histogram of CV and median of CV for each group</li>
 	</ul>"

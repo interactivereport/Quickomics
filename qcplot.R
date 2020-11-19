@@ -142,7 +142,7 @@ QCboxplot_out <- reactive({
 		#scale_fill_manual(values=rep("Dark2", length(tmp_sampleid)))+
 
 		coord_cartesian(ylim = range(boxplot(tmp_data_long$expr, plot=FALSE)$stats)*c(.9, 1.2)) +
-		labs(x = "Sample", y = "Intensity") +
+		labs(x = "Sample", y = "Expression Level") +
 		theme_bw(base_size = 20) +
 		theme(legend.position = "bottom",	legend.title=element_blank(),	axis.text.x = element_blank(), plot.margin=unit(c(1,1,1,1),"mm")) +
 		guides(col = guide_legend(ncol = 8))
@@ -327,8 +327,11 @@ pheatmap_out <- reactive({
 	tmp_sampleid <- DataQC$tmp_sampleid
 	tmp_data_wide <- DataQC$tmp_data_wide
 	tmp_group = DataQC$tmp_group
-
-	annotation = data.frame("group" = tmp_group)
+	MetaData=DataQC$MetaData
+	
+	selCol=which(names(MetaData)==input$PCAcolorby)
+	annotation=MetaData[, selCol, drop=F]
+	#annotation = data.frame("group" = tmp_group)
 	rownames(annotation) <- tmp_sampleid
 
 	sampleDistMatrix <- as.matrix(dist(t(tmp_data_wide)))

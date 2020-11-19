@@ -198,7 +198,7 @@ boxplot_out <- reactive({
         geom_errorbar(aes(ymin=mean-se, ymax=mean+se), size=.3, width=.2, position=position_dodge(.9))
     }
     
-    p <- p + theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +
+    p <- p + theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +scale_fill_discrete(name=input$sel_geneid)+
       theme (plot.margin = unit(c(1,1,1,1), "cm"),
              text = element_text(size=input$expression_axisfontsize),
              axis.text.x = element_text(angle = input$Xangle, hjust=0.5, vjust=0.5),

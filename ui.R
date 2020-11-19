@@ -63,7 +63,8 @@ tabPanel("QC Plots",
 			  tags$style(mycss),
 				selectizeInput("QC_groups", label="Select Groups", choices=NULL, multiple=TRUE),
 				selectizeInput("QC_samples", label="Select Samples", choices=NULL,multiple=TRUE),
-				selectInput("PCAcolorby", label="Color By", choices=NULL),
+				conditionalPanel("input.groupplot_tabset=='PCA Plot' || input.groupplot_tabset=='PCA 3D Interactive' || input.groupplot_tabset=='PCA 3D Plot' || input.groupplot_tabset=='Sample-sample Distance' ",
+				                 selectInput("PCAcolorby", label="Color By", choices=NULL)),				
 				conditionalPanel("input.groupplot_tabset=='PCA Plot' || input.groupplot_tabset=='PCA 3D Interactive'",
 				                 selectInput("PCAshapeby", label="Shape By", choices=NULL)),
 				conditionalPanel("input.groupplot_tabset=='PCA Plot'",
@@ -148,9 +149,12 @@ tabPanel("Volcano Plot",
 				                    numericInput("Max_Pvalue", label= "Max -log10(Stat Value) in plot (use 0 for full range)", value=0, min=0) ),
 				  conditionalPanel( "input.valcano_tabset!='Volcano Plot (Interactive)'",
 				                    sliderInput("lfontsize", "Label Font Size:", min = 1, max = 10, step = 1, value = 4),
-				                    sliderInput("yfontsize", "Legend Font Size:", min = 8, max = 24, step = 1, value = 14)),
+				                    sliderInput("yfontsize", "Legend Font Size:", min = 8, max = 24, step = 1, value = 14),
+				                    radioButtons("rasterize", label="Rasterize plot", inline = TRUE, choices = c("Yes","No"), selected = "No")
+				                    ),
 				  conditionalPanel( "input.valcano_tabset=='DEGs in Two Comparisons'",
-				                    radioButtons("DEG_comp_XY", label="Make X and Y scale the same?", inline = TRUE, choices = c("Yes","No"), selected = "Yes"))
+				                    radioButtons("DEG_comp_XY", label="Make X and Y scale the same?", inline = TRUE, choices = c("Yes","No"), selected = "Yes"),
+				                    radioButtons("DEG_comp_color", label="Color DEGs using dot color?", inline = TRUE, choices = c("Yes","No"), selected = "Yes"))
 				                    
 				)
 			)
@@ -268,7 +272,7 @@ tabPanel("Expression Plot",
          fluidRow(
            column(3,
                   wellPanel(
-                    conditionalPanel("input.expression_tabset=='Searched Expression Data' || input.expression_tabset=='Data Output' ",
+                    conditionalPanel("input.expression_tabset=='Searched Expression Data' ",
                                     radioButtons("exp_subset",label="Genes used in plot", choices=c("Select", "Upload Genes", "Geneset"),inline = TRUE, selected="Select"),
                                     conditionalPanel("input.exp_subset=='Upload Genes'", 
                                         textAreaInput("exp_list", "Enter Gene List", "", cols = 5, rows=6)),
@@ -286,9 +290,12 @@ tabPanel("Expression Plot",
                                      column(width=6,selectInput("sel_page",	label="Select Page",	choices = NULL,	selected=1)),
                                      column(width=6,selectInput("numperpage", label= "Plot Number per Page", choices= c("4"=4,"6"=6,"9"=9), selected=6))
                     ),
+                    conditionalPanel("input.expression_tabset=='Searched Expression Data' || input.expression_tabset=='Browsing' ",
                     selectizeInput("sel_group", label="Select Groups (u can re-order)", choices=NULL, multiple=TRUE),
                     radioButtons("sel_geneid",label="Select Gene Label",inline = TRUE, choices=""),
                     radioButtons("plotformat", label="Select Plot Format", inline = TRUE, choices = c("Box Plot" = "boxplot","Bar Plot" = "barplot", "violin" = "violin","line" = "line")),
+                    conditionalPanel("input.SeparateOnePlot=='OnePlot'",
+                                     h5("OnePlot only supports Bar and Line plots")),
                     radioButtons("IndividualPoint", label="Show Individual Point?", inline = TRUE, choices = c("YES" = "YES","NO" = "NO")),
                     radioButtons("ColPattern", label="Bar Colors", inline = TRUE, choices = c("Palette" = "Palette", "Single" = "Single")),
                     conditionalPanel("input.ColPattern=='Single'",
@@ -305,7 +312,9 @@ tabPanel("Expression Plot",
                       column(width=6,numericInput("exp_plot_Ymin", label= "Y Min",  value = 0, step=0.1)),
                       column(width=6,numericInput("exp_plot_Ymax", label= "Y Max",  value=5, step=0.1))),
                     conditionalPanel("input.expression_tabset=='Searched Expression Data'",
-                      h5("After changing parameters, please click Plot/Refresh button in the plot panel to generate expression plot."))
+                      h5("After changing parameters, please click Plot/Refresh button in the plot panel to generate expression plot."))),
+                    conditionalPanel("input.expression_tabset=='Data Table' || input.expression_tabset=='Result Table' ",
+                      h5("Enter some genes in Search Expression Data tab, then come here for data table."))               
                     #sliderInput("hjust", label= "hjust", min = 0, max = 1, step = 0.1, value = 1),
                     #sliderInput("vjust", label= "vjust", min = 0, max = 1, step = 0.1, value = 0.5)
                   )
@@ -404,7 +413,7 @@ tabPanel("Pattern Clustering",
 				
 				tags$head(tags$style("#patternfilteredgene{color: red; font-size: 20px; font-style: italic; }")),
 				selectizeInput("pattern_group", label="Select Groups (re-order under QC tab)", choices=NULL, multiple=TRUE),
-				radioButtons("ClusterMehtod", label="Cluster Method", inline = FALSE, choices = c("Soft Clustering" = "mfuzz", "K-means" = "kmeans", "Partitioning Around Medoids (disabled)" = "pam")),
+				radioButtons("ClusterMehtod", label="Cluster Method", inline = FALSE, choices = c("Soft Clustering" = "mfuzz", "K-means" = "kmeans")),
 				sliderInput("k", "Cluster Number:", min = 3, max = 12, step = 1, value = 6),
 				conditionalPanel("input.ClusterMehtod=='kmeans'",
 				                 sliderInput("pattern_font", "Font Size:", min = 12, max = 24, step = 1, value = 14),

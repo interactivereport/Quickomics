@@ -49,6 +49,7 @@ suppressPackageStartupMessages({
   library(svglite)
   library(pathview)
   library(shinyjqui)
+  #library(ggrastr)
 	#library(networkD3)
 	#library(Hmisc)
 })

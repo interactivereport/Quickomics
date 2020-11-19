@@ -48,6 +48,7 @@ DataValcanoReactive <- reactive({
   
   test_sel = input$valcano_test
   FCcut = log2(as.numeric(input$valcano_FCcut))
+  FCcut_rd=round(FCcut*1000)/1000
   pvalcut = as.numeric(input$valcano_pvalcut)
   valcano_label = input$valcano_label
   
@@ -59,16 +60,16 @@ DataValcanoReactive <- reactive({
   res$labelgeneid = res[,match(valcano_label,colnames(res))]
   
   if (input$valcano_psel == "Padj") {
-    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut)
-    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut),	paste0("Padj","<",pvalcut, " & abs(logfc)>",FCcut))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd),	paste0("Padj","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
     }
   } else { 
-    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(logfc)>",FCcut)
-    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut),	paste0("pval","<",pvalcut, " & abs(logfc)>",FCcut))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(logfc)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
     }
@@ -88,6 +89,7 @@ DataValcanoReactive1 <- reactive({
   
   test_sel = input$valcano_test1
   FCcut = log2(as.numeric(input$valcano_FCcut))
+  FCcut_rd=round(FCcut*1000)/1000
   pvalcut = as.numeric(input$valcano_pvalcut)
   valcano_label = input$valcano_label
   
@@ -100,17 +102,17 @@ DataValcanoReactive1 <- reactive({
   
   if (input$valcano_psel == "Padj") {
     res$Sig[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = "X_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut)
-    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut),	paste0("Padj","<",pvalcut, " & abs(logfc)>",FCcut))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut),	paste0("Padj","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
     }
   } else { 
     res$Sig[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = "X_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(logfc)>",FCcut)
-    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut),	paste0("pval","<",pvalcut, " & abs(logfc)>",FCcut))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(logfc)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
     }
@@ -127,6 +129,7 @@ DataValcanoReactive2 <- reactive({
   
   test_sel = input$valcano_test2
   FCcut = log2(as.numeric(input$valcano_FCcut))
+  FCcut_rd=round(FCcut * 1000)/1000
   pvalcut = as.numeric(input$valcano_pvalcut)
   valcano_label = input$valcano_label
   
@@ -141,17 +144,17 @@ DataValcanoReactive2 <- reactive({
   
   if (input$valcano_psel == "Padj") {
     res$Sig[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = "Y_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut)
-    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut),	paste0("Padj","<",pvalcut, " & abs(logfc)>",FCcut))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd),	paste0("Padj","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
     }
   } else { 
     res$Sig[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = "Y_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(logfc)>",FCcut)
-    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut),	paste0("pval","<",pvalcut, " & abs(logfc)>",FCcut))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(logfc)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
     }
@@ -202,20 +205,21 @@ volcanoplotstatic_out <- reactive({
   ProteinGeneName = DataIn$ProteinGeneName
   test_sel = input$valcano_test
   FCcut = log2(as.numeric(input$valcano_FCcut))
+  FCcut_rd=round(FCcut*1000)/1000
   pvalcut = as.numeric(input$valcano_pvalcut)
   
   if (input$valcano_psel == "Padj") {
     p <- ggplot(res, aes(x = logFC, y = -log10(Adj.P.Value)))
     ylab <- "-log10(Padj.Value)"
     
-    filterSig <- paste0("Padj", "<", pvalcut, " & abs(logfc)>", FCcut)
+    filterSig <- paste0("Padj", "<", pvalcut, " & abs(logfc)>", FCcut_rd)
     data.label <- filter(res, color == filterSig)
     if (nrow(data.label) > input$Ngenes) {
       data.label <- top_n(data.label, input$Ngenes, abs(logFC_ori))
     }
     
   } else {
-    filterSig <- paste0("pval", "<", pvalcut, " & abs(logfc)>", FCcut)
+    filterSig <- paste0("pval", "<", pvalcut, " & abs(logfc)>",FCcut_rd)
     data.label <- filter(res, color == filterSig)
     if (nrow(data.label) > input$Ngenes) {
       data.label <- top_n(data.label, input$Ngenes, abs(logFC_ori))
@@ -262,8 +266,10 @@ volcanoplotstatic_out <- reactive({
   
   
   p <- p	+
-    scale_color_manual(values = c("grey", "green2","red2")) +
-    geom_point(aes(color = color)) +
+    scale_color_manual(values = c("grey", "green2","red2"))
+  if (input$rasterize=="Yes") { p<-p+geom_point_rast(aes(color = color), size=0.7, alpha=0.6, na.rm=TRUE, dev="ragg") 
+  } else {p<-p+geom_point(aes(color = color), size=0.7) }
+  p <- p+
     theme_bw(base_size = 20) +
     geom_hline(yintercept = -log10(pvalcut), colour="grey") +
     geom_vline(xintercept = c(-FCcut,0,FCcut), colour="grey") +
@@ -293,22 +299,28 @@ DEG_Compare <- reactive({
   plotdata<-plotdata%>%mutate(color1=paste(Sig.x, Sig.y))
   data.label <-plotdata%>%filter(str_detect(color1, "_sig"))%>%mutate(H_logFC=pmax(abs(logFC.x), abs(logFC.y))) #at least one is sig
   c.res<-cor.test(plotdata$logFC.x, plotdata$logFC.y, method="pearson",use = "complete.obs" )
-  cor_string=paste("Pearson corr:", signif(c.res$estimate, digits=3), "; p-value:", signif(c.res$p.value, digits=3), sep="")
+  cor_string=paste("Pearson corr:", format(c.res$estimate, digits=3), "; p-value:", format(c.res$p.value, digits=3), sep="")
+  #browser() #debug
   if (nrow(data.label) > input$Ngenes) {data.label <- top_n(data.label,input$Ngenes,H_logFC) }
   
   if (input$valcano_psel == "Padj") {
     p<-ggplot(plotdata, aes(x=logFC.x, y=logFC.y, color=color1,
-                            size=-pmin(log10(Adj.P.Value.x),log10(Adj.P.Value.y)))) +
-      geom_point() +theme_bw(base_size = 20) + ylab(str_c("log2FC in ", test_sel2)) + xlab(str_c("log2FC in ", test_sel))+
-      labs(color='Significance',size='-log10 min Adj.P.Value',
-           title=cor_string) 
+                            size=-pmin(log10(Adj.P.Value.x),log10(Adj.P.Value.y))))
+    if (input$rasterize=="Yes") { p<-p+geom_point_rast(na.rm=TRUE, dev="ragg") 
+    } else {p<-p+geom_point()}
+    p<-p+
+      theme_bw(base_size = 20) + ylab(str_c("log2FC in ", test_sel2)) + xlab(str_c("log2FC in ", test_sel))+
+      labs(color='Significance',size='-log10 min Adj.P.Value',title=cor_string) 
     
   } else {
     p<-ggplot(plotdata, aes(x=logFC.x, y=logFC.y, color=color1,
-                            size=-pmin(log10(P.Value.x),log10(P.Value.y)))) +
-      geom_point() +theme_bw(base_size = 20) + ylab(str_c("log2FC in ", test_sel2)) + xlab(str_c("log2FC in ", test_sel))+
-      labs(color='Significance',size='-log10 min P.Value',
-           title=cor_string) 
+                            size=-pmin(log10(P.Value.x),log10(P.Value.y)))) 
+    if (input$rasterize=="Yes") { p<-p+geom_point_rast(na.rm=TRUE, dev="ragg") 
+    } else {p<-p+geom_point()}
+    p<-p+
+      geom_point_rast(na.rm=TRUE, dev="ragg")+
+      theme_bw(base_size = 20) + ylab(str_c("log2FC in ", test_sel2)) + xlab(str_c("log2FC in ", test_sel))+
+      labs(color='Significance',size='-log10 min P.Value', title=cor_string) 
   }
   if (input$volcano_label=="Upload") {
     req(input$volcano_gene_list)
@@ -356,8 +368,13 @@ DEG_Compare <- reactive({
                          color="coral3",  point.padding = unit(0.3, "lines"))
   } #uploaded list use a different color. The DEGs colors are hard to see for un-sig genes.
   if (input$volcano_label=="DEGs") {
-    p=p+ geom_text_repel(data = data.label,  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
+    if (input$DEG_comp_color=="No") {
+    p=p+ geom_text_repel(data = data.label, color="coral3",  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
                          point.padding = unit(0.3, "lines"))
+    } else {
+    p=p+ geom_text_repel(data = data.label, aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
+                           point.padding = unit(0.3, "lines"))
+    }
   }  
   #browser() #debug
   if (input$DEG_comp_XY=="Yes"){
@@ -365,6 +382,8 @@ DEG_Compare <- reactive({
     XY_max=max(max(plotdata$logFC.x), max(plotdata$logFC.y))
     p<-p+xlim(XY_min, XY_max)+ylim(XY_min, XY_max)
   }
+  # Remove strange "a" from legend
+  p <- p + guides(color = guide_legend(override.aes = list(alpha = 1, size = 1)))
   return(p)
 })
 
