@@ -10,9 +10,9 @@ shiny >= v1.4.0.2
 ```R
 cran_packages=c("shiny", "shinythemes", "plotly", "reshape2", "tidyverse", "gplots", "ggpubr", "gridExtra", "ggrepel",
 "RcolorBrewer", "pheatmap", "rgl", "car", "colourpicker", "VennDiagram", "factoextra",  "openxlsx", "visNetwork",
-"cowplot", "circlize", "ComplexHeatmap", "svglite", "shinyjgui", "Hmisc")
+"cowplot", "circlize", "ComplexHeatmap", "svglite", "shinyjgui", "Hmisc", "ggrastr")
 #Note: Hmisc is not required to run the Shiny App, but is needed to prepare network data from expression matrix.
-install.packages(cran_packages, repos="http://cran.r-project.org/")
+install.packages(cran_packages, repos="http://cran.r-project.org/")  #choose repos based on your location if needed
 
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
