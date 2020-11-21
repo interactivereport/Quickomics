@@ -361,7 +361,8 @@ DEG_Compare <- reactive({
 
   p<-p+ scale_color_manual(values=c('X_sig Y_sig'='blue3','X_sig Y_notsig'='green3',
                                     'X_notsig Y_sig'='orange','X_notsig Y_notsig'='#00000022')) + 
-    theme(legend.position = "bottom", legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1))
+    theme(legend.position = "bottom", legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1), 
+          legend.box="vertical", legend.margin=margin())
   
   if (input$volcano_label=="Upload" || input$volcano_label=="Geneset" ) {
     p=p+ geom_text_repel(data = data.label,  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
