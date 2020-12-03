@@ -42,7 +42,7 @@ observe({
 })
 
 
-DataValcanoReactive <- reactive({
+DataVolcanoReactive <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   
@@ -83,7 +83,7 @@ DataValcanoReactive <- reactive({
   return(res)
 })
 
-DataValcanoReactive1 <- reactive({
+DataVolcanoReactive1 <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   
@@ -123,7 +123,7 @@ DataValcanoReactive1 <- reactive({
   return(res)
 })
 
-DataValcanoReactive2 <- reactive({
+DataVolcanoReactive2 <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   
@@ -170,7 +170,7 @@ DataValcanoReactive2 <- reactive({
 
 
 output$volcanoplot <- renderPlotly({
-  res = DataValcanoReactive()
+  res = DataVolcanoReactive()
   test_sel = input$volcano_test
   FCcut = log2(as.numeric(input$volcano_FCcut))
   pvalcut = as.numeric(input$volcano_pvalcut)
@@ -200,7 +200,7 @@ output$volcanoplot <- renderPlotly({
 })
 
 volcanoplotstatic_out <- reactive({
-  res = DataValcanoReactive()
+  res = DataVolcanoReactive()
   DataIn = DataReactive()
   ProteinGeneName = DataIn$ProteinGeneName
   test_sel = input$volcano_test
@@ -287,8 +287,8 @@ output$volcanoplotstatic <- renderPlot({
 })
 
 DEG_Compare <- reactive({
-  res = DataValcanoReactive1()
-  res2=DataValcanoReactive2()
+  res = DataVolcanoReactive1()
+  res2=DataVolcanoReactive2()
   DataIn = DataReactive()
   ProteinGeneName = DataIn$ProteinGeneName  
   test_sel = input$volcano_test1
