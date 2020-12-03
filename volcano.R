@@ -3,7 +3,7 @@
 ##
 ##This software belongs to Biogen Inc. All right reserved.
 ##update 09/04/2020 to add DEGs of TWo Comparisons, control on range of logFC and -log10(P-value)
-##@file: valcano.R
+##@file: volcano.R
 ##@Developer : Benbo Gao (benbo.gao@Biogen.com)
 ##@Date : 5/16/2018
 ##@version 1.0
@@ -13,26 +13,26 @@ observe({
   DataIn = DataReactive()
   tests = DataIn$tests
   ProteinGeneName = DataIn$ProteinGeneName
-  updateRadioButtons(session,'valcano_label', inline = TRUE, choices=colnames(ProteinGeneName)[-1], selected="Gene.Name")
-  updateSelectizeInput(session,'valcano_test',choices=tests, selected=tests[1])
-  updateSelectizeInput(session,'valcano_test1',choices=tests, selected=tests[1])
-  if (length(tests)>1) {	updateSelectizeInput(session,'valcano_test2',choices=tests, selected=tests[2])}
-  else {	updateSelectizeInput(session,'valcano_test2',choices=tests, selected=tests[1])}
+  updateRadioButtons(session,'volcano_label', inline = TRUE, choices=colnames(ProteinGeneName)[-1], selected="Gene.Name")
+  updateSelectizeInput(session,'volcano_test',choices=tests, selected=tests[1])
+  updateSelectizeInput(session,'volcano_test1',choices=tests, selected=tests[1])
+  if (length(tests)>1) {	updateSelectizeInput(session,'volcano_test2',choices=tests, selected=tests[2])}
+  else {	updateSelectizeInput(session,'volcano_test2',choices=tests, selected=tests[1])}
 })
 
 
 observe({
   DataIn = DataReactive()
   results_long = DataIn$results_long
-  test_sel = input$valcano_test
-  FCcut = log2(as.numeric(input$valcano_FCcut))
-  pvalcut = as.numeric(input$valcano_pvalcut)
-  if (input$valcano_psel == "Padj") {
+  test_sel = input$volcano_test
+  FCcut = log2(as.numeric(input$volcano_FCcut))
+  pvalcut = as.numeric(input$volcano_pvalcut)
+  if (input$volcano_psel == "Padj") {
     tmpdat = results_long %>% filter(test==test_sel & Adj.P.Value < pvalcut & abs(logFC) > FCcut) 
   } else {
     tmpdat = results_long %>% filter(test==test_sel & P.Value < pvalcut & abs(logFC) > FCcut) 
   }
-  output$valcano_filteredgene <- renderText({paste("Genes pass cutoff (DEGs):",nrow(tmpdat),sep="")})
+  output$volcano_filteredgene <- renderText({paste("Genes pass cutoff (DEGs):",nrow(tmpdat),sep="")})
   #browser()#debug
   DEGs=tmpdat$UniqueID
   if (nrow(tmpdat)>input$Ngenes) {
@@ -46,20 +46,20 @@ DataValcanoReactive <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   
-  test_sel = input$valcano_test
-  FCcut = log2(as.numeric(input$valcano_FCcut))
+  test_sel = input$volcano_test
+  FCcut = log2(as.numeric(input$volcano_FCcut))
   FCcut_rd=round(FCcut*1000)/1000
-  pvalcut = as.numeric(input$valcano_pvalcut)
-  valcano_label = input$valcano_label
+  pvalcut = as.numeric(input$volcano_pvalcut)
+  volcano_label = input$volcano_label
   
   res = results_long %>% filter(test==test_sel) %>%
     filter(!is.na(P.Value)) %>%
     dplyr::mutate (color="Not Significant") %>% as.data.frame() 
   
   
-  res$labelgeneid = res[,match(valcano_label,colnames(res))]
+  res$labelgeneid = res[,match(volcano_label,colnames(res))]
   
-  if (input$valcano_psel == "Padj") {
+  if (input$volcano_psel == "Padj") {
     res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut_rd)
     res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd)
     res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd),	paste0("Padj","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
@@ -87,20 +87,20 @@ DataValcanoReactive1 <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   
-  test_sel = input$valcano_test1
-  FCcut = log2(as.numeric(input$valcano_FCcut))
+  test_sel = input$volcano_test1
+  FCcut = log2(as.numeric(input$volcano_FCcut))
   FCcut_rd=round(FCcut*1000)/1000
-  pvalcut = as.numeric(input$valcano_pvalcut)
-  valcano_label = input$valcano_label
+  pvalcut = as.numeric(input$volcano_pvalcut)
+  volcano_label = input$volcano_label
   
   res = results_long %>% filter(test==test_sel) %>%
     filter(!is.na(P.Value)) %>%
     dplyr::mutate (color="Not Significant") %>% as.data.frame() 
   
-  res$labelgeneid = res[,match(valcano_label,colnames(res))]
+  res$labelgeneid = res[,match(volcano_label,colnames(res))]
   res$Sig="X_notsig"
   
-  if (input$valcano_psel == "Padj") {
+  if (input$volcano_psel == "Padj") {
     res$Sig[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = "X_sig"
     res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut_rd)
     res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd)
@@ -127,11 +127,11 @@ DataValcanoReactive2 <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   
-  test_sel = input$valcano_test2
-  FCcut = log2(as.numeric(input$valcano_FCcut))
+  test_sel = input$volcano_test2
+  FCcut = log2(as.numeric(input$volcano_FCcut))
   FCcut_rd=round(FCcut * 1000)/1000
-  pvalcut = as.numeric(input$valcano_pvalcut)
-  valcano_label = input$valcano_label
+  pvalcut = as.numeric(input$volcano_pvalcut)
+  volcano_label = input$volcano_label
   
   res = results_long %>% filter(test==test_sel) %>%
     filter(!is.na(P.Value)) %>%
@@ -139,10 +139,10 @@ DataValcanoReactive2 <- reactive({
   if (input$Max_logFC>0) {
     res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
   }
-  res$labelgeneid = res[,match(valcano_label,colnames(res))]
+  res$labelgeneid = res[,match(volcano_label,colnames(res))]
   res$Sig="Y_notsig"
   
-  if (input$valcano_psel == "Padj") {
+  if (input$volcano_psel == "Padj") {
     res$Sig[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = "Y_sig"
     res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut_rd)
     res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd)
@@ -171,10 +171,10 @@ DataValcanoReactive2 <- reactive({
 
 output$volcanoplot <- renderPlotly({
   res = DataValcanoReactive()
-  test_sel = input$valcano_test
-  FCcut = log2(as.numeric(input$valcano_FCcut))
-  pvalcut = as.numeric(input$valcano_pvalcut)
-  if (input$valcano_psel == "Padj") {
+  test_sel = input$volcano_test
+  FCcut = log2(as.numeric(input$volcano_FCcut))
+  pvalcut = as.numeric(input$volcano_pvalcut)
+  if (input$volcano_psel == "Padj") {
     p <- ggplot(res, aes(x = logFC, y =-log10(Adj.P.Value), text=UniqueID))
     ylab <- "-log10(Padj.Value)"
   } else {
@@ -203,12 +203,12 @@ volcanoplotstatic_out <- reactive({
   res = DataValcanoReactive()
   DataIn = DataReactive()
   ProteinGeneName = DataIn$ProteinGeneName
-  test_sel = input$valcano_test
-  FCcut = log2(as.numeric(input$valcano_FCcut))
+  test_sel = input$volcano_test
+  FCcut = log2(as.numeric(input$volcano_FCcut))
   FCcut_rd=round(FCcut*1000)/1000
-  pvalcut = as.numeric(input$valcano_pvalcut)
+  pvalcut = as.numeric(input$volcano_pvalcut)
   
-  if (input$valcano_psel == "Padj") {
+  if (input$volcano_psel == "Padj") {
     p <- ggplot(res, aes(x = logFC, y = -log10(Adj.P.Value)))
     ylab <- "-log10(Padj.Value)"
     
@@ -291,10 +291,10 @@ DEG_Compare <- reactive({
   res2=DataValcanoReactive2()
   DataIn = DataReactive()
   ProteinGeneName = DataIn$ProteinGeneName  
-  test_sel = input$valcano_test1
-  test_sel2 = input$valcano_test2	
-  FCcut = log2(as.numeric(input$valcano_FCcut))
-  pvalcut = as.numeric(input$valcano_pvalcut)
+  test_sel = input$volcano_test1
+  test_sel2 = input$volcano_test2	
+  FCcut = log2(as.numeric(input$volcano_FCcut))
+  pvalcut = as.numeric(input$volcano_pvalcut)
   plotdata=merge(res, res2, by="UniqueID")
   plotdata<-plotdata%>%mutate(color1=paste(Sig.x, Sig.y))
   data.label <-plotdata%>%filter(str_detect(color1, "_sig"))%>%mutate(H_logFC=pmax(abs(logFC.x), abs(logFC.y))) #at least one is sig
@@ -303,7 +303,7 @@ DEG_Compare <- reactive({
   #browser() #debug
   if (nrow(data.label) > input$Ngenes) {data.label <- top_n(data.label,input$Ngenes,H_logFC) }
   
-  if (input$valcano_psel == "Padj") {
+  if (input$volcano_psel == "Padj") {
     p<-ggplot(plotdata, aes(x=logFC.x, y=logFC.y, color=color1,
                             size=-pmin(log10(Adj.P.Value.x),log10(Adj.P.Value.y))))
     if (input$rasterize=="Yes") { p<-p+geom_point_rast(na.rm=TRUE, dev="ragg") 
@@ -392,23 +392,23 @@ output$DEG_Compare <- renderPlot({
   DEG_Compare()
 })
 
-observeEvent(input$valcano, {
-  test_sel = input$valcano_test
+observeEvent(input$volcano, {
+  test_sel = input$volcano_test
   saved_plots$volcano[[test_sel]] <- volcanoplotstatic_out()
 })
 
 observeEvent(input$DEG_comp, {
-  test_sel = paste(input$valcano_test1, "vs", input$valcano_test2)
+  test_sel = paste(input$volcano_test1, "vs", input$volcano_test2)
   saved_plots$volcano[[test_sel]] <- DEG_Compare()
 })
 
 DEG_data <-reactive ({
   DataIn = DataReactive()
   results_long = DataIn$results_long
-  test_sel = input$valcano_test
-  FCcut = log2(as.numeric(input$valcano_FCcut))
-  pvalcut = as.numeric(input$valcano_pvalcut)
-  if (input$valcano_psel == "Padj") {
+  test_sel = input$volcano_test
+  FCcut = log2(as.numeric(input$volcano_FCcut))
+  pvalcut = as.numeric(input$volcano_pvalcut)
+  if (input$volcano_psel == "Padj") {
     tmpdat = results_long %>% filter(test==test_sel & Adj.P.Value < pvalcut & abs(logFC) > FCcut) 
   } else {
     tmpdat = results_long %>% filter(test==test_sel & P.Value < pvalcut & abs(logFC) > FCcut) 
@@ -416,7 +416,7 @@ DEG_data <-reactive ({
   tmpdat[,sapply(tmpdat,is.numeric)] <- signif(tmpdat[,sapply(tmpdat,is.numeric)],3)
   return(tmpdat)
 })
-output$valcanoData <- DT::renderDataTable({
+output$volcanoData <- DT::renderDataTable({
   DT::datatable(DEG_data(),extensions = 'Buttons',  options = list(
     dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 20), rownames= FALSE)
 })
