@@ -13,7 +13,7 @@ observe({
   DataIn = DataReactive()
   tests = DataIn$tests
   ProteinGeneName = DataIn$ProteinGeneName
-  updateRadioButtons(session,'volcano_label', inline = TRUE, choices=colnames(ProteinGeneName)[-1], selected="Gene.Name")
+  updateRadioButtons(session,'volcano_genelabel', inline = TRUE, choices=colnames(ProteinGeneName)[-1], selected="Gene.Name")
   updateSelectizeInput(session,'volcano_test',choices=tests, selected=tests[1])
   updateSelectizeInput(session,'volcano_test1',choices=tests, selected=tests[1])
   if (length(tests)>1) {	updateSelectizeInput(session,'volcano_test2',choices=tests, selected=tests[2])}
@@ -42,7 +42,7 @@ observe({
 })
 
 
-DataVolcanoReactive <- reactive({
+DatavolcanoReactive <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   
@@ -50,14 +50,14 @@ DataVolcanoReactive <- reactive({
   FCcut = log2(as.numeric(input$volcano_FCcut))
   FCcut_rd=round(FCcut*1000)/1000
   pvalcut = as.numeric(input$volcano_pvalcut)
-  volcano_label = input$volcano_label
+  volcano_genelabel = input$volcano_genelabel
   
   res = results_long %>% filter(test==test_sel) %>%
     filter(!is.na(P.Value)) %>%
     dplyr::mutate (color="Not Significant") %>% as.data.frame() 
   
   
-  res$labelgeneid = res[,match(volcano_label,colnames(res))]
+  res$labelgeneid = res[,match(volcano_genelabel,colnames(res))]
   
   if (input$volcano_psel == "Padj") {
     res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut_rd)
@@ -83,7 +83,7 @@ DataVolcanoReactive <- reactive({
   return(res)
 })
 
-DataVolcanoReactive1 <- reactive({
+DatavolcanoReactive1 <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   
@@ -91,13 +91,13 @@ DataVolcanoReactive1 <- reactive({
   FCcut = log2(as.numeric(input$volcano_FCcut))
   FCcut_rd=round(FCcut*1000)/1000
   pvalcut = as.numeric(input$volcano_pvalcut)
-  volcano_label = input$volcano_label
+  volcano_genelabel = input$volcano_genelabel
   
   res = results_long %>% filter(test==test_sel) %>%
     filter(!is.na(P.Value)) %>%
     dplyr::mutate (color="Not Significant") %>% as.data.frame() 
   
-  res$labelgeneid = res[,match(volcano_label,colnames(res))]
+  res$labelgeneid = res[,match(volcano_genelabel,colnames(res))]
   res$Sig="X_notsig"
   
   if (input$volcano_psel == "Padj") {
@@ -123,7 +123,7 @@ DataVolcanoReactive1 <- reactive({
   return(res)
 })
 
-DataVolcanoReactive2 <- reactive({
+DatavolcanoReactive2 <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
   
@@ -131,7 +131,7 @@ DataVolcanoReactive2 <- reactive({
   FCcut = log2(as.numeric(input$volcano_FCcut))
   FCcut_rd=round(FCcut * 1000)/1000
   pvalcut = as.numeric(input$volcano_pvalcut)
-  volcano_label = input$volcano_label
+  volcano_genelabel = input$volcano_genelabel
   
   res = results_long %>% filter(test==test_sel) %>%
     filter(!is.na(P.Value)) %>%
@@ -139,7 +139,7 @@ DataVolcanoReactive2 <- reactive({
   if (input$Max_logFC>0) {
     res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
   }
-  res$labelgeneid = res[,match(volcano_label,colnames(res))]
+  res$labelgeneid = res[,match(volcano_genelabel,colnames(res))]
   res$Sig="Y_notsig"
   
   if (input$volcano_psel == "Padj") {
@@ -170,7 +170,7 @@ DataVolcanoReactive2 <- reactive({
 
 
 output$volcanoplot <- renderPlotly({
-  res = DataVolcanoReactive()
+  res = DatavolcanoReactive()
   test_sel = input$volcano_test
   FCcut = log2(as.numeric(input$volcano_FCcut))
   pvalcut = as.numeric(input$volcano_pvalcut)
@@ -200,7 +200,7 @@ output$volcanoplot <- renderPlotly({
 })
 
 volcanoplotstatic_out <- reactive({
-  res = DataVolcanoReactive()
+  res = DatavolcanoReactive()
   DataIn = DataReactive()
   ProteinGeneName = DataIn$ProteinGeneName
   test_sel = input$volcano_test
@@ -287,8 +287,8 @@ output$volcanoplotstatic <- renderPlot({
 })
 
 DEG_Compare <- reactive({
-  res = DataVolcanoReactive1()
-  res2=DataVolcanoReactive2()
+  res = DatavolcanoReactive1()
+  res2=DatavolcanoReactive2()
   DataIn = DataReactive()
   ProteinGeneName = DataIn$ProteinGeneName  
   test_sel = input$volcano_test1
@@ -358,11 +358,10 @@ DEG_Compare <- reactive({
     data.label<-plotdata%>%filter(UniqueID %in% uploadlist)
   }
   
-
+  
   p<-p+ scale_color_manual(values=c('X_sig Y_sig'='blue3','X_sig Y_notsig'='green3',
                                     'X_notsig Y_sig'='orange','X_notsig Y_notsig'='#00000022')) + 
-    theme(legend.position = "bottom", legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1), 
-          legend.box="vertical", legend.margin=margin())
+    theme(legend.position = "bottom", legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1))
   
   if (input$volcano_label=="Upload" || input$volcano_label=="Geneset" ) {
     p=p+ geom_text_repel(data = data.label,  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
@@ -370,10 +369,10 @@ DEG_Compare <- reactive({
   } #uploaded list use a different color. The DEGs colors are hard to see for un-sig genes.
   if (input$volcano_label=="DEGs") {
     if (input$DEG_comp_color=="No") {
-    p=p+ geom_text_repel(data = data.label, color="coral3",  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
-                         point.padding = unit(0.3, "lines"))
+      p=p+ geom_text_repel(data = data.label, color="coral3",  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
+                           point.padding = unit(0.3, "lines"))
     } else {
-    p=p+ geom_text_repel(data = data.label, aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
+      p=p+ geom_text_repel(data = data.label, aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
                            point.padding = unit(0.3, "lines"))
     }
   }  

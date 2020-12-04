@@ -13,7 +13,7 @@
 function(input, output, session) {
 source("inputdata.R",local = TRUE)
 source("qcplot.R",local=TRUE)
-source("valcano.R",local = TRUE)
+source("volcano.R",local = TRUE)
 source("heatmap.R",local = TRUE)
 source("barboxplot.R",local = TRUE)
 source("venn.R",local = TRUE)
