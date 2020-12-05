@@ -102,7 +102,7 @@ output$downloadPDF <- downloadHandler(
 			}
 		}
 		## pattern
-		if (!is.null(saved_plots$patternkmeans) & ("attern Clustering (K-means)" %in% plots_checked)){
+		if (!is.null(saved_plots$patternkmeans) & ("Pattern Clustering (K-means)" %in% plots_checked)){
 			print(saved_plots$patternkmeans)
 		  Np=Np+1
 		}
@@ -304,7 +304,7 @@ output$downloadSVG <- downloadHandler(
       }
     }
     ## pattern
-    if (Np==0 & !is.null(saved_plots$patternkmeans) & ("attern Clustering (K-means)" %in% plots_checked)){
+    if (Np==0 & !is.null(saved_plots$patternkmeans) & ("Pattern Clustering (K-means)" %in% plots_checked)){
       print(saved_plots$patternkmeans)
       Np=Np+1
     }
