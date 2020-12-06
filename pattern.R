@@ -123,7 +123,7 @@ pattern_out <- reactive({withProgress(message = 'Processing...', value = 0, {
 		facet_wrap(~ cluster,scales = "free", ncol = input$pattern_ncol) +
 		geom_line(aes(group=UniqueID, color="UniqueID")) +
 		stat_summary(aes(color="red", group=1), fun=mean, geom="line", size=1.2, group=1)
-		p <- p +	theme_bw(base_size = input$pattern_font) + ylab("expr") + xlab(" ") +
+		p <- p +	theme_bw(base_size = input$pattern_font) + ylab("Expression") + xlab(" ") +
 		theme (plot.margin = unit(c(1,1,1,1), "cm"), axis.text.x = element_text(angle = input$pattern_Xangle),legend.position="none")
 		return(p)
 	#} else if (input$ClusterMehtod == "pam") {
