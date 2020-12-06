@@ -279,6 +279,7 @@ volcanoplotstatic_out <- reactive({
   if (input$volcano_label!="None") {
     p=p+geom_text_repel(data = data.label,  aes(label=labelgeneid),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	point.padding = unit(0.3, "lines"))
   }
+  p <- p + guides(color = guide_legend(override.aes = list(alpha = 1, size = 4)))
   return(p)
 })
 
@@ -361,7 +362,7 @@ DEG_Compare <- reactive({
   
   p<-p+ scale_color_manual(values=c('X_sig Y_sig'='blue3','X_sig Y_notsig'='green3',
                                     'X_notsig Y_sig'='orange','X_notsig Y_notsig'='#00000022')) + 
-    theme(legend.position = "bottom", legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1))
+    theme(legend.position=input$vlegendpos, legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1))
   
   if (input$volcano_label=="Upload" || input$volcano_label=="Geneset" ) {
     p=p+ geom_text_repel(data = data.label,  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
@@ -383,7 +384,7 @@ DEG_Compare <- reactive({
     p<-p+xlim(XY_min, XY_max)+ylim(XY_min, XY_max)
   }
   # Remove strange "a" from legend
-  p <- p + guides(color = guide_legend(override.aes = list(alpha = 1, size = 1)))
+  p <- p + guides(color = guide_legend(override.aes = list(alpha = 1, size = 4)))
   return(p)
 })
 

@@ -150,6 +150,7 @@ tabPanel("Volcano Plot",
 				  conditionalPanel( "input.volcano_tabset!='Volcano Plot (Interactive)'",
 				                    sliderInput("lfontsize", "Label Font Size:", min = 1, max = 10, step = 1, value = 4),
 				                    sliderInput("yfontsize", "Legend Font Size:", min = 8, max = 24, step = 1, value = 14),
+				                    radioButtons("vlegendpos", label="Legend position", inline = TRUE, choices = c("bottom","right"), selected = "bottom"),
 				                    radioButtons("rasterize", label="Rasterize plot", inline = TRUE, choices = c("Yes","No"), selected = "No")
 				                    ),
 				  conditionalPanel( "input.volcano_tabset=='DEGs in Two Comparisons'",
