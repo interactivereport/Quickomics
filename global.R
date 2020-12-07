@@ -146,7 +146,6 @@ html_geneset_exp0 =str_replace_all(html_geneset0, "geneset_list", "geneset_list_
 footer_text = '
 <link rel="stylesheet" type="text/css" href="//bxngs.com/bxomics/api/datatables/datatables.min.css"/>
 <script type="text/javascript" src="//bxngs.com/bxomics/api/datatables/datatables.min.js"></script>
-<script type="text/javascript" src="url-input-binding.js"></script>
 
 <script>
 var GENESET_ACTION_URL = "//bxngs.com/bxomics/api/genesets3.php";
