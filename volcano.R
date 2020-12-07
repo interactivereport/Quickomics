@@ -60,16 +60,16 @@ DatavolcanoReactive <- reactive({
   res$labelgeneid = res[,match(volcano_genelabel,colnames(res))]
   
   if (input$volcano_psel == "Padj") {
-    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd),	paste0("Padj","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("Padj","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
     }
   } else { 
-    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(logfc)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
     }
@@ -102,17 +102,17 @@ DatavolcanoReactive1 <- reactive({
   
   if (input$volcano_psel == "Padj") {
     res$Sig[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = "X_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut),	paste0("Padj","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut),	paste0("Padj","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
     }
   } else { 
     res$Sig[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = "X_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(logfc)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
     }
@@ -144,17 +144,17 @@ DatavolcanoReactive2 <- reactive({
   
   if (input$volcano_psel == "Padj") {
     res$Sig[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = "Y_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(logfc)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(logfc)<",FCcut_rd),	paste0("Padj","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("Padj","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
     }
   } else { 
     res$Sig[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = "Y_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(logfc)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(logfc)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(logfc)>",FCcut_rd))))
+    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
     if (input$Max_Pvalue>0) {
       res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
     }
@@ -212,14 +212,14 @@ volcanoplotstatic_out <- reactive({
     p <- ggplot(res, aes(x = logFC, y = -log10(Adj.P.Value)))
     ylab <- "-log10(Padj.Value)"
     
-    filterSig <- paste0("Padj", "<", pvalcut, " & abs(logfc)>", FCcut_rd)
+    filterSig <- paste0("Padj", "<", pvalcut, " & abs(log2FC)>", FCcut_rd)
     data.label <- filter(res, color == filterSig)
     if (nrow(data.label) > input$Ngenes) {
       data.label <- top_n(data.label, input$Ngenes, abs(logFC_ori))
     }
     
   } else {
-    filterSig <- paste0("pval", "<", pvalcut, " & abs(logfc)>",FCcut_rd)
+    filterSig <- paste0("pval", "<", pvalcut, " & abs(log2FC)>",FCcut_rd)
     data.label <- filter(res, color == filterSig)
     if (nrow(data.label) > input$Ngenes) {
       data.label <- top_n(data.label, input$Ngenes, abs(logFC_ori))
