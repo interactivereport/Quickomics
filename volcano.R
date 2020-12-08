@@ -275,7 +275,7 @@ volcanoplotstatic_out <- reactive({
     geom_vline(xintercept = c(-FCcut,0,FCcut), colour="grey") +
     ylab(ylab) + xlab("log2 Fold Change") +
     ggtitle(test_sel) +
-    theme(legend.position = "bottom", legend.text=element_text(size=input$yfontsize))
+    theme(legend.position = input$vlegendpos, legend.text=element_text(size=input$yfontsize))
   if (input$volcano_label!="None") {
     p=p+geom_text_repel(data = data.label,  aes(label=labelgeneid),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	point.padding = unit(0.3, "lines"))
   }
