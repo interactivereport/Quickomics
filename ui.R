@@ -9,6 +9,7 @@
 ##@version 3.0
 ###########################################################################################################
 tagList(tags$head(tags$style(type = 'text/css','.navbar-brand{display:none;}')),
+useShinyjs(),
 fluidPage(theme = shinytheme("cerulean"),
           windowTitle = "Quickomics",
           titlePanel(
