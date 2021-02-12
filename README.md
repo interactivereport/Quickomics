@@ -8,7 +8,7 @@ shiny >= v1.4.0.2
 # Installation
 ### 1) Instal the following R packages:
 ```R
-cran_packages=c("shiny", "shinythemes", "plotly", "reshape2", "tidyverse", "gplots", "ggpubr", "gridExtra", "ggrepel",
+cran_packages=c("shiny", "shinythemes", "shinyjs", "plotly", "reshape2", "tidyverse", "gplots", "ggpubr", "gridExtra", "ggrepel",
 "RcolorBrewer", "pheatmap", "rgl", "car", "colourpicker", "VennDiagram", "factoextra",  "openxlsx", "visNetwork",
 "cowplot", "circlize", "ComplexHeatmap", "svglite", "shinyjgui", "Hmisc", "ggrastr")
 #Note: Hmisc is not required to run the Shiny App, but is needed to prepare network data from expression matrix.
