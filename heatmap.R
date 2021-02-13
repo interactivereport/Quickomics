@@ -312,14 +312,15 @@ pheatmap2_out <- eventReactive(input$plot_heatmap, {
     hasP<-match("Pathways", names(annot_genes))
     if (is.null(gene_annot_info) & hasP) {
       Pathways=rep("", nrow(data.in)); Pathways[ccl]=annot_genes$Pathways[sel_col]
-      Pathways=str_wrap(Pathways,width=80)
-      logjs(str_wrap(Pathways,width=16))
+      Pathways=str_wrap(Pathways,width=16)
+      logjs(Pathways)
+      legend_height = (max(str_count(Pathways,"\n"))+1) * 0.36
       Colors=rep("", nrow(data.in)); Colors[ccl]=annot_genes$Color[sel_col]
       p_colors = structure(unique(as.character(Colors)), names=unique(as.character(Pathways)))
       p_colors = p_colors[-which(names(p_colors)=="")]
 
-      pathway_legend<-Heatmap(data.frame(Pathways), name = "Pathways",  show_column_names= FALSE, width = unit(0, "mm"), col = p_colors,
-                              heatmap_legend_param = list(title_gp = gpar(fontsize = 9), title_position="topleft",labels_gp = gpar(fontsize = 8)))
+      pathway_legend<-Heatmap(data.frame(Pathways), name = "Pathways",  rect_gp = gpar(type = "none"), show_column_names= FALSE, width = unit(0, "mm"), col = p_colors,
+                              heatmap_legend_param = list(title_position="topleft", labels_gp = gpar(lineheight=0.8), grid_height = unit(legend_height, "cm")))
       p<-p + pathway_legend
     }
     

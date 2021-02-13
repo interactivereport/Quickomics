@@ -13,7 +13,7 @@ options(stringsAsFactors=F)
 suppressPackageStartupMessages({
 	library(shiny)
 	library(shinythemes)
-	library(shinyjs)
+ 	library(shinyjs)
 	library(plotly)
 	#library(heatmaply)
 	library(reshape2)
