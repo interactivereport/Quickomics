@@ -279,7 +279,7 @@ volcanoplotstatic_out <- reactive({
   if (input$volcano_label!="None") {
     p=p+geom_text_repel(data = data.label,  aes(label=labelgeneid),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	point.padding = unit(0.3, "lines"))
   }
-  p <- p + guides(color = guide_legend(override.aes = list(label="", alpha = 1, size = 4)))
+  p <- p + guides(color = guide_legend(override.aes = list(alpha = 1, size = 4)))
   return(p)
 })
 

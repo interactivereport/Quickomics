@@ -213,6 +213,7 @@ pcaplot_out <- reactive({
 	p <- ggpubr::ggpar(p, xlab = xlabel, ylab = ylabel)
 	#	browser() #debug	
 	#	p <- ggpubr::ggpar(p, legend.title ="", xlab = xlabel, ylab = ylabel, legend = "bottom") #works only when use color by. 
+	p <- p + guides(color = guide_legend(override.aes = list(label="")))
 	return(p)
 })
 
