@@ -4,6 +4,7 @@ Smart query tool to explore omics data in an intuitive, interactive and informat
 Demo site: http://quickomics.bxgenomics.com/
 
 Interactive Figure 1: https://interactivereport.github.io/Quickomics/Figure1.html
+![Quickomics](https://interactivereport.github.io/Quickomics/Figure1.png?raw=true "Quickomics")
 
 
 # Requirments
