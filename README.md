@@ -1,7 +1,9 @@
 # Quickomics
 Smart query tool to explore omics data in an intuitive, interactive and informative manner.
 
-Demo site: http://quickomics.bxgenomics.com/
+Demo site: http://quickomics.bxgenomics.com
+
+Tutorial: https://bit.ly/3rXIyhL
 
 Interactive Figure 1: https://interactivereport.github.io/Quickomics/Figure1.html
 ![https://interactivereport.github.io/Quickomics/Figure1.html](https://interactivereport.github.io/Quickomics/Figure1.png?raw=true "Quickomics")
