@@ -11,8 +11,10 @@
 saved_plots <- reactiveValues()  
 saved_table <- reactiveValues() 
 group_order <- reactiveVal()
+upload_message <- reactiveVal()
 #saved_palette <- reactiveVal()
 ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL)
+showAlert<-reactiveVal()
 
 observe({
 query <- parseQueryString(session$clientData$url_search)

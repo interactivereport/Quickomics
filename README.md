@@ -1,10 +1,16 @@
 # Quickomics
 Smart query tool to explore omics data in an intuitive, interactive and informative manner.
 
-# Requirments
-```
-shiny >= v1.4.0.2 
-```
+Demo site: http://quickomics.bxgenomics.com
+
+Tutorial: https://bit.ly/3rXIyhL
+
+Interactive Figure 1: https://interactivereport.github.io/Quickomics/Figure1.html
+![https://interactivereport.github.io/Quickomics/Figure1.html](https://interactivereport.github.io/Quickomics/Figure1.png?raw=true "Quickomics")
+
+Fig. 1. Selected Quickomics functions applied to a dataset of microglial RNA-seq gene expression from three mouse genotypes over time. A) PCA based on full dataset highlights primary sample separation by mouse age, at which the cells were isolated. (B) Volcano plot visualizes differentially expressed genes, most of which show reduced expression in 2mo KO compared to 2mo_WT microglia. For spacing purpose, absolute log2FC (Fold Change) and negative log10 adjusted p-value are capped at 1.5 and 15, respectively. (C) Correlation analysis between two comparisons shows that aging and Cx3cr1-KO have a similar effect on gene expression. (D) Pat-tern clustering identifies subsets of genes with similar expression over the samples. The clustering is mostly driven by age, with the KO genotype having a similar, but smaller effect. (E) Heatmap of all samples allows the identification of gene clusters with expression regulated by age and/or genotype. Key genes and the pathways they belong to are highlighted on the right. (F) After pathway enrichment analysis, KEGG pathways (Kanehisa and Goto, 2000) of interest can be displayed in a cellular context. The color bars with each stripe representing one comparison show log2 fold changes in various comparisons, allowing project-wide insights for patterns of expression. (G) Correlation network shows potential links between genes of interest.
+
+
 # Installation
 ### 1) Instal the following R packages:
 ```R
@@ -17,11 +23,12 @@ install.packages(cran_packages, repos="http://cran.r-project.org/")  #choose rep
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install(c("Mfuzz"))
+
+Requirments: shiny >= v1.4.0.2 
 ```
 ### 2) Clone Quickomics GitHub repository
-e.g.
 ```
-git clone https://github.com/YOUR-USERNAME/YOUR-REPOSITORY
+git clone https://github.com/interactivereport/Quickomics.git
 ```
 see more at https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/cloning-a-repository
 

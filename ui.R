@@ -29,14 +29,16 @@ tabPanel("Select Dataset",
          fluidRow(
            column(3,
                   wellPanel(
-                    radioButtons("select_dataset",label="Select data set", choices=c("Saved Projects","Upload RData File"),inline = F, selected="Saved Projects"),
+                    radioButtons("select_dataset",label="Select data set", choices=c("Saved Projects","Upload RData File", "Upload Data Files (csv)"),inline = F, selected="Saved Projects"),
                     conditionalPanel("input.select_dataset=='Saved Projects'",
                                      selectInput("sel_project", label="Available Dataset", 
                                                  choices=c("", projects), selected=NULL)),
                     conditionalPanel("input.select_dataset=='Upload RData File'",
                                      fileInput("file1", "Choose data file"),
                                      fileInput("file2", "Choose network file"),                                     
-                                     uiOutput('ui.action') )
+                                     uiOutput('ui.action') ),
+                    conditionalPanel("input.select_dataset=='Upload Data Files (csv)'",
+                                     h5("Use the Upload Files tab to the right to create your own data set.") )
                   )
            ),
            column(9,
@@ -48,6 +50,11 @@ tabPanel("Select Dataset",
                               tabPanel(title="Result Table", actionButton("results", "Save to output"), dataTableOutput('results')),
                               tabPanel(title="Data Table", actionButton("data_wide", "Save to output"), dataTableOutput('data_wide')),
                               tabPanel(title="Protein Gene Names", actionButton("ProteinGeneName", "Save to output"), dataTableOutput('ProteinGeneName')),
+                              tabPanel(title="Upload Files", 
+                                       uiOutput('upload.files.ui'), #see process_uploaded_files.R for details.
+                                       tags$br(),
+                                       textOutput('upload.message')
+                                       ),
                               tabPanel(title="Help", htmlOutput('help_input'))
                   )
            )
@@ -348,7 +355,7 @@ tabPanel("Gene Set Enrichment",
 				  radioButtons("geneset_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
 				  radioButtons("geneset_direction", label= "Up- or Down-Regulated Genes?", choices= c("Both", "Up", "Down"),inline = TRUE),
 				  textOutput("geneset_filteredgene"),
-				  tags$head(tags$style("#geneset_filteredgene{color: red; font-size: 20px; font-style: italic;}")),
+				  tags$head(tags$style("#geneset_filteredgene{color: red; font-size: 20px; font-style: italic;}"))
 				),
 				conditionalPanel("input.geneset_tabset=='KEGG Pathway View'",
 				  radioButtons("kegg_more_tests", label= "Add more comparisons?", choices= c("Yes", "No"),selected="No", inline = TRUE),
@@ -356,7 +363,7 @@ tabPanel("Gene Set Enrichment",
 				  selectInput("geneset_test2", label="2nd Comparison", choices=NULL),
 				  selectInput("geneset_test3", label="3rd Comparison", choices=NULL),
 				  selectInput("geneset_test4", label="4th Comparison", choices=NULL),
-				  selectInput("geneset_test5", label="5th Comparison", choices=NULL)),
+				  selectInput("geneset_test5", label="5th Comparison", choices=NULL))
 				),				
 				conditionalPanel("input.geneset_tabset=='Gene Set Heat Map'",
 				radioButtons("gs_heatmap_label",label="Gene Label",inline = TRUE, choices=c("UniqueID", "Gene.Name"), selected="Gene.Name")),
@@ -378,7 +385,7 @@ tabPanel("Gene Set Enrichment",
 					),
 				conditionalPanel("input.geneset_tabset=='KEGG Pathway View'",
 				      selectInput("kegg_logFC", label= "KEGG view log2FC Range:", choices= c(1, 2, 3), selected=1),
-				      radioButtons("kegg_mapsample", label= "Map Symbols to KEGG Nodes?", choices= c("YEs"=TRUE, "No"=FALSE),inline = TRUE)),
+				      radioButtons("kegg_mapsample", label= "Map Symbols to KEGG Nodes?", choices= c("YEs"=TRUE, "No"=FALSE),inline = TRUE))
 				)
 			),
 			column(9,

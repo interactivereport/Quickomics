@@ -51,8 +51,10 @@ suppressPackageStartupMessages({
   library(pathview)
   library(shinyjqui)
   library(ggrastr)
+  library(biomaRt)
 	#library(networkD3)
-	#library(Hmisc)
+	library(Hmisc)
+  library(stringi)
 })
 
 
