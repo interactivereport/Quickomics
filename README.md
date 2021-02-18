@@ -27,9 +27,8 @@ BiocManager::install(c("Mfuzz"))
 Requirments: shiny >= v1.4.0.2 
 ```
 ### 2) Clone Quickomics GitHub repository
-e.g.
 ```
-git clone https://github.com/YOUR-USERNAME/YOUR-REPOSITORY
+git clone https://github.com/interactivereport/Quickomics.git
 ```
 see more at https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/cloning-a-repository
 
