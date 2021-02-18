@@ -12,6 +12,7 @@
 
 function(input, output, session) {
 source("inputdata.R",local = TRUE)
+source("process_uploaded_files.R",local = TRUE)
 source("qcplot.R",local=TRUE)
 source("volcano.R",local = TRUE)
 source("heatmap.R",local = TRUE)
