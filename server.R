@@ -24,5 +24,6 @@ source("vennprojects.R",local = TRUE)
 source("network.R",local = TRUE)
 source("help.R",local = TRUE)
 source("output.R",local = TRUE)
+source("scurve.R",local = TRUE)  
 }
 
