@@ -37,11 +37,21 @@ Check the follwing web links on various options to launch the app.
 * https://shiny.rstudio.com/articles/running.html
 * https://shiny.rstudio.com/deploy/
 
-# Prepare your own data
+# Upload your own data in csv format
+Prepare your own data files in Excel, save them as csv files and upload to QuickOmics using "Upload Files" Tool from Select Dataset tab. The system will automatically process the files and create the R data files. You need the following files:
+1. Sample MetaData File. Sample MetaData must have sampleid and group columns, with additional columns optional. The sample names in sampleid column must match the expression data file.
+2. Expression Data File. Expression data should be a matrix of expression values with genes/proteins as rows, and samples as columns. The unique IDs for genes/proteins are in the first column. We recommend using log of normalized expression values (e.g. log2(TPM+1).
+3. Comparison Data File. Comparison data should have five columns, UniqueID, test, Adj.P.Value, P.Value and logFC. These are typically computed using R packages like limma, edgeR or DESeq2. Make sure to rename the column headers to Adj.P.Value, P.Value and logFC. The comparison names are listed in test column.
+4. An optional Gene/Protein Name File.  Note the system can create gene/protein annotaion based on the unique IDs from data files, so most users don't need to prepare the GEne/Protein Name File. If prepariong this file yourself, it must have four columns: id (sequential numbers), UniqueID (match with the IDs in the expression and comparison data file), Gene.Name (official gene symbols), Protein.ID (UniProt protein IDs, or enter empty values for RNA-Seq data). Additional columns (e.g. gene biotype) can be added.
+
+After the data files are processed, the system will give the user an unlisted URL, which the user can use to access the dataset directly in the future. 
+
+# Prepare your own R data files
+We recommend uploading csv files, which is easier for most users. Experienced R users can create their own R data files. 
 Two files are needed for each data set, one contains the main data, the other contains network information. For the pre-loaded datasets, the main data files are located in the Quickomics/data/ folder, while the network files are located at Quickomics/networkdata/ folder.  One can check the Rdata files (e.g. Mouse_microglia_RNA-Seq.RData) in the data folder to see some examples. 
 To prepare the main data files, you need to get the following R data frame objects. 
 1. MetaData. Must have sampleid, group, Order, ComparePaires columns. Additional metadata columns about the samples can be added. sampleid values should match with expression data. The group is how you divide samples into biological meaning groups. Order is how you order the group. CompareParies are the comparisons performed. 
-2. ProteinGeneName. Must have UniqueID and Gene.Name column. UniqueID values should match with the gene IDs in the data files. Gene.Name should be official gene symbols. Additional columns about the proteins or genes can be added.
+2. ProteinGeneName. Must have UniqueID, Gene.Name and Protein.ID columns. UniqueID values should match with the gene IDs in the data files. Gene.Name should be official gene symbols. Protein.ID is UniProt protein IDs, or enter empty values for RNA-Seq data. Additional columns about the proteins or genes can be added.
 3. data_wide. This is the expression matrix; rows are genes, columns are samples. Samples must match sampleid values from MetaData, gene IDs must match with UniqueID from ProteinGeneName. For RNA-Seq, we recommend using log2(TPM+1) as the expression values in data_wide. 
 4. data_long. data_wide converted into long format, with the following four columns: UniqueID, sampleid, expr, group. The group values must match thoese listed in MetaData.
 5. results_long. The comparison results in long format. The columns are: UniqueID, test, Adj.P.Value, P.Value and logFC. UniqueID must match with UniqueID values from ProteinGeneName; test column has the comparison names, must match values ComparePairs column of MetaData; the other values are typically computed from packages like DESeq2 or limmma, but the spelling must be changed to Adj.P.Value, P.Value and logFC.
