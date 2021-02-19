@@ -36,7 +36,7 @@ Check the follwing web links on various options to launch the app.
 * https://shiny.rstudio.com/articles/running.html
 * https://shiny.rstudio.com/deploy/
 
-# Upload your own data in csv format
+# Upload your own data files in csv format
 Prepare your own data files in Excel, save them as csv files and upload to Quickomics using "Upload Files" Tool from Select Dataset tab. The system will automatically process the files and create the R data files. You need the following files:
 1. Sample MetaData File. Sample MetaData must have sampleid and group columns, with additional columns optional. The sample names in sampleid column must match the expression data file.
 2. Expression Data File. Expression data should be a matrix of expression values with genes/proteins as rows, and samples as columns. The unique IDs for genes/proteins are in the first column. We recommend using log of normalized expression values (e.g. log2(TPM+1).
