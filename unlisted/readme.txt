@@ -4,7 +4,7 @@ Please don't delete the unlisted/ folder, otherwise the Upload Files tool will n
 The Upload Files tools from QuickOmics system will create three files for each datasets in the unlisted/ folder
 *ProjectID.RData  (The main R data files)
 *ProjectID_network.RData  (gene-gene correlation network data)
-*ProjectID.csv ((the same format as the saved_projects.csv in data/ folder) 
+*ProjectID.csv (the same format as the saved_projects.csv in data/ folder) 
 
 
 One can also upload pre-made RData files to this folder, and allow users to access the projet using unlisted URL: 
