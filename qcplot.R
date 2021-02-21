@@ -338,7 +338,7 @@ pheatmap_out <- reactive({
 	rownames(sampleDistMatrix) <- tmp_sampleid
 	colors <- colorRampPalette(rev(brewer.pal(9, "Blues")) )(32)
 
-	p <- pheatmap(sampleDistMatrix, annotation_row=annotation,	annotation_col=annotation, col=colors)
+	p <- pheatmap::pheatmap(sampleDistMatrix, annotation_row=annotation,	annotation_col=annotation, col=colors)
 	return(p)
 })
 
