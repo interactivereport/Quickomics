@@ -173,9 +173,6 @@ boxplot_out <- reactive({
   }
  # browser()
   if (input$SeparateOnePlot == "OnePlot") {
-    
-    library(plyr)
-    
     data_long_tmp1 <- ddply(data_long_tmp, c("UniqueID", "group"), summarise,
                            N    = sum(!is.na(expr)),
                            mean = mean(expr, na.rm=TRUE),

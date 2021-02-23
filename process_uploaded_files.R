@@ -1,25 +1,29 @@
 output$upload.files.ui <- renderUI({
  tagList(tags$div(
-  tags$p("Prepare your own data files in Excel, save them as csv files and upload here. The system will automatically process the files and create the R data files.")),
-  textInput("F_project_name", label="Project Name", value=""),
-  radioButtons("Fspecies",label="Select species", choices=c("human","mouse", "rat"), inline = T, selected="human"),
+  tags$p("Prepare your own data files in Excel, save them as csv files and upload here. The system will automatically process the files and create the R data files. You need sample metadata file, expression data file, and comparison data file. The system can create gene/protein annotaion based on the IDs from data files, or you can upload your own Gene/Protein Name file.")),
+  tags$a(href="RNA_Seq_Demo.zip", "Download RNA-Seq example csv files (200 genes from mouse microglia dataset)"),
+  tags$br(),
+  tags$a(href="Proteomics_Demo.zip", "Download Proteomics example csv files (200 proteins from AD PD dataset)"),
   tags$hr(),
-  tags$p("Sample MetaData must have sampleid and group columns, with additional columns optional. The sammple names in sampleid column must match the expression data file."),
+  textInput("F_project_name", label="Project Name", value=""),
+  radioButtons("Fspecies",label="Select Species", choices=c("human","mouse", "rat"), inline = T, selected="human"),
+  tags$hr(),
+  tags$p("Sample MetaData must have sampleid and group columns, with additional columns optional. The sample names in sampleid column must match the expression data file."),
   fileInput("F_sample", "Sample MetaData File"),
   tags$hr(),
-  tags$p("Expression data should be matrix of expression values with genes/proteins as rows, and samples as columns.  The unique IDs for genes/proteins are in the first column. We recommend using log of normalized expression values (e.g. log2(TPM+1)."),
+  tags$p("Expression data should be matrix of expression values with genes/proteins as rows, and samples as columns.  The unique IDs for genes/proteins are in the first column. We recommend using log of normalized expression values (e.g. log2(TPM+1). Uploas csv file, can be compressed as .gz or .zip file."),
   fileInput("F_exp", "Expression Data File"),
   tags$hr(),
-  tags$p("Comparison data should have five columns, UniqueID, test, Adj.P.Value, P.Value and logFC. The comparison names are listed in test column."),
+  tags$p("Comparison data should have five columns, UniqueID, test, Adj.P.Value, P.Value and logFC. The comparison names are listed in test column. Uploas csv file, can be compressed as .gz or .zip file."),
   fileInput("F_comp", "Comparison Data File"),
   tags$hr(),
   checkboxInput("F_annot_auto", "Create Gene/Protein Name File automatically (or uncheck to upload your own file)", TRUE, width="90%"),
   #radioButtons("F_annot_auto", label="Create Gene/Protein Names automatically:", inline = TRUE, choices = c("Yes","No"), selected = "Yes"),
   conditionalPanel(condition="input.F_annot_auto==1",
-                   radioButtons("F_ID_type",label="Unique ID type in the data files", choices=c("Ensembl Gene ID", "Gene Symbol", "NCBI GeneID","UniProtKB Protein ID", "UniProt Protein Name"), inline = T, selected="Ensembl Gene ID"),
+                   radioButtons("F_ID_type",label="Unique ID Type in the Data Files", choices=c("Ensembl Gene ID", "Gene Symbol", "NCBI GeneID","UniProtKB Protein ID", "UniProt Protein Name"), inline = T, selected="Ensembl Gene ID"),
   checkboxInput("F_ID_info", "Show ID type examples", FALSE, width="90%"),
   conditionalPanel(condition="input.F_ID_info==1",
-                   tags$p("The system will extract gene/protein names based on the unique IDs from your data using BioMart or UniProt database. The unique IDs from the expression and comparion data can be one of the following formats:"),
+                   tags$p("The system will extract gene/protein names based on the unique IDs from your data using BioMart or UniProt database. The unique IDs from the expression and comparison data can be one of the following formats:"),
                    tags$ol(
                      tags$li("Ensembl Gene ID (e.g. ENSG00000118260, or with version number ENSG00000118260.14)"), 
                      tags$li("Gene Symbol (e.g. CREB1)"), 
@@ -33,7 +37,7 @@ output$upload.files.ui <- renderUI({
   
    # radioButtons("F_description",label="Add gene/protein description?", choices=c("Yes", "No"), inline = T, selected="No"),
   conditionalPanel(condition="input.F_annot_auto==0",
-                   tags$p("The Gene/Protein Name file must have four columns: id (sequential numbers), UniqueID (match with the IDs in the expression and comparison data file), Gene.Name (official gene symbols), Protein.ID (UniProt protein IDs, or enter empty values for RNA-Seq data). Additional columns (e.g. gene biotype) can be added."),                  
+                   tags$p("The Gene/Protein Name csv file must have four columns: id (sequential numbers), UniqueID (match with the IDs in the expression and comparison data file), Gene.Name (official gene symbols), Protein.ID (UniProt protein IDs, or enter empty values for RNA-Seq data). Additional columns (e.g. gene biotype) can be added."),                  
                    fileInput("F_annot", "Gene/Protein Name File")),
   tags$hr(),
   actionButton("uploadData", "Submit Data")
@@ -65,8 +69,21 @@ observeEvent(input$uploadData, {
   #get expression data
   withProgress(message = 'Processing...', value = 0, {
   MetaData=read.csv(input$F_sample$datapath, header=T, check.names=F)
-  data_wide=read.csv(input$F_exp$datapath, row.name=1, header=T, check.names=F)
-  results_long=read.csv(input$F_comp$datapath, header=T, check.names=F)
+  exp_file=input$F_exp$datapath
+  if (str_detect(exp_file, "gz$") ) {exp_file=gzfile(exp_file, "rt")}
+  if (str_detect(exp_file, "zip$") ) {
+    fnames = as.character(unzip(exp_file, list = TRUE)$Name)
+    exp_file=unz(exp_file, fnames[1])
+  }
+  data_wide=read.csv(exp_file, row.name=1, header=T, check.names=F)
+  
+  comp_file=input$F_comp$datapath
+  if (str_detect(comp_file, "gz$") ) {comp_file=gzfile(comp_file, "rt")}
+  if (str_detect(comp_file, "zip$") ) {
+    fnames = as.character(unzip(comp_file, list = TRUE)$Name)
+    comp_file=unz(comp_file, fnames[1])
+  }
+  results_long=read.csv(comp_file, header=T, check.names=F)
   species=input$Fspecies
   IDs=rownames(data_wide);
   IDs2=results_long$UniqueID
@@ -78,6 +95,7 @@ observeEvent(input$uploadData, {
   if (input$F_annot_auto==0) {
     ProteinGeneName=read.csv(input$F_annot$datapath)
     ProteinGeneName<-ProteinGeneName%>%filter(UniqueID %in% IDall)
+    setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
   } else {
     if (str_detect(input$F_ID_type, "UniProt") ) { #protein name match
       ProteinInfo<-readRDS('db/ProteinInfo.rds')%>%mutate(Gene_Name=str_replace(Gene_Name, " .+", "")) #replace space, as UniProt put alias here
@@ -102,7 +120,7 @@ observeEvent(input$uploadData, {
       } else {
         ensembl <- useEnsembl(biomart = "ensembl", dataset = "hsapiens_gene_ensembl")
       }
-      setProgress(0.2, detail = "Connected to Biomart"); Sys.sleep(0.1)
+      setProgress(0.2, detail = "Connected to Biomart, converting IDs to gene names..."); Sys.sleep(0.1)
       
       if (input$F_ID_type=="Ensembl Gene ID" ) {
         filter_type="ensembl_gene_id"
@@ -128,14 +146,9 @@ observeEvent(input$uploadData, {
       ProteinGeneName<-ProteinGeneName%>%dplyr::select(id,UniqueID, Gene.Name, Protein.ID, GeneType, Description)
       if (input$F_description==0) {ProteinGeneName<-ProteinGeneName%>%dplyr::select(-Description)}  
       if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
-      setProgress(0.3, detail = "Loaded Gene Names"); Sys.sleep(0.1)
+      setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
       
-      #output$upload.message <- renderUI({
-       # tagList(
-      #    tags$p(str_c("Start processing data for Project", Project_name)),
-      #    tags$p(str_c("Created Gene Protein Name file using Biomart and Unique IDs type ", input$F_ID_type))
-      #  )
-      #}) 
+    
     }
   }
   #now process data
@@ -157,7 +170,7 @@ observeEvent(input$uploadData, {
     left_join(data.frame(UniqueID=rownames(data_wide), Intensity=apply(data_wide,1,mean))%>%filter(!duplicated(UniqueID)))
   sinfo1<-data.frame(sampleid=names(data_wide))%>%left_join(MetaData%>%dplyr::select(sampleid, group))
   for(grp in unique(sinfo1$group) ){
-    subdata<-data.frame(UniqueID=rownames(data_wide), t(apply(data_wide[,sinfo1$group==grp],1,function(x)return(setNames(c(mean(x),sd(x)),paste(grp,c("Mean","sd"),sep="_"))))) )
+    subdata<-data.frame(UniqueID=rownames(data_wide), t(apply(data_wide[,sinfo1$group==grp],1,function(x)return(setNames(c(mean(x),sd(x)),paste(grp,c("Mean","sd"),sep="_"))))), check.names=FALSE )
     data_results<-data_results%>%left_join(subdata)
   }
   for (ctr in tests) {
@@ -175,7 +188,7 @@ observeEvent(input$uploadData, {
   #if data_wide has many genes, trim down to 10K
   if (nrow(data_wide)>10000 ) {
     dataSD=apply(data_wide, 1, function(x) sd(x,na.rm=T))
-    dataM=rowMeans(tmpdat)
+    dataM=rowMeans(data_wide)
     diff=dataSD/(dataM+median(dataM))
     data_wide=data_wide[order(diff, decreasing=TRUE)[1:10000], ]	 
     cat("reduce gene size to 10K for project ", ProjectID, "\n")
