@@ -15,7 +15,7 @@ Fig. 1. Selected Quickomics functions applied to a dataset of microglial RNA-seq
 ```R
 cran_packages=c("shiny", "shinythemes", "shinyjs", "plotly", "reshape2", "tidyverse", "gplots", "ggpubr", "gridExtra", "ggrepel",
 "RcolorBrewer", "pheatmap", "rgl", "car", "colourpicker", "VennDiagram", "factoextra",  "openxlsx", "visNetwork",
-"cowplot", "circlize", "ComplexHeatmap", "svglite", "shinyjgui", "Hmisc", "ggrastr")
+"cowplot", "circlize", "ComplexHeatmap", "svglite", "shinyjgui", "Hmisc", "ggrastr", "ggExtra")
 #Note: Hmisc is not required to run the Shiny app but is needed to prepare network data from expression matrix.
 install.packages(cran_packages, repos="http://cran.r-project.org/")  #choose repos based on your location if needed
 
