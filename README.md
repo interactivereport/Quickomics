@@ -36,10 +36,10 @@ Check the following web links on various options to launch the app.
 * https://shiny.rstudio.com/articles/running.html
 * https://shiny.rstudio.com/deploy/
 
-# Upload your own data files in csv (Comma Seperated Values) format
-Prepare data files in csv format and upload to Quickomics by using "Upload Files" Tool from Select Dataset tab. The system will automatically process these files and create the R data files. You need the following files:
-1. Sample MetaData File. Sample MetaData must have sampleid and group columns, with additional columns optional. The sample names in sampleid column must match the expression data file.
-2. Expression Data File. Expression data should be a matrix of expression values with genes/proteins as rows, and samples as columns. The unique IDs for genes/proteins are in the first column. We recommend using log of normalized expression values (e.g. log2(TPM+1).
+# Upload your own data files in csv (Comma Separated Values) format
+Prepare data files in csv format and upload to Quickomics by using "Upload Files" tool from "Select Dataset" tab. The system will automatically process these files and create the R data files. You need the following files:
+1. Sample Meta Data File. Sample Meta Data must have sampleid and group columns, with additional columns optional. The sample names in sampleid column must match those used in expression data file.
+2. Expression Data File. Expression data should be a matrix of expression values with genes/proteins as rows, and samples as columns. The unique IDs for genes/proteins are in the first column. We recommend using log of normalized expression values (e.g. log2(TPM+1) for RNAseq).
 3. Comparison Data File. Comparison data should have five columns, UniqueID, test, Adj.P.Value, P.Value and logFC. These are typically computed using R packages like limma, edgeR or DESeq2. Make sure to rename the column headers to Adj.P.Value, P.Value and logFC. The comparison names are listed in test column.
 4. An optional Gene/Protein Name File.  Note the system will create gene/protein annotation based on the unique IDs from data files, so most users don't need to prepare the Gene/Protein Name File. Or user could prepare it with four required columns: id (sequential numbers), UniqueID (match with the IDs in the expression and comparison data file), Gene.Name (official gene symbols), Protein.ID (UniProt protein IDs, or enter empty values for RNA-Seq data). Additional columns (e.g. gene biotype) are optional.
 
