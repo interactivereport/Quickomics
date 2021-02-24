@@ -320,7 +320,7 @@ tabPanel("Expression Plot",
                                                       column(width=6,numericInput("exp_plot_Ymax", label= "Y Max",  value=5, step=0.1))),
                                      conditionalPanel("input.expression_tabset=='Searched Expression Data'",
                                                       h5("After changing parameters, please click Plot/Refresh button in the plot panel to generate expression plot."))),
-                    conditionalPanel("input.expression_tabset=='Abundance S Curve'",
+                    conditionalPanel("input.expression_tabset=='Rank Abundance Curve'",
                                      selectizeInput("sel_gene_scurve",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search')),
                                      textAreaInput("gene_list_scurve", "Input Gene List", "", cols = 5, rows=6),
                                      sliderInput("scurve_axisfontsize", "Axis Font Size:", min = 12, max = 28, step = 4, value = 16),
@@ -341,7 +341,7 @@ tabPanel("Expression Plot",
                                        uiOutput("plot.exp")),
                               tabPanel(title="Data Table",	DT::dataTableOutput("dat_dotplot")),
                               tabPanel(title="Result Table",	DT::dataTableOutput("res_dotplot")),
-                              tabPanel(title="Abundance S Curve",plotOutput("SCurve", height=800)),
+                              tabPanel(title="Rank Abundance Curve",plotOutput("SCurve", height=800)),
                               tabPanel(title="Help", htmlOutput('help_expression'))
                   )
            )
