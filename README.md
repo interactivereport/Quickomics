@@ -43,10 +43,10 @@ Prepare data files in csv format and upload to Quickomics by using "Upload Files
 3. Comparison Data File. Comparison data should have five columns, UniqueID, test, Adj.P.Value, P.Value and logFC. These are typically computed using R packages like limma, edgeR or DESeq2. Make sure to rename the column headers to Adj.P.Value, P.Value and logFC. The comparison names are listed in test column.
 4. An optional Gene/Protein Name File.  Note the system will create gene/protein annotation based on the unique IDs from data files, so most users don't need to prepare the Gene/Protein Name File. Or user could prepare it with four required columns: id (sequential numbers), UniqueID (match with the IDs in the expression and comparison data file), Gene.Name (official gene symbols), Protein.ID (UniProt protein IDs, or enter empty values for RNA-Seq data). Additional columns (e.g. gene biotype) are optional.
 
-After the data files are uploaded, the system will give the user an unlisted URL, which the user can use to access the dataset directly in the future. 
+After the data files are uploaded, the system will provide the user a link to explore the result in Quickomics. 
 
-# Prepare your own R data files
-We recommend uploading csv files, which is easier for most users. Nevertheless, Experienced R users can create their own R data files. 
+# Prepare R data files by computational biologist
+We recommend uploading csv files, which is easier for most users. Nevertheless, Experienced R programmer can create R data files to be uploaded. 
 Two files are needed for each data set, one contains the main data, the other contains network information. For the pre-loaded datasets, the main data files are located in the Quickomics/data/ folder, while the network files are located at Quickomics/networkdata/ folder.  One can check the Rdata files (e.g. Mouse_microglia_RNA-Seq.RData) in the data folder to see some examples. 
 To prepare the main data files, you need to get the following R data frame objects. 
 1. MetaData. Must have sampleid, group, Order, ComparePaires columns. Additional metadata columns about the samples can be added. sampleid values should match with expression data. The group is how you divide samples into biological meaning groups. Order is how you order the group. ComparePairs are the comparisons performed. 
@@ -56,12 +56,12 @@ To prepare the main data files, you need to get the following R data frame objec
 5. results_long. The comparison results in long format. The columns are: UniqueID, test, Adj.P.Value, P.Value and logFC. UniqueID must match with UniqueID values from ProteinGeneName; test column has the comparison names, must match values ComparePairs column of MetaData; the other values are typically computed from packages like DESeq2 or limma, but the data headers must be changed to Adj.P.Value, P.Value and logFC.
 6. data_results. This is a summary table, it starts with UniqueID and Gene.Name columns, then the intensity (max or mean expression value from data_wide for each gene), followed by mean and SD expression values for each group, then followed by comparison data (test name added as prefix).
 
-The network data file can be computed from data_wide using Hmisc package. See the example R code mentioned below. 
+The network data file is computed from 'data_wide' expression matrix by using Hmisc package. See the example R code mentioned below. 
 
-## R codes to prepare Rdata file from RNA-Seq results
-We have provided the example input files (TPM and count matrix files, sample grouping file, comparison list file) and the R code to generate the main data and network data files. These files are located at demo_files/Example_RNA_Seq_data/
+## Example R code to prepare R data files from RNA-Seq results
+We have provided the example input files (TPM and count matrix files, sample grouping file, comparison list file) and the R code to generate the main data and network data files. These files are located at demo_files/Example_RNA_Seq_data/ directory. Please note that you may need to modify RNA_Seq_raw2quickomics.R to fit your input files.
 * rsem_TPM.txt The TPM matrix. One can also use RPKM matrix if needed. 
 * rsem_expected_count.txt  The gene count matrix. We used RSEM counts in this case, but gene count results from other packages (like kallisto, salmon, featureCount) can be used as well. 
 * grpID.txt This file lists the group information for each sample
 * comparison.txt This list lists the comparisons to perform (group 1 vs group 2 in each row).
-* RNA_Seq_raw2quickomics.R The R code to read the data, run DEG using DESeq2, and create main data file. Then the code will use data_wide to generate network data. 
+* RNA_Seq_raw2quickomics.R The R code to read the data, run differential gene expression analysis using DESeq2, and create main and network data files.
