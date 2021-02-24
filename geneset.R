@@ -159,7 +159,7 @@ keggView_out <- reactive({withProgress(message = 'Making KEGG Pathway View...', 
 	  if (ncol(FCdata)>1) {	img.file <- paste(pid,"pathview.multi.png",sep=".")}
 	} else {
 	  cat("looking for additional comparisons failed", tests, selCol, "\ngo back to the first comparison\n")
-	  browser()#debug
+	  #browser()#debug
 	  tmp <- pathview(gene.data=sig_genes, pathway.id=pid, kegg.dir="./kegg", kegg.native = T, species="hsa",low = "green", mid = "yellow", high = "red", 
 	                same.layer = F, map.symbol=as.logical(input$kegg_mapsample), limit=list(gene=as.numeric(input$kegg_logFC), cpd=1) )
 	  img.file <- paste(pid,"pathview","png",sep=".")
