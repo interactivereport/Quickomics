@@ -491,27 +491,27 @@ tabPanel("Venn Diagram",
 				radioButtons("venn_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
 				radioButtons("venn_updown", label= "All, Up or Down?", choices= c("All"="All","Up"="Up","Down"="Down"),inline = TRUE),
 				selectInput("venn_test1", label="Select List 1", choices=NULL),
-				conditionalPanel("input.venn_tabset=='vennDiagram'",
+				conditionalPanel("input.venn_tabset=='Venn Diagram'",
 				colourInput("col1", "Select colour", "#0000FF",palette = "limited")
 				),
 
 				selectInput("venn_test2", label="Select List 2", choices=NULL),
-				conditionalPanel("input.venn_tabset=='vennDiagram'",
+				conditionalPanel("input.venn_tabset=='Venn Diagram'",
 				colourInput("col2", "Select colour", "#FF7F00",palette = "limited")
 				),
 
 				selectInput("venn_test3", label="Select List 3", choices=NULL),
-				conditionalPanel("input.venn_tabset=='vennDiagram'",
+				conditionalPanel("input.venn_tabset=='Venn Diagram'",
 				colourInput("col3", "Select colour", "#00FF00",palette = "limited")
 				),
 
 				selectInput("venn_test4", label="Select List 4", choices=NULL),
-				conditionalPanel("input.venn_tabset=='vennDiagram'",
+				conditionalPanel("input.venn_tabset=='Venn Diagram'",
 				colourInput("col4", "Select colour", "#FF00FF",palette = "limited")
 				),
 
 				selectInput("venn_test5", label="Select List 5", choices=NULL),
-				conditionalPanel("input.venn_tabset=='vennDiagram'",
+				conditionalPanel("input.venn_tabset=='Venn Diagram'",
 				colourInput("col5", "Select colour", "#FFFF00", palette = "limited")
 				),
 				conditionalPanel("input.venn_tabset=='Intersection Output'",
@@ -520,7 +520,7 @@ tabPanel("Venn Diagram",
 			),
 			column(10,
 				tabsetPanel(id="venn_tabset",
-					tabPanel(title="vennDiagram",
+					tabPanel(title="Venn Diagram",
 						column(9,
 							actionButton("vennDiagram", "Save to output"),plotOutput("vennDiagram", height = 800)
 						),
@@ -537,7 +537,7 @@ tabPanel("Venn Diagram",
 							sliderInput("margin", "Margin", min = 0, max = 1, step=0.05, value = 0.1, width = "100%")
 						)
 					),
-					tabPanel(title="VennDiagram(black & white)", plotOutput("SvennDiagram",height = 800, width = 800)),
+					tabPanel(title="Venn Diagram (black & white)", plotOutput("SvennDiagram",height = 800, width = 800)),
 					tabPanel(title="Intersection Output", htmlOutput("vennHTML")),
 					tabPanel(title="DEG Table", actionButton("venn_DEG_data", "Save to output"), DT::dataTableOutput("venn_DEG_Data")),
 					tabPanel(title="Help", htmlOutput('help_venn'))
@@ -560,34 +560,34 @@ tabPanel("Venn Across Projects",
 
 				selectInput("dataset1", "Data set1", choices=NULL),
 				selectInput("vennP_test1", label="Select List 1", choices=NULL),
-				conditionalPanel("input.vennP_tabset=='vennDiagram'",
+				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
 				colourInput("vennPcol1", "Select colour", "#0000FF",palette = "limited")
 				),
 				selectInput("dataset2", "Data set2", choices=NULL),
 				selectInput("vennP_test2", label="Select List 2", choices=NULL),
-				conditionalPanel("input.vennP_tabset=='vennDiagram'",
+				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
 				colourInput("vennPcol2", "Select colour", "#FF7F00",palette = "limited")
 				),
 				selectInput("dataset3", "Data set3", choices=NULL),
 				selectInput("vennP_test3", label="Select List 3", choices=NULL),
-				conditionalPanel("input.vennP_tabset=='vennDiagram'",
+				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
 				colourInput("vennPcol3", "Select colour", "#00FF00",palette = "limited")
 				),
 				selectInput("dataset4", "Data set4", choices=NULL),
 				selectInput("vennP_test4", label="Select List 4", choices=NULL),
-				conditionalPanel("input.vennP_tabset=='vennDiagram'",
+				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
 					colourInput("vennPcol4", "Select colour", "#FF00FF",palette = "limited")
 				),
 				selectInput("dataset5", "Data set5", choices=NULL),
 				selectInput("vennP_test5", label="Select List 5", choices=NULL),
-				conditionalPanel("input.vennP_tabset=='vennDiagram'",
+				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
 				colourInput("vennPcol5", "Select colour", "#FFFF00", palette = "limited")
 				)
 			) 
 		), 
 		column(9,
 			tabsetPanel(id="vennP_tabset",
-				tabPanel(title="vennDiagram",
+				tabPanel(title="Venn Diagram",
 					column(9,
 						plotOutput("vennPDiagram", height = 800)
 					),
@@ -604,7 +604,7 @@ tabPanel("Venn Across Projects",
 						sliderInput("vennPmargin", "Margin", min = 0, max = 1, step=0.05, value = 0.2, width = "100%")
 					)
 				),
-				tabPanel(title="VennDiagram(black & white)", plotOutput("SvennPDiagram",height = 800,width = 800)),
+				tabPanel(title="Venn Diagram (black & white)", plotOutput("SvennPDiagram",height = 800,width = 800)),
 				tabPanel(title="Intersection Output", htmlOutput("vennPHTML")),
 				tabPanel(title="Help", htmlOutput('help_vennp'))
 			)
