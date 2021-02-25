@@ -65,3 +65,12 @@ We have provided the example input files (TPM and count matrix files, sample gro
 * grpID.txt This file lists the group information for each sample
 * comparison.txt This list lists the comparisons to perform (group 1 vs group 2 in each row).
 * RNA_Seq_raw2quickomics.R The R code to read the data, run differential gene expression analysis using DESeq2, and create main and network data files.
+
+## Example R code to prepare R data files from Proteomics results
+We have provided the example input files (normalized protein expression, comparison data, sample information, protein and gene names) and the R code to generate the main data and network data files. These files are located at demo_files/Example_Proteomics_data/ directory. Please note that you may need to modify Proteomics2Quickomics.R to fit your input files.
+* NormalizedExpression.csv Normalized protein expression (log2 transformed). 
+* ComparisonData.csv  Comparison results. The statistic values are: logFC,  P.Value and Adj.P.Value. This can be created using R packages like limma.
+* Sample.csv Sample information file.
+* ProteinID_Symbol.csv This file lists the proteinIDs and associate gene symbols.
+* Proteomics2Quickomics.R The R code to read the data and create main and network data files.
+
