@@ -81,6 +81,7 @@ output$help_expression <- renderText({
 	<li>Browsing: view all proteins pass the cutoff. </li>
 	<li>Searched Protein Expression: You can search multiple proteins to plot </li>
 	<li>Data Output: show the selected protein expression </li>
+	<li>Rank Abundance Curve: helps interpret the distribution of relative abundance and expression levels of a set of genes.</li>
 	<li>Options are straightforward </li>
 	</ul>"
 	htmlstr
