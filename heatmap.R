@@ -184,7 +184,7 @@ DataHeatMapReactive <- reactive({
   selCol=match(input$heatmap_label, names(ProteinGeneName))
   
   if (sum(is.na(sel))==0 & sum(is.na(selCol)==0)) {rownames(df)=unlist(ProteinGeneName[sel, selCol])
-  } else {cat("gene lables not updated",sum(is.na(sel)), sum(is.na(selCol)), "\n"); browser()}
+  } else {cat("gene lables not updated",sum(is.na(sel)), sum(is.na(selCol)), "\n")}
   #match sampleid order
   new_order=match(colnames(df), annotation$sampleid)
   annotation=annotation[new_order, ]
