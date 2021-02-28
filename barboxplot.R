@@ -12,9 +12,13 @@
 
 observe({
 	DataIn = DataReactive()
-	#ProteinGeneName = DataIn$ProteinGeneName
-	ProteinGeneName = DataIn$data_results
-	DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
+	ProteinGeneName = DataIn$ProteinGeneName
+	#ProteinGeneName = DataIn$data_results
+	#DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
+	if (input$exp_label=="UniqueID") {
+	  DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
+	} else 
+	{DataIngenes <- ProteinGeneName %>% dplyr::select(Gene.Name) %>% collect %>% .[["Gene.Name"]] %>%	as.character()}
 	updateSelectizeInput(session,'sel_gene', choices= DataIngenes, server=TRUE)
 })
 
@@ -25,7 +29,7 @@ observe({
 	allgroups = DataIn$groups
 	ProteinGeneName = DataIn$ProteinGeneName
 	updateSelectizeInput(session,'sel_group', choices=allgroups, selected=groups)
-	updateRadioButtons(session,'sel_geneid', inline = TRUE, choices=colnames(ProteinGeneName)[-1])
+	updateRadioButtons(session,'sel_geneid', inline = TRUE, choices=colnames(ProteinGeneName)[-1], selected="Gene.Name")
 	updateSelectizeInput(session,'expression_test',choices=tests, selected=tests[1])
 })
 

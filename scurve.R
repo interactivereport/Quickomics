@@ -8,31 +8,16 @@
 ##@Date : 2/15/2021
 ##@version 1.0
 ###########################################################################################################
-observe({
-	DataIn = DataReactive()
-	ProteinGeneName = DataIn$data_results
-	DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
-	updateSelectizeInput(session,'sel_gene_scurve', choices= DataIngenes, server=TRUE)
-})
+
+#updated Feb 28 2021, use the same gene list from search expression plot so users can enter gene name, use gene list, and load gene set
+
 
 
 Scurve_out <- reactive({
 	DataIn = DataReactive()
 	data_results <- DataIn$data_results
 
-	gene_list <- input$gene_list_scurve
-
-	if (grepl("\n", gene_list)) {
-		gene_list <-  stringr::str_split(gene_list, "\n")[[1]]
-	} else if (grepl(",", gene_list)) {
-		gene_list <-  stringr::str_split(genen_list, ",")[[1]]
-	}
-	gene_list <- gsub(" ", "", gene_list, fixed = TRUE)
-	gene_list <- unique(gene_list[gene_list != ""])
-
-	if (length(input$sel_gene_scurve) > 0) {
-		gene_list <- input$sel_gene_scurve
-	}
+	gene_list <- DataExpReactive()$tmpids
 
 	validate(need(length(gene_list)>0,"Please select a gene or input gene."))
 
