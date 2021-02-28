@@ -106,7 +106,7 @@ output$html_geneset_exp=renderUI({
 
 
 output$ui.action <- renderUI({
-  if (is.null(input$file1) || is.null(input$file2)) return()
+  if (is.null(input$file1) ) return()
   tagList(
   textInput("project_name", label="Rename Project", value=input$file1$name),
   radioButtons("species",label="Select species", choices=c("human","mouse", "rat"), inline = F, selected="human"),
@@ -210,15 +210,28 @@ DataNetworkReactive <- reactive({
   ProteinGeneName <- DataIn$ProteinGeneName
   #query <- parseQueryString(session$clientData$url_search)
   Pinfo=ProjectInfo
+  run_network=FALSE
   CorResFile <- ProjectInfo$file2
-  if (file.exists(CorResFile)) {
+  if (is.null(CorResFile))  {
+    run_network=TRUE
+  } else if (file.exists(CorResFile)) {
     load(CorResFile)
-  } else {
+  } else { run_network=TRUE}
+  
+  if (run_network) {
     withProgress(message = 'Compute correlation network data.',
                  detail = 'This may take a few minutes...',
                  value = 0,
                  {
     data_wide <- DataIn$data_wide
+    #if data_wide has many genes, trim down to 10K
+    if (nrow(data_wide)>10000 ) {
+      dataSD=apply(data_wide, 1, function(x) sd(x,na.rm=T))
+      dataM=rowMeans(data_wide)
+      diff=dataSD/(dataM+median(dataM))
+      data_wide=data_wide[order(diff, decreasing=TRUE)[1:10000], ]	 
+      cat("reduce gene size to 10K for project ", ProjectID, "\n")
+    }
     cor_res <- Hmisc::rcorr(as.matrix(t(data_wide)))
     cormat <- cor_res$r
     pmat <- cor_res$P
@@ -232,8 +245,17 @@ DataNetworkReactive <- reactive({
     )
     network <- network %>% mutate_if(is.factor, as.character) %>%
       dplyr::filter(!is.na(cor) & abs(cor) > 0.7 & p < 0.05)
+    if (nrow(network)>2e6) {
+      network <- network_back %>% mutate_if(is.factor, as.character) %>%
+        dplyr::filter(!is.na(cor) & abs(cor) > 0.8 & p < 0.005)
+    }
+    if (nrow(network)>2e6) {
+      network <- network_back %>% mutate_if(is.factor, as.character) %>%
+        dplyr::filter(!is.na(cor) & abs(cor) > 0.85 & p < 0.005)
+    }
     save(network,
          file =  paste("networkdata/", Pinfo$ProjectID, ".RData", sep = ""))
+    ProjectInfo$file2=paste("networkdata/", Pinfo$ProjectID, ".RData", sep = "")
     })
   }
   

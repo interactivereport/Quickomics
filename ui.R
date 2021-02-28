@@ -35,7 +35,7 @@ tabPanel("Select Dataset",
                                                  choices=c("", projects), selected=NULL)),
                     conditionalPanel("input.select_dataset=='Upload RData File'",
                                      fileInput("file1", "Choose data file"),
-                                     fileInput("file2", "Choose network file"),                                     
+                                     fileInput("file2", "(Optional) Choose network file"),                                     
                                      uiOutput('ui.action') ),
                     conditionalPanel("input.select_dataset=='Upload Data Files (csv)'",
                                      h5("Use the Upload Files tab to the right to create your own data set.") )
