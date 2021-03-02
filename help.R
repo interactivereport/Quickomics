@@ -60,8 +60,8 @@ output$help_heatmap <- renderText({
 	<ul>
 	<li>You can select all data,subset, upload genes to visualize.The uploaded gene should be gene names, accession number</li>
 	<li>If the selected gene or upload gene number is less than 50, it will show gene-accession names</li>
-	<li>Static PHeatmap: created by using package 'pheatmap' </li>
-	<li>Static Heatmap: created by using package 'gplots'</li>
+	<li>Static Heatmap 1: created by using package 'ComplexHeatmap' </li>
+	<li>Static Heatmap 2: created by using package 'gplots'</li>
 	<li>Interactive Heatmap: created by using package 'heatmaply'<br>
 	This function is slow if you select large number of genes.</li>
 	<li>Major options: <br>
@@ -96,7 +96,7 @@ output$help_geneset <- renderText({
 	<li>The datasets used are from <a href=\"http://software.broadinstitute.org/gsea/msigdb/collections.jsp\" target=\"_blank\"> Molecular Signatures Database (MSigDB)</a></li>
 	<li>Select genes for gene set enrichment analysis: by comparison, fold change, p value</li>
 	<li>Select interested dataset</li>
-	<li>Click one of the gene set, it will show the expression of genes in this dataset and the heat map from all the studied groups </li>
+	<li>Click one of the gene set, it will show the expression of genes in this dataset and the heatmap from all the studied groups </li>
 	<li>If the gene sets are KEGG pathway, it will label the gene as well relative expression on the KEGG pathway. Save pathway by right click </li>
 	</ul>"
 	htmlstr

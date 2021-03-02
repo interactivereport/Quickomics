@@ -180,9 +180,9 @@ tabPanel("Volcano Plot",
 ), 
 
 ##########################################################################################################
-## Heat Map
+## Heatmap
 ##########################################################################################################
-tabPanel("Heat Map",
+tabPanel("Heatmap",
 	fluidRow(
 		column(3,
 			wellPanel(
@@ -373,7 +373,7 @@ tabPanel("Gene Set Enrichment",
 				  selectInput("geneset_test4", label="4th Comparison", choices=NULL),
 				  selectInput("geneset_test5", label="5th Comparison", choices=NULL))
 				),				
-				conditionalPanel("input.geneset_tabset=='Gene Set Heat Map'",
+				conditionalPanel("input.geneset_tabset=='Gene Set Heatmap'",
 				radioButtons("gs_heatmap_label",label="Gene Label",inline = TRUE, choices=c("UniqueID", "Gene.Name"), selected="Gene.Name")),
 				conditionalPanel("input.geneset_tabset=='Gene Set Enrichment'",
 					radioButtons("MSigDB", label= "MSigDB Collections",
@@ -400,7 +400,7 @@ tabPanel("Gene Set Enrichment",
 				tabsetPanel(id="geneset_tabset",
 					tabPanel(title="Gene Set Enrichment", DT::dataTableOutput("MSigDB")),
 					tabPanel(title="Gene Expression",textInput('x1', 'Row ID'),  DT::dataTableOutput("Expression")),
-					tabPanel(title="Gene Set Heat Map", textInput('x2', 'Row ID'), plotOutput('SetHeatMap',height="auto", width = 900)),
+					tabPanel(title="Gene Set Heatmap", textInput('x2', 'Row ID'), plotOutput('SetHeatMap',height="auto", width = 900)),
 					tabPanel(title="KEGG Pathway View", textInput('x3', 'Row ID'), plotOutput('keggView')),
 					tabPanel(title="Help", htmlOutput('help_geneset'))
 			)
