@@ -56,28 +56,28 @@ observeEvent(input$gennet,{
 
 
 #
-#observeEvent(input$gennet,{
-#	output$networkD3 <- renderForceNetwork({
-#		withProgress(message = 'Making Network:', value = 0, {
-#			isolate({
-#				net <-	DataNetworkReactive()
-#				net$nodes$group = 1
-#				net$nodes$size = 10
-#				edgelist <- as.data.frame(net$edges)
-#				nodes <- as.data.frame(net$nodes)
-#				sources <- edgelist$from
-#				targets <- edgelist$to
-#				node_names <- factor(sort(unique(c(as.character(sources),  as.character(targets)))))
-#				links <- data.frame(source = match(sources, node_names) - 1,target = match(targets, node_names) - 1, value = edgelist$cor)
-#				nodes <- nodes[match(node_names, nodes$id),]
-#				forceNetwork(Links = links, Nodes = nodes, Source = "source",
-#					Target = "target", Value = "value", NodeID = "label",
-#				Group = "group", opacity = 0.9,zoom = TRUE, opacityNoHover = 1)
-#			})
-#		})
-#	})
-#})
-#
+observeEvent(input$gennet,{
+	output$networkD3 <- renderForceNetwork({
+		withProgress(message = 'Making Network:', value = 0, {
+			isolate({
+				net <-	DataNetworkReactive()
+				net$nodes$group = 1
+				net$nodes$size = 10
+				edgelist <- as.data.frame(net$edges)
+				nodes <- as.data.frame(net$nodes)
+				sources <- edgelist$from
+				targets <- edgelist$to
+				node_names <- factor(sort(unique(c(as.character(sources),  as.character(targets)))))
+				links <- data.frame(source = match(sources, node_names) - 1,target = match(targets, node_names) - 1, value = edgelist$cor)
+				nodes <- nodes[match(node_names, nodes$id),]
+				forceNetwork(Links = links, Nodes = nodes, Source = "source",
+					Target = "target", Value = "value", NodeID = "label",fontSize=7,
+				Group = "group", opacity = 0.9,zoom = TRUE, opacityNoHover = 1)
+			})
+		})
+	})
+})
+
 
 output$dat_network <- DT::renderDataTable({
 	DataIn <- DataReactive()

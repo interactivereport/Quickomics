@@ -470,7 +470,7 @@ tabPanel("Correlation Network",
 		column(9,
 			tabsetPanel(id="Network_tabset",
 			tabPanel("visNetwork", visNetworkOutput("visnetwork", height="800px"), style = "background-color: #eeeeee;"),
-			tabPanel("networkD3(disabled)"), #forceNetworkOutput("networkD3", height="800px"), style = "background-color: #eeeeee;"),
+			tabPanel("networkD3", forceNetworkOutput("networkD3", height="800px"), style = "background-color: #eeeeee;"),
      	tabPanel(title="Data Table",	DT::dataTableOutput("dat_network")),
 			tabPanel(title="Help", htmlOutput('help_network'))
 			)

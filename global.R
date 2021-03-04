@@ -52,7 +52,7 @@ suppressPackageStartupMessages({
 	library(shinyjqui)
 	library(ggrastr)
 	library(biomaRt)
-	#library(networkD3)
+	library(networkD3)
 	library(Hmisc)
 	library(stringi)
 	library(plyr)
