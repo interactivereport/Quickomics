@@ -44,10 +44,11 @@ For a data set, the "Upload Files" tool allows users to upload three required fi
 4.	Optional Gene/Protein Name File: The system has built-in function to convert unique IDs in the data files to gene symbols and create the Gene/Protein Name file, so most users don't need to prepare the file. Nevertheless, if provided by users, it must have four columns: “id” (sequential numbers like 1,2,3 … …), “UniqueID” (matching IDs used in the expression and comparison data file), “Gene.Name” (official gene symbols), “Protein.ID” (UniProt protein IDs, or keep it empty for RNA-Seq data). Additional columns (e.g. gene biotype) are optional.
  
 After the data files are uploaded and processed, the system will automatically generate all required R data files and provide a link for the user to explore the dataset in Quickomics immediately.
+
 Behind the scene, Bioconductor biomaRt package (https://bioconductor.org/packages/release/bioc/html/biomaRt.html) has been used to convert gene IDs (Ensembl gene, NCBI gene ID, etc.) into gene symbols by querying Ensembl databases. For protein IDs, we generated a custom lookup table using information downloaded from UniProt Knowledgebase to convert UniProt IDs to gene symbols and protein names. We didn't use biomaRt for proteins as Ensembl databases only cover about 60-80% protein IDs in a typical proteomics data set.
 
 # Prepare R Data Files by Computational Biologists 
-We recommend uploading csv files, which is convenient for general users who can skip section 2.2 entirely. Nevertheless, experienced R programmers can create R data files to be uploaded through “Upload RData File” option.
+We recommend uploading csv files, which is convenient for general users. Nevertheless, experienced R programmers can create R data files to be uploaded through “Upload RData File” option.
 
 Two R data files are required for each data set, one contains the main data and the other contains gene co-expression network information. For the pre-loaded datasets, main data files are located in the “data” folder,  https://github.com/interactivereport/Quickomics/tree/master/data, and gene co-expression network files are located in the “networkdata” folder, https://github.com/interactivereport/Quickomics/tree/master/networkdata.   One can review the content of a R data file (e.g. Mouse_microglia_RNA-Seq.RData) in the “data” folder by loading it into R. 
 The main R data file contains the following R data frame objects. 
@@ -58,6 +59,7 @@ The main R data file contains the following R data frame objects.
 5.	results_long: The comparison results in long format with five columns, “UniqueID”, “test”, “Adj.P.Value”, “P.Value” and “logFC”. “UniqueID” matches “UniqueID” in ProteinGeneName. “test” column has the comparison names that must match “ComparePairs” values in MetaData. The other values are typically computed from statistical analysis, but the data headers must be changed to “Adj.P.Value”, “P.Value” and “logFC”.
 6.	data_results: This is a summary table starting with “UniqueID” and “Gene.Name” columns, then the intensity (max or mean expression value from data_wide for each gene), mean and SD expression values for each group, and finally comparison data (comparison name added as prefix of columns).
 The network data object is computed from “data_wide” expression matrix by using Hmisc R package exemplified by the code snippet below.
+```R
 cor_res <- Hmisc::rcorr(as.matrix(t(data_wide))) 
 cormat <- cor_res$r
 pmat <- cor_res$P
@@ -69,7 +71,7 @@ network <- tibble::tibble (
     p = signif(pmat[ut], 2),
     direction = as.integer(sign(cormat[ut]))
 )
-
+```
 ##	Example R script to prepare R data files from RNA-Seq results
 We have provided example input files (TPM and count matrix files, sample grouping file, comparison list file) and the R scripts to generate the main data and network R data files at https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_RNA_Seq_data. Please note that you may need to modify RNA_Seq_raw2quickomics.R to fit your input files.
 •	rsem_TPM.txt: The TPM matrix. One can also use RPKM matrix if needed. 
@@ -77,9 +79,9 @@ We have provided example input files (TPM and count matrix files, sample groupin
 •	grpID.txt: This file lists the group information for each sample.
 •	comparison.txt: This list lists the comparisons to perform (group 1 vs group 2 in each row).
 The following command will read the above data files, run differential gene expression analysis using DESeq2, and create main and network R data files.
-
+```bash
 $ Rscript RNA_Seq_raw2quickomics.R
-
+```
 ##	Example R script to prepare R data files from proteomics results
 We have provided the example input files (normalized protein expression, comparison data, sample information, protein and gene names) and the R script to generate the main data and network R data files at https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_Proteomics_data. Please note that you may need to modify Proteomics2Quickomics.R to fit your input files.
 •	NormalizedExpression.csv: Normalized protein expression (log2 transformed). 
@@ -87,6 +89,6 @@ We have provided the example input files (normalized protein expression, compari
 •	Sample.csv: Sample information file.
 •	ProteinID_Symbol.csv: This file lists the proteinIDs and associate gene symbols.
 The following command will read the above data files and create main and network R data files.
-
+```bash
 $ Rscript Proteomics2Quickomics.R
-
+```
