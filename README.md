@@ -78,6 +78,7 @@ We have provided example input files (TPM and count matrix files, sample groupin
 * rsem_expected_count.txt:  The gene count matrix. We used RSEM counts in this case, but gene count results from other methods can be used as well. 
 * grpID.txt: This file lists the group information for each sample.
 * comparison.txt: This list lists the comparisons to perform (group 1 vs group 2 in each row).
+
 The following command will read the above data files, run differential gene expression analysis using DESeq2, and create main and network R data files.
 ```bash
 $ Rscript RNA_Seq_raw2quickomics.R
@@ -88,6 +89,7 @@ We have provided the example input files (normalized protein expression, compari
 * ComparisonData.csv:  Comparison results. The statistic values are: logFC,  P.Value and Adj.P.Value. This can be created using R packages like limma.
 * Sample.csv: Sample information file.
 * ProteinID_Symbol.csv: This file lists the proteinIDs and associate gene symbols.
+
 The following command will read the above data files and create main and network R data files.
 ```bash
 $ Rscript Proteomics2Quickomics.R
