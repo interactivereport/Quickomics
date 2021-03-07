@@ -74,20 +74,20 @@ network <- tibble::tibble (
 ```
 ##	Example R script to prepare R data files from RNA-Seq results
 We have provided example input files (TPM and count matrix files, sample grouping file, comparison list file) and the R scripts to generate the main data and network R data files at https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_RNA_Seq_data. Please note that you may need to modify RNA_Seq_raw2quickomics.R to fit your input files.
-•	rsem_TPM.txt: The TPM matrix. One can also use RPKM matrix if needed. 
-•	rsem_expected_count.txt:  The gene count matrix. We used RSEM counts in this case, but gene count results from other methods can be used as well. 
-•	grpID.txt: This file lists the group information for each sample.
-•	comparison.txt: This list lists the comparisons to perform (group 1 vs group 2 in each row).
+* rsem_TPM.txt: The TPM matrix. One can also use RPKM matrix if needed. 
+* rsem_expected_count.txt:  The gene count matrix. We used RSEM counts in this case, but gene count results from other methods can be used as well. 
+* grpID.txt: This file lists the group information for each sample.
+* comparison.txt: This list lists the comparisons to perform (group 1 vs group 2 in each row).
 The following command will read the above data files, run differential gene expression analysis using DESeq2, and create main and network R data files.
 ```bash
 $ Rscript RNA_Seq_raw2quickomics.R
 ```
 ##	Example R script to prepare R data files from proteomics results
 We have provided the example input files (normalized protein expression, comparison data, sample information, protein and gene names) and the R script to generate the main data and network R data files at https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_Proteomics_data. Please note that you may need to modify Proteomics2Quickomics.R to fit your input files.
-•	NormalizedExpression.csv: Normalized protein expression (log2 transformed). 
-•	ComparisonData.csv:  Comparison results. The statistic values are: logFC,  P.Value and Adj.P.Value. This can be created using R packages like limma.
-•	Sample.csv: Sample information file.
-•	ProteinID_Symbol.csv: This file lists the proteinIDs and associate gene symbols.
+* NormalizedExpression.csv: Normalized protein expression (log2 transformed). 
+* ComparisonData.csv:  Comparison results. The statistic values are: logFC,  P.Value and Adj.P.Value. This can be created using R packages like limma.
+* Sample.csv: Sample information file.
+* ProteinID_Symbol.csv: This file lists the proteinIDs and associate gene symbols.
 The following command will read the above data files and create main and network R data files.
 ```bash
 $ Rscript Proteomics2Quickomics.R
