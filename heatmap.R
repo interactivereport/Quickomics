@@ -269,7 +269,7 @@ pheatmap2_out <- eventReactive(input$plot_heatmap, {
       data_range=quantile(unlist(abs(data.in)), probs=c(0.01, 0.5, 0.99), na.rm=T)
       max_s=data_range[3]
       col_fun=colorRamp2(c(0-max_s, 0, max_s),  c(input$lowColor,input$midColor, input$highColor) )
-      legend_text=str_c("Scaled Value")	
+      legend_text=str_c("Z-Score")	
     }
     if (cluster_cols==F) {cutree_cols=0}
     if (input$heatmap_highlight=="No") {row_label_side="right"} else (row_label_side="left")
