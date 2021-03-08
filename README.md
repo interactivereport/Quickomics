@@ -18,7 +18,7 @@ For a data set, the "Upload Files" tool allows users to upload three required fi
  
 ![https://interactivereport.github.io/Quickomics/Upload_Files.png](https://interactivereport.github.io/Quickomics/Upload_Files.png "Upload_Files")
 
-After the data files are processed, Quickomics will automatically load all required data for exploration immediately and provide a link for the user to go back in the future.
+After the data files are processed, Quickomics will automatically load all required data for exploration immediately and provide a link for the user to come back in the future.
 
 Behind the scene, Bioconductor biomaRt package (https://bioconductor.org/packages/release/bioc/html/biomaRt.html) has been used to convert gene IDs (Ensembl gene, NCBI gene ID, etc.) into gene symbols by querying Ensembl databases. For protein IDs, we generated a custom lookup table using information downloaded from UniProt Knowledgebase to convert UniProt IDs to gene symbols and protein names. We didn't use biomaRt for proteins as Ensembl databases only cover about 60-80% protein IDs in a typical proteomics data set.
 
