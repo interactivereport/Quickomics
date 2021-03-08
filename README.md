@@ -1,4 +1,4 @@
-# Quickomics: Smart query tool to explore omics data in an intuitive, interactive and informative manner
+# Quickomics: exploring omics data in an intuitive, interactive and informative manner
 
 Demo site: http://quickomics.bxgenomics.com
 
