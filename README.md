@@ -9,33 +9,6 @@ Interactive Figure 1: https://interactivereport.github.io/Quickomics/Figure1.htm
 
 Fig. 1. Selected Quickomics functions applied to a dataset of microglial RNA-seq gene expression from three mouse genotypes over time. A) PCA based on full dataset highlights primary sample separation by mouse age at which the cells were isolated. (B) Volcano plot visualizes differentially expressed genes, most of which show reduced expression in 2mo KO compared to 2mo_WT microglia. For spacing purpose, absolute log2FC (Fold Change) and negative log10 adjusted p-value are capped at 1.5 and 15, respectively. (C) Correlation analysis between two comparisons shows that aging and Cx3cr1-KO have a similar effect on gene expression. (D) Pattern clustering identifies subsets of genes with similar expression over the samples. The clustering is mostly driven by age, with the KO genotype having a similar, but smaller effect. (E) Heatmap of all samples allows the identification of gene clusters with expression regulated by age and/or genotype. Key genes and the pathways they belong to are highlighted on the right. (F) After pathway enrichment analysis, KEGG pathways (Kanehisa and Goto, 2000) of interest can be displayed in a cellular context. The color bars with each stripe representing one comparison show log2 fold changes in various comparisons, allowing project-wide insights for patterns of expression. (G) Correlation network shows potential links between genes of interest.
 
-
-# Installation
-### 1) Install the following R packages:
-```R
-cran_packages=c("shiny", "shinythemes", "shinyjs", "plotly", "reshape2", "tidyverse", "gplots", "ggpubr", "gridExtra", "ggrepel",
-"RcolorBrewer", "pheatmap", "rgl", "car", "colourpicker", "VennDiagram", "factoextra",  "openxlsx", "visNetwork",
-"cowplot", "circlize", "ComplexHeatmap", "svglite", "shinyjgui", "Hmisc", "ggrastr", "ggExtra", "network3D")
-#Note: Hmisc is not required to run the Shiny app but is needed to prepare network data from expression matrix.
-install.packages(cran_packages, repos="http://cran.r-project.org/")  #choose repos based on your location if needed
-
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-BiocManager::install(c("Mfuzz"))
-
-Requirements: shiny >= v1.4.0.2 
-```
-### 2) Clone Quickomics GitHub repository
-```
-git clone https://github.com/interactivereport/Quickomics.git
-```
-see more at https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/cloning-a-repository
-
-### 3) Launch the R Shiny App
-Check the following web links on various options to launch the app. 
-* https://shiny.rstudio.com/articles/running.html
-* https://shiny.rstudio.com/deploy/
-
 # Upload your own data files in csv (Comma Separated Values) format
 For a data set, the "Upload Files" tool allows users to upload three required files, namely sample metadata, normalized expression data and statistical comparison results in csv format (Comma Separated Values) to Quickomics directly. Example data sets are provided in GitHub for both RNAseq (https://bit.ly/2MRkFcb) and proteomics (https://bit.ly/3rn4i6a). Detailed formatting guidance is outlined below,
 1.	Sample Metadata File: It should have “sampleid” and “group” columns, with additional columns optional. Sample identifiers must match those used in the expression data file.
@@ -96,3 +69,29 @@ The following command will read the above data files and create main and network
 ```bash
 $ Rscript Proteomics2Quickomics.R
 ```
+
+# Local Installation
+### 1) Install the following R packages:
+```R
+cran_packages=c("shiny", "shinythemes", "shinyjs", "plotly", "reshape2", "tidyverse", "gplots", "ggpubr", "gridExtra", "ggrepel",
+"RcolorBrewer", "pheatmap", "rgl", "car", "colourpicker", "VennDiagram", "factoextra",  "openxlsx", "visNetwork",
+"cowplot", "circlize", "ComplexHeatmap", "svglite", "shinyjgui", "Hmisc", "ggrastr", "ggExtra", "network3D")
+#Note: Hmisc is not required to run the Shiny app but is needed to prepare network data from expression matrix.
+install.packages(cran_packages, repos="http://cran.r-project.org/")  #choose repos based on your location if needed
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(c("Mfuzz"))
+
+Requirements: shiny >= v1.4.0.2 
+```
+### 2) Clone Quickomics GitHub repository
+```
+git clone https://github.com/interactivereport/Quickomics.git
+```
+see more at https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/cloning-a-repository
+
+### 3) Launch the R Shiny App
+Check the following web links on various options to launch the app. 
+* https://shiny.rstudio.com/articles/running.html
+* https://shiny.rstudio.com/deploy/
