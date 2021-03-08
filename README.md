@@ -43,6 +43,8 @@ For a data set, the "Upload Files" tool allows users to upload three required fi
 3.	Comparison Data File: It should have five columns, “UniqueID”, “test”, “Adj.P.Value”, “P.Value” and “logFC”. The comparison names are listed in “test” column. Please note that wrongly named column headers will cause issues.
 4.	Optional Gene/Protein Name File: The system has built-in function to convert unique IDs in the data files to gene symbols and create the Gene/Protein Name file, so most users don't need to prepare the file. Nevertheless, if provided by users, it must have four columns: “id” (sequential numbers like 1,2,3 … …), “UniqueID” (matching IDs used in the expression and comparison data file), “Gene.Name” (official gene symbols), “Protein.ID” (UniProt protein IDs, or keep it empty for RNA-Seq data). Additional columns (e.g. gene biotype) are optional.
  
+![https://interactivereport.github.io/Quickomics/Upload_Files.png](https://interactivereport.github.io/Quickomics/Upload_Files.png?raw=true "Upload_Files")
+
 After the data files are uploaded and processed, the system will automatically generate all required R data files and provide a link for the user to explore the dataset in Quickomics immediately.
 
 Behind the scene, Bioconductor biomaRt package (https://bioconductor.org/packages/release/bioc/html/biomaRt.html) has been used to convert gene IDs (Ensembl gene, NCBI gene ID, etc.) into gene symbols by querying Ensembl databases. For protein IDs, we generated a custom lookup table using information downloaded from UniProt Knowledgebase to convert UniProt IDs to gene symbols and protein names. We didn't use biomaRt for proteins as Ensembl databases only cover about 60-80% protein IDs in a typical proteomics data set.
