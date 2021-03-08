@@ -20,6 +20,10 @@ observe({
 	} else 
 	{DataIngenes <- ProteinGeneName %>% dplyr::select(Gene.Name) %>% collect %>% .[["Gene.Name"]] %>%	as.character()}
 	updateSelectizeInput(session,'sel_gene', choices= DataIngenes, server=TRUE)
+	attributes=setdiff(colnames(DataIn$MetaData), c("sampleid", "Order", "ComparePairs") )
+	updateSelectInput(session, "colorby", choices=c("None", attributes), selected="group")  
+	updateSelectInput(session, "plotx", choices=attributes, selected="group")  
+	
 })
 
 observe({
@@ -137,47 +141,66 @@ boxplot_out <- reactive({
   barcol = input$barcol
   sel_group=input$sel_group
   group_order(sel_group)
+  DataIn = DataReactive()
+  colorby=sym(input$colorby)
+  Val_colorby=input$colorby
+  MetaData=DataIn$MetaData
+  plotx=sym(input$plotx)
   
   data_long_tmp <- DataExpReactive()$data_long_tmp
-
+  if (Val_colorby!="None" & Val_colorby!="group" ) { #add coloyby column
+    data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!colorby))
+  } else {
+    data_long_tmp$None="None"
+  }
+  if (input$plotx!="group" ) { #add plotx column
+    data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!plotx))
+  } 
+  
   if (input$SeparateOnePlot == "Separate") {
 
-    p <- ggplot(data_long_tmp,aes(x=group, y=expr, fill=factor(group))) +
+    p <- ggplot(data_long_tmp,aes(x=!!plotx,y=expr,fill=!!colorby)) +
       facet_wrap(~ labelgeneid, scales = "free", ncol = 3)
     if (input$plotformat == "boxplot") {
       p <- p + geom_boxplot() +
-        stat_summary(fun=mean, geom="point", shape=18,size=4,color = "red")
-    } else 	if (input$plotformat == "violin") {
+        stat_summary(aes(group=!!colorby), fun=mean, geom="point", shape=18,size=3, color = "red", position = position_dodge(width=0.8))
+    }
+    if (input$plotformat == "violin") {
       p <- p + geom_violin(trim = FALSE) +
-        stat_summary(fun=mean, geom="point",shape=18,size=4,color = "red")
-    } else if (input$plotformat == "barplot") {
+        stat_summary(fun=mean, geom="point",shape=18,size=3,color = "red",position = position_dodge(width=0.8))
+    }
+    if (input$plotformat == "barplot") {
       p <- p + stat_summary(fun.data=mean_se, position=position_dodge(0.8), geom="errorbar",aes(width=0.5)) +
         stat_summary(fun=mean, position=position_dodge(0.8), geom="bar")
-    } else if (input$plotformat == "line") {
-      p <- p + stat_summary(fun=mean, geom="point",shape=18, size=4, color = "red") +
-        stat_summary(aes(y = expr, group=1), fun=mean, colour="red", geom="line", group=1)+
-        stat_summary(fun.data=mean_se, position=position_dodge(0.8), geom="errorbar",aes(width=0.5))
     }
-    if (input$IndividualPoint == "YES")
-      p <- p +  geom_dotplot(binaxis='y', stackdir='center', position = "dodge", dotsize = 0.5)
+    if (input$plotformat == "line") {
+      p <- p + stat_summary(aes(color=!!colorby), fun=mean, geom="point",shape=18, size=3) +
+        stat_summary(aes(y = expr, group=!!colorby, color=!!colorby), fun=mean, geom="line")+
+        stat_summary(fun.data=mean_se, geom="errorbar",aes(width=0.3, color=!!colorby))
+    }
     
-    if (input$ColPattern == "Palette") {
-      p <- p + scale_fill_manual(values = colorRampPalette(brewer.pal(8, input$colpalette))(length(sel_group)))
+    if (input$IndividualPoint == "YES")
+      p <- p +  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5,  position = position_dodge(width=0.8))
+    if (Val_colorby!="None" ) {
+      use_color=colorRampPalette(brewer.pal(8, input$colpalette))(length(sel_group))
+      if (input$plotformat == "line") {
+        p <- p +scale_color_manual(values=use_color)+ scale_fill_manual(values =use_color)
+      } else {p <- p + scale_fill_manual(values =use_color)}
+      
     } else {
-      p <- p + scale_fill_manual(values=rep(barcol, length(sel_group)))
-    } 
-
+      p <- p + scale_fill_manual(values=rep(barcol,length(sel_group))) #+scale_color_manual(values=rep(barcol,length(sel_group)))
+    }
+    
     p <- p + theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +
       theme (plot.margin = unit(c(1,1,1,1), "cm"),
              text = element_text(size=input$expression_axisfontsize),
              axis.text.x = element_text(angle = input$Xangle, hjust=0.5, vjust=0.5),
-             legend.position="none", 
              strip.text.x = element_text(size=input$expression_titlefontsize))
-    
+    if (Val_colorby=="None" ) {p <- p +	 theme (legend.position="none") }
   }
  # browser()
   if (input$SeparateOnePlot == "OnePlot") {
-    data_long_tmp1 <- ddply(data_long_tmp, c("UniqueID", "group"), summarise,
+    data_long_tmp1 <- ddply(data_long_tmp, c("UniqueID", input$plotx), summarise,
                            N    = sum(!is.na(expr)),
                            mean = mean(expr, na.rm=TRUE),
                            sd   = sd(expr, na.rm=TRUE),
@@ -188,7 +211,7 @@ boxplot_out <- reactive({
 
 
     pd <- position_dodge(0.1) # move them .05 to the left and right
-    p <-	ggplot(data_long_tmp1, aes(x=group, y=mean, group=Gene.Name))  
+    p <-	ggplot(data_long_tmp1, aes(x=!!plotx, y=mean, group=Gene.Name))  
     
     if (input$plotformat == "line") {
       p <- p + geom_errorbar(aes(ymin=mean-se, ymax=mean+se, color = Gene.Name),size=1, width=.2, position=pd) +
@@ -244,7 +267,10 @@ browsing_out <- reactive({
 	data_long = DataIn$data_long
 	results_long = DataIn$results_long
 	ProteinGeneName = DataIn$ProteinGeneName
-
+	colorby=sym(input$colorby)
+	Val_colorby=input$colorby
+	MetaData=DataIn$MetaData
+	plotx=sym(input$plotx)
 	genelabel=input$sel_geneid
 	sel_group=input$sel_group
 	group_order(sel_group)
@@ -274,58 +300,64 @@ browsing_out <- reactive({
 
 	data_long_tmp = filter(data_long, UniqueID %in% tmpids$UniqueID, group %in% sel_group) %>%
 	filter(!is.na(expr)) %>% as.data.frame()
-
+	if (Val_colorby!="None" & Val_colorby!="group" ) { #add coloyby column
+	  data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!colorby))
+	} else {
+	  data_long_tmp$None="None"
+	}
+	if (input$plotx!="group" ) { #add plotx column
+	  data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!plotx))
+	} 
+#	browser() #debug
 	data_long_tmp$labelgeneid = data_long_tmp[,match(genelabel,colnames(data_long_tmp))]
 	data_long_tmp$group = factor(data_long_tmp$group,levels = sel_group)
 	validate(need(nrow(data_long_tmp)>0, message = "Please select at least one valid gene to plot."))
   #browser() #debug
-	if(numperpage==4) {
-		p <- ggplot(data_long_tmp,aes(x=group,y=expr,fill=group)) +
-		facet_wrap(~ labelgeneid, scales = "free",nrow = 2, ncol = 2)
-	}
-	if(numperpage==6) {
-		p <- ggplot(data_long_tmp,aes(x=group,y=expr,fill=group)) +
-		facet_wrap(~ labelgeneid, scales = "free", nrow = 2, ncol = 3)
-	}
-	if(numperpage==9) {
-		p <- ggplot(data_long_tmp,aes(x=group,y=expr,fill=group)) +
-		facet_wrap(~ labelgeneid, scales = "free", nrow = 3, ncol = 3)
-	}
+	if(numperpage==4) { nrow = 2; ncol = 2 
+	} else if(numperpage==6) {
+		nrow = 2; ncol = 3
+	} else {  nrow = 3; ncol = 3}
+	p <- ggplot(data_long_tmp,aes(x=!!plotx,y=expr,fill=!!colorby)) +
+	  facet_wrap(~ labelgeneid, scales = "free",nrow = nrow, ncol = ncol)
 
 	if (input$plotformat == "boxplot") {
 		p <- p + geom_boxplot() +
-		stat_summary(fun=mean, geom="point", shape=18,size=4,color = "red")
+		stat_summary(aes(group=!!colorby), fun=mean, geom="point", shape=18,size=3, color = "red", position = position_dodge(width=0.8))
 	}
 	if (input$plotformat == "violin") {
 		p <- p + geom_violin(trim = FALSE) +
-		stat_summary(fun=mean, geom="point",shape=18,size=4,color = "red")
+		stat_summary(fun=mean, geom="point",shape=18,size=3,color = "red",position = position_dodge(width=0.8))
 	}
 	if (input$plotformat == "barplot") {
 		p <- p + stat_summary(fun.data=mean_se, position=position_dodge(0.8), geom="errorbar",aes(width=0.5)) +
 		stat_summary(fun=mean, position=position_dodge(0.8), geom="bar")
 	}
 	if (input$plotformat == "line") {
-		p <- p + stat_summary(fun=mean, geom="point",shape=18, size=4, color = "red") +
-		stat_summary(aes(y = expr, group=1), fun=mean, colour="red", geom="line", group=1)+
-		stat_summary(fun.data=mean_se, position=position_dodge(0.8), geom="errorbar",aes(width=0.5))
+		p <- p + stat_summary(aes(color=!!colorby), fun=mean, geom="point",shape=18, size=3) +
+		stat_summary(aes(y = expr, group=!!colorby, color=!!colorby), fun=mean, geom="line")+
+		stat_summary(fun.data=mean_se, geom="errorbar",aes(width=0.3, color=!!colorby))
 	}
 
 	if (input$IndividualPoint == "YES")
-	p <- p +  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5)
-
-	if (input$ColPattern == "Palette") {
-			#p <- p + scale_fill_brewer(palette=input$colpalette)
-			p <- p + scale_fill_manual(values = colorRampPalette(brewer.pal(8, input$colpalette))(length(sel_group)))
+	p <- p +  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5,  position = position_dodge(width=0.8))
+	if (Val_colorby!="None" ) {
+	    use_color=colorRampPalette(brewer.pal(8, input$colpalette))(length(sel_group))
+			if (input$plotformat == "line") {
+			  p <- p +scale_color_manual(values=use_color)+ scale_fill_manual(values =use_color)
+			} else {p <- p + scale_fill_manual(values =use_color)}
+			
 	} else {
-		p <- p + scale_fill_manual(values=rep(barcol,length(sel_group)))
+		p <- p + scale_fill_manual(values=rep(barcol,length(sel_group))) #+scale_color_manual(values=rep(barcol,length(sel_group)))
 	}
-
 	p <- p +	theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +
 	  theme (plot.margin = unit(c(1,1,1,1), "cm"),
 	         text = element_text(size=input$expression_axisfontsize),
 	         axis.text.x = element_text(angle = input$Xangle, hjust=0.5, vjust=0.5),
-	         legend.position="none", 
 	         strip.text.x = element_text(size=input$expression_titlefontsize))
+	if (Val_colorby=="None" ) {
+	p <- p +	 theme (legend.position="none")
+	}
+
 	if (input$exp_plot_Y_scale=="Manual") {
 	  p <- p + ylim(input$exp_plot_Ymin, input$exp_plot_Ymax)
 	}

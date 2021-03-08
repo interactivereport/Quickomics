@@ -23,7 +23,7 @@ observe({
   ProteinGeneName = DataIn$ProteinGeneName
   updateRadioButtons(session,'heatmap_label', inline = TRUE, choices=colnames(ProteinGeneName)[-1], selected="Gene.Name")
   attributes=setdiff(colnames(DataIn$MetaData), c("sampleid", "Order", "ComparePairs") )
-  updateSelectInput(session, "heatmap_annot", choices=attributes, selected=attributes)  
+  updateSelectInput(session, "heatmap_annot", choices=attributes, selected="group")  
 })
 
 observe({
