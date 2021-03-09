@@ -155,6 +155,6 @@ var MY_SECRET_ID = /PHPSESSID=([^;]+)/i.test(document.cookie) ? RegExp.$1 : fals
 <script src="//bxngs.com/bxomics/api/genesets3.js"></script>
 <hr>
 <div align="center" style="font-size:11px">QuickOmics ver1.0 Developed by:
-Benbo Gao, Xinmin Zhang and Baohong Zhang<br><a href="https://github.com/interactivereport/Quickomics/">More information at GitHub</a>
+Benbo Gao, Xinmin Zhang and Baohong Zhang<br><a href="https://github.com/interactivereport/Quickomics/">More information at GitHub</a> | <a href="https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf">Tutorial</a>
 </div>
 '

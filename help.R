@@ -14,10 +14,11 @@ output$help_input <- renderText({
 	htmlstr <- "
 	<br>
 	<ul>
-	<li>Result Table: Statistics result by using LIMMA package, include log2 Fold Change, p value, p-values adjusted (Benjamini-Hochberg)</li>
+	<li>Result Table: Statistics result, include log2 Fold Change, p value, p-values adjusted (Benjamini-Hochberg)</li>
 	<li>Data Table: Normalized data</li>
 	<li>Sample Table: sample group and comparison information</li>
 	<li>Protein Gene Names: protein accession number and gene symbol</li>
+    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -36,6 +37,7 @@ output$help_QC <- renderText({
 	<li>Sample-sample Distance: the Euclidean distance computed from expression values of the samples</li>
 	<li>Box Plot: The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five number summary: minimum, first quartile, median, third quartile, and maximum</li>
 	<li>CV Distribution:  show the histogram of CV and median of CV for each group</li>
+    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -49,6 +51,7 @@ output$help_volcano <- renderText({
 	<li>Volcano Plot (Static): You can select the comparison group, fold change (not log2 FC) cutoff, p value cutoff. The selected proteins will be showed in red. Top 50 genes will be labeled </li>
 	<li>Volcano Plot (Interactive)</li>
 	<li>Data Output: selected genes data</li>
+    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -69,6 +72,7 @@ output$help_heatmap <- renderText({
 	Distance Metric: : function used to compute the distance (dissimilarity) between both rows and columns. <br>
 	Linkage Algorithm: methods of agglomerative hierarchical clustering<br>
 	Scale: If the values should be centered and scaled in either the row direction or the column direction, or none. </li>
+    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -83,6 +87,7 @@ output$help_expression <- renderText({
 	<li>Data Output: show the selected protein expression </li>
 	<li>Rank Abundance Curve: helps interpret the distribution of relative abundance and expression levels of a set of genes.</li>
 	<li>Options are straightforward </li>
+    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -98,6 +103,7 @@ output$help_geneset <- renderText({
 	<li>Select interested dataset</li>
 	<li>Click one of the gene set, it will show the expression of genes in this dataset and the heatmap from all the studied groups </li>
 	<li>If the gene sets are KEGG pathway, it will label the gene as well relative expression on the KEGG pathway. Save pathway by right click </li>
+    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -114,6 +120,7 @@ output$help_pattern <- renderText({
 	 <a href=\"https://en.wikipedia.org/wiki/K-medoids\" target=\"_blank\">  partitioning around medoids (PAM)</a></li>
 	<li>program determined the optimal number of clusters</li>
 	<li>If the gene sets are KEGG pathway, it will label the gene as well relative expression on the KEGG pathway. Save pathway by right click </li>
+    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -125,6 +132,7 @@ output$help_network <- renderText({
 	<li>The co-expression network construction is based on protein-protein correlation matrix information. In order to speed up the response time, only keep correlation pairs with |r| > 0.6  </li>
 	<li>You can search genes to find out expression correlated genes</li>
 	<li>Two network visualization methods provided </li>
+    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -136,6 +144,7 @@ output$help_venn <- renderText({
 	<ul>
 	<li>Used to generate venn diagram among different comparsions in the experiment</li>
 	<li>data output are intersection among different groups </li>
+    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -147,6 +156,7 @@ output$help_vennp <- renderText({
 	<ul>
 	<li>Used to generate venn diagram among different experiments in the list</li>
 	<li>For different expriments, the samples maybe from different species, and used different database to search. Only gene names are used for intersection</li>
+    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
