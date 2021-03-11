@@ -246,11 +246,11 @@ DataNetworkReactive <- reactive({
     network <- network %>% mutate_if(is.factor, as.character) %>%
       dplyr::filter(!is.na(cor) & abs(cor) > 0.7 & p < 0.05)
     if (nrow(network)>2e6) {
-      network <- network_back %>% mutate_if(is.factor, as.character) %>%
+      network <- network %>% mutate_if(is.factor, as.character) %>%
         dplyr::filter(!is.na(cor) & abs(cor) > 0.8 & p < 0.005)
     }
     if (nrow(network)>2e6) {
-      network <- network_back %>% mutate_if(is.factor, as.character) %>%
+      network <- network %>% mutate_if(is.factor, as.character) %>%
         dplyr::filter(!is.na(cor) & abs(cor) > 0.85 & p < 0.005)
     }
     save(network,
