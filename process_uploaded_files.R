@@ -171,12 +171,12 @@ observeEvent(input$uploadData, {
   sinfo1<-data.frame(sampleid=names(data_wide))%>%left_join(MetaData%>%dplyr::select(sampleid, group))
   for(grp in unique(sinfo1$group) ){
     subdata<-data.frame(UniqueID=rownames(data_wide), t(apply(data_wide[,sinfo1$group==grp],1,function(x)return(setNames(c(mean(x),sd(x)),paste(grp,c("Mean","sd"),sep="_"))))), check.names=FALSE )
-    data_results<-data_results%>%left_join(subdata)
+    data_results<-data_results%>%left_join(subdata%>%filter(!duplicated(UniqueID)))
   }
   for (ctr in tests) {
     subdata<-results_long%>%filter(test==ctr)%>%dplyr::select(UniqueID, logFC, P.Value, Adj.P.Value)
     names(subdata)[2:4]=str_c(ctr, "_", names(subdata)[2:4])
-    data_results<-data_results%>%left_join(subdata)
+    data_results<-data_results%>%left_join(subdata%>%filter(!duplicated(UniqueID)))
   }
     
   strOut=str_c("unlisted/", ProjectID, ".RData")
