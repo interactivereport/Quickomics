@@ -170,7 +170,7 @@ observeEvent(input$uploadData, {
     left_join(data.frame(UniqueID=rownames(data_wide), Intensity=apply(data_wide,1,mean))%>%filter(!duplicated(UniqueID)))
   sinfo1<-data.frame(sampleid=names(data_wide))%>%left_join(MetaData%>%dplyr::select(sampleid, group))
   for(grp in unique(sinfo1$group) ){
-    subdata<-data.frame(UniqueID=rownames(data_wide), t(apply(data_wide[,sinfo1$group==grp],1,function(x)return(setNames(c(mean(x),sd(x)),paste(grp,c("Mean","sd"),sep="_"))))), check.names=FALSE )
+    subdata<-data.frame(UniqueID=rownames(data_wide), t(apply(data_wide[,sinfo1$group==grp, drop=FALSE],1,function(x)return(setNames(c(mean(x),sd(x)),paste(grp,c("Mean","sd"),sep="_"))))), check.names=FALSE )
     data_results<-data_results%>%left_join(subdata%>%filter(!duplicated(UniqueID)))
   }
   for (ctr in tests) {
