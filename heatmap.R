@@ -96,7 +96,8 @@ DataHeatMapReactive <- reactive({
   
   if (input$heatmap_subset == "Subset") {
     if(length(filteredGene())>0) {
-      tmpdat  <-  tmpdat[filteredGene(),]
+      gene_list=intersect(rownames(tmpdat), filteredGene()) #user only genes that are in expression.
+      tmpdat  <-  tmpdat[gene_list,]
     }
   }
   

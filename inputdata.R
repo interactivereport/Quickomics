@@ -147,7 +147,7 @@ DataReactive <- reactive({
                  }
                  tests  <-
                    as.character(MetaData$ComparePairs[MetaData$ComparePairs != ""])
-                 tests <-  gsub("-", "vs", tests)
+                 #tests <-  gsub("-", "vs", tests)
                  if (length(tests) == 0) {
                    tests = unique(as.character(results_long$test))
                  }
