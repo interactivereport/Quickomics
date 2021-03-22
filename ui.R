@@ -403,7 +403,7 @@ tabPanel("Gene Set Enrichment",
 				tabsetPanel(id="geneset_tabset",
 					tabPanel(title="Gene Set Enrichment", DT::dataTableOutput("MSigDB")),
 					tabPanel(title="Gene Expression",textInput('x1', 'Row ID'),  DT::dataTableOutput("Expression")),
-					ttabPanel(title="Gene Set Heat Map", textInput('x2', 'Row ID'), actionButton("genesetheatmap", "Save to output"), plotOutput('SetHeatMap', height="auto", width = 900)),
+					tabPanel(title="Gene Set Heat Map", textInput('x2', 'Row ID'), actionButton("genesetheatmap", "Save to output"), plotOutput('SetHeatMap', height="auto", width = 900)),
 					tabPanel(title="KEGG Pathway View", textInput('x3', 'Row ID'), actionButton("keggSave", "Save to output"),plotOutput('keggView')),
 					tabPanel(title="Help", htmlOutput('help_geneset'))
 			)
