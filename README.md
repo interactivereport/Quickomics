@@ -2,7 +2,7 @@
 
 Demo site: http://quickomics.bxgenomics.com
 
-Tutorial: https://bit.ly/3rXIyhL
+Tutorial with supplementary tables: https://bit.ly/3rXIyhL
 
 Interactive Figure 1: https://interactivereport.github.io/Quickomics/Figure1.html
 ![https://interactivereport.github.io/Quickomics/Figure1.html](https://interactivereport.github.io/Quickomics/Figure1.png?raw=true "Quickomics")
