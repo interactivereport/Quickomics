@@ -4,6 +4,8 @@ Demo site: http://quickomics.bxgenomics.com
 
 Tutorial with supplementary tables: https://bit.ly/3rXIyhL
 
+BioRxiv preprint: https://www.biorxiv.org/content/10.1101/2021.01.19.427296v2
+
 Interactive Figure 1: https://interactivereport.github.io/Quickomics/Figure1.html
 ![https://interactivereport.github.io/Quickomics/Figure1.html](https://interactivereport.github.io/Quickomics/Figure1.png?raw=true "Quickomics")
 
