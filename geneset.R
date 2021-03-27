@@ -239,7 +239,17 @@ genesetheatmap_out <- reactive({withProgress(message = 'Making heatmap...', valu
 	subdatwide=subdatwide[row_SD!=0, ]
 	#p <- pheatmap::pheatmap(as.matrix(subdatwide),	scale = "row", color = colorpanel (64, low = "blue",mid = "white", high = "red"),filename=NA)
 	scaled_data=t(scale(t(subdatwide))); scaled_data=pmin(scaled_data, 3); scaled_data=pmax(scaled_data, -3)
-	p <- ComplexHeatmap::Heatmap(scaled_data, column_title = ID, cluster_columns =F, heatmap_legend_param = list(title = "Z Score", color_bar = "continuous") )
+	p <- ComplexHeatmap::Heatmap(scaled_data,
+      column_names_gp = gpar(fontsize = as.numeric(as.character(input$hxfontsize_gsh))),
+      row_names_gp = gpar(fontsize = as.numeric(as.character(input$hyfontsize_gsh))),
+      column_title_gp = gpar(fontsize = as.numeric(as.character(input$htfontsize_gsh))),
+      heatmap_legend_param = list(
+        title = "Z Score",
+        color_bar = "continuous",
+        title_gp = gpar(fontsize = as.numeric(as.character(input$hlfontsize_gsh))),
+        labels_gp = gpar(fontsize = as.numeric(as.character(input$hlfontsize_gsh))-1)
+      ),
+      column_title = ID, cluster_columns =F)
 	return(p)
 })
 })
