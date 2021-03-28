@@ -261,8 +261,10 @@ output$SetHeatMap = renderPlot({
 
 
 observeEvent(input$genesetheatmap, {
-	ID = input$x3
-  saved_plots$genesetheatmap[[ID]] <- genesetheatmap_out()
+	#ID = input$x3
+ # saved_plots$genesetheatmap[[ID]] <- genesetheatmap_out() #this only works on R4.0
+  saved_plots$genesetheatmap<- genesetheatmap_out() #this works on R3.5 - 3.6
+  
   #saved_plots$genesetheatmap <- genesetheatmap_out()$gtable
 }
 )

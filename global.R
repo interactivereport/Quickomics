@@ -57,6 +57,7 @@ suppressPackageStartupMessages({
 	library(stringi)
 	library(plyr)
 	library(ggExtra)
+  library(png)
 })
 
 

@@ -77,15 +77,9 @@ output$downloadPDF <- downloadHandler(
 		}
 		
 		## Geneset Heatmap
-		if (!is.null(saved_plots$genesetheatmap)){
-			for (i in 1:length(names(saved_plots$genesetheatmap))) {
-				p.name <- names(saved_plots$genesetheatmap)[i]
-				title_tmp <- paste("Geneset Heatmap (",p.name,")",sep="")
-				if (title_tmp %in% plots_checked) {
-					draw(saved_plots$genesetheatmap[[i]], merge_legend=T,auto_adjust = FALSE)
-					Np=Np+1
-				}
-			}
+		if (!is.null(saved_plots$genesetheatmap) & ("Geneset Heatmap" %in% plots_checked)){
+	    draw(saved_plots$genesetheatmap, merge_legend=T,auto_adjust = FALSE)
+		  Np=Np+1
 		}
 
 		## Geneset KEGG View
@@ -212,11 +206,7 @@ observe({
 	
 	## Geneset Heatmap
 	if (!is.null(saved_plots$genesetheatmap)){
-		for (i in 1:length(names(saved_plots$genesetheatmap))) {
-			p.name <- names(saved_plots$genesetheatmap)[i]
-			title_tmp <- paste("Geneset Heatmap (",p.name,")",sep="")
-			summary=c(summary,  title_tmp)
-		}
+	  summary=c(summary, 'Geneset Heatmap')
 	}
 	
 	## Geneset KeggView
@@ -335,6 +325,28 @@ output$downloadSVG <- downloadHandler(
       replayPlot(saved_plots$staticheatmap)
       Np=Np+1
     }
+    
+    
+    ## Geneset Heatmap
+    if (Np==0 & !is.null(saved_plots$genesetheatmap) & ("Geneset Heatmap" %in% plots_checked)){
+      draw(saved_plots$genesetheatmap, merge_legend=T,auto_adjust = FALSE)
+      Np=Np+1
+    }
+    
+    ## Geneset KEGG View
+    if (Np==0 &!is.null(saved_plots$keggSave)){
+      for (i in 1:length(names(saved_plots$keggSave))) {
+        p.name <- names(saved_plots$keggSave)[i]
+        title_tmp <- paste("KEGG View (",p.name,")",sep="")
+        if (title_tmp %in% plots_checked) {
+          par(mai=c(0,0,0,0))
+          plot(c(0,1),c(0,1),type="n")
+          rasterImage(saved_plots$keggSave[[i]],0,0,1,1)
+          Np=Np+1
+        }
+      }
+    }
+    
     ### boxplot plot
     if (Np==0 & !is.null(saved_plots$boxplot)){
       for (i in 1:length(saved_plots$boxplot)) {
