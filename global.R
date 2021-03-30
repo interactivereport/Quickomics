@@ -118,6 +118,13 @@ saved_projects = read.csv("data/saved_projects.csv")
 projects = saved_projects$ProjectID
 names(projects) = saved_projects$ShortNames
 
+pub_projects=NULL
+if (file.exists("unlisted/projects_public.csv")) { #load selected projects from unlisted folder for Venn across projects
+  Pinfo=read.csv("unlisted/projects_public.csv")
+  pub_projects=Pinfo$ProjectID
+  names(pub_projects)=Pinfo$ShortName
+}
+
 html_geneset0 =  '
 <script>
 var GENESET_DEFAULT_TABLE = "";

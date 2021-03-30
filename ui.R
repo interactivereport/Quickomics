@@ -565,7 +565,7 @@ tabPanel("Venn Across Projects",
 			  numericInput("vennP_fccut", label= "Choose Fold Change Cutoff", value = 1.2, min=1, step=0.1),
 				radioButtons("vennP_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
 				numericInput("vennP_pvalcut", label= "Choose P value Cutoff", value=0.01, min=0, step=0.001),
-
+				checkboxInput("upperSymbols", "Upper Case Gene Symbols (e.g. mouse vs human)?",  FALSE, width="90%"),
 				selectInput("dataset1", "Data set1", choices=NULL),
 				selectInput("vennP_test1", label="Select List 1", choices=NULL),
 				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
