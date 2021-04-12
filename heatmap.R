@@ -11,29 +11,26 @@
 
 
 observe({
-  DataIn = DataReactive()
+  #DataIn = DataReactive()
+  MetaData=all_metadata()
   groups = group_order()
-  samples = DataIn$MetaData$sampleid
-  tests = DataIn$tests
-  allgroups = DataIn$groups
+  allsamples = all_samples()
+  samples <- sample_order()
+  tests = all_tests()
+  allgroups = all_groups()
   updateSelectizeInput(session,'heatmap_groups', choices=allgroups, selected=groups)
   #cat("show all samples", length(samples), length(groups), "\n") #debug
-  updateSelectizeInput(session,'heatmap_samples', choices=samples, selected=samples)
+  updateSelectizeInput(session,'heatmap_samples', choices=allsamples, selected=samples)
   updateSelectizeInput(session,'heatmap_test',choices=tests, selected=tests[1])
-  ProteinGeneName = DataIn$ProteinGeneName
-  updateRadioButtons(session,'heatmap_label', inline = TRUE, choices=colnames(ProteinGeneName)[-1], selected="Gene.Name")
-  attributes=setdiff(colnames(DataIn$MetaData), c("sampleid", "Order", "ComparePairs") )
+  ProteinGeneName_Headers = ProteinGeneNameHeader()
+  updateRadioButtons(session,'heatmap_label', inline = TRUE, choices=ProteinGeneName_Headers[-1], selected="Gene.Name")
+  attributes=setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") )
   updateSelectInput(session, "heatmap_annot", choices=attributes, selected="group")  
 })
 
-observe({
-  DataIn = DataReactive()
-  tmpgroups = input$heatmap_groups
-  tmpdat = DataIn$MetaData %>% filter(group %in% tmpgroups)
-  tmpsamples = as.character(tmpdat$sampleid)
-  #cat("update samples", length(tmpsamples), length(tmpgroups), "\n") #debug
-  updateSelectizeInput(session,'heatmap_samples', choices=tmpsamples, selected=tmpsamples)
-})
+output$selectGroupSampleHeatmap <- renderText({ paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
+                                               length(sample_order()), " out of ", length(all_samples()), " Samples.", sep="")})
+
 
 output$plot.heatmap=renderUI({
   plotOutput("pheatmap2", height = input$heatmap_height)
@@ -62,6 +59,10 @@ output$heatmapfilteredgene <- renderText({ paste("Selected Genes:",length(filter
 
 observeEvent(input$heatmap_groups, {  
   group_order(input$heatmap_groups)
+})
+
+observeEvent(input$heatmap_samples, {  
+  sample_order(input$heatmap_samples)
 })
 
 

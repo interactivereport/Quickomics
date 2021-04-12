@@ -11,58 +11,115 @@
 
 
 observe({
-	DataIn = DataReactive()
+	#DataIn = DataReactive()
 	groups = group_order()
-	samples = DataIn$MetaData$sampleid
-	allgroups = DataIn$groups
-	samples <- as.character(samples[order(match(DataIn$MetaData$group,groups))])
+	allsamples = all_samples()
+	allgroups = all_groups()
+	MetaData=all_metadata()
+	samples <- sample_order()
 	updateSelectizeInput(session,'QC_groups', choices=allgroups, selected=groups)
-	updateSelectizeInput(session,'QC_samples', choices=samples, selected=samples)
-	attributes=setdiff(colnames(DataIn$MetaData), c("sampleid", "Order", "ComparePairs") )
+	updateSelectizeInput(session,'QC_samples', choices=allsamples, selected=samples)
+	attributes=setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") )
 	updateSelectInput(session, "PCAcolorby", choices=attributes, selected="group")
 	updateSelectInput(session, "PCAshapeby", choices=c("none", attributes), selected="none")
 	updateSelectInput(session, "PCAsizeby", choices=c("none", attributes), selected="none")
-	sampleIDs=setdiff(colnames(DataIn$MetaData), c("Order", "ComparePairs") )
+	sampleIDs=setdiff(colnames(MetaData), c("Order", "ComparePairs") )
 	updateRadioButtons(session,'PCA_label', inline = TRUE, choices=sampleIDs, selected="sampleid")
 	updateTextAreaInput(session, "PCA_list", value=paste(samples, collapse="\n"))
 })
 	
-observe({
-  req(input$QC_groups)
-	DataIn = DataReactive()
-	tmpgroups = input$QC_groups
-	tmpdat = DataIn$MetaData %>% filter(group %in% tmpgroups)
-	tmpsamples = as.character(tmpdat$sampleid)
-	updateSelectizeInput(session,'QC_samples', choices=tmpsamples, selected=tmpsamples)
-	updateTextAreaInput(session, "PCA_list", value=paste(tmpsamples, collapse="\n"))
-})
 
-observeEvent(input$PCA_refresh_sample, {  
-  tmpsamples = input$QC_samples
-  updateTextAreaInput(session, "PCA_list", value=paste(tmpsamples, collapse="\n"))
-})
+
 
 
 output$reorder_group=renderUI({
   req(group_order())
-  orderInput(inputId = 'order_groups', label = 'Drag and Drop to Reorder Groups. (Use Select Groups at left menu to delete or add groups.)', items =group_order(), width="900px", item_class = 'primary' )
+  orderInput(inputId = 'order_groups', label = 'Drag and Drop to Reorder Groups. (Use Select Groups at left menu to delete or add groups.)', items =group_order(), width="90%", item_class = 'primary' )
 })
+
+output$sample_choose_order=renderUI({
+  req(group_order())
+  req(sample_order())
+  group_exclude<-setdiff(all_groups(), group_order())
+  sample_exclude<- setdiff(all_samples(), sample_order())
+  #browser() #debug
+  tagList(
+  tags$div(
+    tags$hr(style="border-color: RoyalBlue;"),
+    tags$p("Groups excluded: ", paste(group_exclude, collapse=", "), tags$br(), "Samples from these groups will be removed from plotting and analysis.")),
+    checkboxInput("remove_samples", "Remove additonal samples?", TRUE, width="90%"),
+    conditionalPanel(condition="input.remove_samples==1",
+                     textAreaInput("sample_exclude_list", "Enter Samples to Exclude:", "",  width="500px", height="125px"),
+                    actionButton("remove_sample", "Remove Samples in the Box Above"),
+                    tags$p("Additional samples to be manualy removed:", paste(samples_excludeM(), collapse=", ")) ),
+    tags$p("All samples to be excluded: ", paste(sample_exclude, collapse=", ")),
+    tags$br(),
+    tags$hr(style="border-color: RoyalBlue;"),
+    checkboxInput("show_samples", "Show samples chosen for plots and reoder samples?", TRUE, width="90%"),
+    conditionalPanel(condition="input.show_samples==1",
+    orderInput(inputId = 'order_samples', label = 'Drag and Drop to Reorder Samples.', items =sample_order(), width="90%", item_class = 'success' ))
+  )
+})
+
 
 
 observeEvent(input$order_groups_order, {  
   group_order(input$order_groups_order)
 })
+observeEvent(input$order_samples_order, {  
+  sample_order(input$order_samples_order)
+})
 observeEvent(input$QC_groups, {  
   group_order(input$QC_groups)
 })
 
-observeEvent(input$reset_group, {
-  DataIn = DataReactive()
-  allgroups = DataIn$groups
-  group_order(allgroups)
+output$selectGroupSample <- renderText({ paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
+                                               length(sample_order()), " out of ", length(all_samples()), " Samples.", sep="")})
+
+
+observe({
+  req(group_order())
+  MetaData=all_metadata()
+  groups = group_order()
+  allsamples=all_samples()
+  MetaData1<-MetaData%>%filter(group %in% groups)
+  samples <- as.character( MetaData1$sampleid[order(match(MetaData1$group,groups))])
+  sample_R= samples_excludeM() #extra samples to remove
+  ToRemove=( toupper(samples) %in% toupper(sample_R) )
+  if  (sum(ToRemove)>0) {samples=samples[!ToRemove]}
+  sample_order(samples)
+})
+
+observeEvent(input$QC_samples, {  
+  sample_order(input$QC_samples)
+})
+
+observeEvent(input$remove_sample, {  
+  sample_list=input$sample_exclude_list
+  if(grepl("\n",sample_list)) {
+    sample_list <-  stringr::str_split(sample_list, "\n")[[1]]
+  } else if(grepl(",",sample_list)) {
+    sample_list <-  stringr::str_split(sample_list, ",")[[1]]
+  }
+  sample_list <- gsub(" ", "", sample_list, fixed = TRUE)
+  sample_list <- unique(sample_list[sample_list != ""])
+  samples=all_samples()
+  ToRemove=( toupper(samples) %in% toupper(sample_list) )
+  #browser() #debug
+  if  (sum(ToRemove)>0) {
+    samples_excludeM(samples[ToRemove])
+  }
 })
 
 
+
+observeEvent(input$reset_group, {
+  allgroups = all_groups()
+  group_order(allgroups)
+  samples_excludeM("")
+  samples=all_samples()
+  sample_order(samples)
+})
 
 DataQCReactive <- reactive({
 	DataIn = DataReactive()

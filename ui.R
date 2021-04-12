@@ -71,6 +71,8 @@ tabPanel("QC Plots",
 			  tags$style(mycss),
 				selectizeInput("QC_groups", label="Select Groups", choices=NULL, multiple=TRUE),
 				selectizeInput("QC_samples", label="Select Samples", choices=NULL,multiple=TRUE),
+				column(width=12,textOutput("selectGroupSample")),
+				tags$hr(),
 				conditionalPanel("input.groupplot_tabset=='PCA Plot' || input.groupplot_tabset=='PCA 3D Interactive' || input.groupplot_tabset=='PCA 3D Plot' || input.groupplot_tabset=='Sample-sample Distance' ",
 				                 selectInput("PCAcolorby", label="Color By", choices=NULL)),				
 				conditionalPanel("input.groupplot_tabset=='PCA Plot' || input.groupplot_tabset=='PCA 3D Interactive'",
@@ -114,7 +116,8 @@ tabPanel("QC Plots",
 				tabPanel(title="Dendrograms",actionButton("Dendrograms", "Save to output"), plotOutput("Dendrograms",height = 800)),
 				tabPanel(title="Box Plot", actionButton("QCboxplot", "Save to output"), plotOutput("QCboxplot",height = 800)),
 				tabPanel(title="CV Distribution", actionButton("histplot", "Save to output"), plotOutput("histplot",height = 800)),
-				tabPanel(title="Order Groups", actionButton("reset_group", "Reset Groups"), uiOutput('reorder_group')),
+				tabPanel(title="Groups and Samples", tags$br(), actionButton("reset_group", "Reset Groups and Samples"), 
+				         tags$hr(style="border-color: RoyalBlue;"), uiOutput('reorder_group'),uiOutput('sample_choose_order')),
 				tabPanel(title="Help", htmlOutput('help_QC'))
 			)
 		)
@@ -189,6 +192,8 @@ tabPanel("Heatmap",
 				#actionButton("action_heatmaps","Generate Interactive Heatmap"),
 				selectizeInput("heatmap_groups", label="Select Groups", choices=NULL, multiple=TRUE),
 				selectizeInput("heatmap_samples", label="Select Samples", choices=NULL, multiple=TRUE),
+				column(width=12,textOutput("selectGroupSampleHeatmap")),
+				tags$hr(),
 				radioButtons("heatmap_subset",label="Genes used for heatmap", choices=c("All","Subset","Upload Genes", "Geneset"),inline = TRUE, selected="All"),
 				conditionalPanel("input.heatmap_subset=='Upload Genes'", 
 				  radioButtons("heatmap_upload_type", label="Select upload type", inline = TRUE, choices = c("Gene List","Annotated Gene File"), selected = "Gene List"),
@@ -274,7 +279,7 @@ tabPanel("Heatmap",
 
 
 ##########################################################################################################
-## Protein Expression Plot
+## Gene/Protein Expression Plot
 ##########################################################################################################
 tabPanel("Expression Plot",
          fluidRow(
@@ -301,7 +306,8 @@ tabPanel("Expression Plot",
                                      column(width=6,selectInput("sel_page",	label="Select Page",	choices = NULL,	selected=1)),
                                      column(width=6,selectInput("numperpage", label= "Plot Number per Page", choices= c("4"=4,"6"=6,"9"=9), selected=6))),
                     conditionalPanel("input.expression_tabset=='Searched Expression Data' | input.expression_tabset=='Browsing' ",
-                                     selectizeInput("sel_group", label="Select Groups (u can re-order)", choices=NULL, multiple=TRUE),
+                                     selectizeInput("sel_group", label="Select Groups", choices=NULL, multiple=TRUE),
+                                     column(width=12,textOutput("selectGroupSampleExpression")),
                                      radioButtons("sel_geneid",label="Select Gene Label",inline = TRUE, choices=""),
                                      radioButtons("plotformat", label="Select Plot Format", inline = TRUE, choices = c("Box Plot" = "boxplot","Bar Plot" = "barplot", "violin" = "violin","line" = "line")),
                                      conditionalPanel("input.SeparateOnePlot=='OnePlot' & input.expression_tabset=='Searched Expression Data'",

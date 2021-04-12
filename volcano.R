@@ -10,10 +10,10 @@
 ###########################################################################################################
 
 observe({
-  DataIn = DataReactive()
-  tests = DataIn$tests
-  ProteinGeneName = DataIn$ProteinGeneName
-  updateRadioButtons(session,'volcano_genelabel', inline = TRUE, choices=colnames(ProteinGeneName)[-1], selected="Gene.Name")
+  #DataIn = DataReactive()
+  tests = all_tests()
+  ProteinGeneName_Header = ProteinGeneNameHeader()
+  updateRadioButtons(session,'volcano_genelabel', inline = TRUE, choices=ProteinGeneName_Header[-1], selected="Gene.Name")
   updateSelectizeInput(session,'volcano_test',choices=tests, selected=tests[1])
   updateSelectizeInput(session,'volcano_test1',choices=tests, selected=tests[1])
   if (length(tests)>1) {	updateSelectizeInput(session,'volcano_test2',choices=tests, selected=tests[2])}

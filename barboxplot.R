@@ -27,15 +27,19 @@ observe({
 })
 
 observe({
-	DataIn = DataReactive()
+	#DataIn = DataReactive()
 	groups = group_order()
-	tests = DataIn$tests
-	allgroups = DataIn$groups
-	ProteinGeneName = DataIn$ProteinGeneName
+	tests = all_tests()
+	allgroups = all_groups()
+	ProteinGeneName_Header = ProteinGeneNameHeader()
 	updateSelectizeInput(session,'sel_group', choices=allgroups, selected=groups)
-	updateRadioButtons(session,'sel_geneid', inline = TRUE, choices=colnames(ProteinGeneName)[-1], selected="Gene.Name")
+	updateRadioButtons(session,'sel_geneid', inline = TRUE, choices=ProteinGeneName_Header[-1], selected="Gene.Name")
 	updateSelectizeInput(session,'expression_test',choices=tests, selected=tests[1])
 })
+
+output$selectGroupSampleExpression <- renderText({ paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
+     length(sample_order()), " out of ", length(all_samples()), " Samples.", " (Update Selection at: QC Plot->Groups and Samples.)", sep="")})
+
 
 
 observe({
@@ -73,6 +77,7 @@ DataExpReactive <- reactive({
 	sel_gene=input$sel_gene
 	genelabel=input$sel_geneid
 	group_order(input$sel_group)
+	sel_samples=sample_order()
 
 	if (input$exp_subset == "Select") {
 	  validate(need(length(input$sel_gene)>0,"Please select a gene."))	
@@ -109,7 +114,7 @@ DataExpReactive <- reactive({
 	}
 	if (length(tmpids)>100) {cat("show only first 100 genes in exprssion plot.\n"); tmpids=tmpids[1:100]}  
 	
-	data_long_tmp = filter(data_long, UniqueID %in% tmpids, group %in% sel_group) %>%
+	data_long_tmp = filter(data_long, UniqueID %in% tmpids, group %in% sel_group, sampleid %in% sel_samples) %>%
 	filter(!is.na(expr)) %>% as.data.frame()
 	data_long_tmp$labelgeneid = data_long_tmp[,match(genelabel,colnames(data_long_tmp))]
 	data_long_tmp$group = factor(data_long_tmp$group,levels = sel_group)
@@ -140,7 +145,7 @@ output$res_dotplot <- DT::renderDataTable({
 boxplot_out <- reactive({
   barcol = input$barcol
   sel_group=input$sel_group
-  group_order(sel_group)
+  #group_order(sel_group)
   DataIn = DataReactive()
   colorby=sym(input$colorby)
   Val_colorby=input$colorby
@@ -273,6 +278,7 @@ browsing_out <- reactive({
 	plotx=sym(input$plotx)
 	genelabel=input$sel_geneid
 	sel_group=input$sel_group
+	sel_samples=sample_order()
 	group_order(sel_group)
 	expression_test = input$expression_test
 	expression_fccut =log2(as.numeric(input$expression_fccut))
@@ -298,7 +304,7 @@ browsing_out <- reactive({
 
 	tmpids = ProteinGeneName[unique(na.omit(c(apply(ProteinGeneName,2,function(k) match(sel_gene,k))))),]
 
-	data_long_tmp = filter(data_long, UniqueID %in% tmpids$UniqueID, group %in% sel_group) %>%
+	data_long_tmp = filter(data_long, UniqueID %in% tmpids$UniqueID, group %in% sel_group, sampleid %in% sel_samples) %>%
 	filter(!is.na(expr)) %>% as.data.frame()
 	if (Val_colorby!="None" & Val_colorby!="group" ) { #add coloyby column
 	  data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!colorby))
@@ -312,7 +318,7 @@ browsing_out <- reactive({
 	data_long_tmp$labelgeneid = data_long_tmp[,match(genelabel,colnames(data_long_tmp))]
 	data_long_tmp$group = factor(data_long_tmp$group,levels = sel_group)
 	validate(need(nrow(data_long_tmp)>0, message = "Please select at least one valid gene to plot."))
-  #browser() #debug
+#  browser() #debug
 	if(numperpage==4) { nrow = 2; ncol = 2 
 	} else if(numperpage==6) {
 		nrow = 2; ncol = 3

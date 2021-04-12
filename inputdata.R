@@ -11,7 +11,14 @@
 saved_plots <- reactiveValues()  
 saved_table <- reactiveValues() 
 group_order <- reactiveVal()
+sample_order <- reactiveVal()
+all_samples <-reactiveVal()
+samples_excludeM<-reactiveVal()
+all_groups <-reactiveVal()
+all_tests<-reactiveVal()
+all_metadata<-reactiveVal()
 upload_message <- reactiveVal()
+ProteinGeneNameHeader<- reactiveVal()
 #saved_palette <- reactiveVal()
 ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL)
 showAlert<-reactiveVal()
@@ -152,7 +159,15 @@ DataReactive <- reactive({
                  if (length(tests) == 0) {
                    tests = unique(as.character(results_long$test))
                  }
+		             samples <- as.character( MetaData$sampleid[order(match(MetaData$group,group_names))])
                  group_order(group_names)
+                 sample_order(samples)
+                 all_samples(samples)
+                 all_groups(group_names)
+                 all_metadata(MetaData)
+                 all_tests(tests)
+                 samples_excludeM("")
+                 ProteinGeneNameHeader(colnames(ProteinGeneName))
                  return(
                    list(
                      "groups" = group_names,
