@@ -32,7 +32,8 @@ observe({
   } else {
     tmpdat = results_long %>% filter(test==test_sel & P.Value < pvalcut & abs(logFC) > FCcut) 
   }
-  output$volcano_filteredgene <- renderText({paste("Genes pass cutoff (DEGs):",nrow(tmpdat),sep="")})
+  output$volcano_filteredgene <- renderText({paste("Genes Pass Cutoff (DEGs):",nrow(tmpdat),sep="")})
+  output$volcano_filteredgene2 <- renderText({paste("Genes Up: ", sum(tmpdat$logFC>0), "; Genes Down: ", sum(tmpdat$logFC<0),sep="")})
   #browser()#debug
   DEGs=tmpdat$UniqueID
   if (nrow(tmpdat)>input$Ngenes) {
