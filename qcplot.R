@@ -218,7 +218,7 @@ observeEvent(input$QCboxplot, {
 
 
 ######## PCA
-pcaplot_out <- reactive({
+pcaplot_out <- eventReactive (input$plot_PCA, {
   req(DataPCAReactive())
 	pcnum=as.numeric(input$pcnum)
 	validate(need(length(pcnum)==2, message = "Select 2 Prinical Components."))

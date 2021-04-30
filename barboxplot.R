@@ -265,7 +265,7 @@ observeEvent(input$boxplot, {
 	saved_plots$boxplot[[saved.num]] <- boxplot_out()
 })
 
-browsing_out <- reactive({
+browsing_out <- eventReactive(input$plot_browsing,{
 	validate(need(length(input$sel_group)>0,"Please select group(s)."))
 	barcol = input$barcol
 	DataIn = DataReactive()
