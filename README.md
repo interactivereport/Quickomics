@@ -6,6 +6,8 @@ Tutorial with supplementary tables: https://bit.ly/3rXIyhL
 
 BioRxiv preprint: https://www.biorxiv.org/content/10.1101/2021.01.19.427296v2
 
+Cite: Benbo Gao, Jing Zhu, Soumya Negi, Xinmin Zhang, Stefka Gyoneva, Fergal Casey, Ru Wei, Baohong Zhang, Quickomics: exploring omics data in an intuitive, interactive and informative manner, Bioinformatics, 2021;, btab255, https://doi.org/10.1093/bioinformatics/btab255
+
 Interactive Figure 1: https://interactivereport.github.io/Quickomics/Figure1.html
 ![https://interactivereport.github.io/Quickomics/Figure1.html](https://interactivereport.github.io/Quickomics/Figure1.png?raw=true "Quickomics")
 
