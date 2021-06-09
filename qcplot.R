@@ -160,6 +160,7 @@ DataPCAReactive <- reactive({
 	MetaData=DataQC$MetaData
 	colsel=match(attributes, colnames(MetaData) )
 	scores=cbind(scores, MetaData[, colsel, drop=F])
+	#browser() #debug
 	return(list('scores'=scores,'percentVar'=percentVar))
 })
 
@@ -466,4 +467,24 @@ output$histplot <- renderPlot({
 
 observeEvent(input$histplot, {
 	saved_plots$histplot <- histplot_out()
+})
+
+
+############PC_covariates QC Plots
+PC_covariates_out <- reactive({
+  DataQC <-  DataQCReactive()
+  tmp_data_wide <- DataQC$tmp_data_wide
+  MetaData=DataQC$MetaData
+  meta=MetaData[, !(colnames(MetaData) %in% c("sampleid", "Order", "ComparePairs")), drop=FALSE]
+  rownames(meta)=MetaData$sampleid
+  if(ncol(meta)==1) { #if only one column, add a random sampled copy of this column. degCovariates fails with single column data frame
+    meta=cbind(meta, sample_n(meta, nrow(meta))); colnames(meta)[2]=str_c(colnames(meta)[2], "_random")
+  }
+ #browser() #debug
+  res <- degCovariates(tmp_data_wide, meta, legacy = TRUE, plot=FALSE) 
+  return(res)
+})
+
+output$PC_covariates <- renderPlot({
+  draw(PC_covariates_out()$plot)
 })
