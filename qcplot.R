@@ -34,7 +34,7 @@ observe({
 
 output$reorder_group=renderUI({
   req(group_order())
-  orderInput(inputId = 'order_groups', label = 'Drag and Drop to Reorder Groups. (Use Select Groups at left menu to delete or add groups.)', items =group_order(), width="90%", item_class = 'primary' )
+  orderInput(inputId = 'order_groups', label = 'Drag and Drop to Reorder Groups. (Use Select Groups at left menu to delete or add groups.)', items =group_order(), width="90%", item_class = 'primary', legacy =TRUE )
 })
 
 output$sample_choose_order=renderUI({
@@ -57,7 +57,7 @@ output$sample_choose_order=renderUI({
     tags$hr(style="border-color: RoyalBlue;"),
     checkboxInput("show_samples", "Show samples chosen for plots and reoder samples?", TRUE, width="90%"),
     conditionalPanel(condition="input.show_samples==1",
-    orderInput(inputId = 'order_samples', label = 'Drag and Drop to Reorder Samples.', items =sample_order(), width="90%", item_class = 'success' ))
+    orderInput(inputId = 'order_samples', label = 'Drag and Drop to Reorder Samples.', items =sample_order(), width="90%", item_class = 'success', legacy =TRUE ))
   )
 })
 
