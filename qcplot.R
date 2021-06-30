@@ -26,6 +26,7 @@ observe({
 	sampleIDs=setdiff(colnames(MetaData), c("Order", "ComparePairs") )
 	updateRadioButtons(session,'PCA_label', inline = TRUE, choices=sampleIDs, selected="sampleid")
 	updateTextAreaInput(session, "PCA_list", value=paste(samples, collapse="\n"))
+	updateSelectInput(session, "covar_variates", choices=attributes, selected=attributes)  
 })
 	
 
@@ -476,15 +477,61 @@ PC_covariates_out <- reactive({
   tmp_data_wide <- DataQC$tmp_data_wide
   MetaData=DataQC$MetaData
   meta=MetaData[, !(colnames(MetaData) %in% c("sampleid", "Order", "ComparePairs")), drop=FALSE]
+  meta=meta[, (colnames(meta) %in% input$covar_variates), drop=FALSE]
   rownames(meta)=MetaData$sampleid
-  if(ncol(meta)==1) { #if only one column, add a random sampled copy of this column. degCovariates fails with single column data frame
-    meta=cbind(meta, sample_n(meta, nrow(meta))); colnames(meta)[2]=str_c(colnames(meta)[2], "_random")
-  }
- #browser() #debug
-  res <- degCovariates(tmp_data_wide, meta, legacy = TRUE, plot=FALSE) 
+  res<-Covariate_PC_Analysis(tmp_data_wide, meta, out_dir=NULL, PC_cutoff=input$covar_PC_cutoff, 
+            FDR_cutoff=input$covar_FDR_cutoff, N_col=input$covar_ncol)
   return(res)
 })
 
-output$PC_covariates <- renderPlot({
-  draw(PC_covariates_out()$plot)
+output$covar_table=renderTable(PC_covariates_out()$selVar_All, colnames=T)
+
+output$plot.PC_covariatesC=renderUI({
+  tagList(
+  textOutput("N_pairs_C"),
+  plotOutput("PC_covariatesC",height = input$covar_cat_height)
+  )
+})
+
+output$plot.PC_covariatesN=renderUI({
+  tagList(
+  textOutput("N_pairs_N"),
+  plotOutput("PC_covariatesN",height = input$covar_num_height)
+  )
+})
+
+Npairs_cov<-reactive({
+  res<-PC_covariates_out()
+  C=res$sel_dataC$selVar
+  if (is.null(C)) {N1=0} else {N1=nrow(C)}
+  N=res$sel_dataN$selVar
+  if (is.null(N)) {N2=0} else {N2=nrow(N)}
+  return(c(N1, N2))
+})
+
+output$N_pairs_C<-renderText({str_c("There are ", Npairs_cov()[1], " significant categorical covariate-PC pairs.")})
+output$N_pairs_N<-renderText({str_c("There are ", Npairs_cov()[2], " significant numeric covariate-PC pairs.")})
+
+output$PC_covariatesC <- renderPlot({
+  data=PC_covariates_out()$sel_dataC
+  if (!is.null(data)) {
+    data$plot
+  }
+})
+
+output$PC_covariatesN <- renderPlot({
+  data=PC_covariates_out()$sel_dataN
+  if (!is.null(data)) {
+    data$plot
+  }
+})
+
+observeEvent(input$covar_cat, {
+  data=PC_covariates_out()$sel_dataC
+  saved_plots$covar_cat <- data$plot
+})
+
+observeEvent(input$covar_num, {
+  data=PC_covariates_out()$sel_dataN
+  saved_plots$covar_num<- data$plot
 })

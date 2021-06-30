@@ -52,6 +52,19 @@ output$downloadPDF <- downloadHandler(
 			Np=Np+1
 		}
 		
+		
+		#Covariates
+		if (!is.null(saved_plots$covar_cat) & ("Categorical Covariates vs PCs" %in% plots_checked)){
+		  print(saved_plots$covar_cat)
+		  Np=Np+1
+		}
+		
+		if (!is.null(saved_plots$covar_num) & ("Numeric Covariates vs PCs" %in% plots_checked)){
+		  print(saved_plots$covar_num)
+		  Np=Np+1
+		}
+		
+		
 		### volcano plot
 		if (!is.null(saved_plots$volcano)){
 			for (i in 1:length(names(saved_plots$volcano))) {
@@ -185,6 +198,14 @@ observe({
 		summary=c(summary, 'CV Distribution')
 	}
 	
+	###Covariates
+	if (!is.null(saved_plots$covar_cat)){
+	  summary=c(summary, 'Categorical Covariates vs PCs')
+	}
+	if (!is.null(saved_plots$covar_num)){
+	  summary=c(summary, 'Numeric Covariates vs PCs')
+	}
+	
 	### volcano plot
 	if (!is.null(saved_plots$volcano)){
 		for (i in 1:length(names(saved_plots$volcano))) {
@@ -304,6 +325,17 @@ output$downloadSVG <- downloadHandler(
       print(saved_plots$histplot)
       Np=Np+1
     }
+    ###Covariates
+    if (!is.null(saved_plots$covar_cat) & ("Categorical Covariates vs PCs" %in% plots_checked)){
+      print(saved_plots$covar_cat)
+      Np=Np+1
+    }
+    if (!is.null(saved_plots$covar_num) & ("Numeric Covariates vs PCs" %in% plots_checked)){
+      print(saved_plots$covar_num)
+      Np=Np+1
+    }
+    
+    
     ### volcano plot
     if (Np==0 & !is.null(saved_plots$volcano)){
       for (i in 1:length(names(saved_plots$volcano))) {

@@ -93,17 +93,21 @@ tabPanel("QC Plots",
 					                 actionButton("PCA_refresh_sample", "Reload Sample IDs"),
 					                 textAreaInput("PCA_list", "List of Samples to Label", "", cols = 5, rows=6))
 				),
+				conditionalPanel("input.groupplot_tabset=='Covariates'",
+				  selectizeInput("covar_variates", label="Select Covariates:", choices=NULL, multiple = TRUE),
+				  numericInput("covar_PC_cutoff", label= "Principle Component (PC) Cutoff (% explained variance)",  value = 5, min=0, max=100, step=1),
+				  numericInput("covar_FDR_cutoff", label= "Choose FDR Value Cutoff", value=0.1, min=0, max=1, step=0.001),
+				  sliderInput("covar_ncol", label= "Number of Columns for Plots", min = 1, max = 6, step = 1, value = 3)
+				),
 				conditionalPanel("input.groupplot_tabset=='PCA 3D Plot'",
 				                 radioButtons("ellipsoid3d", label="Plot Ellipsoid (>3 per Group)", inline = TRUE, choices = c("No" = "No","Yes" = "Yes")),
 				                 radioButtons("dotlabel", label="Dot Label", inline = TRUE, choices =  c("No" = "No","Yes" = "Yes"))
-				                 
 				),
 				conditionalPanel("input.groupplot_tabset=='Dendrograms'",
 					sliderInput("DendroCut", label="tree cut number:", min = 2, max = 10, step = 1, value = 4),
 					sliderInput("DendroFont", label= "Label Font Size:", min = 0.5, max = 4, step = 0.5, value = 1),
 					radioButtons("dendroformat", label="Select Plot Format", inline = TRUE, choices = c("tree" = "tree","horizontal" = "horiz", "circular" = "circular"), selected="circular")
 				)
-				
 			)
 		),
 		column(9,
@@ -111,7 +115,16 @@ tabPanel("QC Plots",
 				tabPanel(title="PCA Plot", actionButton("pcaplot", "Save to output"), 
 				         actionButton("plot_PCA", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"), 
 				         plotOutput("pcaplot",height = 800)),
-				tabPanel(title="Covariates",  plotOutput("PC_covariates",height = 800)),
+				tabPanel(title="Covariates",  
+				         tabsetPanel(id="covartiate_tabset",
+				                     tabPanel(title="Summary", tableOutput('covar_table')),
+				                     tabPanel(title="Categorical Covariates", actionButton("covar_cat", "Save to output"), 
+				                              sliderInput("covar_cat_height", "Plot Height:", min = 200, max = 3000, step = 50, value = 800),
+				                              tags$br(), uiOutput("plot.PC_covariatesC") ),
+				                     tabPanel(title="Numerical Covariates", actionButton("covar_num", "Save to output"),
+				                              sliderInput("covar_num_height", "Plot Height:", min = 200, max = 3000, step = 50, value = 800),
+				                              tags$br(),uiOutput("plot.PC_covariatesN") )
+				         )),
 				tabPanel(title="Eigenvalues",  plotOutput("Eigenvalues",height = 650)),
 				tabPanel(title="PCA 3D Plot",  plotOutput("pca_legend",height = 100), rglwidgetOutput("plot3d",  width = 1000, height = 1000)),
 				tabPanel(title="PCA 3D Interactive", plotlyOutput("plotly3d",  width = 1000, height = 1000)),

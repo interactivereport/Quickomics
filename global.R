@@ -58,7 +58,9 @@ suppressPackageStartupMessages({
 	library(plyr)
 	library(ggExtra)
   library(png)
-  library(DEGreport)
+  library(psych)
+  library(broom)
+  #library(DEGreport)
 })
 
 
@@ -66,6 +68,7 @@ load("db/hgnc.RData")
 load("db/kegg.pathways.RData")
 load("db/gmtlist.RData")
 load("db/mouse_rat_genes_map2_human.RData")
+source("PC_Covariates.R")
 
 
 ORAEnrichment <- function(deGenes,universe, gsets, logFC, Dir="Both"){
