@@ -19,9 +19,14 @@ all_tests<-reactiveVal()
 all_metadata<-reactiveVal()
 upload_message <- reactiveVal()
 ProteinGeneNameHeader<- reactiveVal()
+exp_unit<-reactiveVal()
 #saved_palette <- reactiveVal()
 ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL)
 showAlert<-reactiveVal()
+
+observeEvent(input$exp_unit, {
+  Eu=input$exp_unit; exp_unit(Eu)
+  })
 
 observe({
 query <- parseQueryString(session$clientData$url_search)

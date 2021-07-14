@@ -264,19 +264,20 @@ pheatmap2_out <- eventReactive(input$plot_heatmap, {
     if (input$scale=="none") {
       data_range=quantile(unlist(data.in), probs=c(0.01, 0.5, 0.99), na.rm=T)
       col_fun=colorRamp2(data_range, c(input$lowColor,input$midColor, input$highColor) )
-      legend_text="Value"
+      legend_text=exp_unit()
     } else {
       if (input$scale=="row") {
         data.in=t(scale(t(data.in)) ) } else {data.in=scale(data.in) }
       data_range=quantile(unlist(abs(data.in)), probs=c(0.01, 0.5, 0.99), na.rm=T)
       max_s=data_range[3]
       col_fun=colorRamp2(c(0-max_s, 0, max_s),  c(input$lowColor,input$midColor, input$highColor) )
-      legend_text=str_c("Z-Score")	
+      legend_text=str_c("Z-Score of\n", exp_unit())	
     }
     if (cluster_cols==F) {cutree_cols=0}
     if (input$heatmap_highlight=="No") {row_label_side="right"} else (row_label_side="left")
     
-  #browser() #debug
+    #browser() #debug
+    
     p<-Heatmap(data.in, col=col_fun, cluster_rows = cluster_rows, cluster_columns = cluster_cols, 
                 clustering_distance_rows=input$distanceMethod, clustering_distance_columns=input$distanceMethod,
                 clustering_method_rows=input$agglomerationMethod, clustering_method_columns=input$agglomerationMethod,
@@ -284,6 +285,8 @@ pheatmap2_out <- eventReactive(input$plot_heatmap, {
                 show_row_names = labRow, show_column_names = labCol, row_names_side=row_label_side,
                 show_row_dend=as.logical(input$heatmap_row_dend), show_column_dend = as.logical(input$heatmap_col_dend),
                 top_annotation = sample_annot,	row_names_gp = gpar(fontsize = cexRow),
+                row_title=input$heatmap_row_title, column_title=input$heatmap_column_title,
+                row_title_gp = gpar(fontsize = input$heatmap_row_title_font_size), column_title_gp = gpar(fontsize = input$heatmap_column_title_font_size),
                 column_names_gp = gpar(fontsize = cexCol), heatmap_legend_param = list(title = legend_text, color_bar = "continuous") )
    
      #highlight genes

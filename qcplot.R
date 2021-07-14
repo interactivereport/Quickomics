@@ -26,7 +26,8 @@ observe({
 	sampleIDs=setdiff(colnames(MetaData), c("Order", "ComparePairs") )
 	updateRadioButtons(session,'PCA_label', inline = TRUE, choices=sampleIDs, selected="sampleid")
 	updateTextAreaInput(session, "PCA_list", value=paste(samples, collapse="\n"))
-	updateSelectInput(session, "covar_variates", choices=attributes, selected=attributes)  
+	updateSelectInput(session, "covar_variates", choices=attributes, selected=attributes)
+	updateTextInput(session, "Ylab", value=exp_unit())
 })
 	
 
@@ -201,7 +202,7 @@ QCboxplot_out <- reactive({
 		#scale_fill_manual(values=rep("Dark2", length(tmp_sampleid)))+
 
 		coord_cartesian(ylim = range(boxplot(tmp_data_long$expr, plot=FALSE)$stats)*c(.9, 1.2)) +
-		labs(x = "Sample", y = "Expression Level") +
+		labs(x = "Sample", y = exp_unit()) +
 		theme_bw(base_size = 20) +
 		theme(legend.position = "bottom",	legend.title=element_blank(),	axis.text.x = element_blank(), plot.margin=unit(c(1,1,1,1),"mm")) +
 		guides(col = guide_legend(ncol = 8))
@@ -479,12 +480,25 @@ PC_covariates_out <- reactive({
   meta=MetaData[, !(colnames(MetaData) %in% c("sampleid", "Order", "ComparePairs")), drop=FALSE]
   meta=meta[, (colnames(meta) %in% input$covar_variates), drop=FALSE]
   rownames(meta)=MetaData$sampleid
-  res<-Covariate_PC_Analysis(tmp_data_wide, meta, out_dir=NULL, PC_cutoff=input$covar_PC_cutoff, 
+  res<-Covariate_PC_Analysis(tmp_data_wide, meta, out_prefix=NULL, PC_cutoff=input$covar_PC_cutoff, 
             FDR_cutoff=input$covar_FDR_cutoff, N_col=input$covar_ncol)
   return(res)
 })
 
-output$covar_table=renderTable(PC_covariates_out()$selVar_All, colnames=T)
+#output$covar_table=renderTable(PC_covariates_out()$selVar_All, colnames=T)
+
+output$covar_table <- DT::renderDataTable({
+  results<-PC_covariates_out()$selVar_All
+  results["P-value"]=as.numeric(formatC(unlist(results["P-value"]), format="e", digits=2))
+  results["FDR"]=as.numeric(formatC(unlist(results["FDR"]), format="e", digits=2))
+  DT::datatable(results,  extensions = 'Buttons',
+                options = list(
+                  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
+                  pageLength = 25
+                ),rownames= T)
+})
+
+
 
 output$plot.PC_covariatesC=renderUI({
   tagList(

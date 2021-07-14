@@ -46,7 +46,9 @@ tabPanel("Select Dataset",
                               #tabPanel(title="Introduction",htmlOutput('intro')),
                               #tabPanel(title="Project Table", DT::dataTableOutput('projecttable')),
                               tabPanel(title="Sample Table", actionButton("sample", "Save to output"), dataTableOutput('sample')),
-                              tabPanel(title="Project Overview", htmlOutput("summary"), tableOutput('group_table')),                              
+                              tabPanel(title="Project Overview", htmlOutput("summary"), 
+                                       tableOutput('group_table'), tags$br(), 
+                                       textInput("exp_unit", "Expression Data Units", value="Expression Level", width="300px")),                              
                               tabPanel(title="Result Table", actionButton("results", "Save to output"), dataTableOutput('results')),
                               tabPanel(title="Data Table", actionButton("data_wide", "Save to output"), dataTableOutput('data_wide')),
                               tabPanel(title="Protein Gene Names", actionButton("ProteinGeneName", "Save to output"), dataTableOutput('ProteinGeneName')),
@@ -117,7 +119,7 @@ tabPanel("QC Plots",
 				         plotOutput("pcaplot",height = 800)),
 				tabPanel(title="Covariates",  
 				         tabsetPanel(id="covartiate_tabset",
-				                     tabPanel(title="Summary", tableOutput('covar_table')),
+				                     tabPanel(title="Summary", dataTableOutput('covar_table')),
 				                     tabPanel(title="Categorical Covariates", actionButton("covar_cat", "Save to output"), 
 				                              sliderInput("covar_cat_height", "Plot Height:", min = 200, max = 3000, step = 50, value = 800),
 				                              tags$br(), uiOutput("plot.PC_covariatesC") ),
@@ -275,9 +277,11 @@ tabPanel("Heatmap",
 				                 column(width=5,sliderInput("cutreecols", "cutree_cols:", min = 0, max = 8, step = 1, value = 0)),
 				                 radioButtons("custom_color", label="Upload Colors for Annotations", inline = TRUE, choices = c("Yes","No"), selected = "No"),
 				                 conditionalPanel("input.custom_color=='Yes'",
-				                                  uiOutput("annot_color_file"))
-				                                  
-				                 
+				                                  uiOutput("annot_color_file")),
+				                 textInput("heatmap_row_title", "Row Title", width = "100%"),
+				                 sliderInput("heatmap_row_title_font_size", "Row Title Font Size:", min = 0, max = 30, step = 1, value = 16),
+				                 textInput("heatmap_column_title", "Column Title", width = "100%"),
+					               sliderInput("heatmap_column_title_font_size", "Column Title Font Size:", min = 0, max = 30, step = 1, value = 16)
 				)
 				)			
 			)
