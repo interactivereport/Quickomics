@@ -129,6 +129,15 @@ if (file.exists("unlisted/projects_public.csv")) { #load selected projects from 
   names(pub_projects)=Pinfo$ShortName
 }
 
+config=NULL
+server_dir=NULL
+if (file.exists("config.csv")) { #load optional configuration file
+  config=read_csv("config.csv")
+  N=match("server_dir", config$category)
+  if (!is.na(N)) {server_dir=config$value[N]}
+}
+
+
 html_geneset0 =  '
 <script>
 var GENESET_DEFAULT_TABLE = "";

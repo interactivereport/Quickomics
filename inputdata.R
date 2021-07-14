@@ -50,6 +50,19 @@ if (!is.null(query[['unlisted']])) {
   ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
   ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
 }
+if (!is.null(query[['serverfile']])) {
+  ProjectID = query[['serverfile']]
+  if (!is.null(server_dir)) {
+    unlisted_project=read.csv(str_c(server_dir, "/",  ProjectID, ".csv"))
+    ProjectInfo$ProjectID=ProjectID
+    ProjectInfo$Name=unlisted_project$Name
+    ProjectInfo$Species=unlisted_project$Species
+    ProjectInfo$ShortName=unlisted_project$ShortName
+    ProjectInfo$file1= paste(server_dir, "/",   ProjectID, ".RData", sep = "")  #data file
+    ProjectInfo$file2= paste(server_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
+  }
+
+}
 })
 
 observe({
