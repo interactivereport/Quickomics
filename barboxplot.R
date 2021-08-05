@@ -128,7 +128,7 @@ DataExpReactive <- reactive({
 output$dat_dotplot <- DT::renderDataTable({
 	data_long_tmp <- DataExpReactive()$data_long_tmp
 	data_long_tmp[,sapply(data_long_tmp,is.numeric)] <- signif(data_long_tmp[,sapply(data_long_tmp,is.numeric)],3)
-	data_long_tmp <- data_long_tmp[,-7]
+	#data_long_tmp <- data_long_tmp[,-7]
 	DT::datatable(data_long_tmp,  extensions = 'Buttons',  options = list(
 	  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
 })

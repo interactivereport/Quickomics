@@ -49,6 +49,7 @@ if (!is.null(query[['unlisted']])) {
   ProjectInfo$ShortName=unlisted_project$ShortName
   ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
   ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
+  if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
 }
 if (!is.null(query[['serverfile']])) {
   ProjectID = query[['serverfile']]
@@ -60,8 +61,8 @@ if (!is.null(query[['serverfile']])) {
     ProjectInfo$ShortName=unlisted_project$ShortName
     ProjectInfo$file1= paste(server_dir, "/",   ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste(server_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
+    if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
   }
-
 }
 })
 
@@ -159,21 +160,22 @@ DataReactive <- reactive({
  
                RDataFile <- ProjectInfo$file1
  
-                 load(RDataFile)
-                 
+               comp_info=NULL  
+               load(RDataFile)
+                 #if (!exists("comp_info")) {comp_info=NULL}
                  results_long <-
                    results_long %>% mutate_if(is.factor, as.character)  %>% left_join(ProteinGeneName, ., by = "UniqueID")
                  data_long <-
                    data_long %>% mutate_if(is.factor, as.character)  %>% left_join(ProteinGeneName, ., by = "UniqueID")
                  
-                 group_names <- as.character(MetaData$Order[MetaData$Order != ""])
+                 group_names <- as.character(unique((MetaData$Order[MetaData$Order != "" & !is.na(MetaData$Order)])))
                  if (length(group_names) == 0) {
                    group_names <- as.character(unique(MetaData$group))
                  }
                  tests  <-
                    as.character(MetaData$ComparePairs[MetaData$ComparePairs != ""])
-		 comp_tests=as.character(unique(results_long$test))
-		 if (!all(tests %in% comp_tests) ) { tests <-  gsub("-", "vs", tests) } #for projects where - used in MetaData, "vs" used in results_long
+		             comp_tests=as.character(unique(results_long$test))
+		             if (!all(tests %in% comp_tests) ) { tests <-  gsub("-", "vs", tests) } #for projects where - used in MetaData, "vs" used in results_long
                  if (length(tests) == 0) {
                    tests = unique(as.character(results_long$test))
                  }
@@ -195,7 +197,8 @@ DataReactive <- reactive({
                      "ProteinGeneName" = ProteinGeneName,
                      "data_wide" = data_wide,
                      "data_results" = data_results,
-                     "tests" = tests
+                     "tests" = tests,
+                     "comp_info"=comp_info
                    )
                  )
                })
@@ -333,6 +336,11 @@ output$sample <- DT::renderDataTable({
 	DT::datatable(meta,  extensions = 'Buttons',  options = list(
 	  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
 	
+})
+
+output$comparison <- DT::renderDataTable({
+  DT::datatable(DataReactive()$comp_info,  extensions = 'Buttons',  options = list(
+    dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
 })
 
 output$data_wide <- DT::renderDataTable({

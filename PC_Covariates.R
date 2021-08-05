@@ -78,7 +78,7 @@ Covariate_PC_Analysis<-function(exp, meta, out_prefix, PC_cutoff=5, FDR_cutoff=0
   if (!is.null(selVar_All)) {
     names(selVar_All)[c(2, 4, 5, 6)]=c("Covariate", "Significance", "P-value", "FDR")
   }
-  return(list(data.all=data.all, selVar_All=selVar_All, sel_dataN=sel_dataN, sel_dataC=sel_dataC))
+  return(list(data.all=data.all, selVar_All=selVar_All, sel_dataN=sel_dataN, sel_dataC=sel_dataC, ncol=N_col))
 }
 
 #Plot one covariate vs. one principle component. Can be useful when there are too many categories for the default faceted plot.

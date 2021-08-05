@@ -178,7 +178,7 @@ Eigenvalues_plot<-reactive({
   adj.factor=max(plotdata$TotalVar)/max(plotdata$perVar)*0.9
   p<-ggplot(plotdata, aes(x=PC) )+geom_bar(aes(y=perVar), stat="identity", fill="blue4")+
     geom_line(aes(y=TotalVar/adj.factor), size=1.5, color="red4", group=1)+geom_point(aes(y=TotalVar/adj.factor), size=3, color="red4")+
-    labs(x="Principle Components")+scale_y_continuous(name="Percentage of Variance", sec.axis=sec_axis(~.*adj.factor, name="Total Variance") ) +theme_cowplot()
+    labs(x="Principal Components")+scale_y_continuous(name="Percentage of Variance", sec.axis=sec_axis(~.*adj.factor, name="Total Variance") ) +theme_cowplot()
   return(p)
 })
 output$Eigenvalues <- renderPlot({
@@ -473,7 +473,7 @@ observeEvent(input$histplot, {
 
 
 ############PC_covariates QC Plots
-PC_covariates_out <- reactive({
+PC_covariates_out <-  eventReactive(input$compute_PC,{
   DataQC <-  DataQCReactive()
   tmp_data_wide <- DataQC$tmp_data_wide
   MetaData=DataQC$MetaData
@@ -489,8 +489,10 @@ PC_covariates_out <- reactive({
 
 output$covar_table <- DT::renderDataTable({
   results<-PC_covariates_out()$selVar_All
-  results["P-value"]=as.numeric(formatC(unlist(results["P-value"]), format="e", digits=2))
-  results["FDR"]=as.numeric(formatC(unlist(results["FDR"]), format="e", digits=2))
+  if (!is.null(results)) {
+    results["P-value"]=as.numeric(formatC(unlist(results["P-value"]), format="e", digits=2))
+    results["FDR"]=as.numeric(formatC(unlist(results["FDR"]), format="e", digits=2))
+  }
   DT::datatable(results,  extensions = 'Buttons',
                 options = list(
                   dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
@@ -499,14 +501,26 @@ output$covar_table <- DT::renderDataTable({
 })
 
 
-
+output$PC_covariatesC <- renderPlot({
+  data=PC_covariates_out()$sel_dataC
+  if (!is.null(data)) {
+    data$plot
+  }
+})
 output$plot.PC_covariatesC=renderUI({
   tagList(
-  textOutput("N_pairs_C"),
-  plotOutput("PC_covariatesC",height = input$covar_cat_height)
+    textOutput("N_pairs_C"),
+    plotOutput("PC_covariatesC",height = input$covar_cat_height)
   )
-})
+}) 
 
+
+output$PC_covariatesN <- renderPlot({
+  data=PC_covariates_out()$sel_dataN
+  if (!is.null(data)) {
+    data$plot
+  }
+})
 output$plot.PC_covariatesN=renderUI({
   tagList(
   textOutput("N_pairs_N"),
@@ -523,22 +537,17 @@ Npairs_cov<-reactive({
   return(c(N1, N2))
 })
 
+observe({
+  H_C=ceiling(Npairs_cov()[1]/PC_covariates_out()$ncol)*400
+  if (H_C>0)  { updateSliderInput(session, "covar_cat_height", value = H_C)}
+  H_N=ceiling(Npairs_cov()[2]/PC_covariates_out()$ncol)*400
+  if (H_N>0)  { updateSliderInput(session, "covar_num_height", value = H_N)}  
+})
+
 output$N_pairs_C<-renderText({str_c("There are ", Npairs_cov()[1], " significant categorical covariate-PC pairs.")})
 output$N_pairs_N<-renderText({str_c("There are ", Npairs_cov()[2], " significant numeric covariate-PC pairs.")})
+output$N_pairs<-renderText({str_c("There are ", Npairs_cov()[1]+Npairs_cov()[2], " significant covariate-PC pairs.")})
 
-output$PC_covariatesC <- renderPlot({
-  data=PC_covariates_out()$sel_dataC
-  if (!is.null(data)) {
-    data$plot
-  }
-})
-
-output$PC_covariatesN <- renderPlot({
-  data=PC_covariates_out()$sel_dataN
-  if (!is.null(data)) {
-    data$plot
-  }
-})
 
 observeEvent(input$covar_cat, {
   data=PC_covariates_out()$sel_dataC
