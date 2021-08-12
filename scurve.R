@@ -16,7 +16,8 @@
 Scurve_out <- reactive({
 	DataIn = DataReactive()
 	data_results <- DataIn$data_results
-
+	if (!"Protein.ID" %in% names(data_results)) {data_results$Protein.ID=NA} #Add Protein.ID column if missing
+	
 	gene_list <- DataExpReactive()$tmpids
 
 	validate(need(length(gene_list)>0,"Please select a gene or input gene."))

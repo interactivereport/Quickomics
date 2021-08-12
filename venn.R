@@ -173,7 +173,9 @@ output$SvennDiagram <- renderPlot({
 })
 
 output$vennHTML <- renderText({
-
+  DataIn = DataReactive()
+  ProteinGeneName = DataIn$ProteinGeneName
+  
 	venndata <- DataVennReactive()
 	vennlist <- venndata$vennlist
 
@@ -185,9 +187,12 @@ output$vennHTML <- renderText({
 	v.table <- venn(vennlist,show.plot = FALSE, intersections = TRUE)
 	intersect <- attr(v.table,"intersections")
 	htmlstr <- "  <br>"
+	#browser() #debug
 	for (i in 1:length(intersect)) {
-		if(input$vennlistname == "Gene"){
-			intersectlist <- toString(sapply(strsplit(intersect[[i]],split= "\\_"),'[',1))
+		if(input$vennlistname == "Gene.Name"){
+		  genes<-ProteinGeneName%>%dplyr::filter(UniqueID %in% intersect[[i]])%>%dplyr::select(Gene.Name)%>%unlist()
+		  intersectlist <- toString(genes)
+			#intersectlist <- toString(sapply(strsplit(intersect[[i]],split= "\\_"),'[',1))
 		} else if (input$vennlistname == "AC") {
 			intersectlist <- toString(sapply(strsplit(intersect[[i]],split= "\\_"),'[',2))
 		} else if (input$vennlistname == "UniqueID") {

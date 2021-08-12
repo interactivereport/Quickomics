@@ -176,10 +176,10 @@ output$volcanoplot <- renderPlotly({
   FCcut = log2(as.numeric(input$volcano_FCcut))
   pvalcut = as.numeric(input$volcano_pvalcut)
   if (input$volcano_psel == "Padj") {
-    p <- ggplot(res, aes(x = logFC, y =-log10(Adj.P.Value), text=UniqueID))
+    p <- ggplot(res, aes(x = logFC, y =-log10(Adj.P.Value), text=str_c(UniqueID, "\n", Gene.Name )))
     ylab <- "-log10(Padj.Value)"
   } else {
-    p <- ggplot(res, aes(x = logFC, y =-log10(P.Value), text=UniqueID))
+    p <- ggplot(res, aes(x = logFC, y =-log10(P.Value), text=str_c(UniqueID, "\n", Gene.Name )))
     ylab <- "-log10(P.Value)"
   }
   p <- p	+
@@ -278,7 +278,7 @@ volcanoplotstatic_out <- reactive({
     ggtitle(test_sel) +
     theme(legend.position = input$vlegendpos, legend.text=element_text(size=input$yfontsize))
   if (input$volcano_label!="None") {
-    p=p+geom_text_repel(data = data.label,  aes(label=labelgeneid),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	point.padding = unit(0.3, "lines"))
+    p=p+geom_text_repel(data = data.label,  aes(label=labelgeneid),	size = input$lfontsize,	box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines") )
   }
   p <- p + guides(color = guide_legend(override.aes = list(alpha = 1, size = 4)))
   return(p)

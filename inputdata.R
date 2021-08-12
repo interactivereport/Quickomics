@@ -162,6 +162,7 @@ DataReactive <- reactive({
  
                comp_info=NULL  
                load(RDataFile)
+               if (!"Protein.ID" %in% names(ProteinGeneName)) {ProteinGeneName$Protein.ID=NA} #Add Protein.ID column as it is required for certain tools.
                  #if (!exists("comp_info")) {comp_info=NULL}
                  results_long <-
                    results_long %>% mutate_if(is.factor, as.character)  %>% left_join(ProteinGeneName, ., by = "UniqueID")

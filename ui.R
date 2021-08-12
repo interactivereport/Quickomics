@@ -560,7 +560,7 @@ tabPanel("Venn Diagram",
 				colourInput("col5", "Select colour", "#FFFF00", palette = "limited")
 				),
 				conditionalPanel("input.venn_tabset=='Intersection Output'",
-				radioButtons("vennlistname", label= "Label name", choices= c("Gene"="Gene","AC Number"="AC", "UniqueID"="UniqueID"),inline = TRUE, selected = "Gene"))
+				radioButtons("vennlistname", label= "Label name", choices= c("Gene.Name"="Gene.Name","AC Number"="AC", "UniqueID"="UniqueID"),inline = TRUE, selected = "Gene.Name"))
 				) 
 			),
 			column(10,

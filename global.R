@@ -9,6 +9,7 @@
 ##@version 1.0
 ###########################################################################################################
 options(stringsAsFactors=F)
+options(ggrepel.max.overlaps = Inf)
 
 suppressPackageStartupMessages({
 	library(shiny)

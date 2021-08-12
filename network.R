@@ -32,10 +32,14 @@ output$networkstat <- renderText({
 		output$myTabUI <- renderUI({
 			actionButton("gennet","Generate")
 		})
-	} else {
+	} else if (nrow(net$nodes) == 0) {
 		output$myTabUI <- renderUI({
-			"too many nodes or zero node"
+			"Zero node. Try lower cutoffs or select other genes."
 		})
+	} else {
+	  output$myTabUI <- renderUI({
+	    "Too many nodes. Try higher cutoffs or select fewer genes."
+	  })
 	}
 })
 
