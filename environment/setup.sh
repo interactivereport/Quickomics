@@ -54,6 +54,9 @@ echo "DONE WITH CONDA"
 source $CONDA_DIR/etc/profile.d/conda.sh
 conda activate $repo
 
+echo "Creating .Rprofile"
+CONDA_ENV_BIN=$(dirname `which R`)
+echo '.libPaths("$CONDA_ENV_BIN/../lib/R/library/"); local({  r <- getOption("repos");  r["CRAN"] <- "https://cran.microsoft.com/";  options(repos = r); });' > ../.Rprofile
 
 echo """
 
