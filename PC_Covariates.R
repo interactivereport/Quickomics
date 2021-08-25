@@ -8,7 +8,7 @@
 #Besides the output files, return R list object including the following:
 #data.all (PC scores and meta data combined), selVar_All (significant covariate-PC pairs)
 #sel_dataN (Numeric covariate results), sel_dataC (Categorical covariate results)
-Covariate_PC_Analysis<-function(exp, meta, out_prefix, PC_cutoff=5, FDR_cutoff=0.1, N_col=3) {
+Covariate_PC_Analysis<-function(exp, meta, out_prefix, PC_cutoff=5, FDR_cutoff=0.1, N_col=3, PCA_plots="ranked") {
   require(tidyverse);  require(cowplot); require(openxlsx)
   if (!is.null(out_prefix) ) {
     out_dir=dirname(out_prefix)
@@ -30,6 +30,9 @@ Covariate_PC_Analysis<-function(exp, meta, out_prefix, PC_cutoff=5, FDR_cutoff=0
     ggsave(str_c(out_prefix, "_Significant_Categorical_Covariates.pdf"), sel_dataC$plot, width=graphW, height=graphH)
   }  
   
+  if (!is.null(selVarC)) {selVarC<-selVarC%>%arrange(fdr)}
+  if (!is.null(selVarN)) {selVarN<-selVarN%>%arrange(fdr)}
+  
   PC_info<-data.frame(PC=colnames(res1$PC_scores), Per=res1$percentVar[1:ncol(res1$PC_scores)])%>%mutate(PC_new=str_c(PC, " (", Per, "%)"))
   PC_Scores=res1$PC_scores; PC_Scores=data.frame(Sample=rownames(PC_Scores), PC_Scores)
   MetaData=res1$meta; MetaData=data.frame(Sample=rownames(MetaData), MetaData)
@@ -50,24 +53,38 @@ Covariate_PC_Analysis<-function(exp, meta, out_prefix, PC_cutoff=5, FDR_cutoff=0
   selVar_All<-rbind(selVarC1, selVarN1)
   
   if (!is.null(selVar_All)) {
-    selVar_All<-selVar_All%>%arrange(covar, pvalue)
+    selVar_All<-selVar_All%>%arrange(fdr) #sort by FDR
     if (nrow(selVar_All)>0 && !is.null(out_prefix) ) {
       pdf(str_c(out_prefix, "_PCA_Plots.pdf"), width=8, height=9)
-      var_list=as.character(sort(unique(selVar_All$covar)))
-      for (i in 1:length(var_list) ) {
-        var=as.character(var_list[i])
-        PCs<-selVar_All%>%filter(covar==var)%>%dplyr::select(PC)%>%unlist%>%as.character()
-        if (length(PCs)==1) {
-          PCs=sort(c(PCs, ifelse(PCs=="PC1", "PC2", "PC1")))
-        }
-        for  (j in 2:length(PCs)) {
-          x=sym(PCs[1]); y=sym(PCs[j]); color_by=sym(var)
+      
+      if (PCA_plots=="ranked") { #plot PCA plots in order of FDR
+        for (i in 1:nrow(selVar_All)) {
+          x0=selVar_All$PC[i]
+          if (x0=="PC1") {y0="PC2"} else {y0=x0; x0="PC1"}
+          x=sym(x0); y=sym(y0); color_by=sym(selVar_All$covar[i])
           p<-ggplot(data.all, aes(x=!!x, y=!!y, col=!!color_by))+geom_point()+
-            labs(x=PC_info$PC_new[PC_info$PC==PCs[1]], y=PC_info$PC_new[PC_info$PC==PCs[j]])+ theme_half_open()
+            labs(x=PC_info$PC_new[PC_info$PC==x0], y=PC_info$PC_new[PC_info$PC==y0])+ theme_half_open()
           #additional text to add  
-          more_text<-selVar_All%>%filter(covar==var)%>%dplyr::select(NewText)%>%unlist()%>%paste(collapse="\n")
-          p<-add_sub(p, str_c(more_text, "\n(This plot shows ", PCs[1], " in X and ", PCs[j], " in Y)"), x=0.2, hjust=0)
+          p<-add_sub(p, selVar_All$NewText[i], x=0.2, hjust=0)
           print(ggdraw(p))
+        }
+      }  else { #plot PCA plots for each variate, try to minimize plots
+        var_list=as.character(sort(unique(selVar_All$covar)))
+        for (i in 1:length(var_list) ) {
+          var=as.character(var_list[i])
+          PCs<-selVar_All%>%filter(covar==var)%>%dplyr::select(PC)%>%unlist%>%as.character()
+          if (length(PCs)==1) {
+            PCs=sort(c(PCs, ifelse(PCs=="PC1", "PC2", "PC1")))
+          }
+          for  (j in 2:length(PCs)) {
+            x=sym(PCs[1]); y=sym(PCs[j]); color_by=sym(var)
+            p<-ggplot(data.all, aes(x=!!x, y=!!y, col=!!color_by))+geom_point()+
+              labs(x=PC_info$PC_new[PC_info$PC==PCs[1]], y=PC_info$PC_new[PC_info$PC==PCs[j]])+ theme_half_open()
+            #additional text to add  
+            more_text<-selVar_All%>%filter(covar==var)%>%dplyr::select(NewText)%>%unlist()%>%paste(collapse="\n")
+            p<-add_sub(p, str_c(more_text, "\n(This plot shows ", PCs[1], " in X and ", PCs[j], " in Y)"), x=0.2, hjust=0)
+            print(ggdraw(p))
+          }
         }
       }
       dev.off()
@@ -78,6 +95,7 @@ Covariate_PC_Analysis<-function(exp, meta, out_prefix, PC_cutoff=5, FDR_cutoff=0
   if (!is.null(selVar_All)) {
     names(selVar_All)[c(2, 4, 5, 6)]=c("Covariate", "Significance", "P-value", "FDR")
   }
+
   return(list(data.all=data.all, selVar_All=selVar_All, sel_dataN=sel_dataN, sel_dataC=sel_dataC, ncol=N_col))
 }
 
