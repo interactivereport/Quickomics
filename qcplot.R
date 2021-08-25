@@ -267,9 +267,14 @@ pcaplot_out <- eventReactive (input$plot_PCA, {
 
 	if (input$PCAshapeby=="none") {shape_by=19} else {shape_by=input$PCAshapeby}
 	if (input$PCAsizeby=="none") {size_by=input$PCAdotsize} else {size_by=input$PCAsizeby}	
-	
-	p <- ggpubr::ggscatter(scores,x =PC1, y=PC2, color =input$PCAcolorby, shape=shape_by, size =size_by , palette= colorpal, ellipse = input$ellipsoid, mean.point = input$mean_point, rug = input$rug,
-	                       label =labels, font.label = input$PCAfontsize, repel = TRUE,  ggtheme = theme_bw(base_size = 20) )
+	if (is.numeric(scores[[input$PCAcolorby]])) {  #when colorby is numeric, don't use color palette
+	  p <- ggpubr::ggscatter(scores,x =PC1, y=PC2, color =input$PCAcolorby, shape=shape_by, size =size_by , ellipse = input$ellipsoid, mean.point = input$mean_point, rug = input$rug,
+	                         label =labels, font.label = input$PCAfontsize, repel = TRUE,  ggtheme = theme_bw(base_size = 20) )
+	} else {
+	  p <- ggpubr::ggscatter(scores,x =PC1, y=PC2, color =input$PCAcolorby, shape=shape_by, size =size_by , palette= colorpal, ellipse = input$ellipsoid, mean.point = input$mean_point, rug = input$rug,
+	                         label =labels, font.label = input$PCAfontsize, repel = TRUE,  ggtheme = theme_bw(base_size = 20) )
+	}
+
 	p <- ggpubr::ggpar(p, xlab = xlabel, ylab = ylabel)
 	#	browser() #debug	
 	#	p <- ggpubr::ggpar(p, legend.title ="", xlab = xlabel, ylab = ylabel, legend = "bottom") #works only when use color by. 
