@@ -1,3 +1,4 @@
+source('.Rprofile')
 ###########################################################################################################
 ## Proteomics Visualization R Shiny App
 ##
@@ -8,7 +9,8 @@
 ##@Date : 5/16/2018
 ##@version 1.0
 ###########################################################################################################
-
+options(shiny.host = '0.0.0.0')
+options(shiny.port = 8023)
 
 function(input, output, session) {
 source("inputdata.R",local = TRUE)
