@@ -80,7 +80,7 @@ $ Rscript Proteomics2Quickomics.R
 cran_packages=c("shiny", "shinythemes", "shinyjs", "plotly", "reshape2", "tidyverse", "gplots", "ggpubr",
 "gridExtra", "ggrepel", "RcolorBrewer", "pheatmap", "rgl", "car", "colourpicker", "VennDiagram", "factoextra",
 "openxlsx", "visNetwork", "cowplot", "circlize", "ComplexHeatmap", "svglite", "shinyjqui", "Hmisc", "ggrastr",
-"ggExtra", "network3D", "vctrs", "ragg", "textshaping")
+"ggExtra", "networkd3", "vctrs", "ragg", "textshaping")
 
 #Note: Hmisc is not required to run the Shiny app but is needed to prepare network data from expression matrix.
 install.packages(cran_packages, repos="http://cran.r-project.org/")  #choose repos based on your location if needed
