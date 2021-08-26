@@ -75,6 +75,7 @@ $ Rscript Proteomics2Quickomics.R
 ```
 
 # Local Installation
+## Manual Install
 ### 1) Install the following R packages:
 ```R
 cran_packages=c("shiny", "shinythemes", "shinyjs", "plotly", "reshape2", "tidyverse", "gplots", "ggpubr",
@@ -101,3 +102,27 @@ see more at https://docs.github.com/en/free-pro-team@latest/github/creating-clon
 Check the following web links on various options to launch the app. 
 * https://shiny.rstudio.com/articles/running.html
 * https://shiny.rstudio.com/deploy/
+
+## Automated Install For Linux (bash) & Probably OSX
+There is an automated install script which will build a conda environment `QUICKO` which contains R and all of the dependencies to run the QuickOmics shiny app.  The install script assumes a bash shell, but it should be trivial to edit for other shells.  It is designed to execute the complete install (which can take an 30m-45m), and end with launching the app on  http://0.0.0.0:9808 (you can configure this in the bash script.  
+
+* To install:
+
+```
+git clone <repo>
+cd <repo>/environment # You should be in the environment directory to run the setup.sh script
+./setup.sh QUICKO ~/conda/  # The last argument is the path to your conda install, or where it will be installed if not present.  You do need to watch the install as you may be prompted 1-2x to continue installing certain packages.
+# You'll be presented with an IP:port of the shiny app, which will hold the shell from returning until you hit ctrl-c two times, which will exit the server  
+```
+
+* To run the server yourself after install:
+```
+conda activate QUICKO
+cd <repo>  # not the environment dir
+R --vanilla -e "shiny::runApp(host='0.0.0.0',port=9808)"
+# The server will run and hold the shell until you hit ctrl-c 2x
+conda deactivate # To deactivate the QUICKO environment
+```
+And that is that.
+
+
