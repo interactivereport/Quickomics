@@ -1,5 +1,5 @@
 #!/bin/bash
-repo="QUICKO2"
+repo="QUICKO"
 ################################################################################
 # Sets up miniconda environment 'QUICKO' to run
 ################################################################################
@@ -11,7 +11,7 @@ if [[ $1 != "$repo" ]]; then
     Hello! This is the  __QUICKOMICS___ installer. To allow this script to setup the proper conda environment, please run it with the following arguments: ./setup.sh QUICKO /path/to/your/conda/install (which for most people is ~/conda).  If you do not have conda installed at the location specified, this script will install it for you.
 
 Once your environment is setup, you can source it with 'conda activate QUICKO'.
-Then to start the app, from the main directory, you can run: R --vanilla -e \"shiny::runApp(host='0.0.0.0',port=9804)\"
+Then to start the app, from the main directory, you can run: R --vanilla -e \"shiny::runApp(host='0.0.0.0',port=9808)\"
     """
 	exit 15
 fi
@@ -78,7 +78,7 @@ echo "done ...."
 sleep 1
 
 echo """
-       Attempting to launch Quickomics shiny app on port 9804....
+       Attempting to launch Quickomics shiny app on port 9808....
 """
 sleep 1
 cd $ENV_DIR/../
