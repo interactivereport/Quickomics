@@ -336,7 +336,7 @@ output$results <- DT::renderDataTable({
 output$sample <- DT::renderDataTable({
   meta<-DataReactive()$MetaData%>%dplyr::select(-Order, -ComparePairs)
 	DT::datatable(meta,  extensions = 'Buttons',  options = list(
-	  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
+	  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15), rownames= F)
 	
 })
 
