@@ -505,7 +505,7 @@ tabPanel("Correlation Network",
 			wellPanel(
 			  radioButtons("network_label",label="Select Gene Label",inline = TRUE, choices=c("UniqueID", "Gene.Name"), selected="Gene.Name"),
 				selectizeInput("sel_net_gene",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search')),
-				sliderInput("network_rcut", label= "Choose r Cutoff",  min = 0.7, max = 1, value = 0.9, step=0.02),
+				sliderInput("network_rcut", label= "Choose r Cutoff",  min = 0, max = 1, value = 0.9, step=0.02),
 	 			selectInput("network_pcut", label= "Choose P Value Cutoff", choices= c("0.0001"=0.0001,"0.001"=0.001,"0.01"=0.01,"0.05"=0.05),selected=0.01),
        	textOutput("networkstat"),
         uiOutput("myTabUI")
