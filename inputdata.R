@@ -13,7 +13,10 @@ saved_table <- reactiveValues()
 group_order <- reactiveVal()
 sample_order <- reactiveVal()
 all_samples <-reactiveVal()
-samples_excludeM<-reactiveVal()
+samples_excludeM<-reactiveVal() #manually excluded samples
+samples_excludeF<-reactiveVal() #samples excluded from filtering on sample attributes
+attribute_filters<-reactiveVal()
+attribute_filters("")
 all_groups <-reactiveVal()
 all_tests<-reactiveVal()
 all_metadata<-reactiveVal()
@@ -162,7 +165,7 @@ DataReactive <- reactive({
  
                comp_info=NULL  
                load(RDataFile)
-               if (!is.data.frame(data_wide)) {data_wide=data.frame(data_wide)}  #change data_wide to data frame from numeric matrix if needed
+               if (!is.data.frame(data_wide)) {data_wide=data.frame(data_wide, check.names = FALSE)}  #change data_wide to data frame from numeric matrix if needed
                if (!"Protein.ID" %in% names(ProteinGeneName)) {ProteinGeneName$Protein.ID=NA} #Add Protein.ID column as it is required for certain tools.
                  #if (!exists("comp_info")) {comp_info=NULL}
                  results_long <-

@@ -44,25 +44,65 @@ output$sample_choose_order=renderUI({
   req(sample_order())
   group_exclude<-setdiff(all_groups(), group_order())
   sample_exclude<- setdiff(all_samples(), sample_order())
+  MetaData=all_metadata()
+  attributes=c("None", setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs", "group") ) )
+  attributes=sort(attributes)
   #browser() #debug
   tagList(
-  tags$div(
+    tags$div(
+      tags$p("Groups excluded: ", paste(group_exclude, collapse=", "), " (samples from the excluded groups are removed)")),
+      tags$p(tags$em("Add/remove/re-roder groups will reset sample selection based on slected groups.")),
     tags$hr(style="border-color: RoyalBlue;"),
-    tags$p("Groups excluded: ", paste(group_exclude, collapse=", "), tags$br(), "Samples from these groups will be removed from plotting and analysis.")),
-    checkboxInput("remove_samples", "Remove additonal samples?", TRUE, width="90%"),
-    conditionalPanel(condition="input.remove_samples==1",
-                     textAreaInput("sample_exclude_list", "Enter Samples to Exclude:", "",  width="500px", height="125px"),
-                    actionButton("remove_sample", "Remove Samples in the Box Above"),
-                    tags$p("Additional samples to be manualy removed:", paste(samples_excludeM(), collapse=", ")) ),
-    tags$p("All samples to be excluded: ", paste(sample_exclude, collapse=", ")),
+    tags$p(tags$strong("Please finalized group selection/order before working on further sample selection.")),
+    radioButtons("Select_Sample", label="Method to Select Samples:", inline = TRUE, choices = c("Sample Filter", "Upload Sample List"), selected = "Sample Filter"),
+    conditionalPanel("input.Select_Sample=='Sample Filter'",
+      tags$p("Sample attribute filters already applied: ", attribute_filters()),
+      selectizeInput("meta_col_sel", label="Filter Samples by the Attribute (Covariate) Below:", choices=attributes, selected="None", multiple=FALSE),
+      conditionalPanel(condition="input.meta_col_sel!='None'",
+                     uiOutput('filter_meta')),
+      checkboxInput("remove_samples", "Remove additonal samples?", FALSE, width="90%"),
+      conditionalPanel(condition="input.remove_samples==1",
+                     textAreaInput("sample_exclude_list", "Enter Samples to Exclude:", "",  width="500px", height="50px"),
+                     actionButton("remove_sample", "Remove Samples in the Box Above")) ),
+    conditionalPanel("input.Select_Sample=='Upload Sample List'",
+      textAreaInput("sample_upload_list", "Enter Samples to Use (IDs separated by comma or line break):", "",  width="500px", height="150px"),
+      actionButton("upload_sample", "Upload Samples in the Box Above")),
+    tags$hr(),
+    tags$p("Selected samples: ", paste(sample_order(), collapse=", ")),
+    tags$p("Excluded samples: ", paste(sample_exclude, collapse=", ")),
     tags$br(),
     tags$hr(style="border-color: RoyalBlue;"),
-    checkboxInput("show_samples", "Show samples chosen for plots and reoder samples?", TRUE, width="90%"),
+    checkboxInput("show_samples", "Reorder Selected samples?", TRUE, width="90%"),
     conditionalPanel(condition="input.show_samples==1",
-    orderInput(inputId = 'order_samples', label = 'Drag and Drop to Reorder Samples.', items =sample_order(), width="90%", item_class = 'success', legacy =TRUE ))
+                     orderInput(inputId = 'order_samples', label = 'Drag and Drop to Reorder Samples.', items =sample_order(), width="90%", item_class = 'success', legacy =TRUE ))
   )
 })
 
+output$filter_meta=renderUI({
+  MetaData=all_metadata()
+  selCol=input$meta_col_sel
+  if (selCol!="None") {
+  values=as.character(MetaData[[selCol]])
+  UniqueValues=sort(unique(values))
+  UniqueValues[UniqueValues==""]="Empty_Value" #change so empty values can be displayed and selected
+  group_info<-data.frame(values)%>%group_by(values)%>%dplyr::count()%>%t()
+  output$table_selCol=renderTable(group_info, colnames=F)
+  sel_row=which(MetaData$sampleid %in% sample_order())
+  values2=values[sel_row]
+  group_info2<-data.frame(values2)%>%group_by(values2)%>%dplyr::count()%>%t()
+  output$table_selCol2=renderTable(group_info2, colnames=F)
+  menu_label=str_c("Select Values from ", selCol)
+  #browser() ##debug
+  tagList(
+    selectizeInput("sel_values_meta_col", label=menu_label, choices=UniqueValues, selected=UniqueValues, multiple=TRUE, width="80%"),
+    tags$p("Number of samples for each value from all samples"),
+    tableOutput("table_selCol"),
+    tags$p("Number of samples for each value from selected samples"),
+    tableOutput("table_selCol2"),
+    HTML("<hr>")
+  )
+  }
+})
 
 
 observeEvent(input$order_groups_order, {  
@@ -79,18 +119,34 @@ output$selectGroupSample <- renderText({ paste("Selected ",length(group_order())
                                                length(sample_order()), " out of ", length(all_samples()), " Samples.", sep="")})
 
 
+#update sample list and sample order if group changes
 observe({
   req(group_order())
   MetaData=all_metadata()
   groups = group_order()
-  allsamples=all_samples()
+  #allsamples=all_samples()
   MetaData1<-MetaData%>%filter(group %in% groups)
-  samples <- as.character( MetaData1$sampleid[order(match(MetaData1$group,groups))])
-  sample_R= samples_excludeM() #extra samples to remove
-  ToRemove=( toupper(samples) %in% toupper(sample_R) )
-  if  (sum(ToRemove)>0) {samples=samples[!ToRemove]}
-  sample_order(samples)
+  #samples=sample_order()
+  samplesG <- as.character( MetaData1$sampleid[order(match(MetaData1$group,groups))])
+  #new_samples=intersect(samplesG, samples)
+  #browser() #debug
+  sample_order(samplesG)
+  attribute_filters("")
+  samples_excludeM(""); samples_excludeF("")
 })
+
+#update sample list based on filter and manual list
+observe({
+  req(input$Select_Sample)
+  if (input$Select_Sample=='Sample Filter') {
+    samples=sample_order()
+    sample_R= unique(c(samples_excludeM(), samples_excludeF())) #extra samples to remove
+    ToRemove=( toupper(samples) %in% toupper(sample_R) )
+    if  (sum(ToRemove)>0) {samples=samples[!ToRemove]; sample_order(samples)}
+  }
+})
+
+
 
 observeEvent(input$QC_samples, {  
   sample_order(input$QC_samples)
@@ -113,12 +169,53 @@ observeEvent(input$remove_sample, {
   }
 })
 
+observeEvent(input$upload_sample, {  
+  sample_list=input$sample_upload_list
+  if(grepl("\n",sample_list)) {
+    sample_list <-  stringr::str_split(sample_list, "\n")[[1]]
+  }  else if(grepl(",",sample_list)) {
+    sample_list <-  stringr::str_split(sample_list, ",")[[1]]
+  }
+  sample_list <- gsub(" ", "", sample_list, fixed = TRUE)
+  sample_list <- unique(sample_list[sample_list != ""])
+  samples=all_samples()
+  ToAdd=( toupper(sample_list) %in% toupper(samples) )
+  #browser() #debug
+  if  (sum(ToAdd)>0) {
+    sample_order(sample_list[ToAdd])
+    attribute_filters("")
+    samples_excludeM(""); samples_excludeF("")
+  }
+})
+#remove samples from filter on attributes
+observeEvent(input$sel_values_meta_col, {  
+  MetaData=all_metadata()
+  selCol=input$meta_col_sel
+  values=as.character(MetaData[[selCol]])
+  samples=MetaData$sampleid
+  UniqueValues=sort(unique(values))
+  selValues=input$sel_values_meta_col
+  selValues1=selValues
+  selValues[selValues=="Empty_Value"]=""
+   RemoveValues=setdiff(UniqueValues, selValues)
+  ToRemove=(values %in% RemoveValues)
+  if  (sum(ToRemove)>0) {
+    samples_excludeF(samples[ToRemove])
+    old_attr=attribute_filters()
+    new_attr=str_c(old_attr, "\t", selCol, " selected values: ", paste(selValues1, collapse = ", "), ". "   )
+    attribute_filters(new_attr)
+  }
+})
+
+
 
 
 observeEvent(input$reset_group, {
   allgroups = all_groups()
   group_order(allgroups)
   samples_excludeM("")
+  attribute_filters("")
+  samples_excludeF("")
   samples=all_samples()
   sample_order(samples)
 })
@@ -485,6 +582,7 @@ PC_covariates_out <-  eventReactive(input$compute_PC,{
   meta=MetaData[, !(colnames(MetaData) %in% c("sampleid", "Order", "ComparePairs")), drop=FALSE]
   meta=meta[, (colnames(meta) %in% input$covar_variates), drop=FALSE]
   rownames(meta)=MetaData$sampleid
+  #browser() #debug
   res<-Covariate_PC_Analysis(tmp_data_wide, meta, out_prefix=NULL, PC_cutoff=input$covar_PC_cutoff, 
             FDR_cutoff=input$covar_FDR_cutoff, N_col=input$covar_ncol)
   return(res)
