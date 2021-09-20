@@ -72,7 +72,7 @@ Covariate_PC_Analysis<-function(exp, meta, out_prefix, PC_cutoff=5, FDR_cutoff=0
         var_list=as.character(sort(unique(selVar_All$covar)))
         for (i in 1:length(var_list) ) {
           var=as.character(var_list[i])
-          PCs<-selVar_All%>%filter(covar==var)%>%dplyr::select(PC)%>%unlist%>%as.character()
+          PCs<-selVar_All%>%dplyr::filter(covar==var)%>%dplyr::select(PC)%>%unlist%>%as.character()
           if (length(PCs)==1) {
             PCs=sort(c(PCs, ifelse(PCs=="PC1", "PC2", "PC1")))
           }
@@ -81,7 +81,7 @@ Covariate_PC_Analysis<-function(exp, meta, out_prefix, PC_cutoff=5, FDR_cutoff=0
             p<-ggplot(data.all, aes(x=!!x, y=!!y, col=!!color_by))+geom_point()+
               labs(x=PC_info$PC_new[PC_info$PC==PCs[1]], y=PC_info$PC_new[PC_info$PC==PCs[j]])+ theme_half_open()
             #additional text to add  
-            more_text<-selVar_All%>%filter(covar==var)%>%dplyr::select(NewText)%>%unlist()%>%paste(collapse="\n")
+            more_text<-selVar_All%>%dplyr::filter(covar==var)%>%dplyr::select(NewText)%>%unlist()%>%paste(collapse="\n")
             p<-add_sub(p, str_c(more_text, "\n(This plot shows ", PCs[1], " in X and ", PCs[j], " in Y)"), x=0.2, hjust=0)
             print(ggdraw(p))
           }
@@ -90,22 +90,29 @@ Covariate_PC_Analysis<-function(exp, meta, out_prefix, PC_cutoff=5, FDR_cutoff=0
       dev.off()
     }
   }
-
-  if (!is.null(out_prefix) ) {cat("Please check output files at:", out_dir, "\n")}
+  
   if (!is.null(selVar_All)) {
     names(selVar_All)[c(2, 4, 5, 6)]=c("Covariate", "Significance", "P-value", "FDR")
   }
+  res=list(data.all=data.all, selVar_All=selVar_All, sel_dataN=sel_dataN, sel_dataC=sel_dataC, ncol=N_col)
 
-  return(list(data.all=data.all, selVar_All=selVar_All, sel_dataN=sel_dataN, sel_dataC=sel_dataC, ncol=N_col))
+  if (!is.null(out_prefix) ) {
+    saveRDS(res, str_c(out_prefix, "_Covariate_PC_Results.rds"))
+    cat("Please check output files at:", out_dir, "\n")
+  }
+
+
+  return(res)
 }
 
 #Plot one covariate vs. one principle component. Can be useful when there are too many categories for the default faceted plot.
-#Input: res is from function Covariate_PC_Analysis. add_text will add a line below the plot to show if the covariate vs PC is significant. 
-plot_covariate_PC<-function(res, pc, var, out_file, width=10, height=8, add_text=TRUE) {
+#Input: res_file is RDS file from function Covariate_PC_Analysis. add_text will add a line below the plot to show if the covariate vs PC is significant. 
+plot_covariate_PC<-function(res_file, pc, var, out_file, width=10, height=8, add_text=TRUE) {
+  res<-readRDS(res_file)
   data.all=res$data.all
   selVar=res$selVar_All
   if (!(var %in% names(data.all))) {cat("Covariate ", var, " not in MetaData. Please check the spelling of covariate.\n", sep=""); return(NULL)}
-  if (!(pc %in% names(data.all))) {cat(pc, " not in principle component scores. Please check the spellin.\n", sep=""); return(NULL)}
+  if (!(pc %in% names(data.all))) {cat(pc, " not in principle component scores. Please check the spelling.\n", sep=""); return(NULL)}
   Num_names=names(select_if(data.all, is.numeric))
   if (var %in% Num_names) { #numeric covariate
     p<-ggplot(data.all, aes(x=!!sym(var), y=!!sym(pc)) )+geom_point()+
@@ -115,7 +122,7 @@ plot_covariate_PC<-function(res, pc, var, out_file, width=10, height=8, add_text
       theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=0.5))
   }
   if (add_text) {
-    info<-selVar%>%filter(PC==pc, covar==var)
+    info<-selVar%>%dplyr::filter(PC==pc, Covariate==var)
     if ( nrow(info)>0) {text_info=info$NewText[1]} else {text_info=str_c(var, " vs. ", pc, " not significant.")}
     p<-add_sub(p, text_info, x=0.2, hjust=0)
   }
@@ -126,7 +133,7 @@ plot_covariate_PC<-function(res, pc, var, out_file, width=10, height=8, add_text
 }
 
 
-#compute coraviate vs PC significance. For numerica, use correlation, for categorical, use ANOVA.
+#compute covaviate vs PC significance. For numerical covariates, use correlation, for categorical covariates, use ANOVA.
 #exp is expression matrix (logTPM, logCPM, etc), meta is meta data. Column names (samples) of exp must match row names of meta. 
 #PC_cutoff: select which principle components to be used in analysis. Default 5 will select components that explain more than 5% of variance in the data.
 Compute_Corr_Anova<-function(exp, meta, PC_cutoff=5) {
@@ -181,7 +188,7 @@ Compute_Corr_Anova<-function(exp, meta, PC_cutoff=5) {
           PWinfo=NA
           if (pvalue<0.05) {  #run pairwise
             PW<-tidy(TukeyHSD(res.aov))
-            PW.sig<-PW%>%filter(adj.p.value<0.05)
+            PW.sig<-PW%>%dplyr::filter(adj.p.value<0.05)
             if (nrow(PW.sig)>0) {
               names(PW.sig)[names(PW.sig)=="contrast"]="comparison"  #older version comparison, new version contrast
               PWinfo<-paste(paste(PW.sig$comparison, format.pval(PW.sig$adj.p.value, digits=2)), collapse="; ")
@@ -204,44 +211,57 @@ get_PC_meta_plot<-function(res, var_type, FDR_cutoff=0.1, N_col=3) {
   require(tidyverse);require(cowplot)
   if (var_type=="numeric") {
     if (is.null(res$corr)) {return(NULL)}
-    selVar=res$corr%>%filter(fdr<FDR_cutoff)
+    selVar=res$corr%>%dplyr::filter(fdr<FDR_cutoff)
   } else {
     if (is.null(res$anova)) {return(NULL)}
-    selVar<-res$anova%>%filter(fdr<FDR_cutoff)
+    selVar<-res$anova%>%dplyr::filter(fdr<FDR_cutoff)
   }
   if (nrow(selVar)==0) {return(NULL)}
   meta=res$meta
   scores=res$PC_scores
   data.df=NULL
+  all_levels=NULL
   for (i in 1:nrow(selVar)) {
     N1=match(selVar$PC[i], colnames(scores) )
     N2=match(selVar$covar[i], colnames(meta))
-    df1=data.frame(PC=selVar$PC[i], covar=selVar$covar[i], Value=meta[, N2], Score=scores[, N1])
+    values=meta[, N2]
+    df1=data.frame(PC=selVar$PC[i], covar=selVar$covar[i], Value=values, Score=scores[, N1])
+    #get levels for categorical covariates
+    if (var_type!="numeric") {
+      if (is.factor(values)) {levels=as.character(levels(values))} else {levels=unique(values)}
+      all_levels=unique(c(all_levels, levels))
+    }
     data.df=rbind(data.df, df1)
   }
+  if (var_type!="numeric") {data.df$Value=factor(data.df$Value, levels=all_levels)}
   
   ##make plot
+  selVar<-selVar%>%arrange(fdr)%>%mutate(wrap=str_c(covar, "\n", PC))
+  selVar$wrap<-factor(selVar$wrap, levels=selVar$wrap)
+  data.df<-data.df%>%mutate(wrap=str_c(covar, "\n", PC))
+  data.df$wrap<-factor(data.df$wrap, levels=selVar$wrap)
+  
   if (var_type=="numeric") {
     p<-ggplot(data.df, aes(x=Value, y=Score, color=covar) )+geom_point()+
       stat_summary(fun.data= mean_cl_normal) + geom_smooth(method='lm')+
-      facet_wrap(c("covar", "PC"), ncol=N_col,scales = "free")+theme_half_open() +background_grid()+panel_border() + 
+      facet_wrap(c("wrap"), ncol=N_col,scales = "free")+theme_half_open() +background_grid()+panel_border() + 
       labs(x="Covariate Value", y="PC Scores", color="numeric\ncovariates")  
     
-    selVar$text=str_c("r=", round(selVar$r*1000)/1000,  "; fdr=",format.pval(selVar$fdr, digits=2))
+    selVar$text=str_c("r=", round(selVar$r*1000)/1000,  "; fdr=",format(selVar$fdr, scientific = T, digits=2))
     p<-p+ geom_text( data = selVar, color="black", 
                   mapping = aes(x = -Inf, y = Inf, label = text),
                   hjust   = -0.1, vjust   = 1.5)
     
   } else {
     p<-ggplot(data.df, aes(x=Value, y=Score, color=covar) )+geom_boxplot()+geom_jitter(alpha=0.7, width=0.1)+
-    facet_wrap(c("covar", "PC"), ncol=N_col,scales = "free")+theme_half_open() +background_grid()+panel_border() + 
+    facet_wrap(c("wrap"), ncol=N_col,scales = "free")+theme_half_open() +background_grid()+panel_border() + 
     theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=0.5)) + labs(x="Covariate Category", y="PC Scores", color="categorical\ncovariates")  
-    selVar$text=str_c("ANOVA fdr: ",format.pval(selVar$fdr, digits=2))
+    selVar$text=str_c("ANOVA fdr: ", format(selVar$fdr, scientific = T, digits=2))
     p<-p+ geom_text( data = selVar, color="black", 
                 mapping = aes(x = -Inf, y = Inf, label = text),
                 hjust   = -0.1, vjust   = 1.5)
   }
-  return(list(plot=p, data.df=data.df, selVar=selVar))
+  return(list(plot=p, data.df=data.df%>%dplyr::select(-wrap), selVar=selVar%>%dplyr::select(-wrap)))
 }
     
   
