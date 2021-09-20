@@ -94,17 +94,17 @@ observeEvent(input$uploadData, {
   #get gene or protein name
   if (input$F_annot_auto==0) {
     ProteinGeneName=read.csv(input$F_annot$datapath)
-    ProteinGeneName<-ProteinGeneName%>%filter(UniqueID %in% IDall)
+    ProteinGeneName<-ProteinGeneName%>%dplyr::filter(UniqueID %in% IDall)
     setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
   } else {
     if (str_detect(input$F_ID_type, "UniProt") ) { #protein name match
       ProteinInfo<-readRDS('db/ProteinInfo.rds')%>%mutate(Gene_Name=str_replace(Gene_Name, " .+", "")) #replace space, as UniProt put alias here
      if (input$F_ID_type=="UniProtKB Protein ID" ) {
       ProteinGeneName<-data.frame(id=1:length(IDall), UniqueID=IDall)%>%left_join(ProteinInfo%>%
-                transmute(UniqueID=UniProtKB.AC, Gene.Name=Gene_Name, Protein.ID=UniProtKB.AC, Description=Protein_Name)%>%filter(!duplicated(UniqueID)) )
+                transmute(UniqueID=UniProtKB.AC, Gene.Name=Gene_Name, Protein.ID=UniProtKB.AC, Description=Protein_Name)%>%dplyr::filter(!duplicated(UniqueID)) )
      } else {
        ProteinGeneName<-data.frame(id=1:length(IDall), UniqueID=IDall)%>%left_join(ProteinInfo%>%
-                transmute(UniqueID=UniProtKB.ID, Gene.Name=Gene_Name, Protein.ID=UniProtKB.AC, Description=Protein_Name)%>%filter(!duplicated(UniqueID)) )
+                transmute(UniqueID=UniProtKB.ID, Gene.Name=Gene_Name, Protein.ID=UniProtKB.AC, Description=Protein_Name)%>%dplyr::filter(!duplicated(UniqueID)) )
      }
     if (input$F_description==0) {ProteinGeneName<-ProteinGeneName%>%dplyr::select(-Description)} 
     if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
@@ -137,7 +137,7 @@ observeEvent(input$uploadData, {
       F_TYPE=sym(filter_type)
 
       ProteinGeneName<-data.frame(id=1:length(IDall), UniqueID=IDall)%>%left_join(output%>%
-                          transmute(UniqueID=!!F_TYPE, Gene.Name=external_gene_name, GeneType=gene_biotype, Description=description)%>%filter(!duplicated(UniqueID)) )
+                          transmute(UniqueID=!!F_TYPE, Gene.Name=external_gene_name, GeneType=gene_biotype, Description=description)%>%dplyr::filter(!duplicated(UniqueID)) )
       if (input$F_ID_type=="Ensembl Gene ID" ) {
         ProteinGeneName<-EID%>%transmute(UniqueID=IDall_old, Unique1=IDall)%>%left_join(ProteinGeneName%>%mutate(Unique1=UniqueID)%>%dplyr::select(-UniqueID))%>%dplyr::select(-Unique1)
       }
@@ -167,16 +167,16 @@ observeEvent(input$uploadData, {
   }
   #browser() #bebug
   data_results <- ProteinGeneName[,c("id", "UniqueID","Gene.Name","Protein.ID")]%>%
-    left_join(data.frame(UniqueID=rownames(data_wide), Intensity=apply(data_wide,1,mean))%>%filter(!duplicated(UniqueID)))
+    left_join(data.frame(UniqueID=rownames(data_wide), Intensity=apply(data_wide,1,mean))%>%dplyr::filter(!duplicated(UniqueID)))
   sinfo1<-data.frame(sampleid=names(data_wide))%>%left_join(MetaData%>%dplyr::select(sampleid, group))
   for(grp in unique(sinfo1$group) ){
     subdata<-data.frame(UniqueID=rownames(data_wide), t(apply(data_wide[,sinfo1$group==grp, drop=FALSE],1,function(x)return(setNames(c(mean(x),sd(x)),paste(grp,c("Mean","sd"),sep="_"))))), check.names=FALSE )
-    data_results<-data_results%>%left_join(subdata%>%filter(!duplicated(UniqueID)))
+    data_results<-data_results%>%left_join(subdata%>%dplyr::filter(!duplicated(UniqueID)))
   }
   for (ctr in tests) {
-    subdata<-results_long%>%filter(test==ctr)%>%dplyr::select(UniqueID, logFC, P.Value, Adj.P.Value)
+    subdata<-results_long%>%dplyr::filter(test==ctr)%>%dplyr::select(UniqueID, logFC, P.Value, Adj.P.Value)
     names(subdata)[2:4]=str_c(ctr, "_", names(subdata)[2:4])
-    data_results<-data_results%>%left_join(subdata%>%filter(!duplicated(UniqueID)))
+    data_results<-data_results%>%left_join(subdata%>%dplyr::filter(!duplicated(UniqueID)))
   }
     
   strOut=str_c("unlisted/", ProjectID, ".RData")
