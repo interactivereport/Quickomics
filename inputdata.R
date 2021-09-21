@@ -195,10 +195,11 @@ DataReactive <- reactive({
                  all_tests(tests)
                  ProteinGeneNameHeader(colnames(ProteinGeneName))
                  sel_comp=NULL
+                 #browser() #debug
                  if (!is.null(comp_info)){
-                   sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%filter(str_detect(Subsetting_group, ":")); dim(sel_comp)
+                   sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%dplyr::filter(str_detect(Subsetting_group, ":")); dim(sel_comp)
                    if (nrow(sel_comp)>0) {
-                     sel_comp<-sel_comp%>%mutate(N_samples=0, sample_list=NA)
+                     sel_comp<-sel_comp%>%dplyr::mutate(N_samples=0, sample_list=NA)
                      for (i in 1:nrow(sel_comp)) {
                        sg1<-str_split(sel_comp$Subsetting_group[i], ";")[[1]]
                        sel_samples<-rep(TRUE, nrow(MetaData))
@@ -211,8 +212,8 @@ DataReactive <- reactive({
                        sel_comp$sample_list[i]=paste(MetaData$sampleid[sel_samples], collapse = ",")
                        # cat(i, sg1, sum(sel_samples), paste(MetaData$sampleid[sel_samples], collapse = ","), "\n\n")
                      }
+                     sel_comp<-sel_comp%>%dplyr::filter(N_samples>0)
                    }
-                   sel_comp<-sel_comp%>%filter(N_samples>0)
                    if (nrow(sel_comp)==0) {sel_comp=NULL}
                  }
                  
@@ -332,7 +333,7 @@ DataNetworkReactive <- reactive({
   ))), ]
   
   edges.sel <-
-    network %>% filter((from %in% tmpids$UniqueID) |
+    network %>% dplyr::filter((from %in% tmpids$UniqueID) |
                          (to %in% tmpids$UniqueID))
   rcutoff <- as.numeric(input$network_rcut)
   pvalcutoff <- as.numeric(as.character(input$network_pcut))
