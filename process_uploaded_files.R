@@ -59,7 +59,12 @@ observeEvent(input$uploadData, {
   } else {
     URL=str_c(URL_protocol,"//", URL_host, ":", URL_port)
   }
- 
+  cleanup_empty<-function(df) {
+    df.empty=(is.na(df) | df=="")
+    selCol=!(colSums( df.empty)==nrow(df))
+    selRow=!(rowSums( df.empty)==ncol(df))
+    return(df[selRow, selCol])
+  }
   cat(URL, "\n")
   #create unique project ID
   Project_name=input$F_project_name
@@ -69,6 +74,7 @@ observeEvent(input$uploadData, {
   #get expression data
   withProgress(message = 'Processing...', value = 0, {
   MetaData=read.csv(input$F_sample$datapath, header=T, check.names=F)
+  MetaData=cleanup_empty(MetaData)
   exp_file=input$F_exp$datapath
   if (str_detect(exp_file, "gz$") ) {exp_file=gzfile(exp_file, "rt")}
   if (str_detect(exp_file, "zip$") ) {
@@ -76,6 +82,7 @@ observeEvent(input$uploadData, {
     exp_file=unz(exp_file, fnames[1])
   }
   data_wide=read.csv(exp_file, row.name=1, header=T, check.names=F)
+  data_wide=cleanup_empty(data_wide)
   
   comp_file=input$F_comp$datapath
   if (str_detect(comp_file, "gz$") ) {comp_file=gzfile(comp_file, "rt")}
@@ -84,6 +91,7 @@ observeEvent(input$uploadData, {
     comp_file=unz(comp_file, fnames[1])
   }
   results_long=read.csv(comp_file, header=T, check.names=F)
+  results_long=cleanup_empty(results_long)
   species=input$Fspecies
   IDs=rownames(data_wide);
   IDs2=results_long$UniqueID
@@ -94,6 +102,7 @@ observeEvent(input$uploadData, {
   #get gene or protein name
   if (input$F_annot_auto==0) {
     ProteinGeneName=read.csv(input$F_annot$datapath)
+    ProteinGeneName=cleanup_empty(ProteinGeneName)
     ProteinGeneName<-ProteinGeneName%>%dplyr::filter(UniqueID %in% IDall)
     setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
   } else {
