@@ -15,8 +15,10 @@ sample_order <- reactiveVal()
 all_samples <-reactiveVal()
 samples_excludeM<-reactiveVal() #manually excluded samples
 samples_excludeF<-reactiveVal() #samples excluded from filtering on sample attributes
+samples_excludeM(""); samples_excludeF("")
 attribute_filters<-reactiveVal()
 attribute_filters("")
+resetComp2Sample<-reactiveVal(); resetComp2Sample(FALSE) #control when to reset the tool to Get Samples from Comparison.,
 all_groups <-reactiveVal()
 all_tests<-reactiveVal()
 all_metadata<-reactiveVal()
@@ -163,7 +165,7 @@ DataReactive <- reactive({
  
                RDataFile <- ProjectInfo$file1
  
-               comp_info=NULL  
+               comp_info=NULL;  
                load(RDataFile)
                if (!is.data.frame(data_wide)) {data_wide=data.frame(data_wide, check.names = FALSE)}  #change data_wide to data frame from numeric matrix if needed
                if (!"Protein.ID" %in% names(ProteinGeneName)) {ProteinGeneName$Protein.ID=NA} #Add Protein.ID column as it is required for certain tools.
@@ -191,8 +193,29 @@ DataReactive <- reactive({
                  all_groups(group_names)
                  all_metadata(MetaData)
                  all_tests(tests)
-                 samples_excludeM("")
                  ProteinGeneNameHeader(colnames(ProteinGeneName))
+                 sel_comp=NULL
+                 if (!is.null(comp_info)){
+                   sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%filter(str_detect(Subsetting_group, ":")); dim(sel_comp)
+                   if (nrow(sel_comp)>0) {
+                     sel_comp<-sel_comp%>%mutate(N_samples=0, sample_list=NA)
+                     for (i in 1:nrow(sel_comp)) {
+                       sg1<-str_split(sel_comp$Subsetting_group[i], ";")[[1]]
+                       sel_samples<-rep(TRUE, nrow(MetaData))
+                       for (j in 1:length(sg1)){
+                         sub_values=str_split(sg1[j], ":")[[1]]
+                         sel_j=MetaData[[sub_values[1]]]==sub_values[2]
+                         sel_samples=sel_samples & sel_j
+                       }
+                       sel_comp$N_samples[i]=sum(sel_samples)
+                       sel_comp$sample_list[i]=paste(MetaData$sampleid[sel_samples], collapse = ",")
+                       # cat(i, sg1, sum(sel_samples), paste(MetaData$sampleid[sel_samples], collapse = ","), "\n\n")
+                     }
+                   }
+                   sel_comp<-sel_comp%>%filter(N_samples>0)
+                   if (nrow(sel_comp)==0) {sel_comp=NULL}
+                 }
+                 
                  return(
                    list(
                      "groups" = group_names,
@@ -203,7 +226,8 @@ DataReactive <- reactive({
                      "data_wide" = data_wide,
                      "data_results" = data_results,
                      "tests" = tests,
-                     "comp_info"=comp_info
+                     "comp_info"=comp_info,
+                     "sel_comp"=sel_comp
                    )
                  )
                })

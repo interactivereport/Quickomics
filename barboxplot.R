@@ -11,6 +11,7 @@
 
 
 observe({
+  MetaData=all_metadata()
 	DataIn = DataReactive()
 	ProteinGeneName = DataIn$ProteinGeneName
 	#ProteinGeneName = DataIn$data_results
@@ -20,7 +21,7 @@ observe({
 	} else 
 	{DataIngenes <- ProteinGeneName %>% dplyr::select(Gene.Name) %>% collect %>% .[["Gene.Name"]] %>%	as.character()}
 	updateSelectizeInput(session,'sel_gene', choices= DataIngenes, server=TRUE)
-	attributes=setdiff(colnames(DataIn$MetaData), c("sampleid", "Order", "ComparePairs") )
+	attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") ))
 	updateSelectInput(session, "colorby", choices=c("None", attributes), selected="group")  
 	updateSelectInput(session, "plotx", choices=attributes, selected="group")  
 	
@@ -28,17 +29,18 @@ observe({
 
 observe({
 	#DataIn = DataReactive()
-	groups = group_order()
+	#groups = group_order()
 	tests = all_tests()
 	allgroups = all_groups()
 	ProteinGeneName_Header = ProteinGeneNameHeader()
-	updateSelectizeInput(session,'sel_group', choices=allgroups, selected=groups)
+	#updateSelectizeInput(session,'sel_group', choices=allgroups, selected=groups)
 	updateRadioButtons(session,'sel_geneid', inline = TRUE, choices=ProteinGeneName_Header[-1], selected="Gene.Name")
 	updateSelectizeInput(session,'expression_test',choices=tests, selected=tests[1])
 })
 
-output$selectGroupSampleExpression <- renderText({ paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
-     length(sample_order()), " out of ", length(all_samples()), " Samples.", " (Update Selection at: QC Plot->Groups and Samples.)", sep="")})
+#no longer needed, assign at heatmap.R
+#output$selectGroupSampleExpression <- renderText({ paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
+#     length(sample_order()), " out of ", length(all_samples()), " Samples.", " (Update Selection at: QC Plots->Groups and Samples.)", sep="")})
 
 
 
@@ -67,16 +69,16 @@ observe({
 
 DataExpReactive <- reactive({
 
-	validate(need(length(input$sel_group)>0,"Please select group(s)."))
+	validate(need(length(group_order())>0,"Please select group(s)."))
 
 	DataIn = DataReactive()
 	data_long = DataIn$data_long
 	results_long = DataIn$results_long
 	ProteinGeneName = DataIn$ProteinGeneName
-	sel_group=input$sel_group
+	sel_group=group_order() #input$sel_group
 	sel_gene=input$sel_gene
 	genelabel=input$sel_geneid
-	group_order(input$sel_group)
+	#group_order(input$sel_group)
 	sel_samples=sample_order()
 
 	if (input$exp_subset == "Select") {
@@ -144,7 +146,7 @@ output$res_dotplot <- DT::renderDataTable({
 
 boxplot_out <- reactive({
   barcol = input$barcol
-  sel_group=input$sel_group
+  sel_group=group_order() #input$sel_group
   #group_order(sel_group)
   DataIn = DataReactive()
   colorby=sym(input$colorby)
@@ -266,7 +268,7 @@ observeEvent(input$boxplot, {
 })
 
 browsing_out <- eventReactive(input$plot_browsing,{
-	validate(need(length(input$sel_group)>0,"Please select group(s)."))
+	validate(need(length(group_order())>0,"Please select group(s)."))
 	barcol = input$barcol
 	DataIn = DataReactive()
 	data_long = DataIn$data_long
@@ -277,9 +279,9 @@ browsing_out <- eventReactive(input$plot_browsing,{
 	MetaData=DataIn$MetaData
 	plotx=sym(input$plotx)
 	genelabel=input$sel_geneid
-	sel_group=input$sel_group
+	sel_group=group_order() #input$sel_group
 	sel_samples=sample_order()
-	group_order(sel_group)
+	#group_order(sel_group)
 	expression_test = input$expression_test
 	expression_fccut =log2(as.numeric(input$expression_fccut))
 	expression_pvalcut = as.numeric(input$expression_pvalcut)

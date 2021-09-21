@@ -13,23 +13,37 @@
 observe({
   #DataIn = DataReactive()
   MetaData=all_metadata()
-  groups = group_order()
-  allsamples = all_samples()
-  samples <- sample_order()
   tests = all_tests()
-  allgroups = all_groups()
-  updateSelectizeInput(session,'heatmap_groups', choices=allgroups, selected=groups)
-  #cat("show all samples", length(samples), length(groups), "\n") #debug
-  updateSelectizeInput(session,'heatmap_samples', choices=allsamples, selected=samples)
   updateSelectizeInput(session,'heatmap_test',choices=tests, selected=tests[1])
   ProteinGeneName_Headers = ProteinGeneNameHeader()
   updateRadioButtons(session,'heatmap_label', inline = TRUE, choices=ProteinGeneName_Headers[-1], selected="Gene.Name")
-  attributes=setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") )
+  attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") ))
   updateSelectInput(session, "heatmap_annot", choices=attributes, selected="group")  
 })
 
-output$selectGroupSampleHeatmap <- renderText({ paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
-                                               length(sample_order()), " out of ", length(all_samples()), " Samples.", sep="")})
+#use groups and samples from QC_Plots tab
+#observe({
+  #DataIn = DataReactive()
+ # groups = group_order()
+#  allsamples = all_samples()
+#  samples <- sample_order()
+#  tests = all_tests()
+#  allgroups = all_groups()
+#  updateSelectizeInput(session,'heatmap_groups', choices=allgroups, selected=groups)
+  #cat("show all samples", length(samples), length(groups), "\n") #debug
+#  updateSelectizeInput(session,'heatmap_samples', choices=allsamples, selected=samples)
+#})
+
+
+output$selectGroupSampleHeatmap <- output$selectGroupSampleExpression<-renderUI({ 
+  sample_info=paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
+                 length(sample_order()), " out of ", length(all_samples()), 
+                 " Samples. (Update Selection at: QC Plots->Groups and Samples.)", sep="")
+  tagList(
+    tags$p(sample_info),
+    tags$hr()
+  )
+})
 
 
 output$plot.heatmap=renderUI({
@@ -57,26 +71,26 @@ filteredGene=reactive({
 
 output$heatmapfilteredgene <- renderText({ paste("Selected Genes:",length(filteredGene()),sep="")})
 
-observeEvent(input$heatmap_groups, {  
-  group_order(input$heatmap_groups)
-})
+#observeEvent(input$heatmap_groups, {  
+#  group_order(input$heatmap_groups)
+#})
 
-observeEvent(input$heatmap_samples, {  
-  sample_order(input$heatmap_samples)
-})
+#observeEvent(input$heatmap_samples, {  
+#  sample_order(input$heatmap_samples)
+#})
 
 
 DataHeatMapReactive <- reactive({
-  validate(need(input$heatmap_groups, FALSE))
-  validate(need(input$heatmap_samples, FALSE))
+  validate(need(group_order(), FALSE))
+  validate(need(sample_order(), FALSE))
   DataIn = DataReactive()
   results_long = DataIn$results_long
   ProteinGeneName = DataIn$ProteinGeneName
   MetaData = DataIn$MetaData
   #cat("work on Data for Heatmap", date(), "\n") #debug
-  tmpgroups = input$heatmap_groups
+  tmpgroups = group_order() #input$heatmap_groups
   #group_order(input$heatmap_groups)
-  tmpsamples = input$heatmap_samples
+  tmpsamples = sample_order() #input$heatmap_samples
   tmpkeep = which((MetaData$group %in% tmpgroups)&(MetaData$sampleid %in% tmpsamples))
   gene_annot_info=NULL
   tmp_group = MetaData$group[tmpkeep]
@@ -86,7 +100,7 @@ DataHeatMapReactive <- reactive({
   annotation<-annotation%>%left_join(MetaData)
   annotation$group = factor(tmp_group, levels=group_order() )
   if(length(tmpkeep)>0) {
-    y <- input$heatmap_groups
+    y <- group_order() #input$heatmap_groups
     x= MetaData$group[tmpkeep]
     z = MetaData$sampleid[tmpkeep]
     new_order <- as.character(z[order(match(x, y))])
