@@ -103,5 +103,5 @@ Check the following web links on various options to launch the app.
 * https://shiny.rstudio.com/deploy/
 
 # Potential Pitfalls
-## 1
-## 2
+### 1)
+### 2)
