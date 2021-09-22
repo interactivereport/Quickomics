@@ -132,6 +132,7 @@ output$filter_meta=renderUI({
   #browser() ##debug
   tagList(
     selectizeInput("sel_values_meta_col", label=menu_label, choices=UniqueValues, selected=UniqueValues, multiple=TRUE, width="80%"),
+    actionButton("clear_values_meta_col", "Deselect All Values"),
     tags$p("Number of samples for each value from all samples"),
     tableOutput("table_selCol"),
     tags$p("Number of samples for each value from selected samples"),
@@ -141,6 +142,10 @@ output$filter_meta=renderUI({
   }
 })
 
+observeEvent(input$clear_values_meta_col, {  
+  cat("reset values!\n")
+  updateSelectizeInput(session,'sel_values_meta_col', selected="")
+})
 
 observeEvent(input$order_groups_order, {  
   group_order(input$order_groups_order)
@@ -312,16 +317,21 @@ DataQCReactive <- reactive({
 	input_groups = input$QC_groups
 	#group_order(input$QC_groups)
 	input_samples = input$QC_samples
-	input_keep = which((MetaData$group %in% input_groups) & (MetaData$sampleid %in% input_samples))
-	data_wide  <- data_wide[apply(data_wide, 1, function(x) sum(length(which(x==0 | is.na(x)))) < 3),]
-	tmp_data_wide = data_wide[,input_keep] %>% as.matrix()
-
-	
 	tmp_data_long = dplyr::filter(data_long, (group %in% input_groups) & (sampleid %in% input_samples))
-	tmp_group = MetaData$group[input_keep]
-	tmp_sampleid = MetaData$sampleid[input_keep]
-
-	return(list('tmp_data_wide'=tmp_data_wide,'tmp_data_long'=tmp_data_long,'tmp_group' = tmp_group, 'tmp_sampleid'=tmp_sampleid, "MetaData"=MetaData[input_keep, ] ))
+	
+	sel_sample_order=match(input_samples, MetaData$sampleid)
+	sel_sample_order=sel_sample_order[!is.na(sel_sample_order)]
+	MetaData=MetaData[sel_sample_order, ] #user input sample order
+	input_keep = which(MetaData$group %in% input_groups) 
+	MetaData=MetaData[input_keep, ]
+	tmp_group = MetaData$group
+	tmp_sampleid = MetaData$sampleid
+	data_wide  <- data_wide[apply(data_wide, 1, function(x) sum(length(which(x==0 | is.na(x)))) < 3),]
+	sel_sample_order2=match(tmp_sampleid, colnames(data_wide))
+	sel_sample_order2=sel_sample_order2[!is.na(sel_sample_order2)]
+	tmp_data_wide = data_wide[, sel_sample_order2] %>% as.matrix()
+	
+	return(list('tmp_data_wide'=tmp_data_wide,'tmp_data_long'=tmp_data_long,'tmp_group' = tmp_group, 'tmp_sampleid'=tmp_sampleid, "MetaData"=MetaData ))
 })
 
 DataPCAReactive <- reactive({
