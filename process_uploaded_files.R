@@ -100,10 +100,12 @@ observeEvent(input$uploadData, {
   IDall=IDall[!(IDall=="")] 
   setProgress(0.1, detail = "Data files loaded. Work on Gene/Protein Name..."); Sys.sleep(0.1)
   #get gene or protein name
+  #browser() #bebug
   if (input$F_annot_auto==0) {
     ProteinGeneName=read.csv(input$F_annot$datapath)
     ProteinGeneName=cleanup_empty(ProteinGeneName)
     ProteinGeneName<-ProteinGeneName%>%dplyr::filter(UniqueID %in% IDall)
+    if (!"Protein.ID" %in% names(ProteinGeneName)) {ProteinGeneName$Protein.ID=NA} #Add Protein.ID column as it is required for certain tools.
     setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
   } else {
     if (str_detect(input$F_ID_type, "UniProt") ) { #protein name match
@@ -130,7 +132,7 @@ observeEvent(input$uploadData, {
         ensembl <- useEnsembl(biomart = "ensembl", dataset = "hsapiens_gene_ensembl")
       }
       setProgress(0.2, detail = "Connected to Biomart, converting IDs to gene names..."); Sys.sleep(0.1)
-      
+      #browser() #bebug
       if (input$F_ID_type=="Ensembl Gene ID" ) {
         filter_type="ensembl_gene_id"
         IDall_old=IDall
@@ -140,7 +142,13 @@ observeEvent(input$uploadData, {
       } else if (input$F_ID_type=="Gene Symbol" ) { filter_type="external_gene_name"}
       E_attributes<-c( 'ensembl_gene_id', "external_gene_name", "gene_biotype","entrezgene_id")
       if (input$F_description==1) {E_attributes<-c(E_attributes, "description") }
-      system.time( output<-getBM(attributes = E_attributes,filters = filter_type, values = IDall, mart = ensembl) )
+      system.time( output<-getBM(attributes = E_attributes,filters = filter_type, values = IDall, mart = ensembl, useCache=FALSE) )
+      if (nrow(output)==0) {
+        error_message="No gene annotation extracted from Biomart. Did you select the correct Species and Unique ID Type?"
+        setProgress(0.9, detail = error_message); Sys.sleep(3)
+        upload_message(error_message)}
+      validate(need(nrow(output)>0, message = "No gene annotation extracted from Biomart. Did you select the correct Species and Unique ID Type?"))
+      
       output<-output%>%arrange(entrezgene_id, ensembl_gene_id) #Favor IDs with smaller numbers
       if (input$F_description==0) {output$description=NA}
       F_TYPE=sym(filter_type)
@@ -155,6 +163,7 @@ observeEvent(input$uploadData, {
       ProteinGeneName<-ProteinGeneName%>%dplyr::select(id,UniqueID, Gene.Name, Protein.ID, GeneType, Description)
       if (input$F_description==0) {ProteinGeneName<-ProteinGeneName%>%dplyr::select(-Description)}  
       if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
+     # browser() #bebug
       setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
       
     
