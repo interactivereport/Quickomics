@@ -66,6 +66,32 @@ tabPanel("Select Dataset",
 ), 
 
 ##########################################################################################################
+## Groups and Samples
+##########################################################################################################
+tabPanel("Groups and Samples",
+         fluidRow(
+           column(3,
+                  wellPanel(
+                    tags$style(mycss),
+                    selectizeInput("QC_groups", label="Select Groups", choices=NULL, multiple=TRUE),
+                    checkboxInput("QC_comp2sample", "Get Samples from Comparison?",  FALSE, width="90%"),
+                    conditionalPanel("input.QC_comp2sample==1",
+                                     uiOutput("QC_samples_from_comp")	),
+                    selectizeInput("QC_samples", label="Select Samples", choices=NULL,multiple=TRUE),
+                    column(width=12,textOutput("selectGroupSample")),
+                    tags$hr()
+                  )),
+           column(9,
+             tags$br(),
+             actionButton("reset_group", "Reset Groups and Samples"), 
+             tags$hr(style="border-color: RoyalBlue;"), 
+             uiOutput('reorder_group'),
+             uiOutput('sample_choose_order')),
+
+        )
+), 
+
+##########################################################################################################
 ## QC Plots
 ##########################################################################################################
 tabPanel("QC Plots",
@@ -73,13 +99,7 @@ tabPanel("QC Plots",
 		column(3,
 			wellPanel(
 			  tags$style(mycss),
-				selectizeInput("QC_groups", label="Select Groups", choices=NULL, multiple=TRUE),
-				checkboxInput("QC_comp2sample", "Get Samples from Comparison?",  FALSE, width="90%"),
-				conditionalPanel("input.QC_comp2sample==1",
-				  uiOutput("QC_samples_from_comp")	),
-				selectizeInput("QC_samples", label="Select Samples", choices=NULL,multiple=TRUE),
-				column(width=12,textOutput("selectGroupSample")),
-				tags$hr(),
+			  column(width=12,uiOutput("selectGroupSampleQC")),
 				conditionalPanel("input.groupplot_tabset=='PCA Plot' || input.groupplot_tabset=='PCA 3D Interactive' || input.groupplot_tabset=='PCA 3D Plot' || input.groupplot_tabset=='Sample-sample Distance' ",
 				                 selectInput("PCAcolorby", label="Color By", choices=NULL)),				
 				conditionalPanel("input.groupplot_tabset=='PCA Plot' || input.groupplot_tabset=='PCA 3D Interactive'",
@@ -182,8 +202,6 @@ tabPanel("QC Plots",
 				tabPanel(title="Dendrograms",actionButton("Dendrograms", "Save to output"), plotOutput("Dendrograms",height = 800)),
 				tabPanel(title="Box Plot", actionButton("QCboxplot", "Save to output"), plotOutput("QCboxplot",height = 800)),
 				tabPanel(title="CV Distribution", actionButton("histplot", "Save to output"), plotOutput("histplot",height = 800)),
-				tabPanel(title="Groups and Samples", tags$br(), actionButton("reset_group", "Reset Groups and Samples"), 
-				         tags$hr(style="border-color: RoyalBlue;"), uiOutput('reorder_group'),uiOutput('sample_choose_order')),
 				tabPanel(title="Help", htmlOutput('help_QC'))
 			)
 		)
@@ -519,7 +537,7 @@ tabPanel("Pattern Clustering",
 				conditionalPanel("input.pattern_subset=='upload genes'", textAreaInput("pattern_list", "list", "", cols = 5, rows=6)),
 				
 				tags$head(tags$style("#patternfilteredgene{color: red; font-size: 20px; font-style: italic; }")),
-				selectizeInput("pattern_group", label="Select Groups (re-order under QC tab)", choices=NULL, multiple=TRUE),
+				selectizeInput("pattern_group", label="Select Groups (re-order under Groups and Samples tab)", choices=NULL, multiple=TRUE),
 				radioButtons("ClusterMehtod", label="Cluster Method", inline = FALSE, choices = c("Soft Clustering" = "mfuzz", "K-means" = "kmeans")),
 				sliderInput("k", "Cluster Number:", min = 3, max = 12, step = 1, value = 6),
 				conditionalPanel("input.ClusterMehtod=='kmeans'",
@@ -576,8 +594,9 @@ tabPanel("Correlation Network",
 ##########################################################################################################
 tabPanel("Venn Diagram",
 	fluidRow(
-		column(2,
+		column(3,
 			wellPanel(
+			  conditionalPanel("input.venn_combined=='Venn Diagram from Current Project'",
 				numericInput("venn_fccut", label= "Choose Fold Change Cutoff", value = 1.2, min=1, step=0.1),
 				numericInput("venn_pvalcut", label= "Choose P value Cutoff", value=0.01, min=0, step=0.001),
 				radioButtons("venn_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
@@ -608,9 +627,43 @@ tabPanel("Venn Diagram",
 				),
 				conditionalPanel("input.venn_tabset=='Intersection Output'",
 				radioButtons("vennlistname", label= "Label name", choices= c("Gene.Name"="Gene.Name","AC Number"="AC", "UniqueID"="UniqueID"),inline = TRUE, selected = "Gene.Name"))
+			  ),
+				conditionalPanel("input.venn_combined=='Venn Diagram Across Projects'",
+				numericInput("vennP_fccut", label= "Choose Fold Change Cutoff", value = 1.2, min=1, step=0.1),
+				numericInput("vennP_pvalcut", label= "Choose P value Cutoff", value=0.01, min=0, step=0.001),
+				radioButtons("vennP_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+				checkboxInput("upperSymbols", "Upper Case Gene Symbols (e.g. mouse vs human)?",  FALSE, width="90%"),
+				selectInput("dataset1", "Data set1", choices=NULL),
+				selectInput("vennP_test1", label="Select List 1", choices=NULL),
+				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
+				                 colourInput("vennPcol1", "Select colour", "#0000FF",palette = "limited")
+				),
+				selectInput("dataset2", "Data set2", choices=NULL),
+				selectInput("vennP_test2", label="Select List 2", choices=NULL),
+				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
+				                 colourInput("vennPcol2", "Select colour", "#FF7F00",palette = "limited")
+				),
+				selectInput("dataset3", "Data set3", choices=NULL),
+				selectInput("vennP_test3", label="Select List 3", choices=NULL),
+				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
+				                 colourInput("vennPcol3", "Select colour", "#00FF00",palette = "limited")
+				),
+				selectInput("dataset4", "Data set4", choices=NULL),
+				selectInput("vennP_test4", label="Select List 4", choices=NULL),
+				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
+				                 colourInput("vennPcol4", "Select colour", "#FF00FF",palette = "limited")
+				),
+				selectInput("dataset5", "Data set5", choices=NULL),
+				selectInput("vennP_test5", label="Select List 5", choices=NULL),
+				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
+				                 colourInput("vennPcol5", "Select colour", "#FFFF00", palette = "limited")
+				)
+				)
 				) 
 			),
-			column(10,
+			column(9,
+			  tabsetPanel(id="venn_combined",
+			    tabPanel(title="Venn Diagram from Current Project",
 				tabsetPanel(id="venn_tabset",
 					tabPanel(title="Venn Diagram",
 						column(9,
@@ -620,8 +673,8 @@ tabPanel("Venn Diagram",
 							textInput("title", "Title", width = "100%"),
 							sliderInput("maincex", "Title Size", min = 0, max = 6, value = 3, width = "100%"),
 							sliderInput("alpha", "Opacity", min = 0, max = 1, value = 0.4, width = "100%"),
-							sliderInput("lwd", "line thick", min = 1, max = 4, value = 1, width = "100%"),
-							sliderInput("lty", "line type", min = 1, max = 6, value = 1, width = "100%"),
+							sliderInput("lwd", "Line Width", min = 1, max = 4, value = 1, width = "100%"),
+							sliderInput("lty", "Line Type", min = 1, max = 6, value = 1, width = "100%"),
 							radioButtons("fontface","Number Font face",list("plain", "bold", "italic"),selected = "plain",	inline = TRUE),
 							sliderInput("cex", "Font size", min = 1, max = 4, value = 2, width = "100%"),
 							radioButtons("catfontface","Label Font face",list("plain", "bold", "italic"),	selected = "plain", inline = TRUE),
@@ -634,75 +687,37 @@ tabPanel("Venn Diagram",
 					tabPanel(title="DEG Table", actionButton("venn_DEG_data", "Save to output"), DT::dataTableOutput("venn_DEG_Data")),
 					tabPanel(title="Help", htmlOutput('help_venn'))
 				)
-			)
-		)
-),
-
-
-##########################################################################################################
-## Venn Across Projects
-##########################################################################################################
-tabPanel("Venn Across Projects",
-	fluidRow(
-		column(3,
-			wellPanel(
-			  numericInput("vennP_fccut", label= "Choose Fold Change Cutoff", value = 1.2, min=1, step=0.1),
-				radioButtons("vennP_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
-				numericInput("vennP_pvalcut", label= "Choose P value Cutoff", value=0.01, min=0, step=0.001),
-				checkboxInput("upperSymbols", "Upper Case Gene Symbols (e.g. mouse vs human)?",  FALSE, width="90%"),
-				selectInput("dataset1", "Data set1", choices=NULL),
-				selectInput("vennP_test1", label="Select List 1", choices=NULL),
-				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
-				colourInput("vennPcol1", "Select colour", "#0000FF",palette = "limited")
-				),
-				selectInput("dataset2", "Data set2", choices=NULL),
-				selectInput("vennP_test2", label="Select List 2", choices=NULL),
-				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
-				colourInput("vennPcol2", "Select colour", "#FF7F00",palette = "limited")
-				),
-				selectInput("dataset3", "Data set3", choices=NULL),
-				selectInput("vennP_test3", label="Select List 3", choices=NULL),
-				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
-				colourInput("vennPcol3", "Select colour", "#00FF00",palette = "limited")
-				),
-				selectInput("dataset4", "Data set4", choices=NULL),
-				selectInput("vennP_test4", label="Select List 4", choices=NULL),
-				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
-					colourInput("vennPcol4", "Select colour", "#FF00FF",palette = "limited")
-				),
-				selectInput("dataset5", "Data set5", choices=NULL),
-				selectInput("vennP_test5", label="Select List 5", choices=NULL),
-				conditionalPanel("input.vennP_tabset=='Venn Diagram'",
-				colourInput("vennPcol5", "Select colour", "#FFFF00", palette = "limited")
+			    ),
+				tabPanel(title="Venn Diagram Across Projects",
+				  tabsetPanel(id="vennP_tabset",
+				     tabPanel(title="Venn Diagram",
+				              column(9,
+				                     plotOutput("vennPDiagram", height = 800)
+				              ),
+				              column(3,
+				                     textInput("vennPtitle", "Title", width = "100%"),
+				                     sliderInput("vennPmaincex", "Title Size", min = 0, max = 6, value = 3, width = "100%"),
+				                     sliderInput("vennPalpha", "Opacity", min = 0, max = 1, value = 0.4, width = "100%"),
+				                     sliderInput("vennPlwd", "Line Width", min = 1, max = 4, value = 1, width = "100%"),
+				                     sliderInput("vennPlty", "Line Type", min = 1, max = 6, value = 1, width = "100%"),
+				                     radioButtons("vennPfontface",	"Number Font face", list("plain", "bold", "italic"),	selected = "plain",	inline = TRUE),
+				                     sliderInput("vennPcex", "Font size", min = 1, max = 4, value = 2, width = "100%"),
+				                     radioButtons("vennPcatfontface", "Label Font face", list("plain", "bold", "italic"),	selected = "plain",	inline = TRUE),
+				                     sliderInput("vennPcatcex", "Font size", min = 1, max = 2, step=0.1, value = 1.8, width = "100%"),
+				                     sliderInput("vennPmargin", "Margin", min = 0, max = 1, step=0.05, value = 0.2, width = "100%")
+				              )
+				     ),
+				     tabPanel(title="Venn Diagram (black & white)", plotOutput("SvennPDiagram",height = 800,width = 800)),
+				     tabPanel(title="Intersection Output", htmlOutput("vennPHTML")),
+				     tabPanel(title="Help", htmlOutput('help_vennp'))
+				     
+				)      
 				)
-			) 
-		), 
-		column(9,
-			tabsetPanel(id="vennP_tabset",
-				tabPanel(title="Venn Diagram",
-					column(9,
-						plotOutput("vennPDiagram", height = 800)
-					),
-					column(3,
-						textInput("vennPtitle", "Title", width = "100%"),
-						sliderInput("vennPmaincex", "Title Size", min = 0, max = 6, value = 3, width = "100%"),
-						sliderInput("vennPalpha", "Opacity", min = 0, max = 1, value = 0.4, width = "100%"),
-						sliderInput("vennPlwd", "line thick", min = 1, max = 4, value = 1, width = "100%"),
-						sliderInput("vennPlty", "line type", min = 1, max = 6, value = 1, width = "100%"),
-						radioButtons("vennPfontface",	"Number Font face", list("plain", "bold", "italic"),	selected = "plain",	inline = TRUE),
-						sliderInput("vennPcex", "Font size", min = 1, max = 4, value = 2, width = "100%"),
-						radioButtons("vennPcatfontface", "Label Font face", list("plain", "bold", "italic"),	selected = "plain",	inline = TRUE),
-						sliderInput("vennPcatcex", "Font size", min = 1, max = 2, step=0.1, value = 1.8, width = "100%"),
-						sliderInput("vennPmargin", "Margin", min = 0, max = 1, step=0.05, value = 0.2, width = "100%")
-					)
-				),
-				tabPanel(title="Venn Diagram (black & white)", plotOutput("SvennPDiagram",height = 800,width = 800)),
-				tabPanel(title="Intersection Output", htmlOutput("vennPHTML")),
-				tabPanel(title="Help", htmlOutput('help_vennp'))
+				)	
 			)
 		)
-	)
 ),
+
 
 ##########################################################################################################
 ## Output

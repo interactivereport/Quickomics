@@ -33,7 +33,6 @@ observe({
   updateSelectizeInput(session,'QC_samples', choices=allsamples, selected=samples)
   updateTextAreaInput(session, "PCA_list", value=paste(samples, collapse="\n"))
 })
-	
 
 output$reorder_group=renderUI({
   req(group_order())

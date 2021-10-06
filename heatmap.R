@@ -35,10 +35,10 @@ observe({
 #})
 
 
-output$selectGroupSampleHeatmap <- output$selectGroupSampleExpression<-renderUI({ 
+output$selectGroupSampleHeatmap <- output$selectGroupSampleExpression<-output$selectGroupSampleQC<-renderUI({ 
   sample_info=paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
                  length(sample_order()), " out of ", length(all_samples()), 
-                 " Samples. (Update Selection at: QC Plots->Groups and Samples.)", sep="")
+                 " Samples. (Update Selection at: Top Menu -> Groups and Samples.)", sep="")
   tagList(
     tags$p(sample_info),
     tags$hr()
