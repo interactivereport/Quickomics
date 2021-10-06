@@ -69,6 +69,7 @@ output$sample_choose_order=renderUI({
       actionButton("upload_sample", "Upload Samples in the Box Above")),
     conditionalPanel("input.Select_Sample=='From Comparison'",
       tags$p("This tool is only available when there is comparison information (comp_info in RData) with valid Subsetting_group."),
+      tags$p("To select multiple comparisons, use the left menu tool 'Use Sampels from Comparison'."),
       tags$hr(),
       uiOutput("samples_from_comp")),  
     tags$hr(),
@@ -105,7 +106,7 @@ output$QC_samples_from_comp<-renderUI({
     sel_comp$N_samples=as.integer(sel_comp$N_samples)
     output$table_sel_comp=renderTable(sel_comp, rownames=F, colnames=T)
     tagList(
-      selectizeInput("QC_comp_4_samples", label="Use Samples in Comparison:", choices=comp_all, selected="None", multiple=FALSE),
+      selectizeInput("QC_comp_4_samples", label="Use Samples in Comparison:", choices=comp_all, selected="None", multiple=TRUE),
     )
   } else {
     tagList(
@@ -198,6 +199,38 @@ observe({
 observe({
   req(input$comp_4_samples)
   comp1<-input$comp_4_samples
+  if (length(comp1)==1) {
+    if (comp1!="None"){
+      if (comp1=="All_Samples"){
+        samples=all_samples()
+      } else {
+        sel_comp=DataReactive()$sel_comp
+        samples=sel_comp$sample_list[sel_comp$Comparison==comp1]
+        samples=str_split(samples, ",")[[1]]
+      }
+      sample_order(samples)
+      attribute_filters("")
+      samples_excludeM(""); samples_excludeF("")
+    }
+  } else {
+    if ("All_Samples" %in% comp1) {
+      samples=all_samples()
+    } else {
+      sel_comp=DataReactive()$sel_comp
+      samples<-sel_comp%>%dplyr::filter(Comparison %in% comp1)%>%dplyr::select(sample_list)%>%unlist%>%unname%>%paste(collapse=",")
+      samples=str_split(samples, ",")[[1]]
+    }
+    sample_order(samples)
+    attribute_filters("")
+    samples_excludeM(""); samples_excludeF("")
+  }
+})
+
+observe({
+  req(input$QC_comp_4_samples)
+  comp1<-input$QC_comp_4_samples
+  #browser() #bebug
+  if (length(comp1)==1) {
   if (comp1!="None"){
     if (comp1=="All_Samples"){
       samples=all_samples()
@@ -210,17 +243,12 @@ observe({
     attribute_filters("")
     samples_excludeM(""); samples_excludeF("")
   }
-})
-
-observe({
-  req(input$QC_comp_4_samples)
-  comp1<-input$QC_comp_4_samples
-  if (comp1!="None"){
-    if (comp1=="All_Samples"){
+  } else {
+    if ("All_Samples" %in% comp1) {
       samples=all_samples()
     } else {
       sel_comp=DataReactive()$sel_comp
-      samples=sel_comp$sample_list[sel_comp$Comparison==comp1]
+      samples<-sel_comp%>%dplyr::filter(Comparison %in% comp1)%>%dplyr::select(sample_list)%>%unlist%>%unname%>%paste(collapse=",")
       samples=str_split(samples, ",")[[1]]
     }
     sample_order(samples)
