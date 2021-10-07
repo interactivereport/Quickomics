@@ -109,7 +109,7 @@ options(shiny.maxRequestSize = 40*1024^2)  #upload files up to 30 Mb
 
 
 mycss <- "select ~ .selectize-control .selectize-input {
-        max-height: 100px;
+        max-height: 200px;
         overflow-y: auto;
         }
     .shiny-notification{

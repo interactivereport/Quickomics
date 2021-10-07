@@ -68,9 +68,11 @@ tabPanel("Dataset",
 ##########################################################################################################
 tabPanel("Groups and Samples",
          fluidRow(
-           column(3,
+           column(4,
                   wellPanel(
                     tags$style(mycss),
+                    actionButton("reset_group", "Reset Groups and Samples"),
+                    tags$p("Use the boxes below to remove or add groups/samples. Use the tools at right side for advanced selection and ordering."),
                     selectizeInput("QC_groups", label="Select Groups", choices=NULL, multiple=TRUE),
                     checkboxInput("QC_comp2sample", "Get Samples from Comparison?",  FALSE, width="90%"),
                     conditionalPanel("input.QC_comp2sample==1",
@@ -79,9 +81,8 @@ tabPanel("Groups and Samples",
                     column(width=12,textOutput("selectGroupSample")),
                     tags$hr()
                   )),
-           column(9,
+           column(8,
              tags$br(),
-             actionButton("reset_group", "Reset Groups and Samples"), 
              tags$hr(style="border-color: RoyalBlue;"), 
              uiOutput('reorder_group'),
              uiOutput('sample_choose_order')),
