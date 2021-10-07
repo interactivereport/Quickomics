@@ -25,26 +25,24 @@ navbarPage(title ="",
 ##########################################################################################################
 ## Select Dataset
 ##########################################################################################################
-tabPanel("Select Dataset",
+tabPanel("Dataset",
          fluidRow(
-           column(3,
-                  wellPanel(
-                    radioButtons("select_dataset",label="Select data set", choices=c("Saved Projects","Upload RData File", "Upload Data Files (csv)"),inline = F, selected="Saved Projects"),
-                    conditionalPanel("input.select_dataset=='Saved Projects'",
-                                     selectInput("sel_project", label="Available Dataset", 
-                                                 choices=c("", projects), selected=NULL)),
-                    conditionalPanel("input.select_dataset=='Upload RData File'",
-                                     fileInput("file1", "Choose data file"),
-                                     fileInput("file2", "(Optional) Choose network file"),                                     
-                                     uiOutput('ui.action') ),
-                    conditionalPanel("input.select_dataset=='Upload Data Files (csv)'",
-                                     h5("Use the Upload Files tab to the right to create your own data set.") )
-                  )
-           ),
-           column(9,
+           column(12,
                   tabsetPanel(id="Tables",
                               #tabPanel(title="Introduction",htmlOutput('intro')),
                               #tabPanel(title="Project Table", DT::dataTableOutput('projecttable')),
+                              tabPanel(title="Select Dataset",
+                                       radioButtons("select_dataset",label="Select data set", choices=c("Saved Projects","Upload RData File", "Upload Data Files (csv)"),inline = F, selected="Saved Projects"),
+                                       conditionalPanel("input.select_dataset=='Saved Projects'",
+                                                        selectInput("sel_project", label="Available Dataset", 
+                                                                    choices=c("", projects), selected=NULL)),
+                                       conditionalPanel("input.select_dataset=='Upload RData File'",
+                                                        fileInput("file1", "Choose data file"),
+                                                        fileInput("file2", "(Optional) Choose network file"),                                     
+                                                        uiOutput('ui.action') ),
+                                       conditionalPanel("input.select_dataset=='Upload Data Files (csv)'",
+                                                        h5("Use the Upload Files tab to the right to create your own data set.") )
+                              ),
                               tabPanel(title="Sample Table", actionButton("sample", "Save to output"), dataTableOutput('sample')),
                               tabPanel(title="Project Overview", htmlOutput("summary"), 
                                        tableOutput('group_table'), tags$br(), 

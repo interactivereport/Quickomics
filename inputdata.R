@@ -80,6 +80,7 @@ if (input$sel_project!="") {
   ProjectInfo$ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
   ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
   ProjectInfo$file2= paste("networkdata/", ProjectID, ".RData", sep = "") #Correlation results
+ # updateTabsetPanel(session, "Tables", selected = "Sample Table")
 }
 })
 
@@ -97,6 +98,7 @@ observeEvent(ProjectInfo$ProjectID, {
   output$annot_color_file=renderUI({
     tagList(fileInput("annot_color_file", "Upload annotation Colors (csv with 3 headers: Attribute, Value and Color)"))
   })
+  updateTabsetPanel(session, "Tables", selected = "Sample Table")
 })
 
 output$project <- renderText({
