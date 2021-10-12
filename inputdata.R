@@ -98,7 +98,7 @@ observeEvent(ProjectInfo$ProjectID, {
   output$annot_color_file=renderUI({
     tagList(fileInput("annot_color_file", "Upload annotation Colors (csv with 3 headers: Attribute, Value and Color)"))
   })
-  updateTabsetPanel(session, "Tables", selected = "Sample Table")
+  updateTabsetPanel(session, "Tables", selected = "Project Overview")
 })
 
 output$project <- renderText({
@@ -370,10 +370,19 @@ output$sample <- DT::renderDataTable({
 	
 })
 
-output$comparison <- DT::renderDataTable({
-  DT::datatable(DataReactive()$comp_info,  extensions = 'Buttons',  options = list(
-    dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
+output$comp_info <- renderUI ({
+  if (is.null(DataReactive()$comp_info)) return()
+  output$comparison <- DT::renderDataTable({
+    DT::datatable(DataReactive()$comp_info,  extensions = 'Buttons',  options = list(
+      dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
+  })
+  tagList(
+    h4("Comparison Table (shown only when RData file contains comp_info)"),
+    dataTableOutput('comparison')
+  )
 })
+
+
 
 output$data_wide <- DT::renderDataTable({
   data_w<-DataReactive()$data_wide

@@ -426,3 +426,34 @@ observeEvent(input$DEG_data, {
   saved_table$DEG_data <- DEG_data()
 })
 
+deg_counts_data <-reactive ({
+  DataIn = DataReactive()
+  results_long = DataIn$results_long
+  FCcut = log2(as.numeric(input$volcano_FCcut))
+  pvalcut = as.numeric(input$volcano_pvalcut)
+
+  if (input$volcano_psel == "Padj") {
+    tmpdat = results_long %>% dplyr::filter( Adj.P.Value < pvalcut & abs(logFC) > FCcut) 
+  } else {
+    tmpdat = results_long %>% dplyr::filter( P.Value < pvalcut & abs(logFC) > FCcut) 
+  }
+  deg_stat<-tmpdat%>%group_by(test)%>%dplyr::summarize(DEG=n(), Up=sum(logFC>0), Down=sum(logFC<0))%>%ungroup
+  names(deg_stat)[1]="Comparison"
+  more_comp=setdiff(unique(results_long$test), deg_stat$Comparison)
+  if (length(more_comp)>0) {deg_stat<-rbind(deg_stat, data.frame(Comparison=more_comp, DEG=0, Up=0, Down=0))}
+  deg_stat<-deg_stat%>%arrange(Comparison)%>%filter(!is.na(Comparison))
+  return(deg_stat)
+})
+output$deg_counts <- DT::renderDataTable({
+  DT::datatable(deg_counts_data(),extensions = 'Buttons',  selection = 'none', class = 'cell-border strip hover',
+    options = list(dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 20), 
+    rownames= FALSE) %>% formatStyle(1, cursor = 'pointer',color='blue')
+})
+
+observeEvent(input$deg_counts_cell_clicked, {
+  info = input$deg_counts_cell_clicked
+  #browser() #debug
+  if (is.null(info$value) || info$col != 0) return()
+  updateTabsetPanel(session, 'volcano_tabset', selected = 'Volcano Plot (Static)')
+  updateSelectizeInput(session, 'volcano_test', selected = info$value)
+})
