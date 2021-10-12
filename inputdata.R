@@ -47,6 +47,8 @@ if (!is.null(query[['project']])) {
 }
 if (!is.null(query[['unlisted']])) {
   ProjectID = query[['unlisted']]
+  validate(need(file.exists(str_c("unlisted/",  ProjectID, ".csv")), 
+                message = "Please pass a valid ProjectID from URL. Files must be located in unlisted folder" ))
   unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
   ProjectInfo$ProjectID=ProjectID
   ProjectInfo$Name=unlisted_project$Name
@@ -59,6 +61,8 @@ if (!is.null(query[['unlisted']])) {
 if (!is.null(query[['serverfile']])) {
   ProjectID = query[['serverfile']]
   if (!is.null(server_dir)) {
+    validate(need(file.exists(str_c(server_dir, "/",  ProjectID, ".csv")), 
+                  message = "Please pass a valid ProjectID from URL. Files must be located in server file folder" ))
     unlisted_project=read.csv(str_c(server_dir, "/",  ProjectID, ".csv"))
     ProjectInfo$ProjectID=ProjectID
     ProjectInfo$Name=unlisted_project$Name
@@ -66,6 +70,21 @@ if (!is.null(query[['serverfile']])) {
     ProjectInfo$ShortName=unlisted_project$ShortName
     ProjectInfo$file1= paste(server_dir, "/",   ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste(server_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
+    if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
+  }
+}
+if (!is.null(query[['testfile']])) {
+  ProjectID = query[['testfile']]
+  if (!is.null(test_dir)) {
+    validate(need(file.exists(str_c(test_dir, "/",  ProjectID, ".csv")), 
+                  message = "Please pass a valid ProjectID from URL. Files must be located in test file folder" ))
+    unlisted_project=read.csv(str_c(test_dir, "/",  ProjectID, ".csv"))
+    ProjectInfo$ProjectID=ProjectID
+    ProjectInfo$Name=unlisted_project$Name
+    ProjectInfo$Species=unlisted_project$Species
+    ProjectInfo$ShortName=unlisted_project$ShortName
+    ProjectInfo$file1= paste(test_dir, "/",   ProjectID, ".RData", sep = "")  #data file
+    ProjectInfo$file2= paste(test_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
   }
 }

@@ -132,10 +132,14 @@ if (file.exists("unlisted/projects_public.csv")) { #load selected projects from 
 
 config=NULL
 server_dir=NULL
+test_dir=NULL
 if (file.exists("config.csv")) { #load optional configuration file
   config=read_csv("config.csv")
   N=match("server_dir", config$category)
   if (!is.na(N)) {server_dir=config$value[N]}
+  N=match("test_dir", config$category)
+  if (!is.na(N)) {test_dir=config$value[N]}
+  #browser() #debug
 }
 
 
