@@ -26,7 +26,7 @@ upload_message <- reactiveVal()
 ProteinGeneNameHeader<- reactiveVal()
 exp_unit<-reactiveVal()
 #saved_palette <- reactiveVal()
-ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL)
+ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL, Path=NULL)
 showAlert<-reactiveVal()
 
 observeEvent(input$exp_unit, {
@@ -56,6 +56,7 @@ if (!is.null(query[['unlisted']])) {
   ProjectInfo$ShortName=unlisted_project$ShortName
   ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
   ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
+  if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
   if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
 }
 if (!is.null(query[['serverfile']])) {
@@ -70,6 +71,7 @@ if (!is.null(query[['serverfile']])) {
     ProjectInfo$ShortName=unlisted_project$ShortName
     ProjectInfo$file1= paste(server_dir, "/",   ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste(server_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
+    if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
   }
 }
@@ -85,6 +87,7 @@ if (!is.null(query[['testfile']])) {
     ProjectInfo$ShortName=unlisted_project$ShortName
     ProjectInfo$file1= paste(test_dir, "/",   ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste(test_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
+    if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
   }
 }
@@ -274,6 +277,7 @@ project_summary<-reactive({
 "<h2>Project ", ProjectInfo$ShortName, "</h2><br>",
     '<ul class="disc"><li>Species: ', ProjectInfo$Species, "</li>",
 "<li>Description: ", ProjectInfo$Name, "</li>",
+"<li>Data Path: ", ProjectInfo$Path, "</li>",
     "<li>Number of Samples: ", nrow(DataIn$MetaData), "</li>",
     "<li>Number of Groups: ", length(groups), " (please see group table below)</li>",  
 "<li>Number of Genes/Proteins: ", nrow(DataIn$data_wide), "</li>",
