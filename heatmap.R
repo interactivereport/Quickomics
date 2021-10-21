@@ -34,6 +34,15 @@ observe({
 #  updateSelectizeInput(session,'heatmap_samples', choices=allsamples, selected=samples)
 #})
 
+output$Test_to_sample<-renderUI({
+  sel_comp=DataReactive()$sel_comp
+  if (!is.null(sel_comp)) {
+    tagList(
+      tags$br(),
+      actionButton("heatmap_test2sample", "Use Samples from Test")
+    )
+  } 
+})
 
 output$selectGroupSampleHeatmap <- output$selectGroupSampleExpression<-output$selectGroupSampleQC<-renderUI({ 
   sample_info=paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
@@ -43,6 +52,18 @@ output$selectGroupSampleHeatmap <- output$selectGroupSampleExpression<-output$se
     tags$p(sample_info),
     tags$hr()
   )
+})
+
+observeEvent(input$heatmap_test2sample, {  
+  comp1<-input$heatmap_test
+  sel_comp=DataReactive()$sel_comp
+  if (!is.null(sel_comp)) {
+    samples=sel_comp$sample_list[sel_comp$Comparison==comp1]
+    samples=str_split(samples, ",")[[1]]
+    sample_order(samples)
+    attribute_filters("")
+    samples_excludeM(""); samples_excludeF("")
+  }
 })
 
 

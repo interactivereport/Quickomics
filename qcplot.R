@@ -87,8 +87,11 @@ output$samples_from_comp=renderUI({
   sel_comp=DataReactive()$sel_comp
   if (!is.null(sel_comp)) {
     comp_all=c("None", "All_Samples",sel_comp$Comparison)
-    sel_comp=sel_comp[, 1:(ncol(sel_comp)-1)]
+    sel_comp=sel_comp[, 1:(ncol(sel_comp)-2)]
     sel_comp$N_samples=as.integer(sel_comp$N_samples)
+    subsets=unique(sel_comp$Subsetting_group)
+    sel_sub=str_detect(subsets, ":"); subsets=subsets[sel_sub]
+    if (length(subsets)>0) {comp_all=c(comp_all, str_c("(Subset) ", subsets))}
     output$table_sel_comp=renderTable(sel_comp, rownames=F, colnames=T)
     tagList(
       selectizeInput("comp_4_samples", label="Subset Samples Based on a Comparison:", choices=comp_all, selected="None", multiple=FALSE),
@@ -102,15 +105,15 @@ output$QC_samples_from_comp<-renderUI({
   sel_comp=DataReactive()$sel_comp
   if (!is.null(sel_comp)) {
     comp_all=c("None","All_Samples", sel_comp$Comparison)
-    sel_comp=sel_comp[, 1:(ncol(sel_comp)-1)]
-    sel_comp$N_samples=as.integer(sel_comp$N_samples)
-    output$table_sel_comp=renderTable(sel_comp, rownames=F, colnames=T)
+    subsets=unique(sel_comp$Subsetting_group)
+    sel_sub=str_detect(subsets, ":"); subsets=subsets[sel_sub]
+    if (length(subsets)>0) {comp_all=c(comp_all, str_c("(Subset) ", subsets))}
     tagList(
       selectizeInput("QC_comp_4_samples", label="Use Samples in Comparison:", choices=comp_all, selected="None", multiple=TRUE),
     )
   } else {
     tagList(
-      tags$p("No comparison with sample subsetting. (check comp_info in RData file)."))
+      tags$p("No comparison-sample information. (Need comp_info in RData file)."))
   }
 })
 
@@ -199,12 +202,18 @@ observe({
 observe({
   req(input$comp_4_samples)
   comp1<-input$comp_4_samples
+  sel_comp=DataReactive()$sel_comp
+  subsets<-sel_comp%>%filter(!duplicated(Subsetting_group), str_detect(Subsetting_group, ":"))
+  if (nrow(subsets)>0){
+    subsets<-subsets%>%mutate(Comparison=str_c("(Subset) ", Subsetting_group), sample_list=subset_list, Comparison=NA)
+    sel_comp=rbind(sel_comp, subsets)
+  }
+
   if (length(comp1)==1) {
     if (comp1!="None"){
       if (comp1=="All_Samples"){
         samples=all_samples()
       } else {
-        sel_comp=DataReactive()$sel_comp
         samples=sel_comp$sample_list[sel_comp$Comparison==comp1]
         samples=str_split(samples, ",")[[1]]
       }
@@ -216,7 +225,6 @@ observe({
     if ("All_Samples" %in% comp1) {
       samples=all_samples()
     } else {
-      sel_comp=DataReactive()$sel_comp
       samples<-sel_comp%>%dplyr::filter(Comparison %in% comp1)%>%dplyr::select(sample_list)%>%unlist%>%unname%>%paste(collapse=",")
       samples=str_split(samples, ",")[[1]]
     }
@@ -229,13 +237,18 @@ observe({
 observe({
   req(input$QC_comp_4_samples)
   comp1<-input$QC_comp_4_samples
+  sel_comp=DataReactive()$sel_comp
+  subsets<-sel_comp%>%filter(!duplicated(Subsetting_group), str_detect(Subsetting_group, ":"))
+  if (nrow(subsets)>0){
+    subsets<-subsets%>%mutate(Comparison=str_c("(Subset) ", Subsetting_group), sample_list=subset_list, Comparison=NA)
+    sel_comp=rbind(sel_comp, subsets)
+  }
   #browser() #bebug
   if (length(comp1)==1) {
   if (comp1!="None"){
     if (comp1=="All_Samples"){
       samples=all_samples()
     } else {
-      sel_comp=DataReactive()$sel_comp
       samples=sel_comp$sample_list[sel_comp$Comparison==comp1]
       samples=str_split(samples, ",")[[1]]
     }
@@ -247,7 +260,6 @@ observe({
     if ("All_Samples" %in% comp1) {
       samples=all_samples()
     } else {
-      sel_comp=DataReactive()$sel_comp
       samples<-sel_comp%>%dplyr::filter(Comparison %in% comp1)%>%dplyr::select(sample_list)%>%unlist%>%unname%>%paste(collapse=",")
       samples=str_split(samples, ",")[[1]]
     }

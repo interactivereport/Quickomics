@@ -221,23 +221,31 @@ DataReactive <- reactive({
                  sel_comp=NULL
                  #browser() #debug
                  if (!is.null(comp_info)){
-                   sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%dplyr::filter(str_detect(Subsetting_group, ":")); dim(sel_comp)
+                   sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%dplyr::filter(Group_name!="", !is.na(Group_name)); dim(sel_comp)
+                   #sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%dplyr::filter(str_detect(Subsetting_group, ":")); dim(sel_comp)
                    if (nrow(sel_comp)>0) {
-                     sel_comp<-sel_comp%>%dplyr::mutate(N_samples=0, sample_list=NA)
-                     for (i in 1:nrow(sel_comp)) {
-                       sg1<-str_split(sel_comp$Subsetting_group[i], ";")[[1]]
-                       sel_samples<-rep(TRUE, nrow(MetaData))
-                       for (j in 1:length(sg1)){
-                         sub_values=str_split(sg1[j], ":")[[1]]
-                         sel_j=MetaData[[sub_values[1]]]==sub_values[2]
-                         sel_samples=sel_samples & sel_j
-                       }
-                       sel_comp$N_samples[i]=sum(sel_samples)
-                       sel_comp$sample_list[i]=paste(MetaData$sampleid[sel_samples], collapse = ",")
+                     sel_comp<-sel_comp%>%dplyr::mutate(N_samples=0, sample_list=NA, subset_list=NA)
+                      for (i in 1:nrow(sel_comp)) {
+                        sel_samples<-rep(TRUE, nrow(MetaData))
+                        if  (str_detect(sel_comp$Subsetting_group[i], ":")){
+                          sg1<-str_split(sel_comp$Subsetting_group[i], ";")[[1]]
+                          for (j in 1:length(sg1)){
+                            sub_values=str_split(sg1[j], ":")[[1]]
+                            sel_j=MetaData[[sub_values[1]]]==sub_values[2]
+                            sel_samples=sel_samples & sel_j
+                          }
+                          #sel_comp$N_samples[i]=sum(sel_samples)
+                          sel_comp$subset_list[i]=paste(MetaData$sampleid[sel_samples], collapse = ",")
+                        }
+                        #now further filter for Group_test and Group_ctrl
+                        sel_DEG_samples<- (MetaData[[sel_comp$Group_name[i]]] %in% c(sel_comp$Group_test[i], sel_comp$Group_ctrl[i]) )
+                        sel_samples = sel_samples & sel_DEG_samples
+                        sel_comp$N_samples[i]=sum(sel_samples)
+                        sel_comp$sample_list[i]=paste(MetaData$sampleid[sel_samples], collapse = ",")
+                        }
                        # cat(i, sg1, sum(sel_samples), paste(MetaData$sampleid[sel_samples], collapse = ","), "\n\n")
-                     }
-                     sel_comp<-sel_comp%>%dplyr::filter(N_samples>0)
                    }
+                   sel_comp<-sel_comp%>%dplyr::filter(N_samples>0)
                    if (nrow(sel_comp)==0) {sel_comp=NULL}
                  }
                  
