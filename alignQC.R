@@ -88,9 +88,18 @@ output$alignQC_TGR_plot <- renderUI({
 
 
 ##Top gene list
+inputReactive<-reactive({
+  alignQC_TG_Ngene<-input$alignQC_TG_Ngene
+  alignQC_TG_Ntotal<-input$alignQC_TG_Ntotal
+  alignQC_fontsize<-input$alignQC_fontsize
+  return(list(alignQC_TG_Ngene=alignQC_TG_Ngene, 
+              alignQC_TG_Ntotal=alignQC_TG_Ntotal, alignQC_fontsize= alignQC_fontsize ))
+})
+
 alignQC_TG_data <- reactive({
   DataIn = DataQCReactive()
   data_wide=DataIn$tmp_data_wide
+  inputData<-inputReactive%>%debounce(1000)
   if (input$convert_exp=="None") {
     estT=data_wide
   } else {
@@ -99,9 +108,10 @@ alignQC_TG_data <- reactive({
     #default data_wide=log2(TPM+1)
     estT=N_log^data_wide - small_value
   }
-  topUnion <- input$alignQC_TG_Ngene
+ # browser() #debug
+  topUnion <- inputData()$alignQC_TG_Ngene
   topG <- unique(as.vector(apply(estT,2,function(x)return(names(sort(x,decreasing=T)[1:topUnion])))))
-  while(length(topG)>input$alignQC_TG_Ntotal){
+  while(length(topG)>inputData()$alignQC_TG_Ntotal){
     topUnion <- topUnion-1
     topG <- unique(as.vector(apply(estT,2,function(x)return(names(sort(x,decreasing=T)[1:topUnion])))))
   }
@@ -109,7 +119,7 @@ alignQC_TG_data <- reactive({
   D <- apply(estT[topG,],1,function(x)return(100*x/estTsum))
   graph_height=max(700, ncol(D)*15)
   updateNumericInput(session, "alignQC_TG_height", value=graph_height)
-  return(list(D=D, topUnion=topUnion))
+  return(list(D=D, topUnion=topUnion, alignQC_fontsize=inputData()$alignQC_fontsize))
 })
 
 alignQC_TG_p <- reactive({
@@ -126,7 +136,7 @@ alignQC_TG_p <- reactive({
     geom_boxplot(color="#ff7f00",outlier.shape = NA,alpha=0)+
     xlab(input$alignQC_TGR_Y)+ylab("")+
     ggtitle(paste("Top", ncol(D), "Expressed Genes (Union of Top",topUnion,"Genes Per Sample)"))+
-    theme_minimal_grid(font_size=input$alignQC_fontsize)
+    theme_minimal_grid(font_size=alignQC_TG_data()$alignQC_fontsize)
  return(p)
 })
 
