@@ -127,21 +127,34 @@ DataExpReactive <- reactive({
 	     
 })
 
-output$dat_dotplot <- DT::renderDataTable({
+output$dat_dotplot <- DT::renderDT(server=FALSE, {  
 	data_long_tmp <- DataExpReactive()$data_long_tmp
+	data_long_tmp <- data_long_tmp %>%dplyr::select(-labelgeneid)
 	data_long_tmp[,sapply(data_long_tmp,is.numeric)] <- signif(data_long_tmp[,sapply(data_long_tmp,is.numeric)],3)
 	#data_long_tmp <- data_long_tmp[,-7]
 	DT::datatable(data_long_tmp,  extensions = 'Buttons',  options = list(
-	  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
+	  dom = 'lBfrtip', pageLength = 15,
+	  buttons = list(
+	    list(extend = "csv", text = "Download Page", filename = "Page_results",
+	         exportOptions = list(modifier = list(page = "current"))),
+	    list(extend = "csv", text = "Download All", filename = "All_Results",
+	         exportOptions = list(modifier = list(page = "all")))
+	  )
+	  ))
 })
 
-output$res_dotplot <- DT::renderDataTable({
+output$res_dotplot <- DT::renderDT(server=FALSE,{
   result_long_tmp <- DataExpReactive()$result_long_tmp
   result_long_tmp[,sapply(result_long_tmp,is.numeric)] <- signif(result_long_tmp[,sapply(result_long_tmp,is.numeric)],3)
-
   DT::datatable(result_long_tmp,  extensions = 'Buttons',  options = list(
-    dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
-
+    dom = 'lBfrtip', pageLength = 15,
+    buttons = list(
+      list(extend = "csv", text = "Download Page", filename = "Page_results",
+           exportOptions = list(modifier = list(page = "current"))),
+      list(extend = "csv", text = "Download All", filename = "All_Results",
+           exportOptions = list(modifier = list(page = "all")))
+    )
+  ))
 })
 
 boxplot_out <- reactive({
