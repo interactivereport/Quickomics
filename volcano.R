@@ -442,11 +442,30 @@ deg_counts_data <-reactive ({
   more_comp=setdiff(unique(results_long$test), deg_stat$Comparison)
   if (length(more_comp)>0) {deg_stat<-rbind(deg_stat, data.frame(Comparison=more_comp, DEG=0, Up=0, Down=0))}
   deg_stat<-deg_stat%>%arrange(Comparison)%>%filter(!is.na(Comparison))
+  #reorder according to comp_info
+  comp_info=DataIn$comp_info
+  if (!is.null(comp_info)) {
+    name1=rownames(comp_info)
+    if ( all(sort(name1)==sort(deg_stat$Comparison)) ) {
+      new_order=match(name1, deg_stat$Comparison)
+      deg_stat=deg_stat[new_order, ]
+    } else {
+      cat("comp_info row names doesn't match comparison data results!\n")
+    }
+  }
   return(deg_stat)
 })
-output$deg_counts <- DT::renderDataTable({
+output$deg_counts <- DT::renderDT(server=FALSE,{
   DT::datatable(deg_counts_data(),extensions = 'Buttons',  selection = 'none', class = 'cell-border strip hover',
-    options = list(dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 20), 
+    options = list(
+      dom = 'lBfrtip', pageLength = 20,
+      buttons = list(
+        list(extend = "csv", text = "Download Page", filename = "Page_results",
+             exportOptions = list(modifier = list(page = "current"))),
+        list(extend = "csv", text = "Download All", filename = "All_Results",
+             exportOptions = list(modifier = list(page = "all")))
+      )
+    ), 
     rownames= FALSE) %>% formatStyle(1, cursor = 'pointer',color='blue')
 })
 

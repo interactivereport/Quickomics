@@ -78,7 +78,7 @@ DataGenesetReactive <- reactive({
 	return(list("sig_genes" = sig_genes,"all_genes" = all_genes, "terminals.df"=terminals.df ))
 })
 
-output$MSigDB <- DT::renderDataTable({ withProgress(message = 'Processing...', value = 0, {
+output$MSigDB <-  DT::renderDT(server=FALSE,{ withProgress(message = 'Processing...', value = 0, {
 	getresults <- DataGenesetReactive()
 	sig_genes <- 	getresults$sig_genes
 	all_genes <- 	getresults$all_genes
@@ -97,8 +97,14 @@ output$MSigDB <- DT::renderDataTable({ withProgress(message = 'Processing...', v
 	res[,sapply(res,is.numeric)] <- signif(res[,sapply(res,is.numeric)],3)
 	DT::datatable(
 		res,  extensions = 'Buttons', selection = 'none', class = 'cell-border strip hover', 
-		options = list( dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15)
-	)  %>% formatStyle(1, cursor = 'pointer',color='blue')
+		options = list(    dom = 'lBfrtip', pageLength = 15,
+		                   buttons = list(
+		                     list(extend = "csv", text = "Download Page", filename = "Page_results",
+		                          exportOptions = list(modifier = list(page = "current"))),
+		                     list(extend = "csv", text = "Download All", filename = "All_Results",
+		                          exportOptions = list(modifier = list(page = "all")))
+		                   )
+		)	)  %>% formatStyle(1, cursor = 'pointer',color='blue')
 	})
 })
 
@@ -269,7 +275,7 @@ observeEvent(input$genesetheatmap, {
 }
 )
 
-output$Expression <- DT::renderDataTable({
+output$Expression <-  DT::renderDT(server=FALSE,{
 	ID = input$x1
 	validate(need(ID!="", message = "Select one geneset by clicking geneset name from 'Gene Set Enrichment' tab."))
 
@@ -285,5 +291,14 @@ output$Expression <- DT::renderDataTable({
 	terminalsdf.set <- dplyr::filter(terminals.df, entrez_id %in% GenesetSig)
 	terminalsdf.set[,sapply(terminalsdf.set,is.numeric)] <- signif(terminalsdf.set[,sapply(terminalsdf.set,is.numeric)],3)
 
-	DT::datatable(terminalsdf.set,  extensions = 'Buttons', options = list( dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
+	DT::datatable(terminalsdf.set,  extensions = 'Buttons', options = list( 
+	  dom = 'lBfrtip', pageLength = 15,
+	  buttons = list(
+	    list(extend = "csv", text = "Download Page", filename = "Page_results",
+	         exportOptions = list(modifier = list(page = "current"))),
+	    list(extend = "csv", text = "Download All", filename = "All_Results",
+	         exportOptions = list(modifier = list(page = "all")))
+	  )
+	)
+	  )
 })

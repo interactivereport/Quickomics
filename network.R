@@ -83,11 +83,18 @@ observeEvent(input$gennet,{
 })
 
 
-output$dat_network <- DT::renderDataTable({
+output$dat_network <- DT::renderDT(server=FALSE,{
 	DataIn <- DataReactive()
 	net <-	DataNetworkReactive()
 	results <- as.data.frame(net$edges)
 	results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
-	DT::datatable(results, options = list(pageLength = 15))
+	DT::datatable(results, extensions = 'Buttons', options = list(dom = 'lBfrtip', pageLength = 15,
+	     buttons = list(
+	     list(extend = "csv", text = "Download Page", filename = "Page_results",
+	          exportOptions = list(modifier = list(page = "current"))),
+	     list(extend = "csv", text = "Download All", filename = "All_Results",
+	          exportOptions = list(modifier = list(page = "all")))
+	   )
+	))
 })
 

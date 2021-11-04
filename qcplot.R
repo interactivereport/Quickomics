@@ -721,7 +721,7 @@ PC_covariates_out <-  eventReactive(input$compute_PC,{
 
 #output$covar_table=renderTable(PC_covariates_out()$selVar_All, colnames=T)
 
-output$covar_table <- DT::renderDataTable({
+output$covar_table <- DT::renderDT(server=FALSE,{
   results<-PC_covariates_out()$selVar_All
   if (!is.null(results)) {
     results["P-value"]=as.numeric(formatC(unlist(results["P-value"]), format="e", digits=2))
@@ -729,8 +729,13 @@ output$covar_table <- DT::renderDataTable({
   }
   DT::datatable(results,  extensions = 'Buttons',
                 options = list(
-                  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
-                  pageLength = 25
+                  dom = 'lBfrtip', pageLength = 25,
+                  buttons = list(
+                    list(extend = "csv", text = "Download Page", filename = "Page_results",
+                         exportOptions = list(modifier = list(page = "current"))),
+                    list(extend = "csv", text = "Download All", filename = "All_Results",
+                         exportOptions = list(modifier = list(page = "all")))
+                  )
                 ),rownames= T)
 })
 

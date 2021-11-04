@@ -145,7 +145,7 @@ output$alignQC_TG_plot <- renderUI({
   if (input$alignQC_TG_list==0) {
     plotOutput("alignQC_TG_pp", height = input$alignQC_TG_height, width=input$alignQC_TG_width)
   } else {
-    output$TG_table <- DT::renderDataTable({
+    output$TG_table <- DT::renderDT(server=FALSE,{
       D<-alignQC_TG_data()$D
       ProteinGeneName = DataReactive()$ProteinGeneName
       D<-round(t(D)*100)/100
@@ -154,8 +154,13 @@ output$alignQC_TG_plot <- renderUI({
       results=cbind(annot, D)
       DT::datatable(results,  extensions = 'Buttons',
                     options = list(
-                      dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
-                      pageLength = 50
+                      dom = 'lBfrtip', pageLength = 50,
+                      buttons = list(
+                        list(extend = "csv", text = "Download Page", filename = "Page_results",
+                             exportOptions = list(modifier = list(page = "current"))),
+                        list(extend = "csv", text = "Download All", filename = "All_Results",
+                             exportOptions = list(modifier = list(page = "all")))
+                      )
                     ),rownames= F)
     })
     dataTableOutput('TG_table')

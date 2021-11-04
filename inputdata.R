@@ -394,18 +394,33 @@ output$results <- DT::renderDataTable({
   ),rownames= T)
 })
 
-output$sample <- DT::renderDataTable({
+output$sample <-  DT::renderDT(server=FALSE,{
   meta<-DataReactive()$MetaData%>%dplyr::select(-Order, -ComparePairs)
 	DT::datatable(meta,  extensions = 'Buttons',  options = list(
-	  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15), rownames= F)
+	  dom = 'lBfrtip', pageLength = 15,
+	  buttons = list(
+	    list(extend = "csv", text = "Download Page", filename = "Page_Samples",
+	         exportOptions = list(modifier = list(page = "current"))),
+	    list(extend = "csv", text = "Download All", filename = "All_Samples",
+	         exportOptions = list(modifier = list(page = "all")))
+	  )
+	), rownames= F)
 	
 })
 
 output$comp_info <- renderUI ({
   if (is.null(DataReactive()$comp_info)) return()
-  output$comparison <- DT::renderDataTable({
+  output$comparison <-  DT::renderDT(server=FALSE,{
     DT::datatable(DataReactive()$comp_info,  extensions = 'Buttons',  options = list(
-      dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 15))
+      dom = 'lBfrtip', pageLength = 15,
+      buttons = list(
+        list(extend = "csv", text = "Download Page", filename = "Page_results",
+             exportOptions = list(modifier = list(page = "current"))),
+        list(extend = "csv", text = "Download All", filename = "All_Results",
+             exportOptions = list(modifier = list(page = "all")))
+      )
+    )
+      )
   })
   tagList(
     h4("Comparison Table (shown only when RData file contains comp_info)"),
