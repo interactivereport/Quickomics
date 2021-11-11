@@ -256,7 +256,7 @@ boxplot_out <- reactive({
 
 observeEvent(input$plot_exp, {
   #cat("output plots now\n")
-  withProgress(message = 'Making Expression Plot. It may take a while...', value = 0, {
+  
   output$plot.exp=renderUI({
     D_exp<-isolate(DataExpReactive())
     graph_height=800
@@ -268,7 +268,8 @@ observeEvent(input$plot_exp, {
   })
   p_boxplot=isolate(boxplot_out())
   output$boxplot <- renderPlot({
-    p_boxplot
+    withProgress(message = 'Making Expression Plot. It may take a while...', value = 0, {
+    print(p_boxplot)
     })
   })
 }) 
@@ -280,7 +281,11 @@ observeEvent(input$boxplot, {
 	saved_plots$boxplot[[saved.num]] <- boxplot_out()
 })
 
-browsing_out <- eventReactive(input$plot_browsing,{
+observeEvent(input$plot_browsing, {
+  plot_exp_control(plot_exp_control()+1)
+})
+
+browsing_out <- eventReactive(plot_exp_control(),{
 	validate(need(length(group_order())>0,"Please select group(s)."))
 	barcol = input$barcol
 	DataIn = DataReactive()
@@ -387,7 +392,10 @@ browsing_out <- eventReactive(input$plot_browsing,{
 })
 
 output$browsing <- renderPlot({
-	browsing_out()
+  ptm <- proc.time()
+  withProgress(message = 'Drawing Expression Plot...\nIt may take a while', value = 0, {
+  print(browsing_out()) })
+  cat("plotted expression plot",(proc.time() - ptm)[["elapsed"]], "\n")
 })
 
 observeEvent(input$browsing, {

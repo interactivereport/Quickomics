@@ -229,10 +229,12 @@ DataHeatMapReactive <- reactive({
 })
 
 
+observeEvent(input$plot_heatmap,{
+  plot_heatmap_control( plot_heatmap_control()+1)
+})
 
-
-pheatmap2_out <- eventReactive(input$plot_heatmap, {
-  withProgress(message = 'Making static heatmap 1:', value = 0, {
+pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
+    ptm <- proc.time()
     DataHeatMap <- DataHeatMapReactive()
     data.in <- DataHeatMap$df
     annotation <- DataHeatMap$annotation
@@ -363,21 +365,20 @@ pheatmap2_out <- eventReactive(input$plot_heatmap, {
                               heatmap_legend_param = list(title_position="topleft", labels_gp = gpar(lineheight=0.8), grid_height = unit(legend_height, "cm")))
       p<-p + pathway_legend
     }
-    
-      
   
   }
-    output$pheatmap2 <- renderPlot({
-      draw(p, merge_legend=T,  auto_adjust = FALSE)})
+   # cat("generated heatmap", (proc.time() - ptm)[["elapsed"]], "\n")
     return(p)
-  })
 })
 
 
-observeEvent(input$plot_heatmap, {  
-  p<-pheatmap2_out()
-  output$pheatmap2 <- renderPlot({
-    draw(p, merge_legend=T,  auto_adjust = FALSE)})
+
+output$pheatmap2 <- renderPlot({
+    ptm <- proc.time()
+    p<-pheatmap2_out()
+    withProgress(message = 'Drawing Heatmap...', value = 0, {
+    draw(p, merge_legend=T,  auto_adjust = FALSE) })
+    cat("plotted heatmap",(proc.time() - ptm)[["elapsed"]], "\n")
 })
 
 observeEvent(input$pheatmap2, {

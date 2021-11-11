@@ -21,6 +21,9 @@ observe({
 	updateRadioButtons(session,'PCA_label', inline = TRUE, choices=sampleIDs, selected="sampleid")
 	updateSelectInput(session, "covar_variates", choices=attributes, selected=attributes)
 	updateTextInput(session, "Ylab", value=exp_unit())
+	if (!is.null(MetaData)) {
+	  if (nrow(MetaData)>100) {updateRadioButtons(session,'PCA_subsample', selected="None")} #when there are too many samples, don't show  labels
+	}
 })
 
 observe({
@@ -449,7 +452,12 @@ observeEvent(input$QCboxplot, {
 
 
 ######## PCA
-pcaplot_out <- eventReactive (input$plot_PCA, {
+observeEvent(input$plot_PCA, {
+  plot_pca_control(plot_pca_control()+1)
+})
+
+pcaplot_out <- eventReactive (plot_pca_control(), {
+  ptm <- proc.time()
   req(DataPCAReactive())
 	pcnum=as.numeric(input$pcnum)
 	validate(need(length(pcnum)==2, message = "Select 2 Prinical Components."))
@@ -507,11 +515,18 @@ pcaplot_out <- eventReactive (input$plot_PCA, {
 	#	browser() #debug	
 	#	p <- ggpubr::ggpar(p, legend.title ="", xlab = xlabel, ylab = ylabel, legend = "bottom") #works only when use color by. 
 	p <- p + guides(color = guide_legend(override.aes = list(label="")))
+	#cat("generated pca plot p",(proc.time() - ptm)[["elapsed"]], "\n")
 	return(p)
 })
 
+observe({
+  
+})
 output$pcaplot <- renderPlot({
-	pcaplot_out()
+  ptm <- proc.time()
+  withProgress(message = 'Drawing PCA Plot...', value = 0, {
+	print(pcaplot_out()) })
+	cat("plotted PCA",(proc.time() - ptm)[["elapsed"]], "\n")
 })
 
 observeEvent(input$pcaplot, {

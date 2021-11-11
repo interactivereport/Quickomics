@@ -28,6 +28,9 @@ exp_unit<-reactiveVal()
 #saved_palette <- reactiveVal()
 ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL, Path=NULL)
 showAlert<-reactiveVal()
+plot_pca_control<-reactiveVal(0)
+plot_heatmap_control<-reactiveVal(0)
+plot_exp_control<-reactiveVal(0)
 
 observeEvent(input$exp_unit, {
   Eu=input$exp_unit; exp_unit(Eu)
@@ -248,7 +251,6 @@ DataReactive <- reactive({
                    sel_comp<-sel_comp%>%dplyr::filter(N_samples>0)
                    if (nrow(sel_comp)==0) {sel_comp=NULL}
                  }
-                 
                  return(
                    list(
                      "groups" = group_names,
@@ -267,6 +269,11 @@ DataReactive <- reactive({
   
 })
 
+observeEvent(DataReactive(), {
+  plot_pca_control(plot_pca_control()+1)
+  plot_heatmap_control( plot_heatmap_control()+1)
+  plot_exp_control(plot_exp_control()+1)
+})
 project_summary<-reactive({
   req(DataReactive())
   DataIn = DataReactive()
