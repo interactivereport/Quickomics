@@ -157,7 +157,7 @@ output$res_dotplot <- DT::renderDT(server=FALSE,{
   ))
 })
 
-boxplot_out <- reactive({
+boxplot_out <- eventReactive(input$plot_exp,  {
   barcol = input$barcol
   sel_group=group_order() #input$sel_group
   #group_order(sel_group)
@@ -254,25 +254,29 @@ boxplot_out <- reactive({
   p
 })
 
-observeEvent(input$plot_exp, {
-  #cat("output plots now\n")
-  
-  output$plot.exp=renderUI({
-    D_exp<-isolate(DataExpReactive())
-    graph_height=800
-    if (input$SeparateOnePlot=="Separate") {
-      graph_height=max(800, ceiling(length(D_exp$tmpids)/3)*300 )
-   #   cat("nrow: ", length(D_exp$tmpids), "\nheight: ", graph_height, "\n")
-    }
-    plotOutput("boxplot", height =graph_height)
-  })
-  p_boxplot=isolate(boxplot_out())
-  output$boxplot <- renderPlot({
-    withProgress(message = 'Making Expression Plot. It may take a while...', value = 0, {
+graph_height_boxplot=eventReactive(input$plot_exp,  {
+  D_exp<-DataExpReactive()
+  graph_height=800
+  if (input$SeparateOnePlot=="Separate") {
+    graph_height=max(800, ceiling(length(D_exp$tmpids)/3)*300 )
+  }
+  return(graph_height)
+})
+
+
+output$plot.exp=renderUI({
+  graph_height=graph_height_boxplot()
+  if (is.null(graph_height)){graph_height=800}
+  plotOutput("boxplot", height =graph_height)
+})
+
+output$boxplot <- renderPlot({
+  withProgress(message = 'Making Expression Plot of selected genes...', value = 0, {
+    p_boxplot=boxplot_out()
     print(p_boxplot)
-    })
   })
-}) 
+})
+
 
 
 
