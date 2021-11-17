@@ -35,7 +35,15 @@ DataGenesetReactive <- reactive({
 	dplyr::select(one_of(c("Gene.Name","logFC"))) %>%
 	dplyr::distinct(., Gene.Name,.keep_all = TRUE)
 	#browser()#bebug
-	if (ProjectInfo$Species=="human") {
+	
+	match_info=ifelse(ProjectInfo$Species=="mouse", "(mouse genes mapped to human)", ifelse (ProjectInfo$Species=="rat", "(rat genes mapped to human)", ""))
+	Prj_species=ProjectInfo$Species
+	if (!(Prj_species %in% c("human", "mouse", "rat")))  {
+	  match_info=str_c("(", Prj_species, " genes matches to human gene symbols)")
+	  Prj_species="human"
+	}
+
+	if (Prj_species=="human") {
 		filteredgene<-filteredgene%>%dplyr::mutate_at(.vars = vars(Gene.Name), .funs = toupper)
 		terminals.df <- dplyr::inner_join(hgnc,filteredgene, by=c("symbol"="Gene.Name"))
 		all_genes <- dplyr::filter(ProteinGeneName, !is.na(`Gene.Name`)) %>%
@@ -44,14 +52,14 @@ DataGenesetReactive <- reactive({
 		dplyr::inner_join(hgnc,., by=c("symbol"="Gene.Name")) %>%
 		dplyr::select(one_of(c("entrez_id"))) %>% collect %>%
 		.[["entrez_id"]] %>% as.character() %>% unique()
-	} else if  (ProjectInfo$Species=="mouse") {
+	} else if  (Prj_species=="mouse") {
 		terminals.df<-filteredgene%>%transmute(mouse_Gene=Gene.Name, logFC)%>%left_join(M_match%>%transmute(mouse_Gene=mouse_symbol, symbol=human_symbol))%>%
 		mutate(symbol=ifelse(is.na(symbol), toupper(mouse_Gene), symbol))%>%left_join(hgnc)%>%filter(!is.na(entrez_id))%>%
 		dplyr::select(symbol, entrez_id, logFC, mouse_Gene)
 		all_genes<-ProteinGeneName%>%left_join(M_match%>%transmute(Gene.Name=mouse_symbol, symbol=human_symbol))%>%
 		mutate(symbol=ifelse(is.na(symbol), toupper(Gene.Name), symbol))%>%left_join(hgnc)%>%filter(!is.na(entrez_id))%>%
 		dplyr::select(one_of(c("entrez_id"))) %>% collect %>%.[["entrez_id"]] %>% as.character() %>% unique()
-	} else if  (ProjectInfo$Species=="rat") {
+	} else if  (Prj_species=="rat") {
 		terminals.df<-filteredgene%>%transmute(rat_Gene=Gene.Name, logFC)%>%left_join(R_match%>%transmute(rat_Gene=rat_symbol, symbol=human_symbol))%>%
 		mutate(symbol=ifelse(is.na(symbol), toupper(rat_Gene), symbol))%>%left_join(hgnc)%>%filter(!is.na(entrez_id))%>%
 		dplyr::select(symbol, entrez_id, logFC, rat_Gene)
@@ -72,9 +80,8 @@ DataGenesetReactive <- reactive({
 	}
 	#browser() #debug
 
-	match_info=ifelse(ProjectInfo$Species=="mouse", "(mouse genes mapped to human)", ifelse (ProjectInfo$Species=="rat", "(rat genes mapped to human)", ""))
 	output$geneset_filteredgene <- renderText({ paste("Selected Genes", match_info, ":",length(sig_genes_Dir), " (",input$geneset_direction, " Direction)",  sep="")})
-	#	browser()#debug
+	#browser()#debug
 	return(list("sig_genes" = sig_genes,"all_genes" = all_genes, "terminals.df"=terminals.df ))
 })
 
@@ -136,6 +143,8 @@ keggView_out <- reactive({withProgress(message = 'Making KEGG Pathway View...', 
 	} else if  (ProjectInfo$Species=="rat") {
 		data_results<-data_results%>%mutate(rat_Gene=Gene.Name)%>%left_join(R_match%>%transmute(rat_Gene=rat_symbol, symbol=human_symbol))%>%
 		mutate(symbol=ifelse(is.na(symbol), toupper(rat_Gene), symbol))%>%left_join(hgnc)
+	} else { #other species, use human
+	  data_results<-data_results%>%mutate(Gene.Name=toupper(Gene.Name))%>%left_join(hgnc, by=c("Gene.Name"="symbol"))
 	}
 
 	if (file.exists(img.file)) {
@@ -222,6 +231,9 @@ genesetheatmap_out <- reactive({withProgress(message = 'Making heatmap...', valu
 	}	else if (ProjectInfo$Species=="rat"){
 		terminals_id <- dplyr::filter(ProteinGeneName, Gene.Name %in% terminalsdf.set$rat_Gene)  %>%
 		dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
+	} else {  #no match, just use human
+	  terminals_id <- dplyr::filter(ProteinGeneName, toupper(Gene.Name) %in% terminalsdf.set$symbol)  %>%
+	    dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
 	}
 
 	subdatlong <- dplyr::filter(data_long, UniqueID %in% terminals_id ) %>%
