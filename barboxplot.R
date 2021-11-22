@@ -166,7 +166,7 @@ boxplot_out <- eventReactive(input$plot_exp,  {
   Val_colorby=input$colorby
   MetaData=DataIn$MetaData
   plotx=sym(input$plotx)
-  
+  ncol=input$exp_plot_ncol
   data_long_tmp <- DataExpReactive()$data_long_tmp
   if (Val_colorby!="None" & Val_colorby!="group" ) { #add coloyby column
     data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!colorby))
@@ -180,7 +180,7 @@ boxplot_out <- eventReactive(input$plot_exp,  {
   if (input$SeparateOnePlot == "Separate") {
 
     p <- ggplot(data_long_tmp,aes(x=!!plotx,y=expr,fill=!!colorby)) +
-      facet_wrap(~ labelgeneid, scales = "free", ncol = 3)
+      facet_wrap(~ labelgeneid, scales = "free", ncol = ncol)
     if (input$plotformat == "boxplot") {
       p <- p + geom_boxplot() +
         stat_summary(aes(group=!!colorby), fun=mean, geom="point", shape=18,size=3, color = "red", position = position_dodge(width=0.8))
@@ -308,19 +308,22 @@ browsing_out <- eventReactive(plot_exp_control(),{
 	expression_fccut =log2(as.numeric(input$expression_fccut))
 	expression_pvalcut = as.numeric(input$expression_pvalcut)
 	numperpage = as.numeric(input$numperpage)
+	ncol=input$exp_plot_ncol
+	nrow=ceiling(numperpage/ncol)
 
 	sel_page = as.numeric(input$sel_page)-1
 	startslice = sel_page * 6 + 1
 	endslice = startslice + numperpage -1
+	if (input$browsing_gene_order=="P value") {results_long<-results_long%>%arrange(P.Value)
+	} else {results_long<-results_long%>%arrange(desc(abs(logFC)))}
+	
 	if (input$expression_psel == "Padj") {
 		sel_gene = results_long %>% filter(test %in% expression_test & abs(logFC) > expression_fccut & Adj.P.Value < expression_pvalcut) %>%
-		dplyr::arrange(P.Value) %>%
 		dplyr::slice(startslice:endslice) %>%
 		dplyr::select(UniqueID) %>%
 		collect %>% .[["UniqueID"]] %>% as.character()
 	} else {
 		sel_gene = results_long %>% filter(test %in% expression_test & abs(logFC) > expression_fccut & P.Value < expression_pvalcut) %>%
-		dplyr::arrange(P.Value) %>%
 		dplyr::slice(startslice:endslice) %>%
 		dplyr::select(UniqueID) %>%
 		collect %>% .[["UniqueID"]] %>% as.character()
@@ -342,11 +345,9 @@ browsing_out <- eventReactive(plot_exp_control(),{
 	data_long_tmp$labelgeneid = data_long_tmp[,match(genelabel,colnames(data_long_tmp))]
 	data_long_tmp$group = factor(data_long_tmp$group,levels = sel_group)
 	validate(need(nrow(data_long_tmp)>0, message = "Please select at least one valid gene to plot."))
-#  browser() #debug
-	if(numperpage==4) { nrow = 2; ncol = 2 
-	} else if(numperpage==6) {
-		nrow = 2; ncol = 3
-	} else {  nrow = 3; ncol = 3}
+	#browser() #debug
+	data_long_tmp$labelgeneid=factor(data_long_tmp$labelgeneid, levels=unique(data_long_tmp$labelgeneid))
+
 	p <- ggplot(data_long_tmp,aes(x=!!plotx,y=expr,fill=!!colorby)) +
 	  facet_wrap(~ labelgeneid, scales = "free",nrow = nrow, ncol = ncol)
 
