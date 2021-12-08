@@ -46,7 +46,7 @@ if (!is.null(query[['project']])) {
   ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
   ProjectInfo$ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
   ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
-  ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
+  ProjectInfo$file2= paste("networkdata/", ProjectID, ".RData", sep = "") #Correlation results
 }
 if (!is.null(query[['unlisted']])) {
   ProjectID = query[['unlisted']]
@@ -104,7 +104,7 @@ if (input$sel_project!="") {
   ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
   ProjectInfo$ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
   ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
-  ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
+  ProjectInfo$file2= paste("networkdata/", ProjectID, ".RData", sep = "") #Correlation results
  # updateTabsetPanel(session, "Tables", selected = "Sample Table")
 }
 })
