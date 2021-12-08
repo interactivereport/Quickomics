@@ -1,0 +1,5 @@
+Project ID,Description,Species,Contact Person,Release Date,URL
+Mouse_microglia_RNA-Seq,Cx3cr1-Deficient Mouse Microglia RNA-Seq Demo Data,Monkey,John Smith,1/12/2021,https://quickomics.bxgenomics.com/?project=Mouse_microglia_RNA-Seq
+AD_PD_Proteomics_data,Human Brain Proteome in AD and PD,human,Joe Doe,3/10/2021,https://quickomics.bxgenomics.com/?project=AD_PD_Proteomics_data
+LRRK2_Neuron_RNA,LRRK2 Neuron Transcriptome,human,John Smith,3/10/2021,https://quickomics.bxgenomics.com/?project=LRRK2_Neuron_RNA
+LRRK2_Neuron_Protein,LRRK2 Neuron Proteome,human,Joe Doe,3/10/2021,https://quickomics.bxgenomics.com/?project=LRRK2_Neuron_Protein
