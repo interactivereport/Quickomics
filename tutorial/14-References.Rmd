@@ -1,0 +1,17 @@
+# References
+
+Cotter,D. et al. (2006) LMPD: LIPID MAPS proteome database. Nucleic Acids Res., 34, D507–D510.
+
+Frolkis,A. et al. (2010) SMPDB: The Small Molecule Pathway Database. Nucleic Acids Res., 38, D480–D487.
+
+Jassal,B. et al. (2020) The reactome pathway knowledgebase. Nucleic Acids Res., 48, D498–D503.
+
+Kanehisa,M. and Goto,S. (2000) KEGG: kyoto encyclopedia of genes and genomes. Nucleic Acids Res., 28, 27–30.
+
+Liberzon,A. et al. (2015) The Molecular Signatures Database (MSigDB) hallmark gene set collection. Cell Syst., 1, 417–425.
+
+Martens,M. et al. (2020) WikiPathways: connecting communities. Nucleic Acids Res.
+
+Subramanian,A. et al. (2005) Gene set enrichment analysis: A knowledge-based approach for interpreting genome-wide expression profiles. Proc. Natl. Acad. Sci., 102, 15545 LP – 15550.
+
+The Gene Ontology Consortium (2019) The Gene Ontology Resource: 20 years and still GOing strong. Nucleic Acids Res., 47, D330–D338.

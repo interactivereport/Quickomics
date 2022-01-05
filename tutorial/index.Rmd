@@ -1,0 +1,48 @@
+--- 
+title: "Supplementary Materials - QuickOmics"
+author:
+  - name: This name list has not been finalized!!!
+  - name: Jing Zhu
+    email: jing.zhu@biogen.com
+    affiliation: Biogen
+  - name: Xinmin Zhang
+    email: xinmin.zhang@biogen.com ???
+    affiliation: BioInfoRx
+  - name: Zhengyu Ouyang
+    email: oyoung@bioinforx.com
+    affiliation: BioInfoRx
+  - name: Wei Li
+    email: weili@bioinforx.com
+    affiliation: BioInfoRx
+  - name: Hima Yalamanchili
+    email: hima.yalamanchili@biogen.com
+    affiliation: Biogen
+  - name: Maria Zavodszky
+    email: maria.zavodszky@biogen.com
+    affiliation: Biogen
+  - name: Yu (Henry) Sun (Re-built the bookdown tutorial)
+    email: yuhenry.sun@biogen.com
+    affiliation: Biogen
+  - name: David Sexton
+    email: david.sexton@biogen.com
+    affiliation: Biogen
+  - name: Kejie Li
+    email: kejie.li@biogen.com
+    affiliation: Biogen
+  - name: Fergal Casey
+    email: fergal.casey@biogen.com
+    affiliation: Biogen
+  - name: Baohong Zhang (Corresponding Author)
+    email: baohong.zhang@biogen.com
+    affiliation: Biogen
+address:
+  - code: Biogen, Inc
+    address: 225 Binney St, Cambridge, MA 02142, USA
+  - code: BioInfoRx, Inc
+    address: 510 Charmany Dr, Suite 275A, Madison, WI 53719, USA
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+---
+
+# Preface
+This is a *supplementary materials* written using Bookdown, which provides a detailed guide for QuickOmics.

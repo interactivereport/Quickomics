@@ -1,0 +1,8 @@
+book_filename: "Quickomics"
+output_dir: docs
+delete_merged_file: true
+edit: https://github.com/interactivereport/Quickomics/edit/gh-pages/%s
+view: https://github.com/interactivereport/Quickomics/blob/gh-pages/%s
+language:
+  ui:
+    chapter_name: "Chapter "

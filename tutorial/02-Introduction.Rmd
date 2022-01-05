@@ -1,0 +1,15 @@
+# Introduction
+
+The Quickomics tool can be accessed via the link http://quickomics.bxgenomics.com. Implemented through R Shiny, it helps with visualizing statistical analysis results for RNAseq and Proteomics datasets. This supplemental tutorial provides a detailed guide on using the different functionalities and customizing the tools to best fit individual analysis and plotting needs, using published RNAseq dataset and proteomics dataset as examples (Gyoneva et al., 2019; Connor-Robson et al., 2019).
+
+[Figure!]
+
+The interface contains multiple tabs, corresponding to different functional modules, that can be accessed on top panel of the webpage. Users have the option to upload their own dataset or choose from existing demo datasets for visualization.
+
+## Integrated Gene Set Query
+
+To supply genes in pre-defined gene sets to plotting functions in Quickomics, we developed xGenesets API for Quickomics to query and retrieve a list of genes/proteins when it is needed. The lists can be defined based on pathways, and gene sets from various sources, including KEGG Pathways (Kanehisa and Goto, 2000), WikiPathways (Martens et al., 2020), Small Molecule Pathway Database (Frolkis et al., 2010), Reactome (Jassal et al., 2020), Gene Ontology (The Gene Ontology Consortium, 2019), Molecular Signatures (Subramanian et al., 2005; Liberzon et al., 2015), and LIPID MAPS Proteome Database (Cotter et al., 2006). xGenesets database currently has 175,537 gene sets stored in MySQL tables, covering human (115,497 records), mouse (30,554 records) and rat (29,486 records) gene sets. xGenesets features personalized settings, dynamic drop-down list upon typing for quick gene set selection, full gene set database browsing, and a list of genes from any gene sets. Throughout Quickomics, users interact with this convenient tool in appropriate interface when a gene set is needed by checking “Geneset” option and then clicking on “Select Geneset” to pick a set from a table of available gene sets in a popup window as shown in the following screenshot.
+
+[Figure!]
+
+For developers of web-based applications (general user can skip this paragraph), xGenesets can be easily embedded in any modern websites and online applications, e.g., R Shiny web apps, by leveraging jQuery, DataTables, and bootstrap (either v3 or v4) JavaScript libraries. xGenesets API is freely available for all usages. Examples of using xGenesets API and guidance on setting up the API in your own applications can be found at https://bxaf.net/genesets.
