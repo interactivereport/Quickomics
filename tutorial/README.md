@@ -1,6 +1,6 @@
-# Bookdown tutorial for EA
+# Bookdown tutorial for Quickomics
 
-Link not activated yet:
+Please find the bookdown tutorial for Quickomics here:
 
-https://interactivereport.github.io/ExpressionAnalysis/bookdown/docs/index.html
+https://interactivereport.github.io/Quickomics/tutorial/docs/index.html
 
