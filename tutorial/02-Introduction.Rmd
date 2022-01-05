@@ -2,7 +2,7 @@
 
 The Quickomics tool can be accessed via the link http://quickomics.bxgenomics.com. Implemented through R Shiny, it helps with visualizing statistical analysis results for RNAseq and Proteomics datasets. This supplemental tutorial provides a detailed guide on using the different functionalities and customizing the tools to best fit individual analysis and plotting needs, using published RNAseq dataset and proteomics dataset as examples (Gyoneva et al., 2019; Connor-Robson et al., 2019).
 
-[Figure!]
+![Figure S2.1](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.1.png)
 
 The interface contains multiple tabs, corresponding to different functional modules, that can be accessed on top panel of the webpage. Users have the option to upload their own dataset or choose from existing demo datasets for visualization.
 
