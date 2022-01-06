@@ -6,14 +6,14 @@ This module helps build co-expression networks based on gene-gene or protein-pro
 
 This uses the R package visNetwork to visualize the expression of correlated genes/proteins. Users have the ability to choose the R and P value cutoff for selecting the correlated genes/proteins. In this example below, we probe 3 genes and identify the expression of other genes that are correlated with them.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS9.1_1.png)
 
 The following network plot was produced. Gnai3 is part of a large network with multiple genes correlated with it. On the other hand, Klf6 was correlated with 2 other genes, while Btbd17 was not correlated with any genes.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS9.1_2.png)
 
 ## Data Table
 
 The genes identified in the previous tab as part of the network plot are available as a table in this tab. Users can perform searches and sort based on correlation statistics.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS9.2_1.png)

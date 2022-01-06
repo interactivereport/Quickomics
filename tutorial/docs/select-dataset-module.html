@@ -23,7 +23,7 @@
 
 
 
-<meta name="date" content="2022-01-05" />
+<meta name="date" content="2022-01-06" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -178,7 +178,7 @@
 <div id="select-dataset-module" class="section level1" number="3">
 <h1><span class="header-section-number">Chapter 3</span> Select Dataset Module</h1>
 <p>This first module is for selecting dataset. Users can either select from pre-loaded example datasets or upload their own dataset in a pre-defined format as detailed in section 2.1 and in our GitHub page (<a href="https://github.com/interactivereport/Quickomics" class="uri">https://github.com/interactivereport/Quickomics</a>). We have pre-loaded four datasets from published studies that users can use for demonstrative purposes. These includes two RNAseq datasets from Gyoneva et al., 2019 and Connor-Robson et al., 2019; and two proteomics datasets from Connor-Robson et al., 2019. Users can walk through multiple sub-tabs to visualize, select and download figures or data.</p>
-<p>[Figure!]</p>
+<p><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2_1.png" /></p>
 <div id="upload-files" class="section level2" number="3.1">
 <h2><span class="header-section-number">3.1</span> Upload Files</h2>
 <p>For a data set, the “Upload Files” tool allows users to upload three required files, namely sample metadata, normalized expression data and statistical comparison results in csv format (Comma Separated Values) to Quickomics directly. Example data sets are provided in GitHub for both RNAseq (<a href="https://bit.ly/2MRkFcb" class="uri">https://bit.ly/2MRkFcb</a>) and proteomics (<a href="https://bit.ly/3rn4i6a" class="uri">https://bit.ly/3rn4i6a</a>). Detailed formatting guidance is outlined below,</p>
@@ -188,7 +188,7 @@
 <li><strong>Comparison Data File</strong>: It should have five columns, “UniqueID”, “test”, “Adj.P.Value”, “P.Value” and “logFC”. The comparison names are listed in “test” column. Please note that wrongly named column headers will cause issues.</li>
 <li><strong>Optional Gene/Protein Name File</strong>: The system has built-in function to convert unique IDs in the data files to gene symbols and create the Gene/Protein Name file, so most users don’t need to prepare the file. Nevertheless, if provided by users, it must have four columns: “id” (sequential numbers like 1,2,3 … …), “UniqueID” (matching IDs used in the expression and comparison data file), “Gene.Name” (official gene symbols), “Protein.ID” (UniProt protein IDs, or keep it empty for RNA-Seq data). Additional columns (e.g. gene biotype) are optional.</li>
 </ol>
-<p>[Figure!]</p>
+<p><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.1_1.png" /></p>
 <p>After the data files are processed, Quickomics will automatically load all required data for exploration immediately and provide a link for the user to come back in the future.</p>
 <p>Behind the scene, Bioconductor biomaRt package (<a href="https://bioconductor.org/packages/release/bioc/html/biomaRt.html" class="uri">https://bioconductor.org/packages/release/bioc/html/biomaRt.html</a>) has been used to convert gene IDs (Ensembl gene, NCBI gene ID, etc.) into gene symbols by querying Ensembl databases. For protein IDs, we generated a custom lookup table using information downloaded from UniProt Knowledgebase to convert UniProt IDs to gene symbols and protein names. We didn’t use biomaRt for proteins as Ensembl databases only cover about 60-80% protein IDs in a typical proteomics data set.</p>
 </div>
@@ -242,32 +242,32 @@ The following command will read the above data files and create main and network
 <h2><span class="header-section-number">3.3</span> Sample Table</h2>
 <p>A sample table with metadata/details appears upon completion of dataset loading. Here we have selected the “Mouse Microglia RNA” dataset from the previously published paper (Gyoneva et al., 2019) as an example to illustrate all the functionalities. This publication used RNAseq to conclude that the knockout of the Cx3cr1 gene altered the microglial transcriptome in a manner similar to what ageing does, albeit in a milder extent. Using Quickomics, we can visualize the original results from the paper, as well as provide novel visualizations to support new results.</p>
 <p>The Sample Table contains detailed info of all study samples. A total of 93 samples that were sequenced in this project are listed in the table with attributes like sampleid, group, Age, Genotype and Gender, shown in different columns.</p>
-<p>[Figure!]</p>
+<p><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.3_1.png" /></p>
 </div>
 <div id="project-overview" class="section level2" number="3.4">
 <h2><span class="header-section-number">3.4</span> Project Overview</h2>
 <p>This tab gives an overview of all samples in the project by providing a summary from the metadata. This includes information like which species was used, the different comparisons run and total number of samples in each group. This tab also helps identify how many groups were present in the dataset, like in this project there are 9 different groups that correspond to three genotypes in each of three time points (WT, Het, KO; 2mo, 1yr, 2yr).</p>
-<p>[Figure!]</p>
+<p><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.4_1.png" /></p>
 </div>
 <div id="result-table" class="section level2" number="3.5">
 <h2><span class="header-section-number">3.5</span> Result Table</h2>
 <p>This tab contains statistical analysis results like Ensemble ID (for RNAseq data) and Accession ID (for proteomics data), gene name, mRNA or protein abundance (count or intensity), mean and SD values for each group, log2 fold change, P value and adjusted P value.</p>
-<p>[Figure!]</p>
+<p><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.5_1.png" /></p>
 </div>
 <div id="data-table" class="section level2" number="3.6">
 <h2><span class="header-section-number">3.6</span> Data Table</h2>
 <p>The Data table contains normalized expression values (TPM for RNAseq, intensity for label free proteomic quantification, or ratio for isobaric label proteomics quantification) per sample for each gene.</p>
-<p>[Figure!]</p>
+<p><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.6_1.png" /></p>
 </div>
 <div id="protein-gene-names" class="section level2" number="3.7">
 <h2><span class="header-section-number">3.7</span> Protein Gene Names</h2>
 <p>This tab contains all quantified gene or protein IDs and gene names.</p>
-<p>[Figure!]</p>
+<p><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.7_1.png" /></p>
 </div>
 <div id="help" class="section level2" number="3.8">
 <h2><span class="header-section-number">3.8</span> Help</h2>
 <p>Finally, the “Help” feature summarizes what data is being displayed in each tab under Select Dataset. The Help tab is available for all sections of the subsequent analysis.</p>
-<p>[Figure!]</p>
+<p><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.8_1.png" /></p>
 
 </div>
 </div>

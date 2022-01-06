@@ -6,23 +6,23 @@ This functionality in Quickomics is an extension to the differential gene identi
 
 This first tab lets the users pick a particular comparison, apply different cutoff criteria and select from a list of different databases for enrichment analysis. To demonstrate usage of this functionality, we will use the Mouse Microglia RNA dataset to help answer the question which pathways were altered by Genotype and/or Age. Very similar to the results from Gyoneva et al., 2019, this analysis points to immune related terms being enriched in the down-regulated genes for 2mon_KOvs2mon_WT.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.1_1.png)
 
 Similarly, we pull out the GO enrichment for up-regulated genes.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.1_2.png)
 
 ## Gene Expression
 
 For the enriched terms identified in the previous tab (Gene Set Enrichment, section 7.1), Users have the ability to look at the differential values of the genes present in the set. Here we are probing the GO_IMMUNE_RESPONSE identified in the down-regulated category.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.2_1.png)
 
 ## Gene Set Heat Map
 
 Like the “Gene Expression” tab, Users have the ability to plot expression of the genes in the pathway term selected as a heatmap. This visualization shows that while the Immune Response genes are enriched in the differentially expressed genes list, not all of them change in the same direction.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_1.png)
 
 ## KEGG Pathway View
 
@@ -30,5 +30,5 @@ This functionality is available only to KEGG pathway terms. Users have the optio
 
 This figure identifies all the genes that are differentially expressed in this pathway. It is also clear that genes in the MHC I pathway do not change, but many genes in the MHC II pathway are down regulated in both the comparisons. The visualization is also useful to highlight whether or not a large proportion of genes in a pathway are altered by the perturbation.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.4_1.png)
 

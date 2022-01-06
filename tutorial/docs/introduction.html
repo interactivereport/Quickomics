@@ -23,7 +23,7 @@
 
 
 
-<meta name="date" content="2022-01-05" />
+<meta name="date" content="2022-01-06" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -178,15 +178,12 @@
 <div id="introduction" class="section level1" number="2">
 <h1><span class="header-section-number">Chapter 2</span> Introduction</h1>
 <p>The Quickomics tool can be accessed via the link <a href="http://quickomics.bxgenomics.com" class="uri">http://quickomics.bxgenomics.com</a>. Implemented through R Shiny, it helps with visualizing statistical analysis results for RNAseq and Proteomics datasets. This supplemental tutorial provides a detailed guide on using the different functionalities and customizing the tools to best fit individual analysis and plotting needs, using published RNAseq dataset and proteomics dataset as examples (Gyoneva et al., 2019; Connor-Robson et al., 2019).</p>
-<div class="figure">
-<img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.1.png" alt="" />
-<p class="caption">Figure S2.1</p>
-</div>
+<p><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS1_1.png" /></p>
 <p>The interface contains multiple tabs, corresponding to different functional modules, that can be accessed on top panel of the webpage. Users have the option to upload their own dataset or choose from existing demo datasets for visualization.</p>
 <div id="integrated-gene-set-query" class="section level2" number="2.1">
 <h2><span class="header-section-number">2.1</span> Integrated Gene Set Query</h2>
 <p>To supply genes in pre-defined gene sets to plotting functions in Quickomics, we developed xGenesets API for Quickomics to query and retrieve a list of genes/proteins when it is needed. The lists can be defined based on pathways, and gene sets from various sources, including KEGG Pathways (Kanehisa and Goto, 2000), WikiPathways (Martens et al., 2020), Small Molecule Pathway Database (Frolkis et al., 2010), Reactome (Jassal et al., 2020), Gene Ontology (The Gene Ontology Consortium, 2019), Molecular Signatures (Subramanian et al., 2005; Liberzon et al., 2015), and LIPID MAPS Proteome Database (Cotter et al., 2006). xGenesets database currently has 175,537 gene sets stored in MySQL tables, covering human (115,497 records), mouse (30,554 records) and rat (29,486 records) gene sets. xGenesets features personalized settings, dynamic drop-down list upon typing for quick gene set selection, full gene set database browsing, and a list of genes from any gene sets. Throughout Quickomics, users interact with this convenient tool in appropriate interface when a gene set is needed by checking “Geneset” option and then clicking on “Select Geneset” to pick a set from a table of available gene sets in a popup window as shown in the following screenshot.</p>
-<p>[Figure!]</p>
+<p><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS1.1_1.png" /></p>
 <p>For developers of web-based applications (general user can skip this paragraph), xGenesets can be easily embedded in any modern websites and online applications, e.g., R Shiny web apps, by leveraging jQuery, DataTables, and bootstrap (either v3 or v4) JavaScript libraries. xGenesets API is freely available for all usages. Examples of using xGenesets API and guidance on setting up the API in your own applications can be found at <a href="https://bxaf.net/genesets" class="uri">https://bxaf.net/genesets</a>.</p>
 
 </div>

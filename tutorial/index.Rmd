@@ -5,9 +5,6 @@ author:
   - name: Jing Zhu
     email: jing.zhu@biogen.com
     affiliation: Biogen
-  - name: Xinmin Zhang
-    email: xinmin.zhang@biogen.com ???
-    affiliation: BioInfoRx
   - name: Zhengyu Ouyang
     email: oyoung@bioinforx.com
     affiliation: BioInfoRx
@@ -32,6 +29,9 @@ author:
   - name: Fergal Casey
     email: fergal.casey@biogen.com
     affiliation: Biogen
+  - name: Xinmin Zhang
+    email: xinmin.zhang@biogen.com
+    affiliation: BioInfoRx
   - name: Baohong Zhang (Corresponding Author)
     email: baohong.zhang@biogen.com
     affiliation: Biogen

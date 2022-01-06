@@ -6,19 +6,19 @@ The “QC Plots” module performs basic QC analyses, as described in following 
 
 The principle component analysis (PCA) plot displays, by default, the first 2 PC’s in the dataset and colors study groups with “none” selected in shape and size settings. This plot is highly customizable. Users can change the display by annotating the plot with different colors, shapes, size scheme, as well as label selected subsets data points.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.1_1.png)
 
 Additionally, the “Select Groups” and “Select Samples” feature (Green square) is present in all the QC Plots tabs. The User Is able to remove any particular group or sample from the plots.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.1_2.png)
 
 To illustrate the strengths of customization, we changed a few display elements as shown below, to visualize the influence of Age and Genotype on sample clustering:
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.1_3.png)
 
 These changes results in a PCA plot that clearly showed that Age is the factor that drives the biggest separation, especially along PC1. There is some separation driven by the Genotype as well. The Ellipsoid feature helps group samples by the color attribute, while the Marginal Rug feature helps understand the sample distribution along the axis.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.1_4.png)
 
 Furthermore, the plot can be saved in high resolution by clicking on “Save to Output”. Section 12 of this document describes the next steps of downloading and obtaining the saved plots.
 
@@ -26,31 +26,31 @@ Furthermore, the plot can be saved in high resolution by clicking on “Save to 
 
 By default, the PCA plot displays PC1 and PC2 as described in Section 3.1. However, in many cases other PC’s may be important in explaining additional variance in the dataset. This sub-tab generates a plot of the variances versus the first 10 PCs in the dataset, enabling Users to make educated decisions of which PCs to plot in 2D scatter plot. In this dataset PC1 and PC2 together explain around 30% of the variance.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.2_1.png)
 
 PC2 and PC3 were used to redo the PCA plot, but here the factors driving the separation of the samples is not as clear.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.2_2.png)
 
 ## PCA 3D Plot
 
 This sub-tab contains a way to perform 3D PCA representation. The functionality is limited to doing so only on PC1, PC2 and PC3. Users can zoom in and out to focus on different areas of the plot or rotate the plot in different axes to find the best separation by age as shown below. There are 3 attributes that can be changed: color, ellipsoid inclusion, and labels of the samples.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.3_1.png)
 
 The “Color By” and “Plot Ellipsoid” attributes were changed in the following plot. This highlights the clear separation of samples by Age and not Genotype, contrary to the original biological hypothesis.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.3_2.png)
 
 ## PCA 3D Interactive
 
 This tab is similar to the previous one (3.2 PCA 3D Plot), but here users have the additional capability to hover over the samples on the plot to identify more details, see the pointer below. This was implemented through the plotly package in R. Users can change 2 attributes here, the color and shape.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.4_1.png)
 
 In the plot below, the “Color By” and “Shape By” attributes have been changed to highlight the drivers of separation.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.4_2.png)
 
 ## Sample-sample Distance
 
@@ -58,47 +58,47 @@ This tab helps identify pair-wise similarity between all samples. A distance mat
 
 It is clear from this plot that samples of the same Age have the smaller distances, that is, they have closer gene expression patterns. Here again, Users have the option to save to output.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.5_1.png)
 
 ## Dendrograms
 
 Like the previous plot (3.5 Sample-sample Distance), the Dendrogram plot helps visualize hierarchical clustering relationships between samples. The Default plot is Circular and cut into four parts. Users have the option to visualize in two other ways (tree or horizontal) and cut the plot in multiple regions. Here again, Users can save the plot to output.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.6_1.png)
 
 In the plot below, we have selected to visualize as a tree and cut into eight parts. This shows the relationship between the samples to help understand the hierarchal clustering. Overall, the samples are arranged by age, but there are some outliers that appear. It is also interesting how the 2mo samples cluster with the 1yr samples.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.6_2.png)
 
 ## Box Plot
 
 The Boxplot is a visualization to understand the distribution of the normalized expression levels in all samples. This identifies the minimum, first quartile, median, third quartile, and maximum values in the dataset. In this demo dataset, most of the samples have the same range of expression, indicating that there are no outliers.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.7_1.png)
 
 ## CV Distribution
 
 This plot shows the histogram of CVs (coefficient of variation) and a dotted line for each group indicates the median CV. In this dataset, the 2mon_KO samples have the highest CV while the 2yr_Het samples have the lowest variability, which corresponds to what is visually seen on the PCA plot for these samples in Section 3.1.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.8_1.png)
 
 ## Order Groups
 
 In this sub-tab, Users can select and/or re-order the groups in the dataset. The order will be stored in the current session, and labels will be displayed in this preferred order for all plots. Users can either drag and drop a group to reorder or use the select panel to delete and add. In this example the KO genotype was of highest interest and so we have changed the order of the group so that the KO samples are before Het and WT.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.9_1.png)
 
 The changed groups are now visible. To revert back to the default, Users have the option to click “Reset Groups”.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.9_2.png)
 
 As noted above, that the new order of groups will dynamically change all other related visualizations. As an example, a 2D PCA plot reflecting a newly changed group order is shown below.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.9_3.png)
 
 ## Help
 
-The Help section describes each tab of the QC Plot and what is being visualized. For further help please visit the GitHub containing the source code for this tool (https://github.com/interactivereport/Quickomics) or click on the link at the bottom of the page.
+The Help section describes each tab of the QC Plot and what is being visualized. For further help please visit the GitHub containing the source code for this tools (https://github.com/interactivereport/Quickomics) or click on the link at the bottom of the page.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.10_1.png)
 

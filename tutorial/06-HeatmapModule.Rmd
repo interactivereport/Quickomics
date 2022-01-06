@@ -8,15 +8,15 @@ The “Static Heatmap Layout 1” uses the ComplexHeatmap package (Gu et al., 20
 
 In this heatmap, the top up-regulated genes in **2mon_WT** samples are seen as high in 2mon samples but low in 2yr and 1yr samples, while the top up-regulated genes in the **2yr_WT** samples are high in the 2yr and 1yr samples but low in the 2mon samples. This is another example that age has a major effect on gene expression in microglia, and the 2mon microglia have a different gene expression profile compared to 1yr and 2yr.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.1_1.png)
 
 In this next example, we customize another Heatmap to highlight immune related genes that were called out in Gyoneva et al., 2019. This is done by uploading a csv file consisting of the gene names with pathway information and the color for display. An example of this file is on our GitHub (Quickomics/demo_files/fig5_all_genes.csv)
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.1_2.png)
 
 ## Static Heatmap Layout 2
 
 The “Static Heatmap Layout 2” uses the heatmap.2 function from the gplots package for generating the plot. Here is a demo of the same set of genes with dendrograms for both rows and columns.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_1.png)
 

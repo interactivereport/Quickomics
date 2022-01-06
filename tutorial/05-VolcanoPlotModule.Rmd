@@ -10,19 +10,19 @@ This plot reveals the differentially expressed genes provided in the input data 
 
 The red dots are indicative of all genes that pass the Fold Change and P value cutoff, while the green dots are indicative of genes that only pass the P value cutoff. Fifty random genes are labelled for both the up-regulated and down-regulated genes by default.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_1.png)
 
 For demonstration purposes, we have changed the following attributes to highlight a few genes in this dataset. We have selected the 2mon_KOvs2mon_WT comparison, where Gyoneva et al., 2019 report immune response genes as the top differentially expressed category. To highlight these genes, in the example below, we select an “Immune Response” dataset from the Molecular Signatures Database (MSigDB) to highlight the genes by adding labels to the volcano plot. As MSigDB contains only human gene lists and the demo dataset is from mouse, Quickomics does a quick conversion of the names of Human genes to Mouse genes by changing the letters after the first one to lowercase. Additionally, in this example we removed some of the genes from the list to reduce size. This visualization was not available in the original publication, but clearly supports the finding that the KO genotypes altered the expression of immune-related genes.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_2.png)
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_3.png)
 
 ## Volcano Plot (Interactive)
 
 This next sub-tab is a very similar visualization as the previous one (4.1 Volcano Plot (Static)) with an additional capability where users can hover over a particular dot/gene on the plot to see more details. This plot has a few attributes that can be changed, and in the example below we have used the same cutoffs and values as in section 4.1.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.2_1.png)
 
 ## DEGs and DEPs in Two Comparisons
 
@@ -30,19 +30,19 @@ This next tab helps with identifying DEGs/DEPs that follow a similar trend in tw
 
 **2mo_KOvs2mo_WT** vs **1yr_KOvs1yr_WT** has a low correlation score. There are many genes that are colored yellow, meaning those genes were significant in **2mo_KOvs2mo_WT (Y axis)** but not in **1yr_KOvs1yr_WT (X axis)**.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.3_1.png)
 
 Similarly, we changed the X axis to **2yr_KOvs2yr_WT** to compare to **2mo_KOvs2mo_WT**, and it shows a very similar plot with a low correlation score of 0.178
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.3_2.png)
 
 Next, we changed the Y axis comparison to **1yr_KOvs1yr_WT** comparing it to **2yr_KOvs2yr_WT** on the X axis. This plot has a higher correlation score of 0.371 than the previous one, suggesting that these two comparisons are more similar. These comparisons represent additional insights supported by statistical analyses that were gained from the data and were not available in the original manuscript by Gyoneva et al.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.3_3.png)
 
 ## Data Table
 
 This tab lets the users view the DEGs/DEPs in a tabular format with a searchable feature. Users also have the ability to download the gene list as a CSV.
 
-[Figure!]
+![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.4_1.png)
 
