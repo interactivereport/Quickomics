@@ -6,41 +6,41 @@ This functional module allows Users to browse through a subset of genes/proteins
 
 This tab lets the Users plot out the expression of the DEGs/DEPs identified in the different comparisons. In this example below, we demonstrate how to display a few top genes as Violin Plots.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_1.png)
 
 ## Searched Expression Data
 
 Another way to plot genes/proteins is using this functionality. Users can either enter a custom list of genes/proteins or select a list from online databases like KEGG, MSigDB etc. The selected genes/proteins can be plotted on a single plot or in multiple plots. Here is an example of plotting genes involved in MHCII antigen processing.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.2_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.2_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.2_1.png)
 
 The resulting plot shows the expression of a subset of genes from the MHCII antigen presentation family of genes. Many of them appear altered by gene KO in 2mon microglia, but also in all genotypes in 2yr microglia, as indicated in the publication.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.2_2.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.2_2.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.2_2.png)
 
 ## Data Table
 
 This sub-tab lists the normalized data of the genes/proteins selected in “Searched Expression Data” (Section 6.2) as a searchable table. For a demo of this feature, we select a proteome dataset from published paper (Connor-Robson et al., 2019).
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.3_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.3_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.3_1.png)
 
 Once the dataset is selected, we go into the “Searched Expression Data” sub-tab to select a gene set.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.3_2.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.3_2.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.3_2.png)
 
 Finally, we click the “Data Table” tab to look at the expression of the protein selected for a searchable table of values.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.3_3.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.3_3.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.3_3.png)
 
 ## Result Table
 
 This tab lists the statistics results of the genes/proteins selected in “Searched Expression Data” as a searchable table. Each comparison defined is probed for the genes in the list and the P value and Fold changes are listed. This is specifically designed for the gene values, unlike “Data Table” in the previous section (6.3) that is designed for protein values.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.4_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.4_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.4_1.png)
 
 ## Rank Abundance Curve
 
 This functionality helps identify the relative abundance of a list of genes within a dataset. This plot helps interpret the distribution of abundance and expression levels of a set of genes. A steep gradient indicates the genes are very different in their expression levels as the high-ranking species have much higher abundances than the low-ranking species. A shallow gradient indicates that the genes have very similar expression levels as the abundances of different species are similar.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.5_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.5_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.5_1.png)
 

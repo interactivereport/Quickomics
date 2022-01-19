@@ -44,5 +44,5 @@ date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 ---
 
-# Preface
+# Preface {-}
 This is a *supplementary materials* written using Bookdown, which provides a detailed guide for QuickOmics.

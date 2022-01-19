@@ -1,4 +1,3 @@
-preface
 introduction
 integrated-gene-set-query
 select-dataset-module

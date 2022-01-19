@@ -2,4 +2,4 @@
 
 This final tab in Quickomics is available for Users to download plots in high resolution, including for use in publications. Users can save different plots by clicking on “Save to Output” present on the top left corner of the plot during analysis and exploration of the datasets in all previous tabs. Upon clicking on the “Output” tab as seen in the image below, Users can see a list of plots that are available to download to their local machine.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS12_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS12_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS12_1.png)

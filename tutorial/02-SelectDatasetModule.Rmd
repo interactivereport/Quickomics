@@ -2,7 +2,7 @@
 
 This first module is for selecting dataset. Users can either select from pre-loaded example datasets or upload their own dataset in a pre-defined format as detailed in section 2.1 and in our GitHub page (https://github.com/interactivereport/Quickomics). We have pre-loaded four datasets from published studies that users can use for demonstrative purposes. These includes two RNAseq datasets from Gyoneva et al., 2019 and Connor-Robson et al., 2019; and two proteomics datasets from Connor-Robson et al., 2019. Users can walk through multiple sub-tabs to visualize, select and download figures or data.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2_1.png)
 
 ## Upload Files
 
@@ -13,7 +13,7 @@ For a data set, the "Upload Files" tool allows users to upload three required fi
 3. **Comparison Data File**: It should have five columns, “UniqueID”, “test”, “Adj.P.Value”, “P.Value” and “logFC”. The comparison names are listed in “test” column. Please note that wrongly named column headers will cause issues.
 4. **Optional Gene/Protein Name File**: The system has built-in function to convert unique IDs in the data files to gene symbols and create the Gene/Protein Name file, so most users don't need to prepare the file. Nevertheless, if provided by users, it must have four columns: “id” (sequential numbers like 1,2,3 … …), “UniqueID” (matching IDs used in the expression and comparison data file), “Gene.Name” (official gene symbols), “Protein.ID” (UniProt protein IDs, or keep it empty for RNA-Seq data). Additional columns (e.g. gene biotype) are optional.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.1_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.1_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.1_1.png)
 
 After the data files are processed, Quickomics will automatically load all required data for exploration immediately and provide a link for the user to come back in the future.
 
@@ -85,35 +85,35 @@ A sample table with metadata/details appears upon completion of dataset loading.
 
 The Sample Table contains detailed info of all study samples. A total of 93 samples that were sequenced in this project are listed in the table with attributes like sampleid, group, Age, Genotype and Gender, shown in different columns.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.3_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.3_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.3_1.png)
 
 ## Project Overview
 
 This tab gives an overview of all samples in the project by providing a summary from the metadata. This includes information like which species was used, the different comparisons run and total number of samples in each group. This tab also helps identify how many groups were present in the dataset, like in this project there are 9 different groups that correspond to three genotypes in each of three time points (WT, Het, KO; 2mo, 1yr, 2yr).
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.4_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.4_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.4_1.png)
 
 ## Result Table
 
 This tab contains statistical analysis results like Ensemble ID (for RNAseq data) and Accession ID (for proteomics data), gene name, mRNA or protein abundance (count or intensity), mean and SD values for each group, log2 fold change, P value and adjusted P value.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.5_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.5_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.5_1.png)
 
 ## Data Table
 
 The Data table contains normalized expression values (TPM for RNAseq, intensity for label free proteomic quantification, or ratio for isobaric label proteomics quantification) per sample for each gene.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.6_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.6_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.6_1.png)
 
 ## Protein Gene Names
 
 This tab contains all quantified gene or protein IDs and gene names.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.7_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.7_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.7_1.png)
 
 ## Help
 
 Finally, the “Help” feature summarizes what data is being displayed in each tab under Select Dataset. The Help tab is available for all sections of the subsequent analysis.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.8_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.8_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.8_1.png)
 

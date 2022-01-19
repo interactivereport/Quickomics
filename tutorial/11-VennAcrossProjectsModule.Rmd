@@ -6,7 +6,7 @@ This functionality in Quickomics is the only one that lets users probe more than
 
 To illustrate this feature, we compare the two RNAseq and two Proteomic comparisons from Connor-Robson et al., 2019. We load 2 comparisons from each dataset/project and view the number of DEGs/DEPs that are common and different between the 4 comparisons.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS11.1_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS11.1_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS11.1_1.png)
 
 Users have the option to view this Venn Diagram as a Black & White plot.
 
@@ -14,5 +14,5 @@ Users have the option to view this Venn Diagram as a Black & White plot.
 
 Like in 10.3 Intersection Output, Users can view the individual genes present in different regions of the Venn Diagram, like the ones identified in all the samples, or the ones only present in 3 of them.
 
-![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS11.2_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS11.2_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS11.2_1.png)
 
