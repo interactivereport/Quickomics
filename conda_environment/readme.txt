@@ -18,7 +18,7 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh -b -p /share/miniconda/Miniconda3
 rm Miniconda3-latest-Linux-x86_64.sh
 
-#The codes below shows how the conda environment was created from scratch. 
+#The scripts below show how the conda environment was created from scratch. 
 #Inspired by iamh2o  https://github.com/iamh2o/Quickomics/tree/master/environment
 conda install -y -n base -c conda-forge mamba # Install mamba (an accelerated conda wrapper)
 
