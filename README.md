@@ -75,21 +75,26 @@ $ Rscript Proteomics2Quickomics.R
 ```
 
 # Local Installation
-### 1) Install the following R packages:
+### 1) Install R packages:
+Method 1. Create conda environment from yml file. This is the easiest way to install all packages. 
+Please download the file https://github.com/interactivereport/Quickomics/blob/master/conda_environment/QuickOmics.yml, load your conda, then run:
+```
+conda env create -f QuickOmics.yml
+#The above command may take a while, then you will have a new conda environment called QuickOmics
+```
+
+Method 2. Install all packages in your current R environment. Depending on your system, you may need to install other required programs. We recommend using the conda environment method whenever possible.  
 ```R
 cran_packages=c("shiny", "shinythemes", "shinyjs", "plotly", "reshape2", "tidyverse", "gplots", "ggpubr",
 "gridExtra", "ggrepel", "RcolorBrewer", "pheatmap", "rgl", "car", "colourpicker", "VennDiagram", "factoextra",
-"openxlsx", "visNetwork", "cowplot", "circlize", "ComplexHeatmap", "svglite", "shinyjqui", "Hmisc", "ggrastr",
-"ggExtra", "networkD3", "vctrs", "ragg", "textshaping")
-
+"openxlsx", "visNetwork", "cowplot", "circlize", "svglite", "shinyjqui", "Hmisc", "ggrastr",
+"ggExtra", "networkD3", "vctrs", "ragg", "textshaping", "stringi", "plyr", "png", "psych", "broom")
 #Note: Hmisc is not required to run the Shiny app but is needed to prepare network data from expression matrix.
 install.packages(cran_packages, repos="http://cran.r-project.org/")  #choose repos based on your location if needed
-
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-BiocManager::install(c("Mfuzz"))
-
-Requirements: shiny >= v1.4.0.2 
+BiocManager::install(c("Mfuzz", "biomaRt", "ComplexHeatmap", "pathview"))
+#Requirements: shiny >= v1.4.0.2 
 ```
 ### 2) Clone Quickomics GitHub repository
 ```
