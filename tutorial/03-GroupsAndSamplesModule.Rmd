@@ -1,0 +1,7 @@
+# Groups and Samples Module
+
+The “Groups and Samples” module is a new feature in the version 2 of Quickomics. It provides a wide range of flexibility to select groups and samples by clicking and dragging them in a interactive manner.
+
+## Select groups and samples
+
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.1_1.png)

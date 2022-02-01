@@ -1,6 +1,6 @@
 introduction
 integrated-gene-set-query
-select-dataset-module
+dataset-module
 upload-files
 prepare-r-data-files-by-computational-biologists
 example-r-script-to-prepare-r-data-files-from-rna-seq-results
@@ -11,8 +11,12 @@ result-table
 data-table
 protein-gene-names
 help
+groups-and-samples-module
+select-groups-and-samples
 qc-plots-module
 pca-plot
+covariates
+alignqc
 eigenvalues
 pca-3d-plot
 pca-3d-interactive
@@ -20,9 +24,9 @@ sample-sample-distance
 dendrograms
 box-plot
 cv-distribution
-order-groups
 help-1
-volcano-plot-module
+deg-module
+deg-counts
 volcano-plot-static
 volcano-plot-interactive
 degs-and-deps-in-two-comparisons
@@ -52,8 +56,5 @@ venn-diagram
 venn-diagram-black-white
 intersection-output
 deg-table
-venn-across-projects-module
-venn-diagram-1
-intersection-output-1
 output-module
 references
