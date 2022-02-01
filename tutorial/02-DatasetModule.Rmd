@@ -1,4 +1,4 @@
-# Select Dataset Module
+# Dataset Module
 
 This first module is for selecting dataset. Users can either select from pre-loaded example datasets or upload their own dataset in a pre-defined format as detailed in section 2.1 and in our GitHub page (https://github.com/interactivereport/Quickomics). We have pre-loaded four datasets from published studies that users can use for demonstrative purposes. These includes two RNAseq datasets from Gyoneva et al., 2019 and Connor-Robson et al., 2019; and two proteomics datasets from Connor-Robson et al., 2019. Users can walk through multiple sub-tabs to visualize, select and download figures or data.
 
