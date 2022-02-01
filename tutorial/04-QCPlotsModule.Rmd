@@ -14,21 +14,25 @@ To illustrate the strengths of customization, we changed a few display elements 
 
 These changes results in a PCA plot that clearly showed that Age is the factor that drives the biggest separation, especially along PC1. There is some separation driven by the Genotype as well. The Ellipsoid feature helps group samples by the color attribute, while the Marginal Rug feature helps understand the sample distribution along the axis.
 
-[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_4.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_3.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_3.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_3.png)
 
 Furthermore, the plot can be saved in high resolution by clicking on “Save to Output”. Section 12 of this document describes the next steps of downloading and obtaining the saved plots.
 
 ## Covariates
 
+The Covariates tab provides flexibility to visualize the covariates, such as Age, group, Genotype showing here. This table contains several columns including the Significance, p-value, and FDR for each covariates listed. Users can also adjust the covariates and cutoffs on the left.
+
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.2_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.2_1.png)
 
 ## AlignQC
+
+The AlignQC tab contains several sub-tabs to visualize the QC metrics of the alignment step. Here, we can check the 'Top Gene Ratio', 'Top Gene List', 'Mapped Read Allocation', or 'Plot Other Variables' across samples. More details can be adjusted on the left panel, such as the height, width, and font size of the plot. The 'Save to output' function can add the current plot in the output list.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.3_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.3_1.png)
 
 ## Eigenvalues
 
-By default, the PCA plot displays PC1 and PC2 as described in Section 3.1. However, in many cases other PC’s may be important in explaining additional variance in the dataset. This sub-tab generates a plot of the variances versus the first 10 PCs in the dataset, enabling Users to make educated decisions of which PCs to plot in 2D scatter plot. In this dataset PC1 and PC2 together explain around 30% of the variance.
+By default, the PCA plot displays PC1 and PC2 as described in Section 4.1. However, in many cases other PC’s may be important in explaining additional variance in the dataset. This sub-tab generates a plot of the variances versus the first 10 PCs in the dataset, enabling Users to make educated decisions of which PCs to plot in 2D scatter plot. In this dataset PC1 and PC2 together explain around 30% of the variance.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.4_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.4_1.png)
 
@@ -48,7 +52,7 @@ The “Color By” and “Plot Ellipsoid” attributes were changed in the follo
 
 ## PCA 3D Interactive
 
-This tab is similar to the previous one (3.2 PCA 3D Plot), but here users have the additional capability to hover over the samples on the plot to identify more details, see the pointer below. This was implemented through the plotly package in R. Users can change 2 attributes here, the color and shape.
+This tab is similar to the previous one (4.5 PCA 3D Plot), but here users have the additional capability to hover over the samples on the plot to identify more details, see the pointer below. This was implemented through the plotly package in R. Users can change 2 attributes here, the color and shape.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.6_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.6_1.png)
 
@@ -66,7 +70,7 @@ It is clear from this plot that samples of the same Age have the smaller distanc
 
 ## Dendrograms
 
-Like the previous plot (3.5 Sample-sample Distance), the Dendrogram plot helps visualize hierarchical clustering relationships between samples. The Default plot is Circular and cut into four parts. Users have the option to visualize in two other ways (tree or horizontal) and cut the plot in multiple regions. Here again, Users can save the plot to output.
+Like the previous plot (4.7 Sample-sample Distance), the Dendrogram plot helps visualize hierarchical clustering relationships between samples. The Default plot is Circular and cut into four parts. Users have the option to visualize in two other ways (tree or horizontal) and cut the plot in multiple regions. Here again, Users can save the plot to output.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.8_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.8_1.png)
 
@@ -82,7 +86,7 @@ The Boxplot is a visualization to understand the distribution of the normalized 
 
 ## CV Distribution
 
-This plot shows the histogram of CVs (coefficient of variation) and a dotted line for each group indicates the median CV. In this dataset, the 2mon_KO samples have the highest CV while the 2yr_Het samples have the lowest variability, which corresponds to what is visually seen on the PCA plot for these samples in Section 3.1.
+This plot shows the histogram of CVs (coefficient of variation) and a dotted line for each group indicates the median CV. In this dataset, the 2mon_KO samples have the highest CV while the 2yr_Het samples have the lowest variability, which corresponds to what is visually seen on the PCA plot for these samples in Section 4.1.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.10_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.10_1.png)
 

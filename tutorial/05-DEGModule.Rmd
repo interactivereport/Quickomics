@@ -6,6 +6,8 @@ The “Volcano Plot (Static)” described in Section 5.2 and “Volcano Plot (In
 
 ## DEG Counts
 
+
+
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.1_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.1_1.png)
 
 ## Volcano Plot (Static)
