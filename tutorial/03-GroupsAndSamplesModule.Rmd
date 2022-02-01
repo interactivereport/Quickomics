@@ -4,4 +4,4 @@ The “Groups and Samples” module is a new feature in the version 2 of Quickom
 
 ## Select groups and samples
 
-[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.1_1.png)
+[![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.png)
