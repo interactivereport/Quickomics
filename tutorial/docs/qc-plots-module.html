@@ -186,20 +186,22 @@
 <p>To illustrate the strengths of customization, we changed a few display elements as shown below, to visualize the influence of Age and Genotype on sample clustering:</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_3.png" /></a></p>
 <p>These changes results in a PCA plot that clearly showed that Age is the factor that drives the biggest separation, especially along PC1. There is some separation driven by the Genotype as well. The Ellipsoid feature helps group samples by the color attribute, while the Marginal Rug feature helps understand the sample distribution along the axis.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_3.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_4.png" /></a></p>
+<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_3.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_3.png" /></a></p>
 <p>Furthermore, the plot can be saved in high resolution by clicking on “Save to Output”. Section 12 of this document describes the next steps of downloading and obtaining the saved plots.</p>
 </div>
 <div id="covariates" class="section level2" number="4.2">
 <h2><span class="header-section-number">4.2</span> Covariates</h2>
+<p>The Covariates tab provides flexibility to visualize the covariates, such as Age, group, Genotype showing here. This table contains several columns including the Significance, p-value, and FDR for each covariates listed. Users can also adjust the covariates and cutoffs on the left.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.2_1.png" /></a></p>
 </div>
 <div id="alignqc" class="section level2" number="4.3">
 <h2><span class="header-section-number">4.3</span> AlignQC</h2>
+<p>The AlignQC tab contains several sub-tabs to visualize the QC metrics of the alignment step. Here, we can check the ‘Top Gene Ratio’, ‘Top Gene List’, ‘Mapped Read Allocation’, or ‘Plot Other Variables’ across samples. More details can be adjusted on the left panel, such as the height, width, and font size of the plot. The ‘Save to output’ function can add the current plot in the output list.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.3_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.3_1.png" /></a></p>
 </div>
 <div id="eigenvalues" class="section level2" number="4.4">
 <h2><span class="header-section-number">4.4</span> Eigenvalues</h2>
-<p>By default, the PCA plot displays PC1 and PC2 as described in Section 3.1. However, in many cases other PC’s may be important in explaining additional variance in the dataset. This sub-tab generates a plot of the variances versus the first 10 PCs in the dataset, enabling Users to make educated decisions of which PCs to plot in 2D scatter plot. In this dataset PC1 and PC2 together explain around 30% of the variance.</p>
+<p>By default, the PCA plot displays PC1 and PC2 as described in Section 4.1. However, in many cases other PC’s may be important in explaining additional variance in the dataset. This sub-tab generates a plot of the variances versus the first 10 PCs in the dataset, enabling Users to make educated decisions of which PCs to plot in 2D scatter plot. In this dataset PC1 and PC2 together explain around 30% of the variance.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.4_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.4_1.png" /></a></p>
 <p>PC2 and PC3 were used to redo the PCA plot, but here the factors driving the separation of the samples is not as clear.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.4_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.4_2.png" /></a></p>
@@ -213,7 +215,7 @@
 </div>
 <div id="pca-3d-interactive" class="section level2" number="4.6">
 <h2><span class="header-section-number">4.6</span> PCA 3D Interactive</h2>
-<p>This tab is similar to the previous one (3.2 PCA 3D Plot), but here users have the additional capability to hover over the samples on the plot to identify more details, see the pointer below. This was implemented through the plotly package in R. Users can change 2 attributes here, the color and shape.</p>
+<p>This tab is similar to the previous one (4.5 PCA 3D Plot), but here users have the additional capability to hover over the samples on the plot to identify more details, see the pointer below. This was implemented through the plotly package in R. Users can change 2 attributes here, the color and shape.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.6_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.6_1.png" /></a></p>
 <p>In the plot below, the “Color By” and “Shape By” attributes have been changed to highlight the drivers of separation.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.6_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.6_2.png" /></a></p>
@@ -226,7 +228,7 @@
 </div>
 <div id="dendrograms" class="section level2" number="4.8">
 <h2><span class="header-section-number">4.8</span> Dendrograms</h2>
-<p>Like the previous plot (3.5 Sample-sample Distance), the Dendrogram plot helps visualize hierarchical clustering relationships between samples. The Default plot is Circular and cut into four parts. Users have the option to visualize in two other ways (tree or horizontal) and cut the plot in multiple regions. Here again, Users can save the plot to output.</p>
+<p>Like the previous plot (4.7 Sample-sample Distance), the Dendrogram plot helps visualize hierarchical clustering relationships between samples. The Default plot is Circular and cut into four parts. Users have the option to visualize in two other ways (tree or horizontal) and cut the plot in multiple regions. Here again, Users can save the plot to output.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.8_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.8_1.png" /></a></p>
 <p>In the plot below, we have selected to visualize as a tree and cut into eight parts. This shows the relationship between the samples to help understand the hierarchal clustering. Overall, the samples are arranged by age, but there are some outliers that appear. It is also interesting how the 2mo samples cluster with the 1yr samples.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.8_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.8_2.png" /></a></p>
@@ -238,7 +240,7 @@
 </div>
 <div id="cv-distribution" class="section level2" number="4.10">
 <h2><span class="header-section-number">4.10</span> CV Distribution</h2>
-<p>This plot shows the histogram of CVs (coefficient of variation) and a dotted line for each group indicates the median CV. In this dataset, the 2mon_KO samples have the highest CV while the 2yr_Het samples have the lowest variability, which corresponds to what is visually seen on the PCA plot for these samples in Section 3.1.</p>
+<p>This plot shows the histogram of CVs (coefficient of variation) and a dotted line for each group indicates the median CV. In this dataset, the 2mon_KO samples have the highest CV while the 2yr_Het samples have the lowest variability, which corresponds to what is visually seen on the PCA plot for these samples in Section 4.1.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.10_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.10_1.png" /></a></p>
 </div>
 <div id="help-1" class="section level2" number="4.11">
