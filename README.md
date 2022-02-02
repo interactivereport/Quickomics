@@ -4,8 +4,10 @@ Please find the bookdown tutorial for Quickomics here:
 
 https://interactivereport.github.io/Quickomics/tutorial/docs/index.html
 
-Current update: 2022-01-31, all texts and figures have been added.
+Current update: 2022-02-02.
 
 This version contains the update of:
 
-1, Multiple figures changed due to the version number update of Quickomics
+1, All screenshot figures
+
+2, New features of Quickomics v2.0 have been included
