@@ -10,7 +10,7 @@ In this heatmap, the top up-regulated genes in **2mon_WT** samples are seen as h
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_1.png)
 
-In this next example, we customize another Heatmap to highlight immune related genes that were called out in Gyoneva et al., 2019. This is done by uploading a csv file consisting of the gene names with pathway information and the color for display. An example of this file is on our GitHub (Quickomics/demo_files/fig5_all_genes.csv)
+In this next example, we customize another Heatmap to highlight immune related genes that were called out in [Gyoneva et al., 2019](https://www.life-science-alliance.org/content/2/6/e201900453){target="_blank"}. This is done by uploading a csv file consisting of the gene names with pathway information and the color for display. An example of this file is on our GitHub ([Quickomics/demo_files/fig5_all_genes.csv](https://github.com/interactivereport/Quickomics/blob/master/demo_files/fig5_all_genes.csv){target="_blank"})
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_2.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_2.png)
 

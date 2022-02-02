@@ -4,7 +4,7 @@ This functionality in Quickomics is an extension to the differential gene identi
 
 ## Gene Set Enrichment
 
-This first tab lets the users pick a particular comparison, apply different cutoff criteria and select from a list of different databases for enrichment analysis. To demonstrate usage of this functionality, we will use the Mouse Microglia RNA dataset to help answer the question which pathways were altered by Genotype and/or Age. Very similar to the results from Gyoneva et al., 2019, this analysis points to immune related terms being enriched in the down-regulated genes for 2mon_KOvs2mon_WT.
+This first tab lets the users pick a particular comparison, apply different cutoff criteria and select from a list of different databases for enrichment analysis. To demonstrate usage of this functionality, we will use the Mouse Microglia RNA dataset to help answer the question which pathways were altered by Genotype and/or Age. Very similar to the results from [Gyoneva et al., 2019](https://www.life-science-alliance.org/content/2/6/e201900453){target="_blank"}, this analysis points to immune related terms being enriched in the down-regulated genes for 2mon_KOvs2mon_WT.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.1_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.1_1.png)
 

@@ -8,11 +8,11 @@ Users have the option to either select the DEGs/DEPS as the list of genes/protei
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS9.1_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS9.1_1.png)
 
-Please note that this visualization for this dataset is novel and was not previously reported in Gyoneva et al., 2019. The genes in each cluster can be viewed in the “Data Table” tab.
+Please note that this visualization for this dataset is novel and was not previously reported in [Gyoneva et al., 2019](https://www.life-science-alliance.org/content/2/6/e201900453){target="_blank"}. The genes in each cluster can be viewed in the “Data Table” tab.
 
 ## Data Table
 
-The data table contains genes from the previous clusters, along with their expression values
+The data table contains genes from the previous clusters, along with their expression values.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS9.2_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS9.2_1.png)
 

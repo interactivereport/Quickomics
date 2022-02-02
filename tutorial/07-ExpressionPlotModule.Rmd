@@ -20,7 +20,7 @@ The resulting plot shows the expression of a subset of genes from the MHCII anti
 
 ## Data Table
 
-This sub-tab lists the normalized data of the genes/proteins selected in “Searched Expression Data” (Section 7.2) as a searchable table. For a demo of this feature, we select a proteome dataset from published paper (Connor-Robson et al., 2019).
+This sub-tab lists the normalized data of the genes/proteins selected in “Searched Expression Data” (Section 7.2) as a searchable table. For a demo of this feature, we select a proteome dataset from published paper ([Connor-Robson et al., 2019](https://www.sciencedirect.com/science/article/pii/S0969996119300968?via%3Dihub){target="_blank"}).
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_1.png)
 
