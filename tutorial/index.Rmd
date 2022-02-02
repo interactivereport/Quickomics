@@ -1,33 +1,27 @@
 --- 
-title: "Supplementary Materials - QuickOmics"
+title: "Supplementary Materials - Quickomics v2.0"
 author:
-  - name: This name list has not been finalized!!!
+  - name: Using the author list from RNASequest manuscript
   - name: Jing Zhu
     email: jing.zhu@biogen.com
+    affiliation: Biogen
+  - name: Fergal Casey
+    email: fergal.casey@biogen.com
     affiliation: Biogen
   - name: Zhengyu Ouyang
     email: oyoung@bioinforx.com
     affiliation: BioInfoRx
-  - name: Wei Li
-    email: weili@bioinforx.com
-    affiliation: BioInfoRx
-  - name: Hima Yalamanchili
-    email: hima.yalamanchili@biogen.com
-    affiliation: Biogen
-  - name: Maria Zavodszky
-    email: maria.zavodszky@biogen.com
-    affiliation: Biogen
-  - name: Yu (Henry) Sun (Re-built the bookdown tutorial)
+  - name: Yu (Henry) Sun
     email: yuhenry.sun@biogen.com
-    affiliation: Biogen
-  - name: David Sexton
-    email: david.sexton@biogen.com
     affiliation: Biogen
   - name: Kejie Li
     email: kejie.li@biogen.com
     affiliation: Biogen
-  - name: Fergal Casey
-    email: fergal.casey@biogen.com
+  - name: Sarbottam Piya
+    email: sarbottam.piya@biogen.com
+    affiliation: Biogen
+  - name: Maria Zavodszky
+    email: maria.zavodszky@biogen.com
     affiliation: Biogen
   - name: Xinmin Zhang
     email: xinmin.zhang@biogen.com
@@ -45,4 +39,4 @@ site: bookdown::bookdown_site
 ---
 
 # Preface {-}
-This is a *supplementary materials* written using Bookdown, which provides a detailed guide for QuickOmics.
+This is a *supplementary materials* written using Bookdown, which provides a detailed guide for Quickomics v2.0.

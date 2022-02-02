@@ -1,6 +1,6 @@
 # Groups and Samples Module
 
-The “Groups and Samples” module is a new feature in the version 2 of Quickomics. We enhanced sample selection in the new Groups and Samples tab. It provides a wide range of flexibility to select groups and samples by clicking and dragging them in a interactive manner. Users can select samples based on metadata, comparison, subsetting, or manual list.  The selected samples are used globally for all plots.
+The “Groups and Samples” module is a new feature in the version 2.0 of Quickomics. We enhanced sample selection in the new Groups and Samples tab. It provides a wide range of flexibility to select groups and samples by clicking and dragging them in a interactive manner. Users can select samples based on metadata, comparison, subsetting, or manual list.  The selected samples are used globally for all plots.
 
 ## Select groups and samples
 

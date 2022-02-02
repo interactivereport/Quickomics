@@ -1,5 +1,7 @@
 introduction
 integrated-gene-set-query
+launch-project-saved-on-server
+shinyone
 dataset-module
 upload-files
 prepare-r-data-files-by-computational-biologists

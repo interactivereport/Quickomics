@@ -1,6 +1,6 @@
 # Introduction
 
-The Quickomics tool can be accessed via the link http://quickomics.bxgenomics.com. Implemented through R Shiny, it helps with visualizing statistical analysis results for RNAseq and Proteomics datasets. This supplemental tutorial provides a detailed guide on using the different functionalities and customizing the tools to best fit individual analysis and plotting needs, using published RNAseq dataset and proteomics dataset as examples (Gyoneva et al., 2019; Connor-Robson et al., 2019).
+The Quickomics tool can be accessed via the link [http://quickomics.bxgenomics.com](http://quickomics.bxgenomics.com){target="_blank"}. Implemented through R Shiny, it helps with visualizing statistical analysis results for RNAseq and Proteomics datasets. This supplemental tutorial provides a detailed guide on using the different functionalities and customizing the tools to best fit individual analysis and plotting needs, using published RNAseq dataset and proteomics dataset as examples (Gyoneva et al., 2019; Connor-Robson et al., 2019).
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS1_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS1_1.png)
 
@@ -12,4 +12,47 @@ To supply genes in pre-defined gene sets to plotting functions in Quickomics, we
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS1.1_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS1.1_1.png)
 
-For developers of web-based applications (general user can skip this paragraph), xGenesets can be easily embedded in any modern websites and online applications, e.g., R Shiny web apps, by leveraging jQuery, DataTables, and bootstrap (either v3 or v4) JavaScript libraries. xGenesets API is freely available for all usages. Examples of using xGenesets API and guidance on setting up the API in your own applications can be found at https://bxaf.net/genesets.
+For developers of web-based applications (general user can skip this paragraph), xGenesets can be easily embedded in any modern websites and online applications, e.g., R Shiny web apps, by leveraging jQuery, DataTables, and bootstrap (either v3 or v4) JavaScript libraries. xGenesets API is freely available for all usages. Examples of using xGenesets API and guidance on setting up the API in your own applications can be found at [https://bxaf.net/genesets](https://bxaf.net/genesets){target="_blank"}.
+
+## Launch project saved on server
+
+In this updated version 2.0 of Quickomics, we added this new function to launch projects saved on the server directly using URL.
+
+To view your own datasets, you can upload RData files using browser, but a better way is to put the RData files on your server where you host QuickOmics and access them directly using a URL. We suggest the following:
+
+**1. Prepare three files for each project**, `projectID.RData` and `projectID_network.RData` file, as well as a `projectID.csv` file.
+
+The csv file should have four columns: 
+
+```
+Name,ShortName,ProjectID,Species
+```
+
+Two optional columns for the csv file include:  `ExpressionUnit` (you can enter something like log2(TPM+0.1)),  and `Path` (optional path for raw or analyzed data, e.g. Z:/share/GSE158470/).
+
+**2. Put the three files you prepared in a special folder**, and use URL to access them.
+
+The simplest way is to put the three files in the unlisted/ folder under Quickomics folder. Then use a URL like [https://quickomics.bxgenomics.com/?unlisted=ProjectID](https://quickomics.bxgenomics.com/?unlisted=ProjectID){target="_blank"} (replace quickomics.bxgenomics.com with your own instance URL).
+
+You can also create a config.csv file under Quickomics folder, for example:
+
+```
+category,value
+server_dir, /hpc/data/server_files
+test_dir,/hpc/data/test_fiels
+```
+
+Just make sure the two folders in server_dir and test_dir can be read by the Shiny App.
+
+Then you can copy the three files prepared in step 1) into the server_dir, and use URL like [https://quickomics.bxgenomics.com/?serverfile=ProjectID](https://quickomics.bxgenomics.com/?serverfile=ProjectID){target="_blank"}
+Or you can copy the three files prepared in step 1) into the test_dir, and use URL like [https://quickomics.bxgenomics.com/?testfile=ProjectID](https://quickomics.bxgenomics.com/?testfile=ProjectID){target="_blank"}
+Using `config.csv` is preferred as the data are separated from the QuickOmics Shiny App folder.
+
+
+## ShinyOne
+
+In Quickomics v2.0, we also introduce ShinyOne, a web-based table listing existing projects loaded into Quickomics.
+
+We have pre-loaded several demo data to Quickomics, and the ShinyOne demo site is:
+
+[http://demo.bxgenomics.com:8185/](http://demo.bxgenomics.com:8185/){target="_blank"}

@@ -12,7 +12,7 @@ In this example there were 33 DEGs that were identified in the three comparisons
 
 ## Venn Diagram (black & white)
 
-This tab has the same plot seen before in Section 10.1 but highly simplified and in black and white.
+This tab has the same plot seen before in Section 11.1 but highly simplified and in black and white.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS11.2_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS11.2_1.png)
 
@@ -24,6 +24,6 @@ This tab lets the User view the individual genes that were present in the Venn D
 
 ## DEG Table
 
-This tab lets the Users view the Fold Change and P value of the genes identified in the Venn Diagram in the comparisons being queried.
+This tab lets the Users view the Fold Change and p value of the genes identified in the Venn Diagram in the comparisons being queried.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS11.4_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS11.4_1.png)

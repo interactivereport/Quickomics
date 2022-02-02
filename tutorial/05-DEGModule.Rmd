@@ -26,7 +26,7 @@ For demonstration purposes, we have changed the following attributes to highligh
 
 ## Volcano Plot (Interactive)
 
-This next sub-tab is a very similar visualization as the previous one (4.1 Volcano Plot (Static)) with an additional capability where users can hover over a particular dot/gene on the plot to see more details. This plot has a few attributes that can be changed, and in the example below we have used the same cutoffs and values as in section 4.1.
+This next sub-tab is a very similar visualization as the previous one (5.2 Volcano Plot (Static)) with an additional capability where users can hover over a particular dot/gene on the plot to see more details. This plot has a few attributes that can be changed, and in the example below we have used the same cutoffs and values as in section 5.2.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.3_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.3_1.png)
 

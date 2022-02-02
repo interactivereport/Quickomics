@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 8 Gene Set Enrichment Module | Supplementary Materials - QuickOmics</title>
-  <meta name="description" content="Chapter 8 Gene Set Enrichment Module | Supplementary Materials - QuickOmics" />
+  <title>Chapter 8 Gene Set Enrichment Module | Supplementary Materials - Quickomics v2.0</title>
+  <meta name="description" content="Chapter 8 Gene Set Enrichment Module | Supplementary Materials - Quickomics v2.0" />
   <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 8 Gene Set Enrichment Module | Supplementary Materials - QuickOmics" />
+  <meta property="og:title" content="Chapter 8 Gene Set Enrichment Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
   
   
@@ -16,14 +16,14 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 8 Gene Set Enrichment Module | Supplementary Materials - QuickOmics" />
+  <meta name="twitter:title" content="Chapter 8 Gene Set Enrichment Module | Supplementary Materials - Quickomics v2.0" />
   
   
   
 
 
 
-<meta name="date" content="2022-02-01" />
+<meta name="date" content="2022-02-02" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -76,6 +76,8 @@
 <li class="chapter" data-level="1" data-path="introduction.html"><a href="introduction.html"><i class="fa fa-check"></i><b>1</b> Introduction</a>
 <ul>
 <li class="chapter" data-level="1.1" data-path="introduction.html"><a href="introduction.html#integrated-gene-set-query"><i class="fa fa-check"></i><b>1.1</b> Integrated Gene Set Query</a></li>
+<li class="chapter" data-level="1.2" data-path="introduction.html"><a href="introduction.html#launch-project-saved-on-server"><i class="fa fa-check"></i><b>1.2</b> Launch project saved on server</a></li>
+<li class="chapter" data-level="1.3" data-path="introduction.html"><a href="introduction.html#shinyone"><i class="fa fa-check"></i><b>1.3</b> ShinyOne</a></li>
 </ul></li>
 <li class="chapter" data-level="2" data-path="dataset-module.html"><a href="dataset-module.html"><i class="fa fa-check"></i><b>2</b> Dataset Module</a>
 <ul>
@@ -168,7 +170,7 @@
       <div class="body-inner">
         <div class="book-header" role="navigation">
           <h1>
-            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Supplementary Materials - QuickOmics</a>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Supplementary Materials - Quickomics v2.0</a>
           </h1>
         </div>
 
@@ -178,7 +180,7 @@
             <section class="normal" id="section-">
 <div id="gene-set-enrichment-module" class="section level1" number="8">
 <h1><span class="header-section-number">Chapter 8</span> Gene Set Enrichment Module</h1>
-<p>This functionality in Quickomics is an extension to the differential gene identification. Users are able to use different cutoffs to filter out DEGs/DEPs in different comparisons and probe enriched pathways. This is a useful way to make biological sense of the data.</p>
+<p>This functionality in Quickomics is an extension to the differential gene identification. Users are able to use different cutoffs to filter out DEGs/DEPs in different comparisons and probe enriched pathways. This is a useful way to make biological sense of the data. We also improved the robustness of Gene Set Enrichment Module in Quickomics v2.0, using human gene set enrichment for unknown species instead of giving error. The updated system performs more error checking and data cleanup in the backend.</p>
 <div id="gene-set-enrichment" class="section level2" number="8.1">
 <h2><span class="header-section-number">8.1</span> Gene Set Enrichment</h2>
 <p>This first tab lets the users pick a particular comparison, apply different cutoff criteria and select from a list of different databases for enrichment analysis. To demonstrate usage of this functionality, we will use the Mouse Microglia RNA dataset to help answer the question which pathways were altered by Genotype and/or Age. Very similar to the results from Gyoneva et al., 2019, this analysis points to immune related terms being enriched in the down-regulated genes for 2mon_KOvs2mon_WT.</p>

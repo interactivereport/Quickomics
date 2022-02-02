@@ -1,12 +1,12 @@
 # Dataset Module
 
-This first module is for selecting dataset. Users can either select from pre-loaded example datasets or upload their own dataset in a pre-defined format as detailed in section 2.1 and in our GitHub page (https://github.com/interactivereport/Quickomics). We have pre-loaded four datasets from published studies that users can use for demonstrative purposes. These includes two RNAseq datasets from Gyoneva et al., 2019 and Connor-Robson et al., 2019; and two proteomics datasets from Connor-Robson et al., 2019. Users can walk through multiple sub-tabs to visualize, select and download figures or data.
+This first module is for selecting dataset. Users can either select from pre-loaded example datasets or upload their own dataset in a pre-defined format as detailed in section 2.1 and in our GitHub page ([https://github.com/interactivereport/Quickomics](https://github.com/interactivereport/Quickomics){target="_blank"}). We have pre-loaded four datasets from published studies that users can use for demonstrative purposes. These includes two RNAseq datasets from Gyoneva et al., 2019 and Connor-Robson et al., 2019; and two proteomics datasets from Connor-Robson et al., 2019. Users can walk through multiple sub-tabs to visualize, select and download figures or data.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2_1.png)
 
 ## Upload Files
 
-For a data set, the "Upload Files" tool allows users to upload three required files, namely sample metadata, normalized expression data and statistical comparison results in csv format (Comma Separated Values) to Quickomics directly. Example data sets are provided in GitHub for both RNAseq (https://bit.ly/2MRkFcb) and proteomics (https://bit.ly/3rn4i6a). Detailed formatting guidance is outlined below,
+For a data set, the "Upload Files" tool allows users to upload three required files, namely sample metadata, normalized expression data and statistical comparison results in csv format (Comma Separated Values) to Quickomics directly. Example data sets are provided in GitHub for both RNAseq ([https://bit.ly/2MRkFcb](https://bit.ly/2MRkFcb){target="_blank"}) and proteomics ([https://bit.ly/3rn4i6a](https://bit.ly/3rn4i6a){target="_blank"}). Detailed formatting guidance is outlined below,
 
 1. **Sample Metadata File**: It should have “sampleid” and “group” columns, with additional columns optional. Sample identifiers must match those used in the expression data file.
 2. **Expression Data File**: It should be a matrix of expression values with genes/proteins as rows, and samples as columns. The unique IDs for genes/proteins are in the first column. We recommend using log of normalized expression values, e.g. log2(TPM+1) for RNAseq data or normalized intensity or ratio for proteomics data.
@@ -17,13 +17,13 @@ For a data set, the "Upload Files" tool allows users to upload three required fi
 
 After the data files are processed, Quickomics will automatically load all required data for exploration immediately and provide a link for the user to come back in the future.
 
-Behind the scene, Bioconductor biomaRt package (https://bioconductor.org/packages/release/bioc/html/biomaRt.html) has been used to convert gene IDs (Ensembl gene, NCBI gene ID, etc.) into gene symbols by querying Ensembl databases. For protein IDs, we generated a custom lookup table using information downloaded from UniProt Knowledgebase to convert UniProt IDs to gene symbols and protein names. We didn't use biomaRt for proteins as Ensembl databases only cover about 60-80% protein IDs in a typical proteomics data set.
+Behind the scene, Bioconductor biomaRt package ([https://bioconductor.org/packages/release/bioc/html/biomaRt.html](https://bioconductor.org/packages/release/bioc/html/biomaRt.html){target="_blank"}) has been used to convert gene IDs (Ensembl gene, NCBI gene ID, etc.) into gene symbols by querying Ensembl databases. For protein IDs, we generated a custom lookup table using information downloaded from UniProt Knowledgebase to convert UniProt IDs to gene symbols and protein names. We didn't use biomaRt for proteins as Ensembl databases only cover about 60-80% protein IDs in a typical proteomics data set.
 
 ## Prepare R Data Files by Computational Biologists
 
 We recommend uploading csv files, which is convenient for general users who can skip section 2.2 entirely. Nevertheless, experienced R programmers can create R data files to be uploaded through “Upload RData File” option. Section 2.2.1 and 2.2.2 provide example R scripts to prepare such R data files for RNA-Seq and proteomics data, respectively.
 
-Two R data files are required for each data set, one contains the main data and the other contains gene co-expression network information. For the pre-loaded datasets, main data files are located in the “data” folder, https://github.com/interactivereport/Quickomics/tree/master/data, and gene co-expression network files are located in the “networkdata” folder, https://github.com/interactivereport/Quickomics/tree/master/networkdata. One can review the content of a R data file (e.g. Mouse_microglia_RNA-Seq.RData) in the “data” folder by loading it into R.
+Two R data files are required for each data set, one contains the main data and the other contains gene co-expression network information. For the pre-loaded datasets, main data files are located in the “data” folder, [https://github.com/interactivereport/Quickomics/tree/master/data](https://github.com/interactivereport/Quickomics/tree/master/data){target="_blank"}, and gene co-expression network files are located in the “networkdata” folder, https://github.com/interactivereport/Quickomics/tree/master/networkdata. One can review the content of a R data file (e.g. Mouse_microglia_RNA-Seq.RData) in the “data” folder by loading it into R.
 The main R data file contains the following R data frame objects.
 
 1. **MetaData**: It must have “sampleid”, “group”, “Order” and “ComparePairs” columns. Additional metadata columns about samples are optional. “sampleid” should match those used in expression data. “group” holds group names of samples. “Order” is ordered group names used on plotting. “ComparePairs” are names of comparisons performed.
@@ -51,7 +51,7 @@ network <- tibble::tibble (
 
 ### Example R script to prepare R data files from RNA-Seq results
 
-We have provided example input files (TPM and count matrix files, sample grouping file, comparison list file) and the R scripts to generate the main data and network R data files at https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_RNA_Seq_data. Please note that you may need to modify RNA_Seq_raw2quickomics.R to fit your input files.
+We have provided example input files (TPM and count matrix files, sample grouping file, comparison list file) and the R scripts to generate the main data and network R data files at [https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_RNA_Seq_data](https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_RNA_Seq_data){target="_blank"}. Please note that you may need to modify RNA_Seq_raw2quickomics.R to fit your input files.
 • **rsem_TPM.txt**: The TPM matrix. One can also use RPKM matrix if needed.
 • **rsem_expected_count.txt**: The gene count matrix. We used RSEM counts in this case, but gene count results from other methods can be used as well.
 • **grpID.txt**: This file lists the group information for each sample.
@@ -64,7 +64,7 @@ $ Rscript RNA_Seq_raw2quickomics.R
 
 ### Example R script to prepare R data files from proteomics results
 
-We have provided the example input files (normalized protein expression, comparison data, sample information, protein and gene names) and the R script to generate the main data and network R data files at https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_Proteomics_data. Please note that you may need to modify Proteomics2Quickomics.R to fit your input files.
+We have provided the example input files (normalized protein expression, comparison data, sample information, protein and gene names) and the R script to generate the main data and network R data files at [https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_Proteomics_data](https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_Proteomics_data){target="_blank"}. Please note that you may need to modify Proteomics2Quickomics.R to fit your input files.
 
 • **NormalizedExpression.csv**: Normalized protein expression (log2 transformed).
 
@@ -101,7 +101,7 @@ This tab contains statistical analysis results like Ensemble ID (for RNAseq data
 
 ## Data Table
 
-The Data table contains normalized expression values (TPM for RNAseq, intensity for label free proteomic quantification, or ratio for isobaric label proteomics quantification) per sample for each gene.
+The Data table contains normalized expression values (TPM for RNAseq, intensity for label free proteomic quantification, or ratio for isobaric label proteomics quantification) per sample for each gene. In Quickomics version 2.0, we added "Download all" button for small tables, and enable "Save to output" button for large tables.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.6_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.6_1.png)
 

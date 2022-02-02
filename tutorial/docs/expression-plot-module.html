@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 7 Expression Plot Module | Supplementary Materials - QuickOmics</title>
-  <meta name="description" content="Chapter 7 Expression Plot Module | Supplementary Materials - QuickOmics" />
+  <title>Chapter 7 Expression Plot Module | Supplementary Materials - Quickomics v2.0</title>
+  <meta name="description" content="Chapter 7 Expression Plot Module | Supplementary Materials - Quickomics v2.0" />
   <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 7 Expression Plot Module | Supplementary Materials - QuickOmics" />
+  <meta property="og:title" content="Chapter 7 Expression Plot Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
   
   
@@ -16,14 +16,14 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 7 Expression Plot Module | Supplementary Materials - QuickOmics" />
+  <meta name="twitter:title" content="Chapter 7 Expression Plot Module | Supplementary Materials - Quickomics v2.0" />
   
   
   
 
 
 
-<meta name="date" content="2022-02-01" />
+<meta name="date" content="2022-02-02" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -76,6 +76,8 @@
 <li class="chapter" data-level="1" data-path="introduction.html"><a href="introduction.html"><i class="fa fa-check"></i><b>1</b> Introduction</a>
 <ul>
 <li class="chapter" data-level="1.1" data-path="introduction.html"><a href="introduction.html#integrated-gene-set-query"><i class="fa fa-check"></i><b>1.1</b> Integrated Gene Set Query</a></li>
+<li class="chapter" data-level="1.2" data-path="introduction.html"><a href="introduction.html#launch-project-saved-on-server"><i class="fa fa-check"></i><b>1.2</b> Launch project saved on server</a></li>
+<li class="chapter" data-level="1.3" data-path="introduction.html"><a href="introduction.html#shinyone"><i class="fa fa-check"></i><b>1.3</b> ShinyOne</a></li>
 </ul></li>
 <li class="chapter" data-level="2" data-path="dataset-module.html"><a href="dataset-module.html"><i class="fa fa-check"></i><b>2</b> Dataset Module</a>
 <ul>
@@ -168,7 +170,7 @@
       <div class="body-inner">
         <div class="book-header" role="navigation">
           <h1>
-            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Supplementary Materials - QuickOmics</a>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Supplementary Materials - Quickomics v2.0</a>
           </h1>
         </div>
 
@@ -178,7 +180,7 @@
             <section class="normal" id="section-">
 <div id="expression-plot-module" class="section level1" number="7">
 <h1><span class="header-section-number">Chapter 7</span> Expression Plot Module</h1>
-<p>This functional module allows Users to browse through a subset of genes/proteins. It also offers an option to plot expression of individually selected genes. Four different displays: Box Plot, Bar Plot, Violin Plot and Line Plot are made available to fit the Users’ preference.</p>
+<p>This functional module allows Users to browse through a subset of genes/proteins. It also offers an option to plot expression of individually selected genes. Four different displays: Box Plot, Bar Plot, Violin Plot and Line Plot are made available to fit the Users’ preference. In Quickomics v2.0, we enhanced the Expression Plot module: Genes can be ranked by p-value or logFC, and the number of columns in the graph can be changed.</p>
 <div id="browsing" class="section level2" number="7.1">
 <h2><span class="header-section-number">7.1</span> Browsing</h2>
 <p>This tab lets the Users plot out the expression of the DEGs/DEPs identified in the different comparisons. In this example below, we demonstrate how to display a few top genes as Violin Plots.</p>
@@ -193,7 +195,7 @@
 </div>
 <div id="data-table-2" class="section level2" number="7.3">
 <h2><span class="header-section-number">7.3</span> Data Table</h2>
-<p>This sub-tab lists the normalized data of the genes/proteins selected in “Searched Expression Data” (Section 6.2) as a searchable table. For a demo of this feature, we select a proteome dataset from published paper (Connor-Robson et al., 2019).</p>
+<p>This sub-tab lists the normalized data of the genes/proteins selected in “Searched Expression Data” (Section 7.2) as a searchable table. For a demo of this feature, we select a proteome dataset from published paper (Connor-Robson et al., 2019).</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_1.png" /></a></p>
 <p>Once the dataset is selected, we go into the “Searched Expression Data” sub-tab to select a gene set.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_2.png" /></a></p>
@@ -202,7 +204,7 @@
 </div>
 <div id="result-table-1" class="section level2" number="7.4">
 <h2><span class="header-section-number">7.4</span> Result Table</h2>
-<p>This tab lists the statistics results of the genes/proteins selected in “Searched Expression Data” as a searchable table. Each comparison defined is probed for the genes in the list and the P value and Fold changes are listed. This is specifically designed for the gene values, unlike “Data Table” in the previous section (6.3) that is designed for protein values.</p>
+<p>This tab lists the statistics results of the genes/proteins selected in “Searched Expression Data” as a searchable table. Each comparison defined is probed for the genes in the list and the P value and Fold changes are listed. This is specifically designed for the gene values, unlike “Data Table” in the previous section (7.3) that is designed for protein values.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.4_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.4_1.png" /></a></p>
 </div>
 <div id="rank-abundance-curve" class="section level2" number="7.5">

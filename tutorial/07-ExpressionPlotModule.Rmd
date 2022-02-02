@@ -1,6 +1,6 @@
 # Expression Plot Module
 
-This functional module allows Users to browse through a subset of genes/proteins. It also offers an option to plot expression of individually selected genes. Four different displays: Box Plot, Bar Plot, Violin Plot and Line Plot are made available to fit the Users’ preference.
+This functional module allows Users to browse through a subset of genes/proteins. It also offers an option to plot expression of individually selected genes. Four different displays: Box Plot, Bar Plot, Violin Plot and Line Plot are made available to fit the Users’ preference. In Quickomics v2.0, we enhanced the Expression Plot module: Genes can be ranked by p-value or logFC, and the number of columns in the graph can be changed.
 
 ## Browsing
 
@@ -20,7 +20,7 @@ The resulting plot shows the expression of a subset of genes from the MHCII anti
 
 ## Data Table
 
-This sub-tab lists the normalized data of the genes/proteins selected in “Searched Expression Data” (Section 6.2) as a searchable table. For a demo of this feature, we select a proteome dataset from published paper (Connor-Robson et al., 2019).
+This sub-tab lists the normalized data of the genes/proteins selected in “Searched Expression Data” (Section 7.2) as a searchable table. For a demo of this feature, we select a proteome dataset from published paper (Connor-Robson et al., 2019).
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_1.png)
 
@@ -34,7 +34,7 @@ Finally, we click the “Data Table” tab to look at the expression of the prot
 
 ## Result Table
 
-This tab lists the statistics results of the genes/proteins selected in “Searched Expression Data” as a searchable table. Each comparison defined is probed for the genes in the list and the P value and Fold changes are listed. This is specifically designed for the gene values, unlike “Data Table” in the previous section (6.3) that is designed for protein values.
+This tab lists the statistics results of the genes/proteins selected in “Searched Expression Data” as a searchable table. Each comparison defined is probed for the genes in the list and the P value and Fold changes are listed. This is specifically designed for the gene values, unlike “Data Table” in the previous section (7.3) that is designed for protein values.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.4_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.4_1.png)
 

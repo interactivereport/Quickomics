@@ -10,6 +10,8 @@ The principle component analysis (PCA) plot displays, by default, the first 2 PC
 
 To illustrate the strengths of customization, we changed a few display elements as shown below, to visualize the influence of Age and Genotype on sample clustering:
 
+We added the Plot/Refresh button to graphs that take time to generate. We also enhanced user interface to show plot progress and display initial plot.
+
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_3.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_2.png)
 
 These changes results in a PCA plot that clearly showed that Age is the factor that drives the biggest separation, especially along PC1. There is some separation driven by the Genotype as well. The Ellipsoid feature helps group samples by the color attribute, while the Marginal Rug feature helps understand the sample distribution along the axis.
@@ -92,7 +94,7 @@ This plot shows the histogram of CVs (coefficient of variation) and a dotted lin
 
 ## Help
 
-The Help section describes each tab of the QC Plot and what is being visualized. For further help please visit the GitHub containing the source code for this tools (https://github.com/interactivereport/Quickomics) or click on the link at the bottom of the page.
+The Help section describes each tab of the QC Plot and what is being visualized. For further help please visit the GitHub containing the source code for this tools ([https://github.com/interactivereport/Quickomics](https://github.com/interactivereport/Quickomics){target="_blank"}) or click on the link at the bottom of the page.
 
 [![](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.11_1.png)](https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.11_1.png)
 

@@ -1,6 +1,6 @@
 # Gene Set Enrichment Module
 
-This functionality in Quickomics is an extension to the differential gene identification. Users are able to use different cutoffs to filter out DEGs/DEPs in different comparisons and probe enriched pathways. This is a useful way to make biological sense of the data.
+This functionality in Quickomics is an extension to the differential gene identification. Users are able to use different cutoffs to filter out DEGs/DEPs in different comparisons and probe enriched pathways. This is a useful way to make biological sense of the data. We also improved the robustness of Gene Set Enrichment Module in Quickomics v2.0, using human gene set enrichment for unknown species instead of giving error. The updated system performs more error checking and data cleanup in the backend.
 
 ## Gene Set Enrichment
 

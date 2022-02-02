@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 1 Introduction | Supplementary Materials - QuickOmics</title>
-  <meta name="description" content="Chapter 1 Introduction | Supplementary Materials - QuickOmics" />
+  <title>Chapter 1 Introduction | Supplementary Materials - Quickomics v2.0</title>
+  <meta name="description" content="Chapter 1 Introduction | Supplementary Materials - Quickomics v2.0" />
   <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 1 Introduction | Supplementary Materials - QuickOmics" />
+  <meta property="og:title" content="Chapter 1 Introduction | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
   
   
@@ -16,14 +16,14 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 1 Introduction | Supplementary Materials - QuickOmics" />
+  <meta name="twitter:title" content="Chapter 1 Introduction | Supplementary Materials - Quickomics v2.0" />
   
   
   
 
 
 
-<meta name="date" content="2022-02-01" />
+<meta name="date" content="2022-02-02" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -76,6 +76,8 @@
 <li class="chapter" data-level="1" data-path="introduction.html"><a href="introduction.html"><i class="fa fa-check"></i><b>1</b> Introduction</a>
 <ul>
 <li class="chapter" data-level="1.1" data-path="introduction.html"><a href="introduction.html#integrated-gene-set-query"><i class="fa fa-check"></i><b>1.1</b> Integrated Gene Set Query</a></li>
+<li class="chapter" data-level="1.2" data-path="introduction.html"><a href="introduction.html#launch-project-saved-on-server"><i class="fa fa-check"></i><b>1.2</b> Launch project saved on server</a></li>
+<li class="chapter" data-level="1.3" data-path="introduction.html"><a href="introduction.html#shinyone"><i class="fa fa-check"></i><b>1.3</b> ShinyOne</a></li>
 </ul></li>
 <li class="chapter" data-level="2" data-path="dataset-module.html"><a href="dataset-module.html"><i class="fa fa-check"></i><b>2</b> Dataset Module</a>
 <ul>
@@ -168,7 +170,7 @@
       <div class="body-inner">
         <div class="book-header" role="navigation">
           <h1>
-            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Supplementary Materials - QuickOmics</a>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Supplementary Materials - Quickomics v2.0</a>
           </h1>
         </div>
 
@@ -178,14 +180,39 @@
             <section class="normal" id="section-">
 <div id="introduction" class="section level1" number="1">
 <h1><span class="header-section-number">Chapter 1</span> Introduction</h1>
-<p>The Quickomics tool can be accessed via the link <a href="http://quickomics.bxgenomics.com" class="uri">http://quickomics.bxgenomics.com</a>. Implemented through R Shiny, it helps with visualizing statistical analysis results for RNAseq and Proteomics datasets. This supplemental tutorial provides a detailed guide on using the different functionalities and customizing the tools to best fit individual analysis and plotting needs, using published RNAseq dataset and proteomics dataset as examples (Gyoneva et al., 2019; Connor-Robson et al., 2019).</p>
+<p>The Quickomics tool can be accessed via the link <a href="http://quickomics.bxgenomics.com" target="_blank">http://quickomics.bxgenomics.com</a>. Implemented through R Shiny, it helps with visualizing statistical analysis results for RNAseq and Proteomics datasets. This supplemental tutorial provides a detailed guide on using the different functionalities and customizing the tools to best fit individual analysis and plotting needs, using published RNAseq dataset and proteomics dataset as examples (Gyoneva et al., 2019; Connor-Robson et al., 2019).</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS1_1.png" /></a></p>
 <p>The interface contains multiple tabs, corresponding to different functional modules, that can be accessed on top panel of the webpage. Users have the option to upload their own dataset or choose from existing demo datasets for visualization.</p>
 <div id="integrated-gene-set-query" class="section level2" number="1.1">
 <h2><span class="header-section-number">1.1</span> Integrated Gene Set Query</h2>
 <p>To supply genes in pre-defined gene sets to plotting functions in Quickomics, we developed xGenesets API for Quickomics to query and retrieve a list of genes/proteins when it is needed. The lists can be defined based on pathways, and gene sets from various sources, including KEGG Pathways (Kanehisa and Goto, 2000), WikiPathways (Martens et al., 2020), Small Molecule Pathway Database (Frolkis et al., 2010), Reactome (Jassal et al., 2020), Gene Ontology (The Gene Ontology Consortium, 2019), Molecular Signatures (Subramanian et al., 2005; Liberzon et al., 2015), and LIPID MAPS Proteome Database (Cotter et al., 2006). xGenesets database currently has 175,537 gene sets stored in MySQL tables, covering human (115,497 records), mouse (30,554 records) and rat (29,486 records) gene sets. xGenesets features personalized settings, dynamic drop-down list upon typing for quick gene set selection, full gene set database browsing, and a list of genes from any gene sets. Throughout Quickomics, users interact with this convenient tool in appropriate interface when a gene set is needed by checking “Geneset” option and then clicking on “Select Geneset” to pick a set from a table of available gene sets in a popup window as shown in the following screenshot.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS1.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS1.1_1.png" /></a></p>
-<p>For developers of web-based applications (general user can skip this paragraph), xGenesets can be easily embedded in any modern websites and online applications, e.g., R Shiny web apps, by leveraging jQuery, DataTables, and bootstrap (either v3 or v4) JavaScript libraries. xGenesets API is freely available for all usages. Examples of using xGenesets API and guidance on setting up the API in your own applications can be found at <a href="https://bxaf.net/genesets" class="uri">https://bxaf.net/genesets</a>.</p>
+<p>For developers of web-based applications (general user can skip this paragraph), xGenesets can be easily embedded in any modern websites and online applications, e.g., R Shiny web apps, by leveraging jQuery, DataTables, and bootstrap (either v3 or v4) JavaScript libraries. xGenesets API is freely available for all usages. Examples of using xGenesets API and guidance on setting up the API in your own applications can be found at <a href="https://bxaf.net/genesets" target="_blank">https://bxaf.net/genesets</a>.</p>
+</div>
+<div id="launch-project-saved-on-server" class="section level2" number="1.2">
+<h2><span class="header-section-number">1.2</span> Launch project saved on server</h2>
+<p>In this updated version 2.0 of Quickomics, we added this new function to launch projects saved on the server directly using URL.</p>
+<p>To view your own datasets, you can upload RData files using browser, but a better way is to put the RData files on your server where you host QuickOmics and access them directly using a URL. We suggest the following:</p>
+<p><strong>1. Prepare three files for each project</strong>, <code>projectID.RData</code> and <code>projectID_network.RData</code> file, as well as a <code>projectID.csv</code> file.</p>
+<p>The csv file should have four columns:</p>
+<pre><code>Name,ShortName,ProjectID,Species</code></pre>
+<p>Two optional columns for the csv file include: <code>ExpressionUnit</code> (you can enter something like log2(TPM+0.1)), and <code>Path</code> (optional path for raw or analyzed data, e.g. Z:/share/GSE158470/).</p>
+<p><strong>2. Put the three files you prepared in a special folder</strong>, and use URL to access them.</p>
+<p>The simplest way is to put the three files in the unlisted/ folder under Quickomics folder. Then use a URL like <a href="https://quickomics.bxgenomics.com/?unlisted=ProjectID" target="_blank">https://quickomics.bxgenomics.com/?unlisted=ProjectID</a> (replace quickomics.bxgenomics.com with your own instance URL).</p>
+<p>You can also create a config.csv file under Quickomics folder, for example:</p>
+<pre><code>category,value
+server_dir, /hpc/data/server_files
+test_dir,/hpc/data/test_fiels</code></pre>
+<p>Just make sure the two folders in server_dir and test_dir can be read by the Shiny App.</p>
+<p>Then you can copy the three files prepared in step 1) into the server_dir, and use URL like <a href="https://quickomics.bxgenomics.com/?serverfile=ProjectID" target="_blank">https://quickomics.bxgenomics.com/?serverfile=ProjectID</a>
+Or you can copy the three files prepared in step 1) into the test_dir, and use URL like <a href="https://quickomics.bxgenomics.com/?testfile=ProjectID" target="_blank">https://quickomics.bxgenomics.com/?testfile=ProjectID</a>
+Using <code>config.csv</code> is preferred as the data are separated from the QuickOmics Shiny App folder.</p>
+</div>
+<div id="shinyone" class="section level2" number="1.3">
+<h2><span class="header-section-number">1.3</span> ShinyOne</h2>
+<p>In Quickomics v2.0, we also introduce ShinyOne, a web-based table listing existing projects loaded into Quickomics.</p>
+<p>We have pre-loaded several demo data to Quickomics, and the ShinyOne demo site is:</p>
+<p><a href="http://demo.bxgenomics.com:8185/" target="_blank">http://demo.bxgenomics.com:8185/</a></p>
 
 </div>
 </div>
