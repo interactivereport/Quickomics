@@ -15,11 +15,16 @@ dependencies:
   - bioconductor-biobase=2.54.0=r41hd029910_0
   - bioconductor-biocfilecache=2.2.0=r41hdfd78af_0
   - bioconductor-biocgenerics=0.40.0=r41hdfd78af_0
+  - bioconductor-biocio=1.4.0=r41hdfd78af_0
   - bioconductor-biocparallel=1.28.0=r41h399db7b_0
   - bioconductor-biomart=2.50.0=r41hdfd78af_0
   - bioconductor-biostrings=2.62.0=r41hd029910_0
+  - bioconductor-bsgenome=1.62.0=r41hdfd78af_0
+  - bioconductor-bumphunter=1.36.0=r41hdfd78af_0
   - bioconductor-complexheatmap=2.10.0=r41hdfd78af_0
   - bioconductor-delayedarray=0.20.0=r41hd029910_0
+  - bioconductor-derfinder=1.28.0=r41hdfd78af_0
+  - bioconductor-derfinderhelper=1.28.0=r41hdfd78af_0
   - bioconductor-deseq2=1.34.0=r41h399db7b_0
   - bioconductor-dyndoc=1.72.0=r41hdfd78af_0
   - bioconductor-edger=3.36.0=r41h399db7b_0
@@ -27,20 +32,32 @@ dependencies:
   - bioconductor-geneplotter=1.72.0=r41hdfd78af_0
   - bioconductor-genomeinfodb=1.30.0=r41hdfd78af_0
   - bioconductor-genomeinfodbdata=1.2.7=r41hdfd78af_1
+  - bioconductor-genomicalignments=1.30.0=r41hd029910_0
+  - bioconductor-genomicfeatures=1.46.1=r41hdfd78af_0
+  - bioconductor-genomicfiles=1.30.0=r41hdfd78af_0
   - bioconductor-genomicranges=1.46.0=r41hd029910_0
+  - bioconductor-geoquery=2.62.0=r41hdfd78af_0
   - bioconductor-graph=1.72.0=r41hd029910_0
   - bioconductor-iranges=2.28.0=r41hd029910_0
   - bioconductor-kegggraph=1.54.0=r41hdfd78af_0
   - bioconductor-keggrest=1.34.0=r41hdfd78af_0
   - bioconductor-limma=3.50.0=r41hd029910_0
+  - bioconductor-made4=1.68.0=r41hdfd78af_0
   - bioconductor-matrixgenerics=1.6.0=r41hdfd78af_0
   - bioconductor-mfuzz=2.54.0=r41hdfd78af_0
   - bioconductor-org.hs.eg.db=3.14.0=r41hdfd78af_0
   - bioconductor-pathview=1.34.0=r41hdfd78af_0
+  - bioconductor-qvalue=2.26.0=r41hdfd78af_0
+  - bioconductor-recount=1.20.0=r41hdfd78af_0
+  - bioconductor-recount3=1.4.0=r41hdfd78af_0
   - bioconductor-rgraphviz=2.38.0=r41h399db7b_0
+  - bioconductor-rhtslib=1.26.0=r41hd029910_0
+  - bioconductor-rsamtools=2.10.0=r41h399db7b_0
+  - bioconductor-rtracklayer=1.54.0=r41hd029910_0
   - bioconductor-s4vectors=0.32.0=r41hd029910_0
   - bioconductor-summarizedexperiment=1.24.0=r41hdfd78af_0
   - bioconductor-tkwidgets=1.72.0=r41hdfd78af_0
+  - bioconductor-variantannotation=1.40.0=r41hd029910_0
   - bioconductor-widgettools=1.72.0=r41hdfd78af_0
   - bioconductor-xvector=0.34.0=r41hd029910_0
   - bioconductor-zlibbioc=1.40.0=r41hd029910_0
@@ -124,6 +141,7 @@ dependencies:
   - python_abi=3.10=2_cp310
   - r-abind=1.4_5=r41hc72bb7e_1003
   - r-acepack=1.4.1=r41h859d828_1006
+  - r-ade4=1.7_18=r41he454529_0
   - r-askpass=1.1=r41hcfec24a_2
   - r-assertthat=0.2.1=r41hc72bb7e_2
   - r-backports=1.4.1=r41hcfec24a_0
@@ -133,6 +151,7 @@ dependencies:
   - r-bdsmatrix=1.3_4=r41hcfec24a_1
   - r-beeswarm=0.4.0=r41hcfec24a_1
   - r-bh=1.78.0_0=r41hc72bb7e_0
+  - r-bibtex=0.4.2.3=r41hcfec24a_0
   - r-biocmanager=1.30.16=r41hc72bb7e_0
   - r-bit=4.0.4=r41hcfec24a_0
   - r-bit64=4.0.5=r41hcfec24a_0
@@ -177,6 +196,8 @@ dependencies:
   - r-diffobj=0.3.5=r41hcfec24a_0
   - r-digest=0.6.29=r41h03ef668_0
   - r-doparallel=1.0.16=r41hc72bb7e_0
+  - r-dorng=1.8.2=r41hc72bb7e_1
+  - r-downloader=0.4=r41hc72bb7e_1003
   - r-dplyr=1.0.7=r41h03ef668_0
   - r-dt=0.20=r41hc72bb7e_0
   - r-dtplyr=1.2.1=r41hc72bb7e_0
@@ -286,8 +307,10 @@ dependencies:
   - r-pbkrtest=0.5.1=r41hc72bb7e_0
   - r-pheatmap=1.0.12=r41hc72bb7e_2
   - r-pillar=1.6.5=r41hc72bb7e_0
+  - r-pixmap=0.4_12=r41hc72bb7e_0
   - r-pkgconfig=2.0.3=r41hc72bb7e_1
   - r-pkgload=1.2.4=r41h03ef668_0
+  - r-pkgmaker=0.32.2=r41hc72bb7e_0
   - r-plogr=0.2.0=r41hc72bb7e_1003
   - r-plotly=4.10.0=r41hc72bb7e_0
   - r-plyr=1.8.6=r41h03ef668_1
@@ -321,15 +344,19 @@ dependencies:
   - r-readr=2.1.1=r41h03ef668_0
   - r-readxl=1.3.1=r41h2713e49_4
   - r-recipes=0.1.17=r41hc72bb7e_0
+  - r-registry=0.5_1=r41hc72bb7e_2
   - r-rematch=1.0.1=r41hc72bb7e_1004
   - r-rematch2=2.1.2=r41hc72bb7e_1
+  - r-rentrez=1.2.3=r41h785f33e_0
   - r-reprex=2.0.1=r41hc72bb7e_0
   - r-reshape2=1.4.4=r41h03ef668_1
+  - r-restfulr=0.0.13=r41hdf9a8c9_1
   - r-rgl=0.108.3=r41hbf98b08_0
   - r-rio=0.5.29=r41hc72bb7e_0
   - r-rjson=0.2.21=r41h03ef668_0
   - r-rlang=0.4.12=r41hcfec24a_0
   - r-rmarkdown=2.11=r41hc72bb7e_1
+  - r-rngtools=1.5.2=r41hc72bb7e_0
   - r-rpart=4.1.16=r41hcfec24a_0
   - r-rprojroot=2.0.2=r41hc72bb7e_0
   - r-rsqlite=2.2.8=r41h03ef668_0
@@ -340,6 +367,7 @@ dependencies:
   - r-scales=1.1.1=r41hc72bb7e_0
   - r-scatterplot3d=0.3_41=r41hc72bb7e_1003
   - r-selectr=0.4_2=r41hc72bb7e_1
+  - r-sessioninfo=1.2.2=r41hc72bb7e_0
   - r-shape=1.4.6=r41ha770c72_0
   - r-shiny=1.7.1=r41h785f33e_0
   - r-shinyjqui=0.4.0=r41hc72bb7e_0
@@ -387,7 +415,6 @@ dependencies:
   - r-zip=2.2.0=r41hcfec24a_0
   - readline=8.1=h46c0cb4_0
   - sed=4.8=he412f7d_0
-  - setuptools=60.5.0=py310hff52083_0
   - six=1.16.0=pyh6c4a22f_0
   - sqlite=3.37.0=h9cd32fc_0
   - sysroot_linux-64=2.12=he073ed8_15
@@ -411,4 +438,6 @@ dependencies:
   - xz=5.2.5=h516909a_1
   - zlib=1.2.11=h36c2ea0_1013
   - zstd=1.5.2=ha95c52a_0
+  - pip:
+    - setuptools==60.5.0
 prefix: /share/miniconda/Miniconda3/envs/QuickOmics
