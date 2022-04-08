@@ -117,6 +117,7 @@ server_dir,{Path/to/Server/File}
 test_dir,{Path/to/Test/Files}
 ```
 Files stored in server_dir can be loaded by URLs like: https://quickomics.bxgenomics.com/?serverfile=project_ID
+
 Files stored in test_dir can be loaded by URLs like: https://quickomics.bxgenomics.com/?testfile=project_ID
 
 ### 5) Prepare project data to be loaded from URL 
