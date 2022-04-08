@@ -4,6 +4,8 @@ Demo site: http://quickomics.bxgenomics.com
 
 Tutorial with supplementary tables: https://bit.ly/3rXIyhL
 
+Online Tutorial of Ver. 2: https://interactivereport.github.io/Quickomics/tutorial/docs/
+
 Cite: Gao B, Zhu J, Negi S, Zhang X, Gyoneva S, Casey F, Wei R, Zhang B. Quickomics: exploring omics data in an intuitive, interactive and informative manner. Bioinformatics. 2021 Apr 26:btab255. https://doi.org/10.1093/bioinformatics/btab255
 
 BioRxiv preprint: https://www.biorxiv.org/content/10.1101/2021.01.19.427296v2
