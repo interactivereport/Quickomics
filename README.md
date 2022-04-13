@@ -122,7 +122,7 @@ Files stored in test_dir can be loaded by URLs like: https://quickomics.bxgenomi
 
 ### 5) Prepare project data to be loaded from URL 
 To prepare project files to be loaded via URL, do the following.
-For each project, besides the two RData files (projectID.RData and ProjectID_netword.RData), prepare a ProjectID.csv file with six columns, e.g.
+For each project, besides the two RData files (ProjectID.RData and ProjectID_netword.RData), prepare a ProjectID.csv file with six columns, e.g.
 ```
 "Name","ShortName","ProjectID","Species","ExpressionUnit","Path"
 "RNAseq analysis of sorted microglia","SRP199678","SRP199678","mouse","log2(TPM+0.25)","/camhpc/home/ysun4/RNASequest/example/SRP199678/EA20220329_0"
