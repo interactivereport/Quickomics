@@ -4,6 +4,8 @@ Demo site: http://quickomics.bxgenomics.com
 
 Tutorial with supplementary tables: https://bit.ly/3rXIyhL
 
+Online Tutorial of Ver. 2: https://interactivereport.github.io/Quickomics/tutorial/docs/
+
 Cite: Gao B, Zhu J, Negi S, Zhang X, Gyoneva S, Casey F, Wei R, Zhang B. Quickomics: exploring omics data in an intuitive, interactive and informative manner. Bioinformatics. 2021 Apr 26:btab255. https://doi.org/10.1093/bioinformatics/btab255
 
 BioRxiv preprint: https://www.biorxiv.org/content/10.1101/2021.01.19.427296v2
@@ -107,3 +109,24 @@ Check the following web links on various options to launch the app.
 * https://shiny.rstudio.com/articles/running.html
 * https://shiny.rstudio.com/deploy/
 
+### 4) Configure QuickOmics to load projects directly from URLs 
+QuickOmics has a feature to load a project directly from URL in the form of https://quickomics.bxgenomics.com/?serverfile=SRP199678, which requires saving project data files to a user-specified directory on the sever hosting QuickOmics. To use this feature, create a file called config.csv in the QuickOmics App folder. 
+```
+category,value
+server_dir,{Path/to/Server/File}
+test_dir,{Path/to/Test/Files}
+```
+Files stored in server_dir can be loaded by URLs like: https://quickomics.bxgenomics.com/?serverfile=project_ID
+
+Files stored in test_dir can be loaded by URLs like: https://quickomics.bxgenomics.com/?testfile=project_ID
+
+### 5) Prepare project data to be loaded from URL 
+To prepare project files to be loaded via URL, do the following.
+For each project, besides the two RData files (projectID.RData and ProjectID_netword.RData), prepare a ProjectID.csv file with six columns, e.g.
+```
+"Name","ShortName","ProjectID","Species","ExpressionUnit","Path"
+"RNAseq analysis of sorted microglia","SRP199678","SRP199678","mouse","log2(TPM+0.25)","/camhpc/home/ysun4/RNASequest/example/SRP199678/EA20220329_0"
+```
+The last two columns in the csv file are optional but recommended. 
+
+Now copy the three files (projectID.RData, ProjectID_netword.RData and ProjectID.csv) inside the server_dir folder as specified by the config.csv file, and the project can be loaded as https://quickomics.bxgenomics.com/?serverfile=project_ID  (replace quickomics.bxgenomics.com by the URL of your own QuickOmics instance).
