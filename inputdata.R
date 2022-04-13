@@ -17,7 +17,7 @@ samples_excludeM<-reactiveVal() #manually excluded samples
 samples_excludeF<-reactiveVal() #samples excluded from filtering on sample attributes
 samples_excludeM(""); samples_excludeF("")
 attribute_filters<-reactiveVal()
-attribute_filters("")
+attribute_filters(NULL)
 resetComp2Sample<-reactiveVal(); resetComp2Sample(FALSE) #control when to reset the tool to Get Samples from Comparison.,
 all_groups <-reactiveVal()
 all_tests<-reactiveVal()

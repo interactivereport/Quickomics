@@ -42,6 +42,20 @@ output$reorder_group=renderUI({
   orderInput(inputId = 'order_groups', label = 'Drag and Drop to Reorder Groups. (Use Select Groups at left menu to delete or add groups.)', items =group_order(), width="90%", item_class = 'primary', legacy =TRUE )
 })
 
+attribute_filters_text=reactive({
+  if (!is.null(attribute_filters())) {
+    text=""
+    attr=attribute_filters()
+    #browser() #debug
+    for (i in 1:length(attr) ) {
+      m1=attr[[i]]
+      name1=names(attr[i])
+      text=str_c(text," (", name1, ":  ", paste(m1, collapse=","), ")" )
+    }
+  } else (text="None (Filters that select 0 samples will be reset)")
+  return(text)  
+})
+
 output$sample_choose_order=renderUI({
   req(group_order())
   req(sample_order())
@@ -57,9 +71,10 @@ output$sample_choose_order=renderUI({
       tags$p(tags$em("Add/remove/re-roder groups will reset sample selection based on slected groups.")),
     tags$hr(style="border-color: RoyalBlue;"),
     tags$p(tags$strong("Please finalized group selection/order before working on further sample selection.")),
-    radioButtons("Select_Sample", label="Method to Select Samples:", inline = TRUE, choices = c("Sample Filter", "Upload Sample List", "From Comparison"), selected = "Sample Filter"),
+    radioButtons("Select_Sample", label="Method to Select Samples:", inline = TRUE, choices = c("Sample Filter", "Upload Sample List", "From Comparison", "None"), selected = "Sample Filter"),
     conditionalPanel("input.Select_Sample=='Sample Filter'",
-      tags$p("Sample attribute filters already applied: ", attribute_filters()),
+      tags$p("Sample attribute filters already applied: ", attribute_filters_text() ),
+      tags$p("Manualy removed samples: ", paste(samples_excludeM(), collapse=",") ),
       selectizeInput("meta_col_sel", label="Filter Samples by the Attribute (Covariate) Below:", choices=attributes, selected="None", multiple=FALSE),
       conditionalPanel(condition="input.meta_col_sel!='None'",
                      uiOutput('filter_meta')),
@@ -72,7 +87,7 @@ output$sample_choose_order=renderUI({
       actionButton("upload_sample", "Upload Samples in the Box Above")),
     conditionalPanel("input.Select_Sample=='From Comparison'",
       tags$p("This tool is only available when there is comparison information (comp_info in RData) with valid Subsetting_group."),
-      tags$p("To select multiple comparisons, use the left menu tool 'Use Sampels from Comparison'."),
+      tags$p("To select multiple comparisons, use the left menu tool 'Use Samples in Subset/Comparison'."),
       tags$hr(),
       uiOutput("samples_from_comp")),  
     tags$hr(),
@@ -92,6 +107,7 @@ output$samples_from_comp=renderUI({
     comp_all=c("None", "All_Samples",sel_comp$Comparison)
     sel_comp=sel_comp[, 1:(ncol(sel_comp)-2)]
     sel_comp$N_samples=as.integer(sel_comp$N_samples)
+    sel_comp=sel_comp[, c(1, ncol(sel_comp), 2:(ncol(sel_comp)-1))]
     subsets=unique(sel_comp$Subsetting_group)
     sel_sub=str_detect(subsets, ":"); subsets=subsets[sel_sub]
     if (length(subsets)>0) {comp_all=c(comp_all, str_c("(Subset) ", subsets))}
@@ -136,8 +152,21 @@ output$filter_meta=renderUI({
   output$table_selCol2=renderTable(group_info2, colnames=F)
   menu_label=str_c("Select Values from ", selCol, " (ctrl & click to select multiple values to remove)")
   #browser() ##debug
+  #check if existing filter cover the selected columns
+  selValues=UniqueValues
+  attr=attribute_filters()
+  if (!is.null(attr)) {
+    for (i in 1:length(attr)) {
+      m1=attr[[i]]
+      name1=names(attr[i])
+      if (name1==selCol) {
+        selValues=m1
+      }
+    }
+  }
+  
   tagList(
-    selectizeInput("sel_values_meta_col", label=menu_label, choices=UniqueValues, selected=UniqueValues, multiple=TRUE, width="80%"),
+    selectizeInput("sel_values_meta_col", label=menu_label, choices=UniqueValues, selected=selValues, multiple=TRUE, width="80%"),
     actionButton("clear_values_meta_col", "Deselect All Values"),
     tags$p("Number of samples for each value from all samples"),
     tableOutput("table_selCol"),
@@ -149,7 +178,7 @@ output$filter_meta=renderUI({
 })
 
 observeEvent(input$clear_values_meta_col, {  
-  cat("reset values!\n")
+  #cat("reset values!\n")
   updateSelectizeInput(session,'sel_values_meta_col', selected="")
 })
 
@@ -175,7 +204,7 @@ observe({
   MetaData1<-MetaData%>%filter(group %in% groups)
   samplesG <- as.character( MetaData1$sampleid[order(match(MetaData1$group,groups))])
   sample_order(samplesG)
-  attribute_filters("")
+  attribute_filters(NULL)
   samples_excludeM(""); samples_excludeF("")
   resetComp2Sample(TRUE)
 })
@@ -192,51 +221,31 @@ observe({
 observe({
   req(input$Select_Sample)
   if (input$Select_Sample=='Sample Filter') {
-    samples=sample_order()
+    #get samplese from group first
+    MetaData=all_metadata()
+    groups = group_order()
+    MetaData1<-MetaData%>%filter(group %in% groups)
+    sampleG <- as.character( MetaData1$sampleid[order(match(MetaData1$group,groups))])
+    samples=sampleG
+    #samples=sample_order()
     sample_R= unique(c(samples_excludeM(), samples_excludeF())) #extra samples to remove
     ToRemove=( toupper(samples) %in% toupper(sample_R) )
+   # browser() #bebug
     if  (sum(ToRemove)>0) {samples=samples[!ToRemove]; 
-      sample_order(samples)
-    }
-  }
-})
-
-#update sample list based on comparison
-observe({
-  req(input$comp_4_samples)
-  comp1<-input$comp_4_samples
-  sel_comp=DataReactive()$sel_comp
-  subsets<-sel_comp%>%filter(!duplicated(Subsetting_group), str_detect(Subsetting_group, ":"))
-  if (nrow(subsets)>0){
-    subsets<-subsets%>%mutate(Comparison=str_c("(Subset) ", Subsetting_group), sample_list=subset_list, Comparison=NA)
-    sel_comp=rbind(sel_comp, subsets)
-  }
-
-  if (length(comp1)==1) {
-    if (comp1!="None"){
-      if (comp1=="All_Samples"){
-        samples=all_samples()
+      if (length(samples)>0) {
+        sample_order(samples)
       } else {
-        samples=sel_comp$sample_list[sel_comp$Comparison==comp1]
-        samples=str_split(samples, ",")[[1]]
+        cat("No samples left after applying sample filter, reset!\n")
+        sample_order(sampleG)
+        attribute_filters(NULL)
+        samples_excludeM(""); samples_excludeF("")
       }
-      sample_order(samples)
-      attribute_filters("")
-      samples_excludeM(""); samples_excludeF("")
+     
     }
-  } else {
-    if ("All_Samples" %in% comp1) {
-      samples=all_samples()
-    } else {
-      samples<-sel_comp%>%dplyr::filter(Comparison %in% comp1)%>%dplyr::select(sample_list)%>%unlist%>%unname%>%paste(collapse=",")
-      samples=str_split(samples, ",")[[1]]
-    }
-    sample_order(samples)
-    attribute_filters("")
-    samples_excludeM(""); samples_excludeF("")
   }
 })
 
+#update sample list based on comparison (left menu)
 observe({
   req(input$QC_comp_4_samples)
   comp1<-input$QC_comp_4_samples
@@ -256,8 +265,9 @@ observe({
       samples=str_split(samples, ",")[[1]]
     }
     sample_order(samples)
-    attribute_filters("")
+    attribute_filters(NULL)
     samples_excludeM(""); samples_excludeF("")
+    updateRadioButtons(session, "Select_Sample", selected = "None")
   }
   } else {
     if ("All_Samples" %in% comp1) {
@@ -267,12 +277,50 @@ observe({
       samples=str_split(samples, ",")[[1]]
     }
     sample_order(samples)
-    attribute_filters("")
+    attribute_filters(NULL)
     samples_excludeM(""); samples_excludeF("")
+    updateRadioButtons(session, "Select_Sample", selected = "None")
   }
 })
 
 
+#update sample list based on comparison (right panel)
+observe({
+  req(input$comp_4_samples)
+  comp1<-input$comp_4_samples
+  sel_comp=DataReactive()$sel_comp
+  subsets<-sel_comp%>%filter(!duplicated(Subsetting_group), str_detect(Subsetting_group, ":"))
+  if (nrow(subsets)>0){
+    subsets<-subsets%>%mutate(Comparison=str_c("(Subset) ", Subsetting_group), sample_list=subset_list, Comparison=NA)
+    sel_comp=rbind(sel_comp, subsets)
+  }
+  
+  if (length(comp1)==1) {
+    if (comp1!="None"){
+      if (comp1=="All_Samples"){
+        samples=all_samples()
+      } else {
+        samples=sel_comp$sample_list[sel_comp$Comparison==comp1]
+        samples=str_split(samples, ",")[[1]]
+      }
+      sample_order(samples)
+      attribute_filters(NULL)
+      samples_excludeM(""); samples_excludeF("")
+      resetComp2Sample(TRUE)
+    }
+  } else {
+    if ("All_Samples" %in% comp1) {
+      samples=all_samples()
+    } else {
+      samples<-sel_comp%>%dplyr::filter(Comparison %in% comp1)%>%dplyr::select(sample_list)%>%unlist%>%unname%>%paste(collapse=",")
+      samples=str_split(samples, ",")[[1]]
+    }
+    sample_order(samples)
+    attribute_filters(NULL)
+    samples_excludeM(""); samples_excludeF("")
+    resetComp2Sample(TRUE)
+  }
+})
 
 observeEvent(input$QC_samples, {  
   sample_order(input$QC_samples)
@@ -309,7 +357,7 @@ observeEvent(input$upload_sample, {
   #browser() #debug
   if  (sum(ToAdd)>0) {
     sample_order(sample_list[ToAdd])
-    attribute_filters("")
+    attribute_filters(NULL)
     samples_excludeM(""); samples_excludeF("")
     resetComp2Sample(TRUE)
   }
@@ -325,13 +373,50 @@ observeEvent(input$sel_values_meta_col, {
   selValues=input$sel_values_meta_col
   selValues1=selValues
   selValues[selValues=="Empty_Value"]=""
-   RemoveValues=setdiff(UniqueValues, selValues)
-  ToRemove=(values %in% RemoveValues)
-  if  (sum(ToRemove)>0) {
-    samples_excludeF(samples[ToRemove])
-    old_attr=attribute_filters()
-    new_attr=str_c(old_attr, "\t", selCol, " selected values: ", paste(selValues1, collapse = ", "), ". "   )
-    attribute_filters(new_attr)
+  RemoveValues=setdiff(UniqueValues, selValues)
+  #check if selCol in filters already
+  attr=attribute_filters()
+  InFilter=0
+  if (!is.null(attr)) {
+    for (i in 1:length(attr)) {
+      name1=names(attr[i])
+      if (name1==selCol ) {
+        InFilter=i
+      }
+    }
+  }
+  
+  if (length(RemoveValues)>0 || InFilter>0)  {
+    Fnew=list(selValues1)
+    names(Fnew)=selCol
+    #add selection to attribute_filters
+    if (is.null(attr) & length(RemoveValues)>0) {
+      attr=Fnew
+    } else if (InFilter>0) {
+      attr[InFilter]=Fnew
+    } else if  (!is.null(attr) & length(RemoveValues)>0) {
+      attr=c(attr, Fnew)
+    }
+  
+    attribute_filters(attr)
+    resetComp2Sample(TRUE)
+    # browser() #debug
+    #now loop through attributes
+    ToRemove=rep(F, length(samples))
+    for (i in 1:length(attr)) {
+      selValues=attr[[i]]
+      selCol=names(attr[i])
+      values=as.character(MetaData[[selCol]])
+      UniqueValues=sort(unique(values))
+      selValues[selValues=="Empty_Value"]=""
+      RemoveValues=setdiff(UniqueValues, selValues)
+      NRemove=which(values %in% RemoveValues)
+      ToRemove[NRemove]=T
+    }
+
+    if  (sum(ToRemove)>0) {
+      samples_excludeF(samples[ToRemove])
+    }
   }
 })
 
@@ -342,7 +427,7 @@ observeEvent(input$reset_group, {
   allgroups = all_groups()
   group_order(allgroups)
   samples_excludeM("")
-  attribute_filters("")
+  attribute_filters(NULL)
   samples_excludeF("")
   samples=all_samples()
   sample_order(samples)
