@@ -18,7 +18,7 @@ output$help_input <- renderText({
 	<li>Data Table: Normalized data</li>
 	<li>Sample Table: sample group and comparison information</li>
 	<li>Protein Gene Names: protein accession number and gene symbol</li>
-    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
+    <li><a href=\"https://interactivereport.github.io/Quickomics/tutorial/docs/dataset-module.html#result-table\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -37,7 +37,7 @@ output$help_QC <- renderText({
 	<li>Sample-sample Distance: the Euclidean distance computed from expression values of the samples</li>
 	<li>Box Plot: The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the five number summary: minimum, first quartile, median, third quartile, and maximum</li>
 	<li>CV Distribution:  show the histogram of CV and median of CV for each group</li>
-    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
+    <li><a href=\"https://interactivereport.github.io/Quickomics/tutorial/docs/qc-plots-module.html#pca-plot\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -51,7 +51,7 @@ output$help_volcano <- renderText({
 	<li>Volcano Plot (Static): You can select the comparison group, fold change (not log2 FC) cutoff, p value cutoff. The selected proteins will be showed in red. Top 50 genes will be labeled </li>
 	<li>Volcano Plot (Interactive)</li>
 	<li>Data Output: selected genes data</li>
-    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
+    <li><a href=\"https://interactivereport.github.io/Quickomics/tutorial/docs/deg-module.html#volcano-plot-static\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
@@ -72,7 +72,7 @@ output$help_heatmap <- renderText({
 	Distance Metric: : function used to compute the distance (dissimilarity) between both rows and columns. <br>
 	Linkage Algorithm: methods of agglomerative hierarchical clustering<br>
 	Scale: If the values should be centered and scaled in either the row direction or the column direction, or none. </li>
-    <li><a href=\"https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf\">Tutorial</a></li>
+    <li><a href=\"https://interactivereport.github.io/Quickomics/tutorial/docs/heatmap-module.html#heatmap-module\">Tutorial</a></li>
 	</ul>"
 	htmlstr
 })
