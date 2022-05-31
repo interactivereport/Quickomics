@@ -31,7 +31,7 @@ DataGenesetReactive <- reactive({
 	pvalcut = as.numeric(input$geneset_pvalcut)
 	filteredgene <- results_long %>%  mutate(P.stat=ifelse(rep(input$geneset_psel == "Padj", nrow(results_long)),  Adj.P.Value,  P.Value)) %>%
 	dplyr::filter(test == test_sel) %>%dplyr::filter(!is.na(`Gene.Name`))%>%
-	dplyr::filter(abs(logFC) >= absFCcut & P.stat < pvalcut) %>%
+	dplyr::filter(abs(logFC) > absFCcut & P.stat < pvalcut) %>%
 	dplyr::select(one_of(c("Gene.Name","logFC"))) %>%
 	dplyr::distinct(., Gene.Name,.keep_all = TRUE)
 	#browser()#bebug
