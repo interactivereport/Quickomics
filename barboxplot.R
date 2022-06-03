@@ -202,13 +202,15 @@ boxplot_out <- eventReactive(input$plot_exp,  {
     if (input$IndividualPoint == "YES")
       p <- p +  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5,  position = position_dodge(width=0.8))
     if (Val_colorby!="None" ) {
-      use_color=colorRampPalette(brewer.pal(8, input$colpalette))(length(sel_group))
+      #browser()
+      N_color<-data_long_tmp%>%dplyr::select(!!colorby)%>%unlist%>%unname%>%as.character%>%unique%>%length
+      use_color=colorRampPalette(brewer.pal(8, input$colpalette))(N_color)
       if (input$plotformat == "line") {
         p <- p +scale_color_manual(values=use_color)+ scale_fill_manual(values =use_color)
       } else {p <- p + scale_fill_manual(values =use_color)}
       
     } else {
-      p <- p + scale_fill_manual(values=rep(barcol,length(sel_group))) #+scale_color_manual(values=rep(barcol,length(sel_group)))
+      p <- p + scale_fill_manual(values=barcol) #+scale_color_manual(values=rep(barcol,length(sel_group)))
     }
     
     p <- p + theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +
@@ -372,13 +374,15 @@ browsing_out <- eventReactive(plot_exp_control(),{
 	if (input$IndividualPoint == "YES")
 	p <- p +  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5,  position = position_dodge(width=0.8))
 	if (Val_colorby!="None" ) {
-	    use_color=colorRampPalette(brewer.pal(8, input$colpalette))(length(sel_group))
+	    #browser()
+	    N_color<-data_long_tmp%>%dplyr::select(!!colorby)%>%unlist%>%unname%>%as.character%>%unique%>%length
+	    use_color=colorRampPalette(brewer.pal(8, input$colpalette))(N_color)
 			if (input$plotformat == "line") {
 			  p <- p +scale_color_manual(values=use_color)+ scale_fill_manual(values =use_color)
 			} else {p <- p + scale_fill_manual(values =use_color)}
 			
 	} else {
-		p <- p + scale_fill_manual(values=rep(barcol,length(sel_group))) #+scale_color_manual(values=rep(barcol,length(sel_group)))
+		p <- p + scale_fill_manual(values=barcol) #+scale_color_manual(values=rep(barcol,length(sel_group)))
 	}
 	p <- p +	theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +
 	  theme (plot.margin = unit(c(1,1,1,1), "cm"),
