@@ -130,19 +130,6 @@ if (file.exists("unlisted/projects_public.csv")) { #load selected projects from 
   names(pub_projects)=Pinfo$ShortName
 }
 
-config=NULL
-server_dir=NULL
-test_dir=NULL
-if (file.exists("config.csv")) { #load optional configuration file
-  config=read_csv("config.csv")
-  N=match("server_dir", config$category)
-  if (!is.na(N)) {server_dir=config$value[N]}
-  N=match("test_dir", config$category)
-  if (!is.na(N)) {test_dir=config$value[N]}
-  #browser() #debug
-}
-
-
 html_geneset0 =  '
 <script>
 var GENESET_DEFAULT_TABLE = "";
@@ -184,3 +171,17 @@ var MY_SECRET_ID = /PHPSESSID=([^;]+)/i.test(document.cookie) ? RegExp.$1 : fals
 Benbo Gao, Xinmin Zhang and Baohong Zhang<br><a href="https://github.com/interactivereport/Quickomics/">More information at GitHub</a> | <a href="https://github.com/interactivereport/Quickomics/blob/master/Supplementary/Supplementary_tutorial.pdf">Tutorial</a>
 </div>
 '
+
+config=NULL
+server_dir=NULL
+test_dir=NULL
+if (file.exists("config.csv")) { #load optional configuration file
+  config=read_csv("config.csv")
+  N=match("server_dir", config$category)
+  if (!is.na(N)) {server_dir=config$value[N]}
+  N=match("test_dir", config$category)
+  if (!is.na(N)) {test_dir=config$value[N]}
+  N=match("geneset_api", config$category) #if using internal api for geneset
+  if (!is.na(N)) {footer_text=str_replace_all(footer_text, "//bxngs.com/bxomics/api", config$value[N])}
+  #browser() #debug
+}
