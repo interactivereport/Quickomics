@@ -173,7 +173,7 @@ Compute_Corr_Anova<-function(exp, meta, PC_cutoff=5) {
   meta_cat=meta[, sel_col, drop=F]
   if (ncol(meta_cat)>0) {
     for (i in 1:ncol(meta_cat)) {
-      if (!is.factor(meta_cat[i, 1])) {meta_cat[, i]=as.factor(meta_cat[, i])} #turn all into factors, even logical
+      if (!is.factor(meta_cat[1, i])) {meta_cat[, i]=as.factor(meta_cat[, i])} #turn all into factors, even logical
     }  
     nelem<-function(x) nlevels(factor(x))
     ( nL<-apply(meta_cat, 2, nelem) )
