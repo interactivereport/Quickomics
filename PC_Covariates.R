@@ -204,7 +204,7 @@ Compute_Corr_Anova<-function(exp, meta, PC_cutoff=5) {
       anova_results$fdr=p.adjust(anova_results$pvalue, method = "fdr") 
     }
   }
-  meta=rbind(meta_num, meta_cat)
+  meta=cbind(meta_num, meta_cat)
   return(list(PC_scores=scores, meta=meta, percentVar=percentVar, corr=cor_mat, anova=anova_results))
 }
 
