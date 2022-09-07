@@ -1,6 +1,6 @@
 # Quickomics: exploring omics data in an intuitive, interactive and informative manner
 
-Demo site: http://quickomics.bxgenomics.com
+Demo site: https://quickomics.bxgenomics.com
 
 Tutorial with supplementary tables: https://bit.ly/3rXIyhL
 
