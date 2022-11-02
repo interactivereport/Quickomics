@@ -649,7 +649,7 @@ output$plot3d <- renderRglwidget({
 	#colorpal = topo.colors(n, alpha = 1)
 	#colorpal = get_palette("Dark2", n)
 	colorpal = colorRampPalette(brewer.pal(8, input$PCAcolpalette))(n)
-	scores$tmp_group=as.factor(tmp_group)
+	scores$tmp_group=unlist(scores[, colnames(scores)==input$PCAcolorby])
 
 	
 	#rgl.open(useNULL=T)
