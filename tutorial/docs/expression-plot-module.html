@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 7 Expression Plot Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 7 Expression Plot Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 7 Expression Plot Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
-  
   
   
   
@@ -23,7 +22,7 @@
 
 
 
-<meta name="date" content="2022-02-02" />
+<meta name="date" content="2023-02-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -32,7 +31,6 @@
   
 <link rel="prev" href="heatmap-module.html"/>
 <link rel="next" href="gene-set-enrichment-module.html"/>
-<script src="libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -50,8 +48,9 @@
 
 
 
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 
 
 
@@ -178,23 +177,23 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="expression-plot-module" class="section level1" number="7">
-<h1><span class="header-section-number">Chapter 7</span> Expression Plot Module</h1>
+<div id="expression-plot-module" class="section level1 hasAnchor" number="7">
+<h1><span class="header-section-number">Chapter 7</span> Expression Plot Module<a href="expression-plot-module.html#expression-plot-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
 <p>This functional module allows Users to browse through a subset of genes/proteins. It also offers an option to plot expression of individually selected genes. Four different displays: Box Plot, Bar Plot, Violin Plot and Line Plot are made available to fit the Users’ preference. In Quickomics v2.0, we enhanced the Expression Plot module: Genes can be ranked by p-value or logFC, and the number of columns in the graph can be changed.</p>
-<div id="browsing" class="section level2" number="7.1">
-<h2><span class="header-section-number">7.1</span> Browsing</h2>
+<div id="browsing" class="section level2 hasAnchor" number="7.1">
+<h2><span class="header-section-number">7.1</span> Browsing<a href="expression-plot-module.html#browsing" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This tab lets the Users plot out the expression of the DEGs/DEPs identified in the different comparisons. In this example below, we demonstrate how to display a few top genes as Violin Plots.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.1_1.png" /></a></p>
 </div>
-<div id="searched-expression-data" class="section level2" number="7.2">
-<h2><span class="header-section-number">7.2</span> Searched Expression Data</h2>
+<div id="searched-expression-data" class="section level2 hasAnchor" number="7.2">
+<h2><span class="header-section-number">7.2</span> Searched Expression Data<a href="expression-plot-module.html#searched-expression-data" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Another way to plot genes/proteins is using this functionality. Users can either enter a custom list of genes/proteins or select a list from online databases like KEGG, MSigDB etc. The selected genes/proteins can be plotted on a single plot or in multiple plots. Here is an example of plotting genes involved in MHCII antigen processing.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.2_1.png" /></a></p>
 <p>The resulting plot shows the expression of a subset of genes from the MHCII antigen presentation family of genes. Many of them appear altered by gene KO in 2mon microglia, but also in all genotypes in 2yr microglia, as indicated in the publication.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.2_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.2_2.png" /></a></p>
 </div>
-<div id="data-table-2" class="section level2" number="7.3">
-<h2><span class="header-section-number">7.3</span> Data Table</h2>
+<div id="data-table-2" class="section level2 hasAnchor" number="7.3">
+<h2><span class="header-section-number">7.3</span> Data Table<a href="expression-plot-module.html#data-table-2" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This sub-tab lists the normalized data of the genes/proteins selected in “Searched Expression Data” (Section 7.2) as a searchable table. For a demo of this feature, we select a proteome dataset from published paper (<a href="https://www.sciencedirect.com/science/article/pii/S0969996119300968?via%3Dihub" target="_blank">Connor-Robson et al., 2019</a>).</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_1.png" /></a></p>
 <p>Once the dataset is selected, we go into the “Searched Expression Data” sub-tab to select a gene set.</p>
@@ -202,13 +201,13 @@
 <p>Finally, we click the “Data Table” tab to look at the expression of the protein selected for a searchable table of values.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_3.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.3_3.png" /></a></p>
 </div>
-<div id="result-table-1" class="section level2" number="7.4">
-<h2><span class="header-section-number">7.4</span> Result Table</h2>
+<div id="result-table-1" class="section level2 hasAnchor" number="7.4">
+<h2><span class="header-section-number">7.4</span> Result Table<a href="expression-plot-module.html#result-table-1" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This tab lists the statistics results of the genes/proteins selected in “Searched Expression Data” as a searchable table. Each comparison defined is probed for the genes in the list and the P value and Fold changes are listed. This is specifically designed for the gene values, unlike “Data Table” in the previous section (7.3) that is designed for protein values.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.4_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.4_1.png" /></a></p>
 </div>
-<div id="rank-abundance-curve" class="section level2" number="7.5">
-<h2><span class="header-section-number">7.5</span> Rank Abundance Curve</h2>
+<div id="rank-abundance-curve" class="section level2 hasAnchor" number="7.5">
+<h2><span class="header-section-number">7.5</span> Rank Abundance Curve<a href="expression-plot-module.html#rank-abundance-curve" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This functionality helps identify the relative abundance of a list of genes within a dataset. This plot helps interpret the distribution of abundance and expression levels of a set of genes. A steep gradient indicates the genes are very different in their expression levels as the high-ranking species have much higher abundances than the low-ranking species. A shallow gradient indicates that the genes have very similar expression levels as the abundances of different species are similar.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.5_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS7.5_1.png" /></a></p>
 

@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 2 Dataset Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 2 Dataset Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 2 Dataset Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
-  
   
   
   
@@ -23,7 +22,7 @@
 
 
 
-<meta name="date" content="2022-02-02" />
+<meta name="date" content="2023-02-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -32,7 +31,6 @@
   
 <link rel="prev" href="introduction.html"/>
 <link rel="next" href="groups-and-samples-module.html"/>
-<script src="libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -50,8 +48,9 @@
 
 
 
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 
 
 
@@ -178,12 +177,12 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="dataset-module" class="section level1" number="2">
-<h1><span class="header-section-number">Chapter 2</span> Dataset Module</h1>
+<div id="dataset-module" class="section level1 hasAnchor" number="2">
+<h1><span class="header-section-number">Chapter 2</span> Dataset Module<a href="dataset-module.html#dataset-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
 <p>This first module is for selecting dataset. Users can either select from pre-loaded example datasets or upload their own dataset in a pre-defined format as detailed in section 2.1 and in our GitHub page (<a href="https://github.com/interactivereport/Quickomics" target="_blank">https://github.com/interactivereport/Quickomics</a>). We have pre-loaded four datasets from published studies that users can use for demonstrative purposes. These includes two RNAseq datasets from <a href="https://www.life-science-alliance.org/content/2/6/e201900453" target="_blank">Gyoneva et al., 2019</a> and <a href="https://www.sciencedirect.com/science/article/pii/S0969996119300968?via%3Dihub" target="_blank">Connor-Robson et al., 2019</a>; and two proteomics datasets from Connor-Robson et al., 2019. Users can walk through multiple sub-tabs to visualize, select and download figures or data.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2_1.png" /></a></p>
-<div id="upload-files" class="section level2" number="2.1">
-<h2><span class="header-section-number">2.1</span> Upload Files</h2>
+<div id="upload-files" class="section level2 hasAnchor" number="2.1">
+<h2><span class="header-section-number">2.1</span> Upload Files<a href="dataset-module.html#upload-files" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>For a data set, the “Upload Files” tool allows users to upload three required files, namely sample metadata, normalized expression data and statistical comparison results in csv format (Comma Separated Values) to Quickomics directly. Example data sets are provided in GitHub for both RNAseq (<a href="https://bit.ly/2MRkFcb" target="_blank">https://bit.ly/2MRkFcb</a>) and proteomics (<a href="https://bit.ly/3rn4i6a" target="_blank">https://bit.ly/3rn4i6a</a>). Detailed formatting guidance is outlined below,</p>
 <ol style="list-style-type: decimal">
 <li><strong>Sample Metadata File</strong>: It should have “sampleid” and “group” columns, with additional columns optional. Sample identifiers must match those used in the expression data file.</li>
@@ -195,8 +194,8 @@
 <p>After the data files are processed, Quickomics will automatically load all required data for exploration immediately and provide a link for the user to come back in the future.</p>
 <p>Behind the scene, Bioconductor biomaRt package (<a href="https://bioconductor.org/packages/release/bioc/html/biomaRt.html" target="_blank">https://bioconductor.org/packages/release/bioc/html/biomaRt.html</a>) has been used to convert gene IDs (Ensembl gene, NCBI gene ID, etc.) into gene symbols by querying Ensembl databases. For protein IDs, we generated a custom lookup table using information downloaded from UniProt Knowledgebase to convert UniProt IDs to gene symbols and protein names. We didn’t use biomaRt for proteins as Ensembl databases only cover about 60-80% protein IDs in a typical proteomics data set.</p>
 </div>
-<div id="prepare-r-data-files-by-computational-biologists" class="section level2" number="2.2">
-<h2><span class="header-section-number">2.2</span> Prepare R Data Files by Computational Biologists</h2>
+<div id="prepare-r-data-files-by-computational-biologists" class="section level2 hasAnchor" number="2.2">
+<h2><span class="header-section-number">2.2</span> Prepare R Data Files by Computational Biologists<a href="dataset-module.html#prepare-r-data-files-by-computational-biologists" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>We recommend uploading csv files, which is convenient for general users who can skip section 2.2 entirely. Nevertheless, experienced R programmers can create R data files to be uploaded through “Upload RData File” option. Section 2.2.1 and 2.2.2 provide example R scripts to prepare such R data files for RNA-Seq and proteomics data, respectively.</p>
 <p>Two R data files are required for each data set, one contains the main data and the other contains gene co-expression network information. For the pre-loaded datasets, main data files are located in the “data” folder, <a href="https://github.com/interactivereport/Quickomics/tree/master/data" target="_blank">https://github.com/interactivereport/Quickomics/tree/master/data</a>, and gene co-expression network files are located in the “networkdata” folder, <a href="https://github.com/interactivereport/Quickomics/tree/master/networkdata" class="uri">https://github.com/interactivereport/Quickomics/tree/master/networkdata</a>. One can review the content of a R data file (e.g. Mouse_microglia_RNA-Seq.RData) in the “data” folder by loading it into R.
 The main R data file contains the following R data frame objects.</p>
@@ -220,8 +219,8 @@ network &lt;- tibble::tibble (
   p = signif(pmat[ut], 2), 
   direction = as.integer(sign(cormat[ut]))
 )</code></pre>
-<div id="example-r-script-to-prepare-r-data-files-from-rna-seq-results" class="section level3" number="2.2.1">
-<h3><span class="header-section-number">2.2.1</span> Example R script to prepare R data files from RNA-Seq results</h3>
+<div id="example-r-script-to-prepare-r-data-files-from-rna-seq-results" class="section level3 hasAnchor" number="2.2.1">
+<h3><span class="header-section-number">2.2.1</span> Example R script to prepare R data files from RNA-Seq results<a href="dataset-module.html#example-r-script-to-prepare-r-data-files-from-rna-seq-results" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>We have provided example input files (TPM and count matrix files, sample grouping file, comparison list file) and the R scripts to generate the main data and network R data files at <a href="https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_RNA_Seq_data" target="_blank">https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_RNA_Seq_data</a>. Please note that you may need to modify RNA_Seq_raw2quickomics.R to fit your input files.
 • <strong>rsem_TPM.txt</strong>: The TPM matrix. One can also use RPKM matrix if needed.
 • <strong>rsem_expected_count.txt</strong>: The gene count matrix. We used RSEM counts in this case, but gene count results from other methods can be used as well.
@@ -230,8 +229,8 @@ network &lt;- tibble::tibble (
 The following command will read the above data files, run differential gene expression analysis using DESeq2, and create main and network R data files.</p>
 <pre><code>$ Rscript RNA_Seq_raw2quickomics.R</code></pre>
 </div>
-<div id="example-r-script-to-prepare-r-data-files-from-proteomics-results" class="section level3" number="2.2.2">
-<h3><span class="header-section-number">2.2.2</span> Example R script to prepare R data files from proteomics results</h3>
+<div id="example-r-script-to-prepare-r-data-files-from-proteomics-results" class="section level3 hasAnchor" number="2.2.2">
+<h3><span class="header-section-number">2.2.2</span> Example R script to prepare R data files from proteomics results<a href="dataset-module.html#example-r-script-to-prepare-r-data-files-from-proteomics-results" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <p>We have provided the example input files (normalized protein expression, comparison data, sample information, protein and gene names) and the R script to generate the main data and network R data files at <a href="https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_Proteomics_data" target="_blank">https://github.com/interactivereport/Quickomics/tree/master/demo_files/Example_Proteomics_data</a>. Please note that you may need to modify Proteomics2Quickomics.R to fit your input files.</p>
 <p>• <strong>NormalizedExpression.csv</strong>: Normalized protein expression (log2 transformed).</p>
 <p>• <strong>ComparisonData.csv</strong>: Comparison results. The statistic values are: logFC, P.Value and Adj.P.Value. This can be created using R packages like limma.</p>
@@ -241,34 +240,34 @@ The following command will read the above data files and create main and network
 <pre><code>$ Rscript Proteomics2Quickomics.R</code></pre>
 </div>
 </div>
-<div id="sample-table" class="section level2" number="2.3">
-<h2><span class="header-section-number">2.3</span> Sample Table</h2>
+<div id="sample-table" class="section level2 hasAnchor" number="2.3">
+<h2><span class="header-section-number">2.3</span> Sample Table<a href="dataset-module.html#sample-table" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>A sample table with metadata/details appears upon completion of dataset loading. Here we have selected the “Mouse Microglia RNA” dataset from the previously published paper (Gyoneva et al., 2019) as an example to illustrate all the functionalities. This publication used RNAseq to conclude that the knockout of the Cx3cr1 gene altered the microglial transcriptome in a manner similar to what ageing does, albeit in a milder extent. Using Quickomics, we can visualize the original results from the paper, as well as provide novel visualizations to support new results.</p>
 <p>The Sample Table contains detailed info of all study samples. A total of 93 samples that were sequenced in this project are listed in the table with attributes like sampleid, group, Age, Genotype and Gender, shown in different columns.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.3_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.3_1.png" /></a></p>
 </div>
-<div id="project-overview" class="section level2" number="2.4">
-<h2><span class="header-section-number">2.4</span> Project Overview</h2>
+<div id="project-overview" class="section level2 hasAnchor" number="2.4">
+<h2><span class="header-section-number">2.4</span> Project Overview<a href="dataset-module.html#project-overview" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This tab gives an overview of all samples in the project by providing a summary from the metadata. This includes information like which species was used, the different comparisons run and total number of samples in each group. This tab also helps identify how many groups were present in the dataset, like in this project there are 9 different groups that correspond to three genotypes in each of three time points (WT, Het, KO; 2mo, 1yr, 2yr).</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.4_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.4_1.png" /></a></p>
 </div>
-<div id="result-table" class="section level2" number="2.5">
-<h2><span class="header-section-number">2.5</span> Result Table</h2>
+<div id="result-table" class="section level2 hasAnchor" number="2.5">
+<h2><span class="header-section-number">2.5</span> Result Table<a href="dataset-module.html#result-table" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This tab contains statistical analysis results like Ensemble ID (for RNAseq data) and Accession ID (for proteomics data), gene name, mRNA or protein abundance (count or intensity), mean and SD values for each group, log2 fold change, P value and adjusted P value.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.5_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.5_1.png" /></a></p>
 </div>
-<div id="data-table" class="section level2" number="2.6">
-<h2><span class="header-section-number">2.6</span> Data Table</h2>
+<div id="data-table" class="section level2 hasAnchor" number="2.6">
+<h2><span class="header-section-number">2.6</span> Data Table<a href="dataset-module.html#data-table" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The Data table contains normalized expression values (TPM for RNAseq, intensity for label free proteomic quantification, or ratio for isobaric label proteomics quantification) per sample for each gene. In Quickomics version 2.0, we added “Download all” button for small tables, and enable “Save to output” button for large tables.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.6_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.6_1.png" /></a></p>
 </div>
-<div id="protein-gene-names" class="section level2" number="2.7">
-<h2><span class="header-section-number">2.7</span> Protein Gene Names</h2>
+<div id="protein-gene-names" class="section level2 hasAnchor" number="2.7">
+<h2><span class="header-section-number">2.7</span> Protein Gene Names<a href="dataset-module.html#protein-gene-names" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This tab contains all quantified gene or protein IDs and gene names.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.7_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.7_1.png" /></a></p>
 </div>
-<div id="help" class="section level2" number="2.8">
-<h2><span class="header-section-number">2.8</span> Help</h2>
+<div id="help" class="section level2 hasAnchor" number="2.8">
+<h2><span class="header-section-number">2.8</span> Help<a href="dataset-module.html#help" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Finally, the “Help” feature summarizes what data is being displayed in each tab under Select Dataset. The Help tab is available for all sections of the subsequent analysis.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.8_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS2.8_1.png" /></a></p>
 

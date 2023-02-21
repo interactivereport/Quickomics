@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 4 QC Plots Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 4 QC Plots Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 4 QC Plots Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
-  
   
   
   
@@ -23,7 +22,7 @@
 
 
 
-<meta name="date" content="2022-02-02" />
+<meta name="date" content="2023-02-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -32,7 +31,6 @@
   
 <link rel="prev" href="groups-and-samples-module.html"/>
 <link rel="next" href="deg-module.html"/>
-<script src="libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -50,8 +48,9 @@
 
 
 
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 
 
 
@@ -178,11 +177,11 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="qc-plots-module" class="section level1" number="4">
-<h1><span class="header-section-number">Chapter 4</span> QC Plots Module</h1>
+<div id="qc-plots-module" class="section level1 hasAnchor" number="4">
+<h1><span class="header-section-number">Chapter 4</span> QC Plots Module<a href="qc-plots-module.html#qc-plots-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
 <p>The “QC Plots” module performs basic QC analyses, as described in following paragraphs, on an uploaded dataset to evaluate integrity and quality of the data. The plots were generated using ggplot, plotly, ComplexHeatmap and pheatmap R packages.</p>
-<div id="pca-plot" class="section level2" number="4.1">
-<h2><span class="header-section-number">4.1</span> PCA Plot</h2>
+<div id="pca-plot" class="section level2 hasAnchor" number="4.1">
+<h2><span class="header-section-number">4.1</span> PCA Plot<a href="qc-plots-module.html#pca-plot" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The principle component analysis (PCA) plot displays, by default, the first 2 PC’s in the dataset and colors study groups with “none” selected in shape and size settings. This plot is highly customizable. Users can change the display by annotating the plot with different colors, shapes, size scheme, as well as label selected subsets data points.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_1.png" /></a></p>
 <p>To illustrate the strengths of customization, we changed a few display elements as shown below, to visualize the influence of Age and Genotype on sample clustering:</p>
@@ -192,62 +191,62 @@
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_3.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.1_3.png" /></a></p>
 <p>Furthermore, the plot can be saved in high resolution by clicking on “Save to Output”. Section 12 of this document describes the next steps of downloading and obtaining the saved plots.</p>
 </div>
-<div id="covariates" class="section level2" number="4.2">
-<h2><span class="header-section-number">4.2</span> Covariates</h2>
+<div id="covariates" class="section level2 hasAnchor" number="4.2">
+<h2><span class="header-section-number">4.2</span> Covariates<a href="qc-plots-module.html#covariates" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The Covariates tab provides flexibility to visualize the covariates, such as Age, group, Genotype showing here. This table contains several columns including the Significance, p-value, and FDR for each covariates listed. Users can also adjust the covariates and cutoffs on the left.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.2_1.png" /></a></p>
 </div>
-<div id="alignqc" class="section level2" number="4.3">
-<h2><span class="header-section-number">4.3</span> AlignQC</h2>
+<div id="alignqc" class="section level2 hasAnchor" number="4.3">
+<h2><span class="header-section-number">4.3</span> AlignQC<a href="qc-plots-module.html#alignqc" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The AlignQC tab contains several sub-tabs to visualize the QC metrics of the alignment step. Here, we can check the ‘Top Gene Ratio’, ‘Top Gene List’, ‘Mapped Read Allocation’, or ‘Plot Other Variables’ across samples. More details can be adjusted on the left panel, such as the height, width, and font size of the plot. The ‘Save to output’ function can add the current plot in the output list.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.3_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.3_1.png" /></a></p>
 </div>
-<div id="eigenvalues" class="section level2" number="4.4">
-<h2><span class="header-section-number">4.4</span> Eigenvalues</h2>
+<div id="eigenvalues" class="section level2 hasAnchor" number="4.4">
+<h2><span class="header-section-number">4.4</span> Eigenvalues<a href="qc-plots-module.html#eigenvalues" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>By default, the PCA plot displays PC1 and PC2 as described in Section 4.1. However, in many cases other PC’s may be important in explaining additional variance in the dataset. This sub-tab generates a plot of the variances versus the first 10 PCs in the dataset, enabling Users to make educated decisions of which PCs to plot in 2D scatter plot. In this dataset PC1 and PC2 together explain around 30% of the variance.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.4_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.4_1.png" /></a></p>
 <p>PC2 and PC3 were used to redo the PCA plot, but here the factors driving the separation of the samples is not as clear.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.4_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.4_2.png" /></a></p>
 </div>
-<div id="pca-3d-plot" class="section level2" number="4.5">
-<h2><span class="header-section-number">4.5</span> PCA 3D Plot</h2>
+<div id="pca-3d-plot" class="section level2 hasAnchor" number="4.5">
+<h2><span class="header-section-number">4.5</span> PCA 3D Plot<a href="qc-plots-module.html#pca-3d-plot" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This sub-tab contains a way to perform 3D PCA representation. The functionality is limited to doing so only on PC1, PC2 and PC3. Users can zoom in and out to focus on different areas of the plot or rotate the plot in different axes to find the best separation by age as shown below. There are 3 attributes that can be changed: color, ellipsoid inclusion, and labels of the samples.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.5_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.5_1.png" /></a></p>
 <p>The “Color By” and “Plot Ellipsoid” attributes were changed in the following plot. This highlights the clear separation of samples by Age and not Genotype, contrary to the original biological hypothesis.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.5_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.5_2.png" /></a></p>
 </div>
-<div id="pca-3d-interactive" class="section level2" number="4.6">
-<h2><span class="header-section-number">4.6</span> PCA 3D Interactive</h2>
+<div id="pca-3d-interactive" class="section level2 hasAnchor" number="4.6">
+<h2><span class="header-section-number">4.6</span> PCA 3D Interactive<a href="qc-plots-module.html#pca-3d-interactive" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This tab is similar to the previous one (4.5 PCA 3D Plot), but here users have the additional capability to hover over the samples on the plot to identify more details, see the pointer below. This was implemented through the plotly package in R. Users can change 2 attributes here, the color and shape.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.6_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.6_1.png" /></a></p>
 <p>In the plot below, the “Color By” and “Shape By” attributes have been changed to highlight the drivers of separation.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.6_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.6_2.png" /></a></p>
 </div>
-<div id="sample-sample-distance" class="section level2" number="4.7">
-<h2><span class="header-section-number">4.7</span> Sample-sample Distance</h2>
+<div id="sample-sample-distance" class="section level2 hasAnchor" number="4.7">
+<h2><span class="header-section-number">4.7</span> Sample-sample Distance<a href="qc-plots-module.html#sample-sample-distance" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This tab helps identify pair-wise similarity between all samples. A distance matrix is generated for every sample pair and is plotted as a heatmap. The rows and columns are clustered based on similarity.</p>
 <p>It is clear from this plot that samples of the same Age have the smaller distances, that is, they have closer gene expression patterns. Here again, Users have the option to save to output.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.7_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.7_1.png" /></a></p>
 </div>
-<div id="dendrograms" class="section level2" number="4.8">
-<h2><span class="header-section-number">4.8</span> Dendrograms</h2>
+<div id="dendrograms" class="section level2 hasAnchor" number="4.8">
+<h2><span class="header-section-number">4.8</span> Dendrograms<a href="qc-plots-module.html#dendrograms" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Like the previous plot (4.7 Sample-sample Distance), the Dendrogram plot helps visualize hierarchical clustering relationships between samples. The Default plot is Circular and cut into four parts. Users have the option to visualize in two other ways (tree or horizontal) and cut the plot in multiple regions. Here again, Users can save the plot to output.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.8_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.8_1.png" /></a></p>
 <p>In the plot below, we have selected to visualize as a tree and cut into eight parts. This shows the relationship between the samples to help understand the hierarchal clustering. Overall, the samples are arranged by age, but there are some outliers that appear. It is also interesting how the 2mo samples cluster with the 1yr samples.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.8_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.8_2.png" /></a></p>
 </div>
-<div id="box-plot" class="section level2" number="4.9">
-<h2><span class="header-section-number">4.9</span> Box Plot</h2>
+<div id="box-plot" class="section level2 hasAnchor" number="4.9">
+<h2><span class="header-section-number">4.9</span> Box Plot<a href="qc-plots-module.html#box-plot" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The Boxplot is a visualization to understand the distribution of the normalized expression levels in all samples. This identifies the minimum, first quartile, median, third quartile, and maximum values in the dataset. In this demo dataset, most of the samples have the same range of expression, indicating that there are no outliers.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.9_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.9_1.png" /></a></p>
 </div>
-<div id="cv-distribution" class="section level2" number="4.10">
-<h2><span class="header-section-number">4.10</span> CV Distribution</h2>
+<div id="cv-distribution" class="section level2 hasAnchor" number="4.10">
+<h2><span class="header-section-number">4.10</span> CV Distribution<a href="qc-plots-module.html#cv-distribution" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This plot shows the histogram of CVs (coefficient of variation) and a dotted line for each group indicates the median CV. In this dataset, the 2mon_KO samples have the highest CV while the 2yr_Het samples have the lowest variability, which corresponds to what is visually seen on the PCA plot for these samples in Section 4.1.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.10_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.10_1.png" /></a></p>
 </div>
-<div id="help-1" class="section level2" number="4.11">
-<h2><span class="header-section-number">4.11</span> Help</h2>
+<div id="help-1" class="section level2 hasAnchor" number="4.11">
+<h2><span class="header-section-number">4.11</span> Help<a href="qc-plots-module.html#help-1" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The Help section describes each tab of the QC Plot and what is being visualized. For further help please visit the GitHub containing the source code for this tools (<a href="https://github.com/interactivereport/Quickomics" target="_blank">https://github.com/interactivereport/Quickomics</a>) or click on the link at the bottom of the page.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.11_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS4.11_1.png" /></a></p>
 

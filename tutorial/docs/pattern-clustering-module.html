@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 9 Pattern Clustering Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 9 Pattern Clustering Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 9 Pattern Clustering Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
-  
   
   
   
@@ -23,7 +22,7 @@
 
 
 
-<meta name="date" content="2022-02-02" />
+<meta name="date" content="2023-02-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -32,7 +31,6 @@
   
 <link rel="prev" href="gene-set-enrichment-module.html"/>
 <link rel="next" href="correlation-network-module.html"/>
-<script src="libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -50,8 +48,9 @@
 
 
 
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 
 
 
@@ -178,17 +177,17 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="pattern-clustering-module" class="section level1" number="9">
-<h1><span class="header-section-number">Chapter 9</span> Pattern Clustering Module</h1>
+<div id="pattern-clustering-module" class="section level1 hasAnchor" number="9">
+<h1><span class="header-section-number">Chapter 9</span> Pattern Clustering Module<a href="pattern-clustering-module.html#pattern-clustering-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
 <p>This functional module in Quickomics helps cluster genes/proteins based on their expression profiles across different groups. Three different algorithms, soft (fuzzy) clustering, k-means and partitioning around medoids (PAM), are implemented.</p>
-<div id="clustering-of-centroid-profiles" class="section level2" number="9.1">
-<h2><span class="header-section-number">9.1</span> Clustering of Centroid Profiles</h2>
+<div id="clustering-of-centroid-profiles" class="section level2 hasAnchor" number="9.1">
+<h2><span class="header-section-number">9.1</span> Clustering of Centroid Profiles<a href="pattern-clustering-module.html#clustering-of-centroid-profiles" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Users have the option to either select the DEGs/DEPS as the list of genes/proteins to cluster based off on or upload a custom gene list. DEGs/DEPs are selected based off all the comparisons, and cutoffs can be applied to limit the number of genes. In this example below, we use the top DEGs/DEPs with a Fold Change cutoff of 3 to identify 6 clusters of genes.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS9.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS9.1_1.png" /></a></p>
 <p>Please note that this visualization for this dataset is novel and was not previously reported in <a href="https://www.life-science-alliance.org/content/2/6/e201900453" target="_blank">Gyoneva et al., 2019</a>. The genes in each cluster can be viewed in the “Data Table” tab.</p>
 </div>
-<div id="data-table-3" class="section level2" number="9.2">
-<h2><span class="header-section-number">9.2</span> Data Table</h2>
+<div id="data-table-3" class="section level2 hasAnchor" number="9.2">
+<h2><span class="header-section-number">9.2</span> Data Table<a href="pattern-clustering-module.html#data-table-3" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The data table contains genes from the previous clusters, along with their expression values.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS9.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS9.2_1.png" /></a></p>
 

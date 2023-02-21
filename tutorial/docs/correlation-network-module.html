@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 10 Correlation Network Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 10 Correlation Network Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 10 Correlation Network Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
-  
   
   
   
@@ -23,7 +22,7 @@
 
 
 
-<meta name="date" content="2022-02-02" />
+<meta name="date" content="2023-02-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -32,7 +31,6 @@
   
 <link rel="prev" href="pattern-clustering-module.html"/>
 <link rel="next" href="venn-diagram-module.html"/>
-<script src="libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -50,8 +48,9 @@
 
 
 
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 
 
 
@@ -178,18 +177,18 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="correlation-network-module" class="section level1" number="10">
-<h1><span class="header-section-number">Chapter 10</span> Correlation Network Module</h1>
+<div id="correlation-network-module" class="section level1 hasAnchor" number="10">
+<h1><span class="header-section-number">Chapter 10</span> Correlation Network Module<a href="correlation-network-module.html#correlation-network-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
 <p>This module helps build co-expression networks based on gene-gene or protein-protein correlations. This is especially useful during co-immunoprecipitation or pulldown proteomics experiments to identify protein partners. Users have the ability to enter 1 or more genes/proteins to identify if their expression is correlated.</p>
-<div id="visnetwork" class="section level2" number="10.1">
-<h2><span class="header-section-number">10.1</span> visNetwork</h2>
+<div id="visnetwork" class="section level2 hasAnchor" number="10.1">
+<h2><span class="header-section-number">10.1</span> visNetwork<a href="correlation-network-module.html#visnetwork" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This uses the R package visNetwork to visualize the expression of correlated genes/proteins. Users have the ability to choose the R and P value cutoff for selecting the correlated genes/proteins. In this example below, we probe 3 genes and identify the expression of other genes that are correlated with them.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.1_1.png" /></a></p>
 <p>The following network plot was produced. Gnai3 is part of a large network with multiple genes correlated with it. On the other hand, Klf6 was correlated with 2 other genes, while Btbd17 was not correlated with any genes.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.1_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.1_2.png" /></a></p>
 </div>
-<div id="data-table-4" class="section level2" number="10.2">
-<h2><span class="header-section-number">10.2</span> Data Table</h2>
+<div id="data-table-4" class="section level2 hasAnchor" number="10.2">
+<h2><span class="header-section-number">10.2</span> Data Table<a href="correlation-network-module.html#data-table-4" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The genes identified in the previous tab as part of the network plot are available as a table in this tab. Users can perform searches and sort based on correlation statistics.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.2_1.png" /></a></p>
 

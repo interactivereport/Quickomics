@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 6 Heatmap Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 6 Heatmap Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 6 Heatmap Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
-  
   
   
   
@@ -23,7 +22,7 @@
 
 
 
-<meta name="date" content="2022-02-02" />
+<meta name="date" content="2023-02-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -32,7 +31,6 @@
   
 <link rel="prev" href="deg-module.html"/>
 <link rel="next" href="expression-plot-module.html"/>
-<script src="libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -50,8 +48,9 @@
 
 
 
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 
 
 
@@ -178,19 +177,19 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="heatmap-module" class="section level1" number="6">
-<h1><span class="header-section-number">Chapter 6</span> Heatmap Module</h1>
+<div id="heatmap-module" class="section level1 hasAnchor" number="6">
+<h1><span class="header-section-number">Chapter 6</span> Heatmap Module<a href="heatmap-module.html#heatmap-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
 <p>This module generates highly customized publication-quality heatmaps with the ComplexHeatmap package in R. Users can enter automated list of differentially expressed genes or enter a custom list of genes to highlight on the heatmap. This module differs from other modules in that each time Users change the attributes; they need to click on the “Plot/Refresh” button to generate the plot. This is to avoid changing the output before all the attribute are added.</p>
-<div id="static-heatmap-layout-1" class="section level2" number="6.1">
-<h2><span class="header-section-number">6.1</span> Static Heatmap Layout 1</h2>
+<div id="static-heatmap-layout-1" class="section level2 hasAnchor" number="6.1">
+<h2><span class="header-section-number">6.1</span> Static Heatmap Layout 1<a href="heatmap-module.html#static-heatmap-layout-1" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The “Static Heatmap Layout 1” uses the ComplexHeatmap package (Gu et al., 2016) for generating the plot. For demo purposes, we have selected options that highlight some capabilities to generate informative heatmap. For gene selection the default option is the selection of 100 random genes which can also be changed to variable genes. Here we selected DEGs/DEPs from the <strong>2yr_WTvs2mon_WT</strong> comparison. Users also have the option to change the cutoff criteria for filtering the genes. They can also add/remove annotation categories for the samples on the columns.</p>
 <p>In this heatmap, the top up-regulated genes in <strong>2mon_WT</strong> samples are seen as high in 2mon samples but low in 2yr and 1yr samples, while the top up-regulated genes in the <strong>2yr_WT</strong> samples are high in the 2yr and 1yr samples but low in the 2mon samples. This is another example that age has a major effect on gene expression in microglia, and the 2mon microglia have a different gene expression profile compared to 1yr and 2yr.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_1.png" /></a></p>
 <p>In this next example, we customize another Heatmap to highlight immune related genes that were called out in <a href="https://www.life-science-alliance.org/content/2/6/e201900453" target="_blank">Gyoneva et al., 2019</a>. This is done by uploading a csv file consisting of the gene names with pathway information and the color for display. An example of this file is on our GitHub (<a href="https://github.com/interactivereport/Quickomics/blob/master/demo_files/fig5_all_genes.csv" target="_blank">Quickomics/demo_files/fig5_all_genes.csv</a>)</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_2.png" /></a></p>
 </div>
-<div id="static-heatmap-layout-2" class="section level2" number="6.2">
-<h2><span class="header-section-number">6.2</span> Static Heatmap Layout 2</h2>
+<div id="static-heatmap-layout-2" class="section level2 hasAnchor" number="6.2">
+<h2><span class="header-section-number">6.2</span> Static Heatmap Layout 2<a href="heatmap-module.html#static-heatmap-layout-2" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The “Static Heatmap Layout 2” uses the heatmap.2 function from the gplots package for generating the plot. Here is a demo of the same set of genes with dendrograms for both rows and columns.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.2_1.png" /></a></p>
 

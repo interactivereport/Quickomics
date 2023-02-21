@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 5 DEG Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 5 DEG Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 5 DEG Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
-  
   
   
   
@@ -23,7 +22,7 @@
 
 
 
-<meta name="date" content="2022-02-02" />
+<meta name="date" content="2023-02-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -32,7 +31,6 @@
   
 <link rel="prev" href="qc-plots-module.html"/>
 <link rel="next" href="heatmap-module.html"/>
-<script src="libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -50,8 +48,9 @@
 
 
 
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 
 
 
@@ -178,17 +177,17 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="deg-module" class="section level1" number="5">
-<h1><span class="header-section-number">Chapter 5</span> DEG Module</h1>
+<div id="deg-module" class="section level1 hasAnchor" number="5">
+<h1><span class="header-section-number">Chapter 5</span> DEG Module<a href="deg-module.html#deg-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
 <p>This section is designed to explore the differentially expressed genes (DEGs) and differentially expressed proteins (DEPs) in the dataset. The comparisons are defined by the User when they input the dataset. Please refer to our GitHub for more details on uploading datasets.</p>
 <p>The “Volcano Plot (Static)” described in Section 5.2 and “Volcano Plot (Interactive)” described in Section 5.3 are ways to visualize each pair-wise comparison one by one. “DEGs/DEPs in Two Comparisons” described in Section 5.4 is a novel way to visualize the similarities and differences in two comparisons. Finally, “Data Table” described in Section 5.5 displays a searchable table containing all genes and their fold changes and P values in each comparison.</p>
-<div id="deg-counts" class="section level2" number="5.1">
-<h2><span class="header-section-number">5.1</span> DEG Counts</h2>
+<div id="deg-counts" class="section level2 hasAnchor" number="5.1">
+<h2><span class="header-section-number">5.1</span> DEG Counts<a href="deg-module.html#deg-counts" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>DEG Counts tab provides a summary of the number of significanly changed genes for each comparison, separating Up- and Down-regulated genes.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.1_1.png" /></a></p>
 </div>
-<div id="volcano-plot-static" class="section level2" number="5.2">
-<h2><span class="header-section-number">5.2</span> Volcano Plot (Static)</h2>
+<div id="volcano-plot-static" class="section level2 hasAnchor" number="5.2">
+<h2><span class="header-section-number">5.2</span> Volcano Plot (Static)<a href="deg-module.html#volcano-plot-static" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This plot reveals the differentially expressed genes provided in the input data file. By default, the Fold change Cutoff is set to 1.2 and the P value Cutoff is set to 0.01. Users have the option to change any of these parameters. For more advanced display options, they can set the “Show More Options” to “Yes” to customize other settings.</p>
 <p>The red dots are indicative of all genes that pass the Fold Change and P value cutoff, while the green dots are indicative of genes that only pass the P value cutoff. Fifty random genes are labelled for both the up-regulated and down-regulated genes by default.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_1.png" /></a></p>
@@ -196,13 +195,13 @@
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_2.png" /></a></p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_3.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_3.png" /></a></p>
 </div>
-<div id="volcano-plot-interactive" class="section level2" number="5.3">
-<h2><span class="header-section-number">5.3</span> Volcano Plot (Interactive)</h2>
+<div id="volcano-plot-interactive" class="section level2 hasAnchor" number="5.3">
+<h2><span class="header-section-number">5.3</span> Volcano Plot (Interactive)<a href="deg-module.html#volcano-plot-interactive" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This next sub-tab is a very similar visualization as the previous one (5.2 Volcano Plot (Static)) with an additional capability where users can hover over a particular dot/gene on the plot to see more details. This plot has a few attributes that can be changed, and in the example below we have used the same cutoffs and values as in section 5.2.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.3_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.3_1.png" /></a></p>
 </div>
-<div id="degs-and-deps-in-two-comparisons" class="section level2" number="5.4">
-<h2><span class="header-section-number">5.4</span> DEGs and DEPs in Two Comparisons</h2>
+<div id="degs-and-deps-in-two-comparisons" class="section level2 hasAnchor" number="5.4">
+<h2><span class="header-section-number">5.4</span> DEGs and DEPs in Two Comparisons<a href="deg-module.html#degs-and-deps-in-two-comparisons" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This next tab helps with identifying DEGs/DEPs that follow a similar trend in two comparisons. <a href="https://www.life-science-alliance.org/content/2/6/e201900453" target="_blank">Gyoneva et al., 2019</a>, the source of this demo dataset, report that the genes differentially expressed in <strong>Cx3cr1 KO</strong> microglia in the <strong>2mon KO</strong> are quite different from WT, while the differences from WT are smaller for the 1yr KO and 2yr KO, and the two older ages are similar to each other. We have plotted out the following comparisons that illustrate this conclusion.</p>
 <p><strong>2mo_KOvs2mo_WT</strong> vs <strong>1yr_KOvs1yr_WT</strong> has a low correlation score. There are many genes that are colored yellow, meaning those genes were significant in <strong>2mo_KOvs2mo_WT (Y axis)</strong> but not in <strong>1yr_KOvs1yr_WT (X axis)</strong>.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.4_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.4_1.png" /></a></p>
@@ -211,8 +210,8 @@
 <p>Next, we changed the Y axis comparison to <strong>1yr_KOvs1yr_WT</strong> comparing it to <strong>2yr_KOvs2yr_WT</strong> on the X axis. This plot has a higher correlation score of 0.371 than the previous one, suggesting that these two comparisons are more similar. These comparisons represent additional insights supported by statistical analyses that were gained from the data and were not available in the original manuscript by Gyoneva et al.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.4_3.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.4_3.png" /></a></p>
 </div>
-<div id="data-table-1" class="section level2" number="5.5">
-<h2><span class="header-section-number">5.5</span> Data Table</h2>
+<div id="data-table-1" class="section level2 hasAnchor" number="5.5">
+<h2><span class="header-section-number">5.5</span> Data Table<a href="deg-module.html#data-table-1" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This tab lets the users view the DEGs/DEPs in a tabular format with a searchable feature. Users also have the ability to download the gene list as a CSV.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.5_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.5_1.png" /></a></p>
 

@@ -6,11 +6,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 8 Gene Set Enrichment Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 8 Gene Set Enrichment Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.32 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 8 Gene Set Enrichment Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
-  
   
   
   
@@ -23,7 +22,7 @@
 
 
 
-<meta name="date" content="2022-02-02" />
+<meta name="date" content="2023-02-21" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -32,7 +31,6 @@
   
 <link rel="prev" href="expression-plot-module.html"/>
 <link rel="next" href="pattern-clustering-module.html"/>
-<script src="libs/header-attrs-2.11/header-attrs.js"></script>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -50,8 +48,9 @@
 
 
 
-<link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
-<script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
 
 
 
@@ -178,28 +177,28 @@
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="gene-set-enrichment-module" class="section level1" number="8">
-<h1><span class="header-section-number">Chapter 8</span> Gene Set Enrichment Module</h1>
+<div id="gene-set-enrichment-module" class="section level1 hasAnchor" number="8">
+<h1><span class="header-section-number">Chapter 8</span> Gene Set Enrichment Module<a href="gene-set-enrichment-module.html#gene-set-enrichment-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
 <p>This functionality in Quickomics is an extension to the differential gene identification. Users are able to use different cutoffs to filter out DEGs/DEPs in different comparisons and probe enriched pathways. This is a useful way to make biological sense of the data. We also improved the robustness of Gene Set Enrichment Module in Quickomics v2.0, using human gene set enrichment for unknown species instead of giving error. The updated system performs more error checking and data cleanup in the backend.</p>
-<div id="gene-set-enrichment" class="section level2" number="8.1">
-<h2><span class="header-section-number">8.1</span> Gene Set Enrichment</h2>
+<div id="gene-set-enrichment" class="section level2 hasAnchor" number="8.1">
+<h2><span class="header-section-number">8.1</span> Gene Set Enrichment<a href="gene-set-enrichment-module.html#gene-set-enrichment" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This first tab lets the users pick a particular comparison, apply different cutoff criteria and select from a list of different databases for enrichment analysis. To demonstrate usage of this functionality, we will use the Mouse Microglia RNA dataset to help answer the question which pathways were altered by Genotype and/or Age. Very similar to the results from <a href="https://www.life-science-alliance.org/content/2/6/e201900453" target="_blank">Gyoneva et al., 2019</a>, this analysis points to immune related terms being enriched in the down-regulated genes for 2mon_KOvs2mon_WT.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.1_1.png" /></a></p>
 <p>Similarly, we pull out the GO enrichment for up-regulated genes.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.1_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.1_2.png" /></a></p>
 </div>
-<div id="gene-expression" class="section level2" number="8.2">
-<h2><span class="header-section-number">8.2</span> Gene Expression</h2>
+<div id="gene-expression" class="section level2 hasAnchor" number="8.2">
+<h2><span class="header-section-number">8.2</span> Gene Expression<a href="gene-set-enrichment-module.html#gene-expression" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>For the enriched terms identified in the previous tab (Gene Set Enrichment, section 8.1), Users have the ability to look at the differential values of the genes present in the set. Here we are probing the GO_IMMUNE_RESPONSE identified in the down-regulated category.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.2_1.png" /></a></p>
 </div>
-<div id="gene-set-heat-map" class="section level2" number="8.3">
-<h2><span class="header-section-number">8.3</span> Gene Set Heat Map</h2>
+<div id="gene-set-heat-map" class="section level2 hasAnchor" number="8.3">
+<h2><span class="header-section-number">8.3</span> Gene Set Heat Map<a href="gene-set-enrichment-module.html#gene-set-heat-map" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Like the “Gene Expression” tab, Users have the ability to plot expression of the genes in the pathway term selected as a heatmap. This visualization shows that while the Immune Response genes are enriched in the differentially expressed genes list, not all of them change in the same direction.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.3_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.3_1.png" /></a></p>
 </div>
-<div id="kegg-pathway-view" class="section level2" number="8.4">
-<h2><span class="header-section-number">8.4</span> KEGG Pathway View</h2>
+<div id="kegg-pathway-view" class="section level2 hasAnchor" number="8.4">
+<h2><span class="header-section-number">8.4</span> KEGG Pathway View<a href="gene-set-enrichment-module.html#kegg-pathway-view" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This functionality is available only to KEGG pathway terms. Users have the option to view the Fold Change levels of different genes in the KEGG pathway selected for up to 5 comparisons. In this example we demo the KEGG pathway “hsa04612 Antigen processing and presentation” as identified as a down-regulated term in the 2mon_KOvs2mon_WT and 1yr_KOvs1yr_WT comparisons.</p>
 <p>This figure identifies all the genes that are differentially expressed in this pathway. It is also clear that genes in the MHC I pathway do not change, but many genes in the MHC II pathway are down regulated in both the comparisons. The visualization is also useful to highlight whether or not a large proportion of genes in a pathway are altered by the perturbation.</p>
 <p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.4_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.4_1.png" /></a></p>
