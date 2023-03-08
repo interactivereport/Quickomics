@@ -89,7 +89,7 @@ conda env create -f QuickOmics.yml
 Method 2. Install all packages in your current R environment. Depending on your system, you may need to install other required programs. We recommend using the conda environment method whenever possible.  
 ```R
 cran_packages=c("shiny", "shinythemes", "shinyjs", "plotly", "reshape2", "tidyverse", "gplots", "ggpubr",
-"gridExtra", "ggrepel", "RcolorBrewer", "pheatmap", "rgl", "car", "colourpicker", "VennDiagram", "factoextra",
+"gridExtra", "ggrepel", "RColorBrewer", "pheatmap", "rgl", "car", "colourpicker", "VennDiagram", "factoextra",
 "openxlsx", "visNetwork", "cowplot", "circlize", "svglite", "shinyjqui", "Hmisc", "ggrastr",
 "ggExtra", "networkD3", "vctrs", "ragg", "textshaping", "stringi", "plyr", "png", "psych", "broom")
 #Note: Hmisc is not required to run the Shiny app but is needed to prepare network data from expression matrix.
