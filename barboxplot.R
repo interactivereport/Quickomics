@@ -200,7 +200,9 @@ boxplot_out <- eventReactive(input$plot_exp,  {
     }
     
     if (input$IndividualPoint == "YES")
-      p <- p +  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5,  position = position_dodge(width=0.8))
+      #browser()
+      p <- p +   geom_jitter(aes(fill=!!colorby), shape=21, size=2, color="black", position = position_jitterdodge(jitter.width=0.25))
+        #geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5,  position = position_dodge(width=0.8))
     if (Val_colorby!="None" ) {
       #browser()
       N_color<-data_long_tmp%>%dplyr::select(!!colorby)%>%unlist%>%unname%>%as.character%>%unique%>%length
@@ -213,7 +215,7 @@ boxplot_out <- eventReactive(input$plot_exp,  {
       p <- p + scale_fill_manual(values=barcol) #+scale_color_manual(values=rep(barcol,length(sel_group)))
     }
     
-    p <- p + theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +
+    p <- p + theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +guides(fill = guide_legend(override.aes = list(shape = NA) ) )+
       theme (plot.margin = unit(c(1,1,1,1), "cm"),
              text = element_text(size=input$expression_axisfontsize),
              axis.text.x = element_text(angle = input$Xangle, hjust=0.5, vjust=0.5),
@@ -372,7 +374,8 @@ browsing_out <- eventReactive(plot_exp_control(),{
 	}
 
 	if (input$IndividualPoint == "YES")
-	p <- p +  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5,  position = position_dodge(width=0.8))
+	  p <- p +   geom_jitter(aes(fill=!!colorby), shape=21, size=2, color="black", position = position_jitterdodge(jitter.width=0.25))
+	#geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5,  position = position_dodge(width=0.8))
 	if (Val_colorby!="None" ) {
 	    #browser()
 	    N_color<-data_long_tmp%>%dplyr::select(!!colorby)%>%unlist%>%unname%>%as.character%>%unique%>%length
@@ -384,7 +387,7 @@ browsing_out <- eventReactive(plot_exp_control(),{
 	} else {
 		p <- p + scale_fill_manual(values=barcol) #+scale_color_manual(values=rep(barcol,length(sel_group)))
 	}
-	p <- p +	theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +
+	p <- p +	theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +guides(fill = guide_legend(override.aes = list(shape = NA) ) )+
 	  theme (plot.margin = unit(c(1,1,1,1), "cm"),
 	         text = element_text(size=input$expression_axisfontsize),
 	         axis.text.x = element_text(angle = input$Xangle, hjust=0.5, vjust=0.5),
