@@ -18,13 +18,13 @@ observe({
 	#DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
 	if (input$exp_label=="UniqueID") {
 	  DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
-	} else 
+	} else
 	{DataIngenes <- ProteinGeneName %>% dplyr::select(Gene.Name) %>% collect %>% .[["Gene.Name"]] %>%	as.character()}
 	updateSelectizeInput(session,'sel_gene', choices= DataIngenes, server=TRUE)
 	attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") ))
-	updateSelectInput(session, "colorby", choices=c("None", attributes), selected="group")  
-	updateSelectInput(session, "plotx", choices=attributes, selected="group")  
-	
+	updateSelectInput(session, "colorby", choices=c("None", attributes), selected="group")
+	updateSelectInput(session, "plotx", choices=attributes, selected="group")
+
 })
 
 observe({
@@ -34,15 +34,28 @@ observe({
 	allgroups = all_groups()
 	ProteinGeneName_Header = ProteinGeneNameHeader()
 	#updateSelectizeInput(session,'sel_group', choices=allgroups, selected=groups)
-	updateRadioButtons(session,'sel_geneid', inline = TRUE, choices=ProteinGeneName_Header[-1], selected="Gene.Name")
+	updateRadioButtons(session,'sel_geneid', inline = TRUE, choices=c(ProteinGeneName_Header[-1], "Gene.Name_UniqueID"), selected="Gene.Name")
 	updateSelectizeInput(session,'expression_test',choices=tests, selected=tests[1])
 })
 
 #no longer needed, assign at heatmap.R
-#output$selectGroupSampleExpression <- renderText({ paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
+#output$selectGroupSampleExpression <- renderText({ paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ",
 #     length(sample_order()), " out of ", length(all_samples()), " Samples.", " (Update Selection at: QC Plots->Groups and Samples.)", sep="")})
 
-
+#linear value parameters
+observe( {
+  if (input$exp_plot_Y_scale=='Linear') {
+    expU = exp_unit()
+    N_log = as.numeric(str_replace(str_extract(expU,"log\\d+"),"log",""))
+    small_value=as.numeric(str_replace(str_split_fixed(expU, "\\+", 2)[2], "\\)", ""))
+    unit=str_replace_all(str_extract(expU, "\\(.+\\+"), "(\\(|\\+)", "")
+    if (!is.na(N_log) & !is.na(small_value)) {
+      updateTextInput(session, "linear_base", value=N_log)
+      updateTextInput(session, "linear_small_value", value=small_value)
+      updateTextInput(session, "Ylab", value=unit)
+    }
+  } else if (input$exp_plot_Y_scale=='Log') {updateTextInput(session, "Ylab", value=exp_unit())}
+})
 
 observe({
 	DataIn = DataReactive()
@@ -55,11 +68,11 @@ observe({
 	if (input$expression_psel == "Padj") {
 		filteredgene = results_long %>%
 		dplyr::filter(abs(logFC) > expression_fccut & Adj.P.Value < expression_pvalcut) %>%
-		dplyr::filter(test == expression_test) 
+		dplyr::filter(test == expression_test)
 	} else {
 		filteredgene = results_long %>%
 		dplyr::filter(abs(logFC) > expression_fccut & P.Value < expression_pvalcut) %>%
-		dplyr::filter(test == expression_test) 
+		dplyr::filter(test == expression_test)
 	}
 
 	output$expfilteredgene <- renderText({paste("Selected Genes:",nrow(filteredgene),sep="")})
@@ -82,8 +95,12 @@ DataExpReactive <- reactive({
 	sel_samples=sample_order()
 
 	if (input$exp_subset == "Select") {
-	  validate(need(length(input$sel_gene)>0,"Please select a gene."))	
-	  tmpids = ProteinGeneName[unique(na.omit(c(apply(ProteinGeneName,2,function(k) match(sel_gene,k))))),]
+	  validate(need(length(input$sel_gene)>0,"Please select a gene."))
+	  if (input$exp_label=="UniqueID") {
+	    tmpids = ProteinGeneName[unique(na.omit(c(apply(ProteinGeneName,2,function(k) match(sel_gene,k))))),]
+	  } else { #Gene.Name can be duplicate
+	    tmpids <- ProteinGeneName %>% dplyr::filter (Gene.Name %in% sel_gene)
+	  }
 	  tmpids=tmpids$UniqueID
 	}
 	if (input$exp_subset == "Upload Genes") {
@@ -114,22 +131,26 @@ DataExpReactive <- reactive({
 	    dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
 	  validate(need(length(tmpids)>0, message = "Please input at least 1 valid genes."))
 	}
-	if (length(tmpids)>100) {cat("show only first 100 genes in exprssion plot.\n"); tmpids=tmpids[1:100]}  
-	
+	if (length(tmpids)>100) {cat("show only first 100 genes in exprssion plot.\n"); tmpids=tmpids[1:100]}
+
 	data_long_tmp = filter(data_long, UniqueID %in% tmpids, group %in% sel_group, sampleid %in% sel_samples) %>%
 	filter(!is.na(expr)) %>% as.data.frame()
+	data_long_tmp<-data_long_tmp%>%mutate(Gene.Name_UniqueID=str_c(Gene.Name, "_", UniqueID))
 	data_long_tmp$labelgeneid = data_long_tmp[,match(genelabel,colnames(data_long_tmp))]
 	data_long_tmp$group = factor(data_long_tmp$group,levels = sel_group)
-	
+	if (input$exp_plot_Y_scale=='Linear') {
+	  data_long_tmp<-data_long_tmp%>%mutate(expr=input$linear_base^(expr-input$linear_small_value))
+	}
 	result_long_tmp = filter(results_long, UniqueID %in% tmpids) %>%  as.data.frame()
+	#browser() #debug
 
 	return(list("data_long_tmp"=data_long_tmp,"result_long_tmp"= result_long_tmp, "tmpids"=tmpids))
-	     
+
 })
 
-output$dat_dotplot <- DT::renderDT(server=FALSE, {  
+output$dat_dotplot <- DT::renderDT(server=FALSE, {
 	data_long_tmp <- DataExpReactive()$data_long_tmp
-	data_long_tmp <- data_long_tmp %>%dplyr::select(-labelgeneid)
+	data_long_tmp <- data_long_tmp %>%dplyr::select(-labelgeneid, -Gene.Name_UniqueID)
 	data_long_tmp[,sapply(data_long_tmp,is.numeric)] <- signif(data_long_tmp[,sapply(data_long_tmp,is.numeric)],3)
 	#data_long_tmp <- data_long_tmp[,-7]
 	DT::datatable(data_long_tmp,  extensions = 'Buttons',  options = list(
@@ -175,8 +196,8 @@ boxplot_out <- eventReactive(input$plot_exp,  {
   }
   if (input$plotx!="group" ) { #add plotx column
     data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!plotx))
-  } 
-  
+  }
+
   if (input$SeparateOnePlot == "Separate") {
 
     p <- ggplot(data_long_tmp,aes(x=!!plotx,y=expr,fill=!!colorby)) +
@@ -198,7 +219,7 @@ boxplot_out <- eventReactive(input$plot_exp,  {
         stat_summary(aes(y = expr, group=!!colorby, color=!!colorby), fun=mean, geom="line")+
         stat_summary(fun.data=mean_se, geom="errorbar",aes(width=0.3, color=!!colorby))
     }
-    
+
     if (input$IndividualPoint == "YES")
       #browser()
       p <- p +   geom_jitter(aes(fill=!!colorby), shape=21, size=2, color="black", position = position_jitterdodge(jitter.width=0.25))
@@ -210,11 +231,11 @@ boxplot_out <- eventReactive(input$plot_exp,  {
       if (input$plotformat == "line") {
         p <- p +scale_color_manual(values=use_color)+ scale_fill_manual(values =use_color)
       } else {p <- p + scale_fill_manual(values =use_color)}
-      
+
     } else {
       p <- p + scale_fill_manual(values=barcol) #+scale_color_manual(values=rep(barcol,length(sel_group)))
     }
-    
+
     p <- p + theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +guides(fill = guide_legend(override.aes = list(shape = NA) ) )+
       theme (plot.margin = unit(c(1,1,1,1), "cm"),
              text = element_text(size=input$expression_axisfontsize),
@@ -230,29 +251,29 @@ boxplot_out <- eventReactive(input$plot_exp,  {
                            sd   = sd(expr, na.rm=TRUE),
                            se   = sd / sqrt(N)
     )
-    
+
     data_long_tmp1 <- data_long_tmp1 %>%left_join(data_long_tmp%>%filter(!duplicated(UniqueID))%>%transmute(UniqueID, Gene.Name=labelgeneid)   )
 
 
     pd <- position_dodge(0.1) # move them .05 to the left and right
-    p <-	ggplot(data_long_tmp1, aes(x=!!plotx, y=mean, group=Gene.Name))  
-    
+    p <-	ggplot(data_long_tmp1, aes(x=!!plotx, y=mean, group=Gene.Name))
+
     if (input$plotformat == "line") {
       p <- p + geom_errorbar(aes(ymin=mean-se, ymax=mean+se, color = Gene.Name),size=1, width=.2, position=pd) +
         geom_line(position=pd, size = 1, aes(color = Gene.Name)) +
         geom_point(position=pd, size=3, shape=21, fill="white")
     } else {
-      p <- p + geom_bar(aes(fill= Gene.Name), position=position_dodge(), stat="identity", colour="black", size=.3) + 
+      p <- p + geom_bar(aes(fill= Gene.Name), position=position_dodge(), stat="identity", colour="black", size=.3) +
         geom_errorbar(aes(ymin=mean-se, ymax=mean+se), size=.3, width=.2, position=position_dodge(.9))
     }
-    
+
     p <- p + theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +scale_fill_discrete(name=input$sel_geneid)+
       theme (plot.margin = unit(c(1,1,1,1), "cm"),
              text = element_text(size=input$expression_axisfontsize),
              axis.text.x = element_text(angle = input$Xangle, hjust=0.5, vjust=0.5),
              strip.text.x = element_text(size=input$expression_titlefontsize))
   }
-  if (input$exp_plot_Y_scale=="Manual") {
+  if (input$exp_plot_Y_range=="Manual") {
     p <- p + ylim(input$exp_plot_Ymin, input$exp_plot_Ymax)
   }
   p
@@ -320,7 +341,7 @@ browsing_out <- eventReactive(plot_exp_control(),{
 	endslice = startslice + numperpage -1
 	if (input$browsing_gene_order=="P value") {results_long<-results_long%>%arrange(P.Value)
 	} else {results_long<-results_long%>%arrange(desc(abs(logFC)))}
-	
+
 	if (input$expression_psel == "Padj") {
 		sel_gene = results_long %>% filter(test %in% expression_test & abs(logFC) > expression_fccut & Adj.P.Value < expression_pvalcut) %>%
 		dplyr::slice(startslice:endslice) %>%
@@ -344,13 +365,17 @@ browsing_out <- eventReactive(plot_exp_control(),{
 	}
 	if (input$plotx!="group" ) { #add plotx column
 	  data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!plotx))
-	} 
+	}
 #	browser() #debug
+	data_long_tmp<-data_long_tmp%>%mutate(Gene.Name_UniqueID=str_c(Gene.Name, "_", UniqueID))
 	data_long_tmp$labelgeneid = data_long_tmp[,match(genelabel,colnames(data_long_tmp))]
 	data_long_tmp$group = factor(data_long_tmp$group,levels = sel_group)
 	validate(need(nrow(data_long_tmp)>0, message = "Please select at least one valid gene to plot."))
 	#browser() #debug
 	data_long_tmp$labelgeneid=factor(data_long_tmp$labelgeneid, levels=unique(data_long_tmp$labelgeneid))
+	if (input$exp_plot_Y_scale=='Linear') {
+	  data_long_tmp<-data_long_tmp%>%mutate(expr=input$linear_base^(expr-input$linear_small_value))
+	}
 
 	p <- ggplot(data_long_tmp,aes(x=!!plotx,y=expr,fill=!!colorby)) +
 	  facet_wrap(~ labelgeneid, scales = "free",nrow = nrow, ncol = ncol)
@@ -383,7 +408,7 @@ browsing_out <- eventReactive(plot_exp_control(),{
 			if (input$plotformat == "line") {
 			  p <- p +scale_color_manual(values=use_color)+ scale_fill_manual(values =use_color)
 			} else {p <- p + scale_fill_manual(values =use_color)}
-			
+
 	} else {
 		p <- p + scale_fill_manual(values=barcol) #+scale_color_manual(values=rep(barcol,length(sel_group)))
 	}
@@ -396,7 +421,7 @@ browsing_out <- eventReactive(plot_exp_control(),{
 	p <- p +	 theme (legend.position="none")
 	}
 
-	if (input$exp_plot_Y_scale=="Manual") {
+	if (input$exp_plot_Y_range=="Manual") {
 	  p <- p + ylim(input$exp_plot_Ymin, input$exp_plot_Ymax)
 	}
 	p
@@ -414,5 +439,3 @@ observeEvent(input$browsing, {
 	saved.num <- length(saved_plots$browsing) +1
 	saved_plots$browsing[[saved.num]] <- browsing_out()
 })
-
-
