@@ -142,6 +142,12 @@ DataExpReactive <- reactive({
 	  data_long_tmp<-data_long_tmp%>%mutate(expr=input$linear_base^(expr-input$linear_small_value))
 	}
 	result_long_tmp = filter(results_long, UniqueID %in% tmpids) %>%  as.data.frame()
+	Ng=length(unique(data_long_tmp$Gene.Name)); Nuid=length(unique(data_long_tmp$UniqueID))
+	search_gene_info<-str_c("Displaying ", Ng, " Gene.Names from ", Nuid, " UniqueIDs.")
+	gene_multi_uid<-result_long_tmp%>%distinct(Gene.Name, UniqueID)%>%group_by(Gene.Name)%>%dplyr::count()%>%dplyr::filter(n>1)
+	if (nrow(gene_multi_uid)>0) {search_gene_info<-str_c(search_gene_info, 
+	       "\nPlease note some gene names map to mulitiple UniqueIDs, we recommend using Gene.Name_UniqueID as Gene Label to separate the UniqueIDs in the plot.")}
+	output$geneSearchInfo<-renderText({search_gene_info})
 	#browser() #debug
 
 	return(list("data_long_tmp"=data_long_tmp,"result_long_tmp"= result_long_tmp, "tmpids"=tmpids))
