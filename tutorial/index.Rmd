@@ -33,7 +33,7 @@ author:
     email: yirui.chen@biogen.com
     affiliation: Biogen
   - name: Xinmin Zhang
-    email: xinmin.zhang@biogen.com
+    email: xinmin@bioinforx.com
     affiliation: BioInfoRx
   - name: Fergal Casey (Corresponding Author)
     email: fergal.casey@biogen.com
