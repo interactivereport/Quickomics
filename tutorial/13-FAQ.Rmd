@@ -1,4 +1,4 @@
-# Q&A
+# FAQ
 
 1, Q: I have noticed that the Expression plots in Quickomics do not show the sample groups in the desired order after reordering the groups under “Groups and Samples”. This is not dataset dependent, I have found this feature not working across multiple datasets. Could you please provide a solution to this?
 
