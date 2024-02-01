@@ -54,10 +54,14 @@ observeEvent(input$uploadData, {
   URL_host <-(session$clientData$url_hostname)
   URL_port <- (session$clientData$url_port)
   URL_protocol<- (session$clientData$url_protocol)
+  url_pathname<- (session$clientData$url_pathname)
   if (URL_port=="") {
     URL=str_c(URL_protocol,"//", URL_host) 
   } else {
     URL=str_c(URL_protocol,"//", URL_host, ":", URL_port)
+  }
+  if (url_pathname!="") {
+    URL=str_c(URL, str_replace(url_pathname, "/$", "") ) 
   }
   cleanup_empty<-function(df) {
     df.empty=(is.na(df) | df=="")
