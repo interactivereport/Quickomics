@@ -8,6 +8,7 @@
 ##@Date : 5/31/2019
 ##@version 1.0
 ###########################################################################################################
+#global reactive values
 saved_plots <- reactiveValues()  
 saved_table <- reactiveValues() 
 group_order <- reactiveVal()
@@ -31,6 +32,9 @@ showAlert<-reactiveVal()
 plot_pca_control<-reactiveVal(0)
 plot_heatmap_control<-reactiveVal(0)
 plot_exp_control<-reactiveVal(0)
+gsea_control<-reactiveVal(0)
+ora_control<-reactiveVal(0)
+
 
 observeEvent(input$exp_unit, {
   Eu=input$exp_unit; exp_unit(Eu)
@@ -274,6 +278,8 @@ observeEvent(DataReactive(), {
   plot_pca_control(plot_pca_control()+1)
   plot_heatmap_control( plot_heatmap_control()+1)
   plot_exp_control(plot_exp_control()+1)
+  gsea_control(gsea_control()+1)
+  ora_control(ora_control()+1)
 })
 project_summary<-reactive({
   req(DataReactive())

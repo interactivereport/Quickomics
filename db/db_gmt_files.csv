@@ -1,0 +1,16 @@
+Species,N_sets,gmt_file_name,label_name,Short_name,Show
+human,347,human/kegg.gmt,KEGG Pathways,human,YES
+human,873,human/Wikipathways_Symbol.gmt,Wikipathways,human,YES
+human,186,human/c2.cp.kegg_legacy.v2023.2.Hs.symbols.gmt,KEGG Legacy,c2.cp.kegg_legacy,NO
+human,50,human/h.all.v2023.2.Hs.symbols.gmt,hallmark,h.all,YES
+human,791,human/c2.cp.wikipathways.v2023.2.Hs.symbols.gmt,WikiPathways,c2.cp.wikipathways,NO
+mouse,343,mouse/kegg.gmt,KEGG Pathways,mouse,YES
+mouse,202,mouse/Wikipathways_Symbol.gmt,Wikipathways,mouse,YES
+mouse,252,mouse/m2.cp.biocarta.v2023.2.Mm.symbols.gmt,BioCarta,m2.cp.biocarta,YES
+mouse,50,mouse/mh.all.v2023.2.Mm.symbols.gmt,hallmark,mh.all,YES
+mouse,188,mouse/m2.cp.wikipathways.v2023.2.Mm.symbols.gmt,WikiPathways,m2.cp.wikipathways,NO
+rat,343,rat/kegg.gmt,KEGG Pathways,rat,YES
+rat,128,rat/Wikipathways_Symbol.gmt,Wikipathways,rat,YES
+rat,186,rat/c2.cp.kegg.v2022.Rn.symbols.gmt,KEGG legacy,c2.cp.kegg,NO
+rat,50,rat/h.all.v2022.Rn.symbols.gmt,hallmark,h.all,YES
+rat,664,rat/c2.cp.wikipathways.v2022.Rn.symbols.gmt,WikiPathways,c2.cp.wikipathways,NO

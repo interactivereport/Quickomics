@@ -1,13 +1,5 @@
-###########################################################################################################
-## Proteomics Visualization R Shiny App
-##
-##This software belongs to Biogen Inc. All right reserved.
-##
-##@file: global.R
-##@Developer : Benbo Gao (benbo.gao@Biogen.com)
-##@Date : 5/16/2018
-##@version 1.0
-###########################################################################################################
+#source("renv.restore.R")
+
 options(stringsAsFactors=F)
 options(ggrepel.max.overlaps = Inf)
 
@@ -33,6 +25,7 @@ suppressPackageStartupMessages({
 	#library(data.table)
 	library(RColorBrewer)
 	library(pheatmap)
+  options(rgl.useNULL = TRUE)
 	library(rgl)
 	library(car)
 	library(colourpicker)
@@ -61,48 +54,35 @@ suppressPackageStartupMessages({
   library(png)
   library(psych)
   library(broom)
+  library(fgsea)
   #library(DEGreport)
+  library(rclipboard)
 })
 
 
-load("db/hgnc.RData")
-load("db/kegg.pathways.RData")
-load("db/gmtlist.RData")
-load("db/mouse_rat_genes_map2_human.RData")
+
+#load("db/hgnc.RData")
+#load("db/kegg.pathways.RData")
+#load("db/gmtlist.RData")
+#load("db/mouse_rat_genes_map2_human.RData")
+homologs=readRDS("db/Homologs.rds") #cross species gene symbol mapping file from Ensembl Gene 110
 source("PC_Covariates.R")
 
 
-ORAEnrichment <- function(deGenes,universe, gsets, logFC, Dir="Both"){
-  deGenes = deGenes[which(deGenes %in% universe)]
-  tmp = rep(NA, length(gsets))
-  ora.stats = data.frame(p.value=tmp, p.adj = tmp, DeGeneNum=tmp,UpGene= tmp, DownGene=tmp, SetNum = tmp)
-  totalDE = length(deGenes)
-  n = length(universe) - totalDE
-  
-  for (j in 1:length(gsets)){
-    gset = gsets[[j]]
-    DEinS = intersect(gset, deGenes)
-    logFCinS = logFC[DEinS]
-    totalDEinS = length(intersect(gset, deGenes))
-    totalSinUniverse = length(intersect(gset, universe))
-    
-    N_q=totalDEinS- 0.5
-    if (Dir=="Up") {N_q=length(logFCinS[logFCinS > 0])-0.5 
-		} else if (Dir=="Down") {N_q=length(logFCinS[logFCinS < 0])-0.5}
-		
-		ora.stats[j, "p.value"] = phyper(q = N_q, m=totalDE, n = n, k = totalSinUniverse, lower.tail = FALSE)
-		ora.stats[j, "DeGeneNum"] = totalDEinS
-		ora.stats[j, "SetNum"] = length(gset)
-		ora.stats[j, "UpGene"] = length(logFCinS[logFCinS > 0])
-		ora.stats[j, "DownGene"] = length(logFCinS[logFCinS < 0])
-
-	}
-	ora.stats[, "p.adj"] = p.adjust(ora.stats[, "p.value"], method = "BH")
-	row.names(ora.stats) = names(gsets)
-
-	ora.stats = ora.stats[order(ora.stats[,"p.value"]),]
-	ora.stats = cbind(Rank=seq(1, nrow(ora.stats)),ora.stats)
-	return(ora.stats)
+homolog_mapping<-function(genelist, species1, species2, homologs) {
+  if (species2=="human") {
+    genelist2=toupper(genelist)
+  } else {
+    genelist2=str_to_title(genelist)
+  }
+  if (tolower(species1) %in% c("human", "mouse", "rat")) {
+    species1=tolower(species1)
+    lookup<-homologs%>%filter(Species1==species1, Species2==species2)
+    df<-data.frame(genelist, genelist2)%>%left_join(lookup%>%transmute(genelist=symbol1, mapped_symbol=symbol2))%>%
+      mutate(mapped_symbol=ifelse(is.na(mapped_symbol), genelist2, mapped_symbol))
+    genelist2<-df$mapped_symbol
+  }
+  return(genelist2)
 }
 
 options(shiny.maxRequestSize = 40*1024^2)  #upload files up to 30 Mb
@@ -157,9 +137,6 @@ html_geneset_exp0 =str_replace_all(html_geneset0, "geneset_list", "geneset_list_
 
 
 footer_text = '
-<link rel="stylesheet" type="text/css" href="//bxngs.com/bxomics/api/datatables/datatables.min.css"/>
-<script type="text/javascript" src="//bxngs.com/bxomics/api/datatables/datatables.min.js"></script>
-
 <script>
 var GENESET_ACTION_URL = "//bxngs.com/bxomics/api/genesets3.php";
 var MY_SECRET_ID = /PHPSESSID=([^;]+)/i.test(document.cookie) ? RegExp.$1 : false;
@@ -167,7 +144,7 @@ var MY_SECRET_ID = /PHPSESSID=([^;]+)/i.test(document.cookie) ? RegExp.$1 : fals
 <link href="//bxngs.com/bxomics/api/genesets3.css" rel="stylesheet">
 <script src="//bxngs.com/bxomics/api/genesets3.js"></script>
 <hr>
-<div align="center" style="font-size:11px">QuickOmics ver2.1 Developed by:
+<div align="center" style="font-size:11px">QuickOmics ver3.0 Developed by:
 Benbo Gao, Xinmin Zhang and Baohong Zhang<br><a href="https://github.com/interactivereport/Quickomics/">More information at GitHub</a> | <a href="https://interactivereport.github.io/Quickomics/tutorial/docs/introduction.html">Tutorial</a>
 </div>
 '
@@ -175,6 +152,8 @@ Benbo Gao, Xinmin Zhang and Baohong Zhang<br><a href="https://github.com/interac
 config=NULL
 server_dir=NULL
 test_dir=NULL
+gmt_file_info=NULL
+system_info=NULL
 if (file.exists("config.csv")) { #load optional configuration file
   config=read_csv("config.csv")
   N=match("server_dir", config$category)
@@ -183,5 +162,9 @@ if (file.exists("config.csv")) { #load optional configuration file
   if (!is.na(N)) {test_dir=config$value[N]}
   N=match("geneset_api", config$category) #if using internal api for geneset
   if (!is.na(N)) {footer_text=str_replace_all(footer_text, "//bxngs.com/bxomics/api", config$value[N])}
+  N=match("gmt_file_info", config$category)
+  if (!is.na(N)) {gmt_file_info=config$value[N]}
+  N=match("system_info", config$category)
+  if (!is.na(N)) {system_info=config$value[N]}
   #browser() #debug
 }

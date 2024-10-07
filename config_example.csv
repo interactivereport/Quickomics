@@ -1,0 +1,5 @@
+category,value
+server_dir,/storage/share/quickomics/server_files
+test_dir,/storage/share/quickomics/test_files
+gmt_file_info,db/db_gmt_files.csv
+system_info,quickomics
