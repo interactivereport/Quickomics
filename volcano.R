@@ -24,62 +24,67 @@ observe({
 observe({
   DataIn = DataReactive()
   results_long = DataIn$results_long
-  test_sel = input$volcano_test
-  FCcut = log2(as.numeric(input$volcano_FCcut))
-  pvalcut = as.numeric(input$volcano_pvalcut)
-  if (input$volcano_psel == "Padj") {
-    tmpdat = results_long %>% filter(test==test_sel & Adj.P.Value < pvalcut & abs(logFC) > FCcut) 
-  } else {
-    tmpdat = results_long %>% filter(test==test_sel & P.Value < pvalcut & abs(logFC) > FCcut) 
+  if (!is.null(results_long)) {
+    test_sel = input$volcano_test
+    FCcut = log2(as.numeric(input$volcano_FCcut))
+    pvalcut = as.numeric(input$volcano_pvalcut)
+    if (input$volcano_psel == "Padj") {
+      tmpdat = results_long %>% filter(test==test_sel & Adj.P.Value < pvalcut & abs(logFC) > FCcut) 
+    } else {
+      tmpdat = results_long %>% filter(test==test_sel & P.Value < pvalcut & abs(logFC) > FCcut) 
+    }
+    output$volcano_filteredgene <- renderText({paste("Genes Pass Cutoff (DEGs):",nrow(tmpdat),sep="")})
+    output$volcano_filteredgene2 <- renderText({paste("Genes Up: ", sum(tmpdat$logFC>0), "; Genes Down: ", sum(tmpdat$logFC<0),sep="")})
+    #browser()#debug
+    DEGs=tmpdat$UniqueID
+    if (nrow(tmpdat)>input$Ngenes) {
+      DEGs=sample(DEGs, input$Ngenes)
+    }
+    updateTextAreaInput(session, "volcano_gene_list", value=paste(DEGs, collapse="\n"))
   }
-  output$volcano_filteredgene <- renderText({paste("Genes Pass Cutoff (DEGs):",nrow(tmpdat),sep="")})
-  output$volcano_filteredgene2 <- renderText({paste("Genes Up: ", sum(tmpdat$logFC>0), "; Genes Down: ", sum(tmpdat$logFC<0),sep="")})
-  #browser()#debug
-  DEGs=tmpdat$UniqueID
-  if (nrow(tmpdat)>input$Ngenes) {
-    DEGs=sample(DEGs, input$Ngenes)
-  }
-  updateTextAreaInput(session, "volcano_gene_list", value=paste(DEGs, collapse="\n"))
-})
+ })
 
 
 DatavolcanoReactive <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
-  
-  test_sel = input$volcano_test
-  FCcut = log2(as.numeric(input$volcano_FCcut))
-  FCcut_rd=round(FCcut*1000)/1000
-  pvalcut = as.numeric(input$volcano_pvalcut)
-  volcano_genelabel = input$volcano_genelabel
-  
-  res = results_long %>% filter(test==test_sel) %>%
-    filter(!is.na(P.Value)) %>%
-    dplyr::mutate (color="Not Significant") %>% as.data.frame() 
-  
-  
-  res$labelgeneid = res[,match(volcano_genelabel,colnames(res))]
-  
-  if (input$volcano_psel == "Padj") {
-    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(log2FC)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("Padj","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
-    if (input$Max_Pvalue>0) {
-      res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
+  res=NULL
+  if (!is.null(results_long)){
+    test_sel = input$volcano_test
+    FCcut = log2(as.numeric(input$volcano_FCcut))
+    FCcut_rd=round(FCcut*1000)/1000
+    pvalcut = as.numeric(input$volcano_pvalcut)
+    volcano_genelabel = input$volcano_genelabel
+    
+    res = results_long %>% filter(test==test_sel) %>%
+      filter(!is.na(P.Value)) %>%
+      dplyr::mutate (color="Not Significant") %>% as.data.frame() 
+    
+    
+    res$labelgeneid = res[,match(volcano_genelabel,colnames(res))]
+    
+    if (input$volcano_psel == "Padj") {
+      res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+      res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+      res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("Padj","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
+      if (input$Max_Pvalue>0) {
+        res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
+      }
+    } else { 
+      res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+      res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+      res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
+      if (input$Max_Pvalue>0) {
+        res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
+      }
     }
-  } else { 
-    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(log2FC)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
-    if (input$Max_Pvalue>0) {
-      res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
+    
+    res$logFC_ori=res$logFC
+    if (input$Max_logFC>0) {
+      res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
     }
   }
-  
-  res$logFC_ori=res$logFC
-  if (input$Max_logFC>0) {
-    res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
-  }
+
   
   return(res)
 })
@@ -87,84 +92,88 @@ DatavolcanoReactive <- reactive({
 DatavolcanoReactive1 <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
-  
-  test_sel = input$volcano_test1
-  FCcut = log2(as.numeric(input$volcano_FCcut))
-  FCcut_rd=round(FCcut*1000)/1000
-  pvalcut = as.numeric(input$volcano_pvalcut)
-  volcano_genelabel = input$volcano_genelabel
-  
-  res = results_long %>% filter(test==test_sel) %>%
-    filter(!is.na(P.Value)) %>%
-    dplyr::mutate (color="Not Significant") %>% as.data.frame() 
-  
-  res$labelgeneid = res[,match(volcano_genelabel,colnames(res))]
-  res$Sig="X_notsig"
-  
-  if (input$volcano_psel == "Padj") {
-    res$Sig[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = "X_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(log2FC)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut),	paste0("Padj","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
-    if (input$Max_Pvalue>0) {
-      res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
+  res=NULL
+  if (!is.null(results_long)){
+    test_sel = input$volcano_test1
+    FCcut = log2(as.numeric(input$volcano_FCcut))
+    FCcut_rd=round(FCcut*1000)/1000
+    pvalcut = as.numeric(input$volcano_pvalcut)
+    volcano_genelabel = input$volcano_genelabel
+    
+    res = results_long %>% filter(test==test_sel) %>%
+      filter(!is.na(P.Value)) %>%
+      dplyr::mutate (color="Not Significant") %>% as.data.frame() 
+    
+    res$labelgeneid = res[,match(volcano_genelabel,colnames(res))]
+    res$Sig="X_notsig"
+    
+    if (input$volcano_psel == "Padj") {
+      res$Sig[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = "X_sig"
+      res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+      res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+      res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut),	paste0("Padj","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
+      if (input$Max_Pvalue>0) {
+        res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
+      }
+    } else { 
+      res$Sig[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = "X_sig"
+      res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+      res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+      res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
+      if (input$Max_Pvalue>0) {
+        res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
+      }
     }
-  } else { 
-    res$Sig[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = "X_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(log2FC)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
-    if (input$Max_Pvalue>0) {
-      res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
+    if (input$Max_logFC>0) {
+      res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
     }
   }
-  if (input$Max_logFC>0) {
-    res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
-  }
+  
   return(res)
 })
 
 DatavolcanoReactive2 <- reactive({
   DataIn = DataReactive()
   results_long = DataIn$results_long
-  
-  test_sel = input$volcano_test2
-  FCcut = log2(as.numeric(input$volcano_FCcut))
-  FCcut_rd=round(FCcut * 1000)/1000
-  pvalcut = as.numeric(input$volcano_pvalcut)
-  volcano_genelabel = input$volcano_genelabel
-  
-  res = results_long %>% filter(test==test_sel) %>%
-    filter(!is.na(P.Value)) %>%
-    dplyr::mutate (color="Not Significant") %>% as.data.frame() 
-  if (input$Max_logFC>0) {
-    res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
-  }
-  res$labelgeneid = res[,match(volcano_genelabel,colnames(res))]
-  res$Sig="Y_notsig"
-  
-  if (input$volcano_psel == "Padj") {
-    res$Sig[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = "Y_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(log2FC)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("Padj","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
-    if (input$Max_Pvalue>0) {
-      res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
+  res=NULL
+  if (!is.null(results_long)) {
+    test_sel = input$volcano_test2
+    FCcut = log2(as.numeric(input$volcano_FCcut))
+    FCcut_rd=round(FCcut * 1000)/1000
+    pvalcut = as.numeric(input$volcano_pvalcut)
+    volcano_genelabel = input$volcano_genelabel
+    
+    res = results_long %>% filter(test==test_sel) %>%
+      filter(!is.na(P.Value)) %>%
+      dplyr::mutate (color="Not Significant") %>% as.data.frame() 
+    if (input$Max_logFC>0) {
+      res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
     }
-  } else { 
-    res$Sig[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = "Y_sig"
-    res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(log2FC)>",FCcut_rd)
-    res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
-    res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
-    if (input$Max_Pvalue>0) {
-      res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
+    res$labelgeneid = res[,match(volcano_genelabel,colnames(res))]
+    res$Sig="Y_notsig"
+    
+    if (input$volcano_psel == "Padj") {
+      res$Sig[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = "Y_sig"
+      res$color[which((abs(res$logFC)>FCcut)*(res$Adj.P.Value<pvalcut)==1)] = paste0("Padj","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+      res$color[which((abs(res$logFC)<FCcut)*(res$Adj.P.Value<pvalcut)==1)] =  paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+      res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("Padj","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("Padj","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
+      if (input$Max_Pvalue>0) {
+        res<-res%>%mutate(Adj.P.Value=pmax(Adj.P.Value, 10^(0-input$Max_Pvalue) ))
+      }
+    } else { 
+      res$Sig[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = "Y_sig"
+      res$color[which((abs(res$logFC)>FCcut)*(res$P.Value<pvalcut)==1)] = paste0("pval","<",pvalcut," & abs(log2FC)>",FCcut_rd)
+      res$color[which((abs(res$logFC)<FCcut)*(res$P.Value<pvalcut)==1)] =  paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd)
+      res$color = factor(res$color,levels = unique(c("Not Significant",	paste0("pval","<",pvalcut, " & abs(log2FC)<",FCcut_rd),	paste0("pval","<",pvalcut, " & abs(log2FC)>",FCcut_rd))))
+      if (input$Max_Pvalue>0) {
+        res<-res%>%mutate(P.Value=pmax(P.Value, 10^(0-input$Max_Pvalue) ))
+      }
+    }
+    
+    if (input$Max_logFC>0) {
+      res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
     }
   }
-  
-  if (input$Max_logFC>0) {
-    res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
-  }
-  
   return(res)
 })
 

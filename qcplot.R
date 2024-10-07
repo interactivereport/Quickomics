@@ -773,7 +773,8 @@ histplot_out <- reactive({
 	tmp_sampleid <- DataQC$tmp_sampleid
 	tmp_data_long <- DataQC$tmp_data_long
 	tmp_group = DataQC$tmp_group
-  #browser() #debug
+	if (!"id" %in% names(tmp_data_long)) {tmp_data_long$id=tmp_data_long$UniqueID} 
+	#browser()
 	CV.df <- tmp_data_long %>%
 	group_by(.,  group, id) %>%
 	dplyr::summarise( mean=mean(expr, na.rm = TRUE), sd=sd(expr, na.rm = TRUE)) %>%

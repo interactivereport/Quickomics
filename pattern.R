@@ -22,20 +22,22 @@ observe({
 	DataIn = DataReactive()
 	ProteinGeneName = DataIn$ProteinGeneName
 	results_long = DataIn$results_long
-	pattern_test = input$pattern_test
-	pattern_fccut = log2(as.numeric(input$pattern_fccut))
-	pattern_pvalcut = as.numeric(input$pattern_pvalcut)
-
-	if (input$pattern_psel == "Padj") {
-		filteredgene1 = results_long %>%
-		dplyr::filter(abs(logFC) > pattern_fccut & Adj.P.Value < pattern_pvalcut) %>%
-		dplyr::select(UniqueID) %>% collect %>%	.[["UniqueID"]] %>%	as.character() %>% unique()
-	} else {
-		filteredgene1 = results_long %>%
-		dplyr::filter(abs(logFC) > pattern_fccut & P.Value < pattern_pvalcut) %>%
-		dplyr::select(UniqueID) %>% collect %>%	.[["UniqueID"]] %>%	as.character() %>% unique()
+	if (!is.null(results_long)) {
+	  pattern_test = input$pattern_test
+	  pattern_fccut = log2(as.numeric(input$pattern_fccut))
+	  pattern_pvalcut = as.numeric(input$pattern_pvalcut)
+	  
+	  if (input$pattern_psel == "Padj") {
+	    filteredgene1 = results_long %>%
+	      dplyr::filter(abs(logFC) > pattern_fccut & Adj.P.Value < pattern_pvalcut) %>%
+	      dplyr::select(UniqueID) %>% collect %>%	.[["UniqueID"]] %>%	as.character() %>% unique()
+	  } else {
+	    filteredgene1 = results_long %>%
+	      dplyr::filter(abs(logFC) > pattern_fccut & P.Value < pattern_pvalcut) %>%
+	      dplyr::select(UniqueID) %>% collect %>%	.[["UniqueID"]] %>%	as.character() %>% unique()
+	  }
+	  output$patternfilteredgene <- renderText({paste("Selected Genes:",length(filteredgene1),sep="")})
 	}
-	output$patternfilteredgene <- renderText({paste("Selected Genes:",length(filteredgene1),sep="")})
 })
 
 DatapatternReactive <- reactive({
@@ -45,26 +47,27 @@ DatapatternReactive <- reactive({
 	pattern_fccut = log2(as.numeric(input$pattern_fccut))
 	pattern_pvalcut = as.numeric(input$pattern_pvalcut)
 	sel_group = input$pattern_group
-
+	filteredgene=NULL
 	group_order(input$pattern_group)
-
 	results_long <- DataIn$results_long
 	data_long <- DataIn$data_long
-
-	if (input$pattern_subset == "subset") {
-	if (input$pattern_psel == "Padj") {
-		filteredgene = results_long %>%
-		dplyr::filter(abs(logFC) > pattern_fccut & Adj.P.Value < pattern_pvalcut) %>%
-		dplyr::select(UniqueID) %>% collect %>%	.[["UniqueID"]] %>%	as.character()
-
-	} else {
-		filteredgene = results_long %>%
-		dplyr::filter(abs(logFC) > pattern_fccut & P.Value < pattern_pvalcut) %>%
-		dplyr::select(UniqueID) %>% collect %>%	.[["UniqueID"]] %>%	as.character()
-
+	if (!is.null(results_long)){
+	  if (input$pattern_subset == "subset") {
+	    if (input$pattern_psel == "Padj") {
+	      filteredgene = results_long %>%
+	        dplyr::filter(abs(logFC) > pattern_fccut & Adj.P.Value < pattern_pvalcut) %>%
+	        dplyr::select(UniqueID) %>% collect %>%	.[["UniqueID"]] %>%	as.character()
+	    } else {
+	      filteredgene = results_long %>%
+	        dplyr::filter(abs(logFC) > pattern_fccut & P.Value < pattern_pvalcut) %>%
+	        dplyr::select(UniqueID) %>% collect %>%	.[["UniqueID"]] %>%	as.character()
+	      
+	    }
+	  }
 	}
 	  
-	}
+
+
 	
 	if (input$pattern_subset == "upload genes") {
 	  pattern_list <- input$pattern_list

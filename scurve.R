@@ -25,7 +25,7 @@ Scurve_out <- reactive({
 	scurve.data <- data_results %>%
 	dplyr::select(one_of(c("UniqueID","Gene.Name","Intensity","Protein.ID"))) %>%
 	dplyr::filter((!is.na(Intensity)) & Intensity > 0) %>%
-	dplyr::arrange(desc(Intensity)) %>%
+	dplyr::arrange(dplyr::desc(Intensity)) %>%
 	dplyr::mutate(RANK = row_number())
 
 	scurve.label <- scurve.data %>%

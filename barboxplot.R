@@ -60,23 +60,25 @@ observe( {
 observe({
 	DataIn = DataReactive()
 	results_long = DataIn$results_long
-	expression_test =input$expression_test
-	expression_fccut = log2(as.numeric(input$expression_fccut))
-	expression_pvalcut =  as.numeric(input$expression_pvalcut)
-	numperpage = as.numeric(input$numperpage)
-
-	if (input$expression_psel == "Padj") {
-		filteredgene = results_long %>%
-		dplyr::filter(abs(logFC) > expression_fccut & Adj.P.Value < expression_pvalcut) %>%
-		dplyr::filter(test == expression_test)
-	} else {
-		filteredgene = results_long %>%
-		dplyr::filter(abs(logFC) > expression_fccut & P.Value < expression_pvalcut) %>%
-		dplyr::filter(test == expression_test)
+	if (!is.null(results_long)){
+  	expression_test =input$expression_test
+  	expression_fccut = log2(as.numeric(input$expression_fccut))
+  	expression_pvalcut =  as.numeric(input$expression_pvalcut)
+  	numperpage = as.numeric(input$numperpage)
+  
+  	if (input$expression_psel == "Padj") {
+  		filteredgene = results_long %>%
+  		dplyr::filter(abs(logFC) > expression_fccut & Adj.P.Value < expression_pvalcut) %>%
+  		dplyr::filter(test == expression_test)
+  	} else {
+  		filteredgene = results_long %>%
+  		dplyr::filter(abs(logFC) > expression_fccut & P.Value < expression_pvalcut) %>%
+  		dplyr::filter(test == expression_test)
+  	}
+  
+  	output$expfilteredgene <- renderText({paste("Selected Genes:",nrow(filteredgene),sep="")})
+  	updateSelectInput(session,'sel_page', choices= seq_len(ceiling(nrow(filteredgene)/numperpage)))
 	}
-
-	output$expfilteredgene <- renderText({paste("Selected Genes:",nrow(filteredgene),sep="")})
-	updateSelectInput(session,'sel_page', choices= seq_len(ceiling(nrow(filteredgene)/numperpage)))
 })
 
 
@@ -141,15 +143,18 @@ DataExpReactive <- reactive({
 	if (input$exp_plot_Y_scale=='Linear') {
 	  data_long_tmp<-data_long_tmp%>%mutate(expr=input$linear_base^(expr-input$linear_small_value))
 	}
-	result_long_tmp = filter(results_long, UniqueID %in% tmpids) %>%  as.data.frame()
+	result_long_tmp=NULL
+	if (!is.null(results_long)) {
+	  result_long_tmp = filter(results_long, UniqueID %in% tmpids) %>%  as.data.frame()
+	  gene_multi_uid<-result_long_tmp%>%distinct(Gene.Name, UniqueID)%>%group_by(Gene.Name)%>%dplyr::count()%>%dplyr::filter(n>1)
+	  if (nrow(gene_multi_uid)>0) {search_gene_info<-str_c(search_gene_info, 
+	                                                       "\nPlease note some gene names map to mulitiple UniqueIDs, we recommend using Gene.Name_UniqueID as Gene Label to separate the UniqueIDs in the plot.")}
+	}
 	Ng=length(unique(data_long_tmp$Gene.Name)); Nuid=length(unique(data_long_tmp$UniqueID))
 	search_gene_info<-str_c("Displaying ", Ng, " Gene.Names from ", Nuid, " UniqueIDs.")
-	gene_multi_uid<-result_long_tmp%>%distinct(Gene.Name, UniqueID)%>%group_by(Gene.Name)%>%dplyr::count()%>%dplyr::filter(n>1)
-	if (nrow(gene_multi_uid)>0) {search_gene_info<-str_c(search_gene_info, 
-	       "\nPlease note some gene names map to mulitiple UniqueIDs, we recommend using Gene.Name_UniqueID as Gene Label to separate the UniqueIDs in the plot.")}
+	#browser()
 	output$geneSearchInfo<-renderText({search_gene_info})
 	#browser() #debug
-
 	return(list("data_long_tmp"=data_long_tmp,"result_long_tmp"= result_long_tmp, "tmpids"=tmpids))
 
 })
@@ -346,7 +351,7 @@ browsing_out <- eventReactive(plot_exp_control(),{
 	startslice = sel_page * 6 + 1
 	endslice = startslice + numperpage -1
 	if (input$browsing_gene_order=="P value") {results_long<-results_long%>%arrange(P.Value)
-	} else {results_long<-results_long%>%arrange(desc(abs(logFC)))}
+	} else {results_long<-results_long%>%arrange(dplyr::desc(abs(logFC)))}
 
 	if (input$expression_psel == "Padj") {
 		sel_gene = results_long %>% filter(test %in% expression_test & abs(logFC) > expression_fccut & Adj.P.Value < expression_pvalcut) %>%
