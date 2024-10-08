@@ -1074,17 +1074,27 @@ geneset_server <- function(id) {
                           req(input$geneset_test)
                           req(DataReactive())
                           if (input$sel_metabase_set!="") {
-                            withProgress(message = 'Plotting...', value = 0, {
-                            cat(input$sel_metabase_set, "\n") #for debug
-                            suppressWarnings(metabase_map<-  view.map(input$sel_metabase_set,
-                                                     datasets = Data_metabase(),  bg_image=FALSE,  input.types="gene", nwobj_style=input$obj_style ) )
-                            output$my_widget <- renderMetabase(metabase_map)
-                            plot_height=metabase_map$height+50
-                            plot_width=metabase_map$width+50
-                            output$plot.metabase=renderUI({
-                              MetabaseOutput(ns("my_widget"), width = plot_width, height = plot_height)
-                            })
-                          })}
+                            tmp<-try(view.map(input$sel_metabase_set)) #test if the metabaseR map can be loaded, some like "Oxidative phosphorylation" has issues
+                            if (class(tmp)[1]=="try-error") {
+                              cat(input$sel_metabase_set, "can't be plotted\n")
+                              output$plot.metabase=renderUI({
+                                tagList(tags$div(
+                                  tags$p("This Metabase pathway cannot be drawn. Please select another pathway.")
+                                )) })
+                            } else {
+                              withProgress(message = 'Plotting...', value = 0, {
+                                cat(input$sel_metabase_set, "\n") #for debug
+                                suppressWarnings(metabase_map<-  view.map(input$sel_metabase_set,
+                                                                          datasets = Data_metabase(),  bg_image=FALSE,  input.types="gene", nwobj_style=input$obj_style ) )
+                                output$my_widget <- renderMetabase(metabase_map)
+                                plot_height=metabase_map$height+50
+                                plot_width=metabase_map$width+50
+                                output$plot.metabase=renderUI({
+                                  MetabaseOutput(ns("my_widget"), width = plot_width, height = plot_height)
+                                })
+                              })
+                            }
+                            }
                         })
                         
                         
