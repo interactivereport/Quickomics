@@ -174,8 +174,8 @@ geneset_ui <- function(id) {
                                                selectInput(ns("geneset_test4"), label="4th Comparison", choices=NULL),
                                                selectInput(ns("geneset_test5"), label="5th Comparison", choices=NULL)),
                               conditionalPanel(ns = ns, "input.geneset_tabset=='KEGG Pathway View'",
-                                column(width=6, selectInput(ns("kegg_logFC"), label= "Gene log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1)),
-                                column(width=6, selectInput(ns("kegg_logFC_cpd"), label= "Compound log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1)),
+                                 selectInput(ns("kegg_logFC"), label= "Gene log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
+                                 selectInput(ns("kegg_logFC_cpd"), label= "Compound log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
                                 radioButtons(ns("kegg_mapsample"), label= "Map Symbols to KEGG Nodes?", choices= c("Yes"=TRUE, "No"=FALSE),inline = TRUE)),
                               conditionalPanel(ns = ns, "input.geneset_tabset=='MetaBase Pathway View'",
                                                selectInput(ns("obj_style"), label="Network Object Style", choices=c("icon", "polygon", "none"), selected="icon")),
@@ -244,13 +244,13 @@ geneset_server <- function(id) {
                         if (exists("system_info")){
                           if (!is.null(system_info)) {
                             if (system_info=="quickomics" ) { system="QuickOmics"}
+                            if (system_info=="rnaview" ) { system="RNAView"}
                           }
                         }
                         #cat(system_info, date(), "\n")
 
-                        
                         ###Modify UI and input data based on QuickOmics or xOmicsShiny system
-                        if (system=="QuickOmics") {
+                        if (system %in% c("QuickOmics", "RNAView")) {
                           #shinyjs::hide(id = "comparison_2")
                           working_project=reactiveVal()
                           observe({
@@ -415,6 +415,9 @@ geneset_server <- function(id) {
                               showTab(session=session, inputId = "geneset_tabset", target = "MetaBase Pathway View")
                             }
                           }
+                          if (system=="RNAView") {
+                            hideElement(id="kegg_logFC_cpd")
+                          }
                         })
                         
                         observeEvent(input$MSigDB_species, {
@@ -454,11 +457,15 @@ geneset_server <- function(id) {
                           if (input$ORA_input_type=='Gene List' && input$geneset_tabset=='Over-Representation Analysis (ORA)')  {
                             hideTab(inputId="geneset_tabset", target="Gene Expression")
                             hideTab(inputId="geneset_tabset", target="Gene Set Heatmap")
-                            hideTab(inputId="geneset_tabset", target="KEGG Pathway View")
+                            if (file.exists("db/human/kegg.gmt")) { 
+                              hideTab(inputId="geneset_tabset", target="KEGG Pathway View")
+                            }
                           } else if (input$ORA_input_type!='Gene List' || input$geneset_tabset=='Gene Set Enrichment Analysis (GSEA)') {
                             showTab(inputId="geneset_tabset", target="Gene Expression")
                             showTab(inputId="geneset_tabset", target="Gene Set Heatmap")
-                            showTab(inputId="geneset_tabset", target="KEGG Pathway View")
+                            if (file.exists("db/human/kegg.gmt")) { 
+                              showTab(inputId="geneset_tabset", target="KEGG Pathway View")
+                            }
                           }
                         } ) 
                         
@@ -926,6 +933,8 @@ geneset_server <- function(id) {
                           validate(need(str_detect(ID, "^(hsa|mmu|rno)\\d{5}"), message = "Only works on human/mouse/rat KEGG pathways."))
                           species=input$MSigDB_species
                           if (species=="rat") {species="rno"}
+                          if (species=="mouse") {species="mmu"}
+                          if (species=="human") {species="hsa"}
                           pid <- strsplit(ID,"_")[[1]][1]
                           img.file <- paste(pid,"pathview","png",sep=".")
                           dataIn=DataReactive()
