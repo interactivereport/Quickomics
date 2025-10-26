@@ -8,6 +8,7 @@
 ##@Date : 5/31/2019
 ##@version 1.0
 ###########################################################################################################
+
 #global reactive values
 saved_plots <- reactiveValues()  
 saved_table <- reactiveValues() 
@@ -409,6 +410,7 @@ output$results <- DT::renderDataTable({
 })
 
 output$sample <-  DT::renderDT(server=FALSE,{
+  req(public_dataset)
   meta<-DataReactive()$MetaData%>%dplyr::select(-Order, -ComparePairs)
 	DT::datatable(meta,  extensions = 'Buttons',  options = list(
 	  dom = 'lBfrtip', pageLength = 15,
@@ -419,8 +421,16 @@ output$sample <-  DT::renderDT(server=FALSE,{
 	         exportOptions = list(modifier = list(page = "all")))
 	  )
 	), rownames= F)
-	
 })
+
+observe({
+  if (public_dataset) {
+    showTab(inputId = "Tables", target = "sample_table")
+  } else {
+    hideTab(inputId = "Tables", target = "sample_table")
+  }
+})
+
 
 output$comp_info <- renderUI ({
   if (is.null(DataReactive()$comp_info)) return()
@@ -445,6 +455,7 @@ output$comp_info <- renderUI ({
 
 
 output$data_wide <- DT::renderDataTable({
+  req(public_dataset)
   data_w<-DataReactive()$data_wide
   data_w=round(data_w*1000)/1000
 	DT::datatable(data_w, extensions = c('FixedColumns', 'Buttons'),
@@ -454,6 +465,14 @@ output$data_wide <- DT::renderDataTable({
     scrollX = TRUE,
     fixedColumns = list(leftColumns = 1)
   ))
+})
+
+observe({
+  if (public_dataset) {
+    showTab(inputId = "Tables", target = "data_table")
+  } else {
+    hideTab(inputId = "Tables", target = "data_table")
+  }
 })
 
 output$ProteinGeneName <- DT::renderDataTable({

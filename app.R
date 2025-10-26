@@ -50,9 +50,10 @@ tabPanel("Dataset",
                                        tableOutput('group_table'), tags$br(),
                                        textInput("exp_unit", "Expression Data Units", value="Expression Level", width="300px"),tags$br(),
                                        uiOutput('comp_info') ),
-                              tabPanel(title="Sample Table", actionButton("sample", "Save to output"), dataTableOutput('sample')),
+                              tabPanel(title="Sample Table", value = "sample_table", actionButton("sample", "Save to output"), dataTableOutput('sample')),
+                              # uiOutput("conditinal_sample_table"),
                               tabPanel(title="Result Table", actionButton("results", "Save to output"), dataTableOutput('results')),
-                              tabPanel(title="Data Table", actionButton("data_wide", "Save to output"), dataTableOutput('data_wide')),
+                              tabPanel(title="Data Table", value = "data_table", actionButton("data_wide", "Save to output"), dataTableOutput('data_wide')),
                               tabPanel(title="Protein Gene Names", actionButton("ProteinGeneName", "Save to output"), dataTableOutput('ProteinGeneName')),
                               tabPanel(title="Upload Files",
                                        uiOutput('upload.files.ui'), #see process_uploaded_files.R for details.
@@ -459,7 +460,7 @@ tabPanel("Expression Plot",
                                        verbatimTextOutput("geneSearchInfo"),
                                        actionButton("plot_exp", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
                                        uiOutput("plot.exp")),
-                              tabPanel(title="Data Table",	DT::dataTableOutput("dat_dotplot")),
+                              tabPanel(title="Data Table",	value="expression_plot_data", DT::dataTableOutput("dat_dotplot")),
                               tabPanel(title="Result Table",	DT::dataTableOutput("res_dotplot")),
                               tabPanel(title="Rank Abundance Curve",plotOutput("SCurve", height=800)),
                               tabPanel(title="Help", htmlOutput('help_expression'))
@@ -706,6 +707,10 @@ footer= HTML(footer_text)
 ) #for tagList
 
 server <- function(input, output, session) {
+  # Hide before user sees it, no CSS required
+  session$onFlushed(function() {
+    hideTab("Tables", "sample_table")
+  }, once = TRUE)
   source("inputdata.R",local = TRUE)
   source("process_uploaded_files.R",local = TRUE)
   source("qcplot.R",local=TRUE)
@@ -715,7 +720,7 @@ server <- function(input, output, session) {
   source("barboxplot.R",local = TRUE)
   source("venn.R",local = TRUE)
   source("genesetmodule.R",local = TRUE)
-  insertTab(session=session,  inputId = "menu", target = "Expression Plot",  position = "after", 
+  insertTab(session=session,  inputId = "menu", target = "Expression Plot",  position = "after",
               tabPanel("Gene Set Enrichment", geneset_ui(id = "GS")) )
   geneset_server(id = "GS")
   source("pattern.R",local = TRUE) 
