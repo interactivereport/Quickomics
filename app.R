@@ -707,10 +707,6 @@ footer= HTML(footer_text)
 ) #for tagList
 
 server <- function(input, output, session) {
-  # Hide before user sees it, no CSS required
-  session$onFlushed(function() {
-    hideTab("Tables", "sample_table")
-  }, once = TRUE)
   source("inputdata.R",local = TRUE)
   source("process_uploaded_files.R",local = TRUE)
   source("qcplot.R",local=TRUE)

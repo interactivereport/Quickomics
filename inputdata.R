@@ -287,6 +287,12 @@ project_summary<-reactive({
   DataIn = DataReactive()
   groups=DataIn$groups
   tests=DataIn$tests
+  restricted_msg <- if (!public_dataset) {
+    "<h4>This project is loaded in restricted mode. Individual sample data have been masked for privacy.</h4><br>"
+  } else {
+    ""
+  }
+  
   summary=str_c('<style type="text/css">
 .disc {
  list-style-type: disc;
@@ -298,6 +304,7 @@ project_summary<-reactive({
 }
 </style>',
 "<h2>Project ", ProjectInfo$ShortName, "</h2><br>",
+restricted_msg,
     '<ul class="disc"><li>Species: ', ProjectInfo$Species, "</li>",
 "<li>Description: ", ProjectInfo$Name, "</li>",
 "<li>Data Path: ", ProjectInfo$Path, "</li>",
