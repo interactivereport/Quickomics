@@ -9,7 +9,6 @@
 ##@version 1.0
 ###########################################################################################################
 
-
 observe({
   MetaData=all_metadata()
 	DataIn = DataReactive()
@@ -174,6 +173,15 @@ output$dat_dotplot <- DT::renderDT(server=FALSE, {
 	  )
 	  ))
 })
+
+observe({
+  if (public_dataset) {
+    showTab(inputId = "expression_tabset", target = "expression_plot_data")
+  } else {
+    hideTab(inputId = "expression_tabset", target = "expression_plot_data")
+  }
+})
+
 
 output$res_dotplot <- DT::renderDT(server=FALSE,{
   result_long_tmp <- DataExpReactive()$result_long_tmp
