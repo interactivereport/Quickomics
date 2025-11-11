@@ -179,7 +179,15 @@ geneset_ui <- function(id) {
                                 radioButtons(ns("kegg_mapsample"), label= "Map Symbols to KEGG Nodes?", choices= c("Yes"=TRUE, "No"=FALSE),inline = TRUE)),
                               conditionalPanel(ns = ns, "input.geneset_tabset=='MetaBase Pathway View'",
                                                selectInput(ns("obj_style"), label="Network Object Style", choices=c("icon", "polygon", "none"), selected="icon")),
-                              )
+                              ),
+             conditionalPanel(ns = ns, "input.geneset_tabset=='Wikipathways View'",
+                              h5("Choose color to map logFC values:"),
+                              column(width=3,colourInput(ns("wiki_low"), "Low", "green")),
+				                      column(width=3,colourInput(ns("wiki_mid"), "Mid", "gray90")),
+				                      column(width=3,colourInput(ns("wiki_high"), "High", "red")),
+				                      selectInput(ns("wiki_logFC"), label= "Gene log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
+                              checkboxInput(ns("wiki_ctrl"), "Show Control Icon ",  TRUE, width="90%")
+                              )             
            )
     ),
     column(9,
@@ -221,7 +229,11 @@ geneset_ui <- function(id) {
                                 selectizeInput(ns("sel_wikipathways_set"), label="Wikipathways for Visualization", choices = NULL, multiple = FALSE, width="600px", 
                                                options = list(placeholder =	'Type to search')),
                                 #actionButton(ns("metabaseSave"), "Save to output"),
-                                svgPanZoomOutput(ns("wikipathways_plot"),width = "100%", height = "800px") ),
+                                fluidRow( column( width = 4,  # adjust width as needed
+                                     plotOutput(ns("wiki_legend"), height = 50)
+                                  )
+                                ),
+                                svgPanZoomOutput(ns("wikipathways_plot"),width = "100%", height = "100%") ),
                        tabPanel(title="Help", htmlOutput('help_geneset'))
            )
     )
@@ -1005,10 +1017,10 @@ geneset_server <- function(id) {
                           return(img.file)
                         })
                         })
-                        output$wikipathways_plot <- renderSvgPanZoom({withProgress(message = 'Making WikiPathways View...', value = 0, {
+                        wiki_plot_results<-reactive({
                           ID=input$sel_wikipathways_set
                           validate(need(ID!="", message = "Please select a Wikipathway to map logFC data to it."))
-                          validate(need(str_detect(ID, "WP\\d+$"), message = "Only works on human/mouse/rat KEGG pathways."))
+                          validate(need(str_detect(ID, "WP\\d+$"), message = "Only works on human/mouse/rat Wiki pathways."))
                           wiki_ID=str_extract(ID, "WP\\d+$")
                           species=input$MSigDB_species
                           dataIn=DataReactive()
@@ -1017,7 +1029,8 @@ geneset_server <- function(id) {
                           comp_sel = input$geneset_test
                           
                           ##Make FCdata  from results_long
-                          FC_df<-results_long%>%dplyr::filter(test==comp_sel)%>%dplyr::select(UniqueID, logFC, Gene.Name)  
+                          FC_df<-results_long%>%dplyr::filter(test==comp_sel)%>%arrange(P.Value) %>% filter(!duplicated(Gene.Name)) %>% 
+                                 dplyr::select(UniqueID, logFC, Gene.Name) 
                           if (input$map_genes!="No Change (as it is)" && !(ProjectInfo$Species==input$MSigDB_species && input$map_genes=="Homologous Genes") ) {
                             if ( input$map_genes=="Change to UPPER case (human)" )  mapped_symbols<-toupper(FC_df$Gene.Name)
                             if ( input$map_genes=="Change to Title Case (mouse/rat)" )  mapped_symbols<-str_to_title(FC_df$Gene.Name)
@@ -1029,10 +1042,21 @@ geneset_server <- function(id) {
                           
                           cat(comp_sel, wiki_ID, length(FCdata), "\n")
                           p1 <- wpplot(wiki_ID)
-                          #p2 <- p1 |> wp_bgfill(FCdata, low='darkgreen', high='firebrick', legend_x = .9, legend_y = .95) #|> is the base R "pipe" operator. It was new in version 4.1.0.
-                          p2 <- wp_bgfill(p1, FCdata, low='darkgreen', high='firebrick', legend_x = .9, legend_y = .95)
-                          svgPanZoom(paste(p2$svg, collapse="\n"),  controlIconsEnabled = T)  
+                          p2 <- wp_bgfill_2025(p=p1, value=FCdata, logFC_max=input$wiki_logFC, high=input$wiki_high, mid=input$wiki_mid, low=input$wiki_low) 
+                          return(p2)
+                        })
+                        
+                        output$wikipathways_plot <- renderSvgPanZoom({withProgress(message = 'Making WikiPathways View...', value = 0, {
+                          p2=wiki_plot_results()
+                          #browser()
+                          fix_svg=paste(p2$p$svg, collapse="\n")
+                          svgPanZoom(fix_svg,  controlIconsEnabled = input$wiki_ctrl, fit=TRUE, center=TRUE)  
                         } )
+                        })
+                        
+                        output$wiki_legend<-renderPlot({
+                          p2=wiki_plot_results()
+                          draw(p2$lgd)
                         })
                         
                         ##MetabaseR map, only when human gene set is selected
