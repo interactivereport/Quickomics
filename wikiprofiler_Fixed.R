@@ -53,7 +53,8 @@ wp_bgfill_2025 <- function(p, value, logFC_max, high="red", mid="gray90", low="g
   color=col_fun(value)
   genes <- names(value)
   for (i in seq_along(genes)) {
-    pos <- grep(genes[i], p$svg)
+    #pos <- grep(genes[i], p$svg)
+    pos <- grep(str_c("tspan.+>", genes[i], "</tspan>"), p$svg)
     p$svg <- replace_bg2(p$svg, pos, color[i])
   }
 
