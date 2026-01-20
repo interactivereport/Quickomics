@@ -85,6 +85,77 @@ homolog_mapping<-function(genelist, species1, species2, homologs) {
   return(genelist2)
 }
 
+GeneFilter <- function(results_long, test_sel, p_sel, direction, pvalcut, FCcut, sel_label) {
+  results_long_filtered <- results_long %>%
+    dplyr::mutate_if(is.factor, as.character) %>%
+    dplyr::filter(if (!is.na(test_sel)) {test == test_sel} else TRUE) %>%
+    dplyr::filter(if (p_sel=="Padj") {Adj.P.Value < pvalcut} else {P.Value < pvalcut}) %>%
+    dplyr::filter(if (direction=="Up") {logFC >= FCcut} else if (direction=="Down") {logFC <= -FCcut} else {abs(logFC) >= FCcut}) %>%
+    dplyr::arrange(desc(abs(logFC)))  %>%
+    dplyr::mutate(labelid = !!sym(sel_label)) %>%
+    dplyr::filter(!is.na(labelid) & labelid != "") %>%
+    as.data.frame()
+  return(results_long_filtered)
+}
+
+
+ProcessUploadGeneList <- function(gene_list) {
+  gene_list <- unlist(strsplit(gene_list, "[,\n]"))
+  gene_list <- gsub(" ", "", gene_list, fixed = TRUE)
+  gene_list <- unique(gene_list[gene_list != ""])
+  return(gene_list)
+}
+
+LoadedData <- reactiveValues()
+GetGeneSetNames <- function() {
+  if(!("gmtlist" %in% names(LoadedData))){
+    load("db/gmtlist.RData")
+    LoadedData[["gmtlist"]]  <-  gmtlist
+  } else {
+    gmtlist <- LoadedData[["gmtlist"]]
+  }
+  
+  if(!("kegg.pathways" %in% names(LoadedData))){
+    load("db/kegg.pathways.RData")
+    LoadedData[["kegg.pathways"]]  <-  kegg.pathways
+  } else{
+    kegg.pathways <- LoadedData[["kegg.pathways"]]
+  }
+  
+  genesetnames <- c()
+  for (setname in names(gmtlist)) {
+    genesetnames <- c(genesetnames, names(gmtlist[[setname]]))
+  }
+  genesetnames <- c(names(kegg.pathways$human$kg.sets), genesetnames)
+  return(genesetnames)
+}
+
+GetGenesFromGeneSet <- function(sel_geneset) {
+  if(!("hgnc" %in% names(LoadedData))){
+    load("db/hgnc.RData")
+    LoadedData[["hgnc"]]  <-  hgnc
+  } else {
+    hgnc <- LoadedData[["hgnc"]]
+  }
+  kegg.pathways <- LoadedData[["kegg.pathways"]]
+  gmtlist <- LoadedData[["gmtlist"]]
+  
+  if (sel_geneset %in% names(kegg.pathways$human$kg.sets)) {
+    geneset_genes <- kegg.pathways$human$kg.sets[[sel_geneset]]
+  }	else {
+    for (setname in names(gmtlist)) {
+      if (sel_geneset %in% names(gmtlist[[setname]])) {
+        geneset_genes <- gmtlist[[setname]][[sel_geneset]]
+        break
+      }
+    }
+  }
+  geneset_genenames <- hgnc %>%
+    dplyr::filter(entrez_id %in% geneset_genes) %>%
+    dplyr::pull(symbol)
+  return(geneset_genenames)
+}
+
 options(shiny.maxRequestSize = 40*1024^2)  #upload files up to 30 Mb
 
 
