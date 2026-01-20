@@ -57,6 +57,7 @@ suppressPackageStartupMessages({
   library(fgsea)
   #library(DEGreport)
   library(rclipboard)
+  library(WGCNA)
 })
 
 

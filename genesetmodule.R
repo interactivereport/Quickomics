@@ -182,20 +182,22 @@ geneset_ui <- function(id) {
                               conditionalPanel(ns = ns, "input.selection_type=='customized gene set list'",
                                                textAreaInput(ns("geneset_dotplot_geneset_list"), "Enter Gene Set List", "", cols = 5, rows=6)
                               ),
-                              column(width=6,sliderInput(ns("geneset_dotplot_point_size_min"), "Min point size", min = 0.1, max = 5, value = 0.7, step = 0.1)),
-                              column(width=6,sliderInput(ns("geneset_dotplot_point_size_max"), "Max point size", min = 1, max = 15, value = 6, step = 0.5)),
-                              column(width=6,sliderInput(ns("geneset_dotplot_legend_title_size"), "Legend title size", min = 8, max = 24, value = 14)),
-                              column(width=6,sliderInput(ns("geneset_dotplot_legend_text_size"), "Legend text size", min = 8, max = 24, value = 12)),
                               checkboxInput(ns("geneset_dotplot_trim"), "Trim long gene set names?", value = FALSE),
                               conditionalPanel(ns = ns, "input.geneset_dotplot_trim==true",
                                                sliderInput(ns("geneset_dotplot_y_axis_text_length"), 
                                                            label = "Length of displayed gene set name:", 
                                                            min = 15, max = 300, step = 10, value = 100)
                               ),
-                              column(width=6,sliderInput(ns("geneset_dotplot_y_axis_text_wrapping_length"), "Wrapping length of Gene set name", min = 15, max = 80, value = 45)),
-                              column(width=6,sliderInput(ns("geneset_dotplot_axis_text_size"), "Axis text size", min = 8, max = 24, value = 12)),
-                              column(width=6,sliderInput(ns("geneset_dotplot_width"), "Heatmap Width:", min = 200, max = 3000, step = 50, value = 900)),
-                              column(width=6,sliderInput(ns("geneset_dotplot_height"), "Heatmap Height:", min = 200, max = 3000, step = 50, value = 800))
+                              sliderInput(ns("geneset_dotplot_y_axis_text_wrapping_length"), "Wrapping length of Gene set name", min = 15, max = 80, value = 45),
+                              column(width=6,sliderInput(ns("geneset_dotplot_point_size_min"), "Min point size", min = 0.1, max = 5, value = 0.7, step = 0.1)),
+                              column(width=6,sliderInput(ns("geneset_dotplot_point_size_max"), "Max point size", min = 1, max = 15, value = 6, step = 0.5)),
+                              column(width=6,sliderInput(ns("geneset_dotplot_legend_title_size"), "Legend title size", min = 8, max = 24, value = 14)),
+                              column(width=6,sliderInput(ns("geneset_dotplot_legend_text_size"), "Legend text size", min = 8, max = 24, value = 12)),
+                              # column(width=6,sliderInput(ns("geneset_dotplot_y_axis_text_wrapping_length"), "Wrapping length of Gene set name", min = 15, max = 80, value = 45)),
+                              column(width=6,sliderInput(ns("geneset_dotplot_x_axis_text_size"), "Axis X text size", min = 8, max = 24, value = 12)),
+                              column(width=6,sliderInput(ns("geneset_dotplot_y_axis_text_size"), "Axis Y text size", min = 8, max = 24, value = 12)),
+                              column(width=6,sliderInput(ns("geneset_dotplot_width"), "Dot Plot Width:", min = 200, max = 3000, step = 50, value = 900)),
+                              column(width=6,sliderInput(ns("geneset_dotplot_height"), "Dot Plot Height:", min = 200, max = 3000, step = 50, value = 800))
              ),
              conditionalPanel(ns = ns, "input.geneset_tabset=='KEGG Pathway View' || input.geneset_tabset=='MetaBase Pathway View' ",
                               # radioButtons(ns("kegg_more_tests"), label= "Add more comparisons?", choices= c("Yes", "No"),selected="No", inline = TRUE),
@@ -1803,8 +1805,8 @@ geneset_server <- function(id) {
                                 scale_fill_gradient(low = "grey", high = "red") +
                                 scale_size(range = c(input$geneset_dotplot_point_size_min, input$geneset_dotplot_point_size_max)) +
                                 labs(fill = "DeGeneNum", size = "-log10(adj.p)") +
-                                theme(axis.text = element_text(size = input$geneset_dotplot_axis_text_size),
-                                      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = input$geneset_dotplot_axis_text_size),
+                                theme(axis.text = element_text(size = input$geneset_dotplot_y_axis_text_size),
+                                      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = input$geneset_dotplot_x_axis_text_size),
                                       legend.title = element_text(size = input$geneset_dotplot_legend_title_size),
                                       legend.text = element_text(size = input$geneset_dotplot_legend_text_size),
                                       axis.title = element_blank()) +
@@ -1912,8 +1914,8 @@ geneset_server <- function(id) {
                                            breaks = seq(p_limit_low, p_limit_up, length.out = 4),
                                            labels = scales::number_format(accuracy = 1)) + 
                                 labs(color="DEGnum", size="-log10(adj.p)") +
-                                theme(axis.text=element_text(size=input$geneset_dotplot_axis_text_size),
-                                      axis.text.x=element_text(angle=90, vjust=0.5, hjust=1, size = input$geneset_dotplot_axis_text_size),
+                                theme(axis.text=element_text(size=input$geneset_dotplot_y_axis_text_size),
+                                      axis.text.x=element_text(angle=90, vjust=0.5, hjust=1, size = input$geneset_dotplot_x_axis_text_size),
                                       legend.title = element_text(size=input$geneset_dotplot_legend_title_size),
                                       legend.text = element_text(size=input$geneset_dotplot_legend_text_size),
                                       axis.title=element_blank()) +

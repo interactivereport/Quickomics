@@ -123,6 +123,12 @@ wgcna_ui <- function(id) {
 wgcna_server <- function(id) {
   shiny::moduleServer(id,
                       function(input, output, session) {
+                        working_project=reactiveVal()
+                        observe({
+                          req(ProjectInfo)
+                          working_project(ProjectInfo$ProjectID)
+                        })
+                        
                         observe({
                           DataIn <- DataReactive()
                           data_wide <- na.omit(DataIn$data_wide)
@@ -132,34 +138,34 @@ wgcna_server <- function(id) {
                                              label= "Select Top N Genes, where N is :",  value=default_n_gene, min=250L, step=25L, max = default_n_gene)
                         })
                         
-                        observeEvent(input$WGCNAgenelable, {
+                        observeEvent(list(working_project(),input$WGCNAgenelable), {
                           DataIn = DataReactive()
                           req(DataIn$data_wide)
                           req(ProjectInfo$ProjectID)
                           req(DataIn$ProteinGeneName)
-                          
+
                           data_wide <- DataIn$data_wide
                           ProjectID <- ProjectInfo$ProjectID
                           ProteinGeneName  <- DataIn$ProteinGeneName
                           gene_label <- input$WGCNAgenelable
-                          
+
                           data_wide <- na.omit(DataIn$data_wide)
                           diff <- apply(data_wide, 1, sd, na.rm = TRUE)/(rowMeans(data_wide) + median(rowMeans(data_wide)))
-                          data_wide=data_wide[order(diff, decreasing=TRUE), ] 
-                          
+                          data_wide=data_wide[order(diff, decreasing=TRUE), ]
+
                           if (nrow(data_wide)>10000 ) {
-                            data_wide=data_wide[1:10000, ] 
-                          } 
-                          
+                            data_wide=data_wide[1:10000, ]
+                          }
+
                           dataExpr <- data_wide
-                          
+
                           wgcnafile <- ProjectInfo$file3
-                          
+
                           if(file.exists(wgcnafile)){
                             load(wgcnafile)
                             wgcna <- netwk
                             mergedColors = labels2colors(wgcna$colors)
-                            
+
                             output$Dendrogram <- renderPlot({
                               withProgress(message = "Creating plot using pre-calculated data", value = 0, {
                                 plotDendroAndColors(
@@ -172,10 +178,10 @@ wgcna_server <- function(id) {
                                   guideHang = 0.05 )
                               })
                             })
-                            
+
                             # t0: merge WGCNA output with ProteinGeneName so that genes can be shown as UniqueID or Gene.Name
                             t2 <- get_wgcna_table(wgcna, ProteinGeneName, gene_label)
-                            
+
                             output$gene_cluster <- DT::renderDT({
                               DT::datatable(
                                 t2,
@@ -192,6 +198,7 @@ wgcna_server <- function(id) {
                           }
                         })
                         
+
                         # use eventReactive to control reactivity of WGCNAReactive;
                         # otherwise, whenever an input change, WGCNAReactive will be re-calculated
                         # and its re-calculation could take a long time.
