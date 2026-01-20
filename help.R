@@ -162,3 +162,13 @@ output$help_vennp <- renderText({
 })
 
 #
+
+output$help_WGCNA <- renderText({
+  htmlstr <- "
+	<br>
+	<ul>
+	<li><b>Top N Genes</b>: The first N number of genes in the data, where N is selected by users. We also set this number to be the max block size to avoid multiple dendrograms whose interpretation is more challenging than a single dendrogram.</li>
+	<li><b>Dendrogram cut height for merging</b>: Dendrogram cut height for module merging.</li>
+	</ul>"
+  htmlstr
+})

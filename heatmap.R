@@ -44,7 +44,7 @@ output$Test_to_sample<-renderUI({
   } 
 })
 
-output$selectGroupSampleHeatmap <- output$selectGroupSampleExpression<-output$selectGroupSampleQC<-renderUI({ 
+output$selectGroupSample <- output$selectGroupSampleHeatmap <- output$selectGroupSampleExpression <- output$selectGroupSampleQC <- renderUI({ 
   sample_info=paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
                  length(sample_order()), " out of ", length(all_samples()), 
                  " Samples. (Update Selection at: Top Menu -> Groups and Samples.)", sep="")

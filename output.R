@@ -157,6 +157,19 @@ output$downloadPDF <- downloadHandler(
 			replayPlot(saved_plots$patternmfuzz)
 			Np=Np+1
 		}
+		
+		## correlation analysis
+		if (!is.null(saved_plots$CorrPlot) ){
+		  for (i in 1:length(names(saved_plots$CorrPlot))) {
+		    p.name <- names(saved_plots$CorrPlot)[i]
+		    title_tmp <- paste("Correlation Plot (",p.name,")",sep="")
+		    if (title_tmp %in% plots_checked) {
+		      print(saved_plots$CorrPlot[[p.name]])
+		      Np=Np+1
+		    }
+		  }
+		}
+		
 		dev.off()
 		cat("Saved to PDF", Np, "graphs.\n")
 	})
@@ -274,6 +287,15 @@ observe({
 	}
 	if (!is.null(saved_plots$patternmfuzz)){
 		summary=c(summary, 'Pattern Clustering (Soft Clustering)')
+	}
+
+	## correlation analysis
+	if (!is.null(saved_plots$CorrPlot)){
+	  for (i in 1:length(names(saved_plots$CorrPlot))) {
+	    p.name <- names(saved_plots$CorrPlot)[i]
+	    title_tmp <- paste("Correlation Plot (",p.name,")",sep="")
+	    summary=c(summary,  title_tmp)
+	  }
 	}
 	
 	#cat("saved plots are:", summary, "\n")
@@ -423,9 +445,19 @@ output$downloadSVG <- downloadHandler(
       replayPlot(saved_plots$patternmfuzz)
       Np=Np+1
     }
+    ## correlation analysis
+    if (Np==0 & !is.null(saved_plots$CorrPlot) ) {
+      for (i in 1:length(names(saved_plots$CorrPlot))) {
+        p.name <- names(saved_plots$CorrPlot)[i]
+        title_tmp <- paste("Correlation Plot (",p.name,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          print(saved_plots$CorrPlot[[p.name]])
+          Np=Np+1
+        }
+      }
+    }
+
     dev.off()
-    
- 
   })
   },contentType = "application/svg"
   

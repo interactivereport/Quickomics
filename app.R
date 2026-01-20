@@ -395,7 +395,7 @@ tabPanel("Expression Plot",
                                                       radioButtons("exp_label",label="Select Gene Label",inline = TRUE, choices=c("UniqueID", "Gene.Name"), selected="Gene.Name"),
                                                       selectizeInput("sel_gene",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search'))),
                                      conditionalPanel("input.exp_subset=='Geneset'",   uiOutput("html_geneset_exp") ) ),
-                                        conditionalPanel("input.expression_tabset=='Searched Expression Data'",
+                    conditionalPanel("input.expression_tabset=='Searched Expression Data'",
                                      radioButtons("SeparateOnePlot", label="Separate or One Plot", inline = TRUE, choices = c("Separate" = "Separate", "OnePlot" = "OnePlot"))),
                     conditionalPanel("input.expression_tabset=='Browsing'",
                                      column(width=6,numericInput("expression_fccut", label= "Choose Fold Change Threshold",  value = 1.2, min=1, step=0.1)),
@@ -487,6 +487,7 @@ tabPanel("Pattern Clustering",
 
 			  radioButtons("pattern_subset",label="Use subset genes or upload your own subset?", choices=c("subset","upload genes"),inline = TRUE, selected="subset"),
 				conditionalPanel("input.pattern_subset=='subset'",
+				                 selectInput("pattern_test", label="Select Genes from Test:", choices=NULL),
 				                 column(width=6,numericInput("pattern_fccut", label= "Choose Fold Change Threshold",value = 1.2, min=1, step=0.1)),
 				                 column(width=6,numericInput("pattern_pvalcut", label= "Choose P-value Threshold", value=0.01, min=0, step=0.001)),
 				                 radioButtons("pattern_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
@@ -511,7 +512,7 @@ tabPanel("Pattern Clustering",
 			tabsetPanel(id="Pattern_tabset",
 				#tabPanel(title="Optimal Number of Clusters", plotOutput("nbclust", height=800)),
 				tabPanel(title="Clustering of Centroid Profiles",actionButton("pattern", "Save to output"),plotOutput("pattern", height=800)),
-				#tabPanel(title="Data Table",actionButton("Pattern_data", "Save to output"), DT::dataTableOutput("dat_pattern")),
+				tabPanel(title="Time Series Plot",actionButton("Pattern_data", "Save to output"), DT::dataTableOutput("dat_pattern")),
 				tabPanel(title="Data Table", DT::dataTableOutput("dat_pattern")),
 				tabPanel(title="Help", htmlOutput('help_pattern'))
 			)
@@ -719,6 +720,14 @@ server <- function(input, output, session) {
   insertTab(session=session,  inputId = "menu", target = "Expression Plot",  position = "after",
               tabPanel("Gene Set Enrichment", geneset_ui(id = "GS")) )
   geneset_server(id = "GS")
+  source("correlation.R",local = TRUE)
+  insertTab(session=session,  inputId = "menu", target = "Gene Set Enrichment",  position = "after",
+            tabPanel("Correlation Analysis", correlation_ui(id = "Corr")) )
+  correlation_server(id = "Corr")
+  source("wgcna.R",local = TRUE)
+  insertTab(session=session,  inputId = "menu", target = "Gene Set Enrichment",  position = "after",
+            tabPanel("WGCNA", wgcna_ui(id = "wgcna")) )
+  wgcna_server(id = "wgcna")
   source("pattern.R",local = TRUE) 
   source("vennprojects.R",local = TRUE)
   source("network.R",local = TRUE)

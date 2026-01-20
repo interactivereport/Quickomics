@@ -28,7 +28,7 @@ upload_message <- reactiveVal()
 ProteinGeneNameHeader<- reactiveVal()
 exp_unit<-reactiveVal()
 #saved_palette <- reactiveVal()
-ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL, Path=NULL)
+ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL, file3=NULL, Path=NULL)
 showAlert<-reactiveVal()
 plot_pca_control<-reactiveVal(0)
 plot_heatmap_control<-reactiveVal(0)
@@ -52,6 +52,7 @@ if (!is.null(query[['project']])) {
   ProjectInfo$ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
   ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
   ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
+  ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
 }
 if (!is.null(query[['unlisted']])) {
   ProjectID = query[['unlisted']]
@@ -64,6 +65,7 @@ if (!is.null(query[['unlisted']])) {
   ProjectInfo$ShortName=unlisted_project$ShortName
   ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
   ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
+  ProjectInfo$file3= paste("unlisted/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
   if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
   if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
 }
@@ -79,6 +81,7 @@ if (!is.null(query[['serverfile']])) {
     ProjectInfo$ShortName=unlisted_project$ShortName
     ProjectInfo$file1= paste(server_dir, "/",   ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste(server_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
+    ProjectInfo$file3= paste(server_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
     if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
   }
@@ -95,6 +98,7 @@ if (!is.null(query[['testfile']])) {
     ProjectInfo$ShortName=unlisted_project$ShortName
     ProjectInfo$file1= paste(test_dir, "/",   ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste(test_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
+    ProjectInfo$file3= paste(test_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
     if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
   }
@@ -110,7 +114,8 @@ if (input$sel_project!="") {
   ProjectInfo$ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
   ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
   ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
- # updateTabsetPanel(session, "Tables", selected = "Sample Table")
+  ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+  # updateTabsetPanel(session, "Tables", selected = "Sample Table")
 }
 })
 
