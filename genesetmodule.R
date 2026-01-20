@@ -172,9 +172,7 @@ geneset_ui <- function(id) {
                               conditionalPanel(ns = ns, "input.selection_type=='individual comparison separately'",
                                                sliderInput(ns("geneset_dotplot_ind_top_n"), 
                                                            label = "Limit the Number of Gene Sets per Comparison to:", 
-                                                           min = 1, max = 30, step = 1, value = 10),
-                                               column(width=12,textOutput(ns("geneset_filtered_comparison")),
-                                                      tags$head(tags$style("#GS-geneset_filtered_comparison{color: red; font-size: 16px; font-style: italic; }")))
+                                                           min = 1, max = 30, step = 1, value = 10)
                               ),
                               conditionalPanel(ns = ns, "input.selection_type=='all comparisons together'",
                                                sliderInput(ns("geneset_dotplot_total_top_n"), 
@@ -188,7 +186,13 @@ geneset_ui <- function(id) {
                               column(width=6,sliderInput(ns("geneset_dotplot_point_size_max"), "Max point size", min = 1, max = 15, value = 6, step = 0.5)),
                               column(width=6,sliderInput(ns("geneset_dotplot_legend_title_size"), "Legend title size", min = 8, max = 24, value = 14)),
                               column(width=6,sliderInput(ns("geneset_dotplot_legend_text_size"), "Legend text size", min = 8, max = 24, value = 12)),
-                              column(width=6,sliderInput(ns("geneset_dotplot_y_axis_text_length"), "Length of Gene set name", min = 15, max = 80, value = 45)),
+                              checkboxInput(ns("geneset_dotplot_trim"), "Trim long gene set names?", value = FALSE),
+                              conditionalPanel(ns = ns, "input.geneset_dotplot_trim==true",
+                                               sliderInput(ns("geneset_dotplot_y_axis_text_length"), 
+                                                           label = "Length of displayed gene set name:", 
+                                                           min = 15, max = 300, step = 10, value = 100)
+                              ),
+                              column(width=6,sliderInput(ns("geneset_dotplot_y_axis_text_wrapping_length"), "Wrapping length of Gene set name", min = 15, max = 80, value = 45)),
                               column(width=6,sliderInput(ns("geneset_dotplot_axis_text_size"), "Axis text size", min = 8, max = 24, value = 12)),
                               column(width=6,sliderInput(ns("geneset_dotplot_width"), "Heatmap Width:", min = 200, max = 3000, step = 50, value = 900)),
                               column(width=6,sliderInput(ns("geneset_dotplot_height"), "Heatmap Height:", min = 200, max = 3000, step = 50, value = 800))
@@ -256,7 +260,11 @@ geneset_ui <- function(id) {
                        tabPanel(title="Dot Plot",
                                 actionButton(ns("create_dotplot"), "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
                                 actionButton(ns("dotplot"), "Save to output"),
-                                span(textOutput(ns("geneset_dotplot_number_setting")), style = "color:red; font-size:15px; font-family:arial"),
+                                tags$br(),br(),
+                                DT::dataTableOutput(ns("GS_top_count"), width = "50%"),
+                                tags$br(),
+                                textOutput(ns("geneset_filtered_comparison")),
+                                tags$head(tags$style("#GS-geneset_filtered_comparison{color: red; font-size: 16px; font-style: italic; }")),
                                 plotOutput(ns("dotplot.geneset"))),
                        tabPanel(title="Help", htmlOutput('help_geneset'))
            )
@@ -1692,13 +1700,16 @@ geneset_server <- function(id) {
                         
                         current_plot <- reactiveVal(NULL)
                         
+                        gset_top_count <- reactiveVal(NULL)
+                        
+                        gset_dotplot_warning_text <- reactiveVal(NULL)
+
                         observe({
                           gs_text <- paste(gset_plot(), collapse = "\n")
                           updateTextAreaInput(session, "geneset_dotplot_geneset_list", value = gs_text)
                         })
 
                         observeEvent(input$create_dotplot, {
-                          browser()
                           if (input$analysis_type == "ORA") {
                             withProgress(message = 'Making ORA dot plot...', value = 0, {
                               GS_all <- combined_ora_res()
@@ -1706,69 +1717,100 @@ geneset_server <- function(id) {
                               n_comp = length(unique(GS_all$comparison))
                               GS_top <- combined_ora_res_filtered()
                               
-                              missing_comps <- setdiff(GS_all %>% distinct(comparison) %>% pull(comparison), GS_top %>% distinct(comparison) %>% pull(comparison))
-                              
-                              if (length(missing_comps) > 0 ) {
+                              if (input$selection_type == "individual comparison separately") {
                                 current_plot(NULL)
-                                output$geneset_filtered_comparison <- renderText({ paste("There are ", length(missing_comps), " comparisons don't have any enriched gene sets. Please increase the pathway analysis statistical cutoff.\n", sep="")})
-                              } else {
-                                output$geneset_filtered_comparison <- renderText({NULL})
-                                if (input$selection_type == "individual comparison separately") {
-                                  current_plot(NULL)
-                                  ind_n <- input$geneset_dotplot_ind_top_n
-                                  top_ind_gs <- GS_top %>%
-                                    dplyr::group_by(comparison) %>%
-                                    dplyr::arrange(p.adj, .by_group = TRUE) %>%   
-                                    dplyr::slice_head(n = ind_n) %>%                  
-                                    dplyr::ungroup() %>%
-                                    dplyr::pull(GeneSet) %>% 
-                                    unique()
-                                  gset_plot(top_ind_gs)
-                                } else if (input$selection_type == "all comparisons together") {
-                                  current_plot(NULL)
-                                  top_n <- input$geneset_dotplot_total_top_n
-                                  top_n_gs <- GS_top %>%
-                                    arrange(p.adj) %>% 
-                                    distinct(GeneSet, .keep_all = TRUE) %>% 
-                                    slice_head(n = top_n) %>%  
-                                    pull(GeneSet)
-                                  gset_plot(top_n_gs)
-                                } else if (input$selection_type == "customized gene set list") {
-                                  current_plot(NULL)
-                                  gset_list <- input$geneset_dotplot_geneset_list
-                                  gset_list <- trimws(gset_list)
-                                  if(grepl("\n",gset_list)) {
-                                    gset_list <-  stringr::str_split(gset_list, "\n")[[1]]
-                                  } else if(grepl(",",gset_list)) {
-                                    gset_list <-  stringr::str_split(gset_list, ",")[[1]]
-                                  }
-                                  gset_list <- gset_list[gset_list != ""]
-                                  validate(need(length(gset_list)>0, message = "Please input at least 1 valid gene set."))
-                                  gset_plot(gset_list)
+                                ind_n <- input$geneset_dotplot_ind_top_n
+                                top_ind_gs <- GS_top %>%
+                                  dplyr::group_by(comparison) %>%
+                                  dplyr::arrange(p.adj, .by_group = TRUE) %>%   
+                                  dplyr::slice_head(n = ind_n) %>%                  
+                                  dplyr::ungroup() 
+                                
+                                GS_top_count <- GS_all %>%
+                                  dplyr::distinct(comparison) %>% 
+                                  dplyr::left_join(top_ind_gs %>% dplyr::count(comparison, name = "GeneSet_count"), by = "comparison") %>%
+                                  dplyr::mutate(GeneSet_count = replace_na(GeneSet_count, 0)) %>% 
+                                  dplyr::arrange(desc(GeneSet_count))
+                                
+                                top_ind_gs <- top_ind_gs %>%
+                                  dplyr::pull(GeneSet) %>%
+                                  unique()
+                                
+                                if (any(GS_top_count$GeneSet_count < ind_n | GS_top_count$GeneSet_count == 0)) { 
+                                  warning_text <- paste("In some comparisons, the number of top enriched gene sets is fewer than", ind_n, "or equal to 0. Please increase the pathway analysis statistical cutoff.") 
+                                } else { 
+                                  warning_text <- "" # no message if condition not met 
                                 }
                                 
-                                GS_plot <- GS_all[GS_all$GeneSet %in% gset_plot(), ]
-                                GS_plot$GeneSet_wrapped <- gsub("_", " ", GS_plot$GeneSet)
-                                GS_plot$GeneSet_wrapped <- stringr::str_wrap(GS_plot$GeneSet_wrapped, width = input$geneset_dotplot_y_axis_text_length)
+                                gset_top_count(GS_top_count)
+                                gset_plot(top_ind_gs)
+                                gset_dotplot_warning_text(warning_text)
+                              } else if (input$selection_type == "all comparisons together") {
+                                current_plot(NULL)
+                                top_n <- input$geneset_dotplot_total_top_n
+                                top_n_gs <- GS_top %>%
+                                  arrange(p.adj) %>% 
+                                  distinct(GeneSet, .keep_all = TRUE) %>% 
+                                  slice_head(n = top_n) 
                                 
-                                # ORA-specific layout
-                                p <- ggplot(GS_plot, aes(x = comparison, y = GeneSet_wrapped)) +
-                                  geom_point(shape = 21, color = "black",
-                                             aes(fill = DeGeneNum, size = Negative.log10.padj)) +
-                                  theme_classic() +
-                                  scale_fill_gradient(low = "grey", high = "red") +
-                                  scale_size(range = c(input$geneset_dotplot_point_size_min, input$geneset_dotplot_point_size_max)) +
-                                  labs(fill = "DeGeneNum", size = "-log10(adj.p)") +
-                                  # scale_y_discrete(labels = function(x) wrap.labels(x, input$geneset_dotplot_y_axis_text_length)) +
-                                  theme(axis.text = element_text(size = input$geneset_dotplot_axis_text_size),
-                                        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = input$geneset_dotplot_axis_text_size),
-                                        legend.title = element_text(size = input$geneset_dotplot_legend_title_size),
-                                        legend.text = element_text(size = input$geneset_dotplot_legend_text_size),
-                                        axis.title = element_blank()) +
-                                  theme(plot.margin = unit(c(1,0.5,1,0.5), "cm"))
+                                GS_top_count <- GS_all %>%
+                                  dplyr::distinct(comparison) %>% 
+                                  dplyr::left_join(top_n_gs %>% dplyr::count(comparison, name = "GeneSet_count"), by = "comparison") %>%
+                                  dplyr::mutate(GeneSet_count = replace_na(GeneSet_count, 0)) %>% 
+                                  dplyr::arrange(desc(GeneSet_count))
                                 
-                                current_plot(p)  # store ggplot object
+                                top_n_gs <- top_n_gs %>%  
+                                  pull(GeneSet)
+                                
+                                if (any(GS_top_count$GeneSet_count == 0)) { 
+                                  warning_text <- "In some comparisons, the number of top enriched gene sets is equal to 0." 
+                                } else { 
+                                  warning_text <- "" 
+                                }
+                                
+                                gset_top_count(GS_top_count)
+                                gset_plot(top_n_gs)
+                                gset_dotplot_warning_text(warning_text)
+                              } else if (input$selection_type == "customized gene set list") {
+                                current_plot(NULL)
+                                gset_top_count(NULL)
+                                gset_dotplot_warning_text(NULL)
+                                gset_list <- input$geneset_dotplot_geneset_list
+                                gset_list <- trimws(gset_list)
+                                if(grepl("\n",gset_list)) {
+                                  gset_list <-  stringr::str_split(gset_list, "\n")[[1]]
+                                } else if(grepl(",",gset_list)) {
+                                  gset_list <-  stringr::str_split(gset_list, ",")[[1]]
+                                }
+                                gset_list <- gset_list[gset_list != ""]
+                                validate(need(length(gset_list)>0, message = "Please input at least 1 valid gene set."))
+                                gset_plot(gset_list)
                               }
+                              
+                              GS_plot <- GS_all[GS_all$GeneSet %in% gset_plot(), ]
+                              GS_plot$GeneSet_wrapped <- gsub("REACTOME_", "R_", GS_plot$GeneSet)
+                              GS_plot$GeneSet_wrapped <- gsub("_", " ", GS_plot$GeneSet)
+                              if (input$geneset_dotplot_trim) {
+                                GS_plot$GeneSet_wrapped <- substr(GS_plot$GeneSet_wrapped, 1, input$geneset_dotplot_y_axis_text_length)
+                              }
+                              GS_plot$GeneSet_wrapped <- stringr::str_wrap(GS_plot$GeneSet_wrapped, width = input$geneset_dotplot_y_axis_text_wrapping_length)
+                              
+                              # ORA-specific layout
+                              p <- ggplot(GS_plot, aes(x = comparison, y = GeneSet_wrapped)) +
+                                geom_point(shape = 21, color = "black",
+                                           aes(fill = DeGeneNum, size = Negative.log10.padj)) +
+                                theme_classic() +
+                                scale_fill_gradient(low = "grey", high = "red") +
+                                scale_size(range = c(input$geneset_dotplot_point_size_min, input$geneset_dotplot_point_size_max)) +
+                                labs(fill = "DeGeneNum", size = "-log10(adj.p)") +
+                                theme(axis.text = element_text(size = input$geneset_dotplot_axis_text_size),
+                                      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = input$geneset_dotplot_axis_text_size),
+                                      legend.title = element_text(size = input$geneset_dotplot_legend_title_size),
+                                      legend.text = element_text(size = input$geneset_dotplot_legend_text_size),
+                                      axis.title = element_blank()) +
+                                theme(plot.margin = unit(c(1,0.5,1,0.5), "cm"))
+                              
+                              current_plot(p)  # store ggplot object
                             })
                           } else if (input$analysis_type == "GSEA") {
                             withProgress(message = 'Making GSEA dot plot...', value = 0, {
@@ -1777,78 +1819,116 @@ geneset_server <- function(id) {
                               n_comp = length(unique(GS_all$comparison))
                               GS_top <- combined_gsea_res_filtered()
                               
-                              missing_comps <- setdiff(GS_all %>% distinct(comparison) %>% pull(comparison), GS_top %>% distinct(comparison) %>% pull(comparison))
-                              
-                              if (length(missing_comps) > 0 ) {
+                              if (input$selection_type == "individual comparison separately") {
                                 current_plot(NULL)
-                                output$geneset_filtered_comparison <- renderText({ paste("There are ", length(missing_comps), " comparisons don't have any enriched gene sets. Please increase the pathway analysis statistical cutoff.\n", sep="")})
-                              } else {
-                                output$geneset_filtered_comparison <- renderText({NULL})
-                                if (input$selection_type == "individual comparison separately") {
-                                  current_plot(NULL)
-                                  ind_n <- input$geneset_dotplot_ind_top_n
-                                  top_ind_gs <- GS_top %>%
-                                    dplyr::group_by(comparison) %>%
-                                    dplyr::arrange(padj, .by_group = TRUE) %>%   
-                                    dplyr::slice_head(n = ind_n) %>%                  
-                                    dplyr::ungroup() %>%
-                                    dplyr::pull(GeneSet) %>% 
-                                    unique()
-                                  gset_plot(top_ind_gs)
-                                } else if (input$selection_type == "all comparisons together") {
-                                  current_plot(NULL)
-                                  top_n <- input$geneset_dotplot_total_top_n
-                                  top_n_gs <- GS_top %>%
-                                    arrange(padj) %>% 
-                                    distinct(GeneSet, .keep_all = TRUE) %>% 
-                                    slice_head(n = top_n) %>%  
-                                    pull(GeneSet)
-                                  gset_plot(top_n_gs)
-                                } else if (input$selection_type == "customized gene set list") {
-                                  current_plot(NULL)
-                                  gset_list <- input$geneset_dotplot_geneset_list
-                                  gset_list <- trimws(gset_list)
-                                  if(grepl("\n",gset_list)) {
-                                    gset_list <-  stringr::str_split(gset_list, "\n")[[1]]
-                                  } else if(grepl(",",gset_list)) {
-                                    gset_list <-  stringr::str_split(gset_list, ",")[[1]]
-                                  }
-                                  gset_list <- gset_list[gset_list != ""]
-                                  validate(need(length(gset_list)>0, message = "Please input at least 1 valid gene set."))
-                                  gset_plot(gset_list)
+                                ind_n <- input$geneset_dotplot_ind_top_n
+                                top_ind_gs <- GS_top %>%
+                                  dplyr::group_by(comparison) %>%
+                                  dplyr::arrange(padj, .by_group = TRUE) %>%   
+                                  dplyr::slice_head(n = ind_n) %>%                  
+                                  dplyr::ungroup() 
+                                
+                                GS_top_count <- GS_all %>%
+                                  dplyr::distinct(comparison) %>% 
+                                  dplyr::left_join(top_ind_gs %>% dplyr::count(comparison, name = "GeneSet_count"), by = "comparison") %>%
+                                  dplyr::mutate(GeneSet_count = replace_na(GeneSet_count, 0)) %>% 
+                                  dplyr::arrange(desc(GeneSet_count))
+                                
+                                top_ind_gs <- top_ind_gs %>%
+                                  dplyr::pull(GeneSet) %>%
+                                  unique()
+                                
+                                if (any(GS_top_count$GeneSet_count < ind_n | GS_top_count$GeneSet_count == 0)) { 
+                                  warning_text <- paste("In some comparisons, the number of top enriched gene sets is fewer than", ind_n, "or equal to 0. Please increase the pathway analysis statistical cutoff.") 
+                                } else { 
+                                  warning_text <- "" # no message if condition not met 
                                 }
                                 
-                                GS_plot <- GS_all[GS_all$GeneSet %in% gset_plot(), ]
-                                GS_plot$GeneSet_wrapped <- gsub("_", " ", GS_plot$GeneSet)
-                                GS_plot$GeneSet_wrapped <- stringr::str_wrap(GS_plot$GeneSet_wrapped, width = input$geneset_dotplot_y_axis_text_length)
+                                gset_top_count(GS_top_count)
+                                gset_plot(top_ind_gs)
+                                gset_dotplot_warning_text(warning_text)
+                              } else if (input$selection_type == "all comparisons together") {
+                                current_plot(NULL)
+                                top_n <- input$geneset_dotplot_total_top_n
+                                top_n_gs <- GS_top %>%
+                                  arrange(padj) %>% 
+                                  distinct(GeneSet, .keep_all = TRUE) %>% 
+                                  slice_head(n = top_n)
                                 
-                                nes_limit <- ceiling(max(abs(GS_plot$NES), na.rm = TRUE))
-                                p_limit_low <- floor(min(GS_plot$Negative.log10.padj, na.rm = TRUE))
-                                p_limit_up <- ceiling(max(GS_plot$Negative.log10.padj, na.rm = TRUE))
+                                GS_top_count <- GS_all %>%
+                                  dplyr::distinct(comparison) %>% 
+                                  dplyr::left_join(top_n_gs %>% dplyr::count(comparison, name = "GeneSet_count"), by = "comparison") %>%
+                                  dplyr::mutate(GeneSet_count = replace_na(GeneSet_count, 0)) %>% 
+                                  dplyr::arrange(desc(GeneSet_count))
                                 
-                                p <- ggplot(GS_plot, aes(x = comparison, y = GeneSet_wrapped)) +
-                                  geom_point(shape=21, color = "black", 
-                                             aes(fill = NES, size=Negative.log10.padj)) +
-                                  theme_classic() +
-                                  scale_fill_gradient2(low = "blue", mid = "grey", high = "red", midpoint = 0,  
-                                                       limits = c(-nes_limit, nes_limit), breaks = seq(-nes_limit, nes_limit, length.out = 5)) +
-                                  scale_size(range = c(input$geneset_dotplot_point_size_min, input$geneset_dotplot_point_size_max), 
-                                             limits = c(p_limit_low,p_limit_up), 
-                                             breaks = seq(p_limit_low, p_limit_up, length.out = 4),
-                                             labels = scales::number_format(accuracy = 1)) + 
-                                  labs(color="DEGnum", size="-log10(adj.p)") +
-                                  theme(axis.text=element_text(size=input$geneset_dotplot_axis_text_size),
-                                        axis.text.x=element_text(angle=90, vjust=0.5, hjust=1, size = input$geneset_dotplot_axis_text_size),
-                                        legend.title = element_text(size=input$geneset_dotplot_legend_title_size),
-                                        legend.text = element_text(size=input$geneset_dotplot_legend_text_size),
-                                        axis.title=element_blank()) +
-                                  theme(plot.margin = unit(c(1,0.5,1,0.5), "cm"))
+                                top_n_gs <- top_n_gs %>%  
+                                  pull(GeneSet)
                                 
-                                current_plot(p)  # store ggplot object
+                                if (any(GS_top_count$GeneSet_count == 0)) { 
+                                  warning_text <- "In some comparisons, the number of top enriched gene sets is equal to 0." 
+                                } else { 
+                                  warning_text <- "" # no message if condition not met 
+                                }
+                                
+                                gset_top_count(GS_top_count)
+                                gset_plot(top_n_gs)
+                                gset_dotplot_warning_text(warning_text)
+                              } else if (input$selection_type == "customized gene set list") {
+                                current_plot(NULL)
+                                gset_top_count(NULL)
+                                gset_dotplot_warning_text(NULL)
+                                gset_list <- input$geneset_dotplot_geneset_list
+                                gset_list <- trimws(gset_list)
+                                if(grepl("\n",gset_list)) {
+                                  gset_list <-  stringr::str_split(gset_list, "\n")[[1]]
+                                } else if(grepl(",",gset_list)) {
+                                  gset_list <-  stringr::str_split(gset_list, ",")[[1]]
+                                }
+                                gset_list <- gset_list[gset_list != ""]
+                                validate(need(length(gset_list)>0, message = "Please input at least 1 valid gene set."))
+                                gset_plot(gset_list)
                               }
+                              
+                              GS_plot <- GS_all[GS_all$GeneSet %in% gset_plot(), ]
+                              GS_plot$GeneSet_wrapped <- gsub("REACTOME_", "R_", GS_plot$GeneSet)
+                              GS_plot$GeneSet_wrapped <- gsub("_", " ", GS_plot$GeneSet)
+                              if (input$geneset_dotplot_trim) {
+                                GS_plot$GeneSet_wrapped <- substr(GS_plot$GeneSet_wrapped, 1, input$geneset_dotplot_y_axis_text_length)
+                              }
+                              GS_plot$GeneSet_wrapped <- stringr::str_wrap(GS_plot$GeneSet_wrapped, width = input$geneset_dotplot_y_axis_text_wrapping_length)
+                              
+                              nes_limit <- ceiling(max(abs(GS_plot$NES), na.rm = TRUE))
+                              p_limit_low <- floor(min(GS_plot$Negative.log10.padj, na.rm = TRUE))
+                              p_limit_up <- ceiling(max(GS_plot$Negative.log10.padj, na.rm = TRUE))
+                              
+                              p <- ggplot(GS_plot, aes(x = comparison, y = GeneSet_wrapped)) +
+                                geom_point(shape=21, color = "black", 
+                                           aes(fill = NES, size=Negative.log10.padj)) +
+                                theme_classic() +
+                                scale_fill_gradient2(low = "blue", mid = "grey", high = "red", midpoint = 0,  
+                                                     limits = c(-nes_limit, nes_limit), breaks = seq(-nes_limit, nes_limit, length.out = 5)) +
+                                scale_size(range = c(input$geneset_dotplot_point_size_min, input$geneset_dotplot_point_size_max), 
+                                           limits = c(p_limit_low,p_limit_up), 
+                                           breaks = seq(p_limit_low, p_limit_up, length.out = 4),
+                                           labels = scales::number_format(accuracy = 1)) + 
+                                labs(color="DEGnum", size="-log10(adj.p)") +
+                                theme(axis.text=element_text(size=input$geneset_dotplot_axis_text_size),
+                                      axis.text.x=element_text(angle=90, vjust=0.5, hjust=1, size = input$geneset_dotplot_axis_text_size),
+                                      legend.title = element_text(size=input$geneset_dotplot_legend_title_size),
+                                      legend.text = element_text(size=input$geneset_dotplot_legend_text_size),
+                                      axis.title=element_blank()) +
+                                theme(plot.margin = unit(c(1,0.5,1,0.5), "cm"))
+                              
+                              current_plot(p)  # store ggplot object
                             })
                           }
                         })
+                        
+                        output$GS_top_count <-  DT::renderDT({
+                          DT::datatable(gset_top_count()) 
+                        })
+                        
+                        output$geneset_filtered_comparison <- renderText({gset_dotplot_warning_text()})
                         
                         # Render whichever plot was last triggered
                         output$dotplot.geneset <- renderPlot({
