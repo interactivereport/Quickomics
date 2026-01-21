@@ -102,13 +102,13 @@ correlation_ui <- function(id) {
                               radioButtons(ns("gene_label"),label="Select Gene Label",inline = TRUE, choices=c("UniqueID", "Gene.Name"), selected="Gene.Name")
              ),
              conditionalPanel(ns = ns, "input.correlation_type=='sample'",
-                              selectizeInput(ns("sel_sample"),	label="Select Samples",	choices = NULL,	multiple=TRUE),
+                              selectizeInput(ns("sel_sample"),	label="Select At Least 2 Samples",	choices = NULL,	multiple=TRUE),
                               span(textOutput(ns("Selected_samples")), style = "color:red; font-size:15px; font-family:arial; font-style:italic"),
                               tags$hr(style="border-color: black;")
              ),             
              conditionalPanel(ns = ns, "input.correlation_type=='group'",
                               selectizeInput(ns("sel_attribute"), label="Select a Attribute", choices = NULL, multiple = FALSE),
-                              selectizeInput(ns("sel_group"),	label="Select Groups",	choices = NULL,	multiple=TRUE),
+                              selectizeInput(ns("sel_group"),	label="Select At Least 2 Groups",	choices = NULL,	multiple=TRUE),
                               span(textOutput(ns("Selected_groups")), style = "color:red; font-size:15px; font-family:arial; font-style:italic"),
                               tags$hr(style="border-color: black;")
              ),
@@ -278,8 +278,11 @@ correlation_server <- function(id) {
                  
                  observeEvent(input$sel_sample, {
                    sample_list = input$sel_sample
-                   
-                   msg_sample <- paste("Selected Samples:",length(sample_list),sep="")
+                   if (!is.null(sample_list) && length(sample_list) > 1) {
+                     msg_sample <- paste("Selected Samples:",length(sample_list),sep="")
+                   } else {
+                     msg_sample <- "Please select at least 2 samples."
+                   }
                    output$Selected_samples <- renderText({msg_sample})
                  })
                  
@@ -294,7 +297,12 @@ correlation_server <- function(id) {
                    
                  observeEvent(input$sel_group, {
                    group_list = input$sel_group
-                 
+                   if (!is.null(group_list) && length(group_list) > 1) {
+                     msg_sample <- paste("Selected Groups:",length(group_list),sep="")
+                   } else {
+                     msg_sample <- "Please select at least 2 groups."
+                   }
+                   
                    msg_group <- paste("Selected Groups:",length(group_list),sep="")
                    output$Selected_groups <- renderText({msg_group})
                  })
@@ -309,7 +317,7 @@ correlation_server <- function(id) {
                    } else {
                      ProteinGeneName_sel <- ProteinGeneName_sel() 
                      genelabel <- genelabel() 
-                     validate(need(nrow(ProteinGeneName_sel) > 1, message = "Please input at least 2 matched gene."))
+                     validate(need(nrow(ProteinGeneName_sel) > 1, message = "Please input at least 2 matched genes."))
                      tmpids <- ProteinGeneName_sel %>% dplyr::pull(UniqueID) %>% unique()
                    }
                    if (input$correlation_type=='gene') {
@@ -325,6 +333,7 @@ correlation_server <- function(id) {
                        tibble::column_to_rownames("gene") %>%
                        as.matrix()
                    } else if (input$correlation_type=='sample') {
+                     validate(need(length(input$sel_sample) > 1, message = "Please input at least 2 samples."))
                      exp_tmp = data_long %>% 
                        dplyr::filter(UniqueID %in% tmpids, group %in% preset_group, sampleid %in% input$sel_sample) %>%
                        dplyr::select(gene = UniqueID, sampleid, expr) %>%
@@ -337,15 +346,16 @@ correlation_server <- function(id) {
                        tibble::column_to_rownames("sampleid") %>%
                        as.matrix()
                    } else if (input$correlation_type=='group') {
+                     browser()
+                     sel_group <- input$sel_group
+                     validate(need(length(sel_group) > 1, message = "Please input at least 2 groups."))
                      adding_number <- ifelse(exp_unit() == "Expression Level", 0, as.numeric(exp_unit()))
                      data_long <- DataIn$data_long
                      sel_attribute <- input$sel_attribute
-                     sel_group <- input$sel_group
                      MetaData = DataIn$MetaData %>% filter(sampleid %in% sample_order(), !!sym(sel_attribute) %in% sel_group)
                      
                      exp_tmp = data_long %>% 
-                       dplyr::left_join(MetaData %>% dplyr::select(sampleid, !!sym(sel_attribute)),
-                                 by = "sampleid") %>%
+                       dplyr::left_join(MetaData %>% dplyr::select(sampleid, !!sym(sel_attribute)), by = "sampleid", suffix = c("", "_meta")) %>%
                        dplyr::filter(UniqueID %in% tmpids, sampleid %in% MetaData$sampleid) %>%
                        dplyr::select(gene = UniqueID, !!sym(sel_attribute), expr) %>%
                        dplyr::filter(!is.na(expr)) %>% 
