@@ -109,8 +109,8 @@ wgcna_ui <- function(id) {
            )
     ),
     column(9,
-           tabsetPanel(id="WGCNA_tabset",
-                       tabPanel(title="Dendrogram", value="Dendrogram",
+           tabsetPanel(id=ns("WGCNA_tabset"),
+                       tabPanel(title="Dendrogram", value=ns("Dendrogram"),
                                 plotOutput(ns("Dendrogram"), height=800)
                        ),
                        tabPanel(title="Gene Clusters", DT::dataTableOutput(ns("gene_cluster"))),
@@ -123,6 +123,7 @@ wgcna_ui <- function(id) {
 wgcna_server <- function(id) {
   shiny::moduleServer(id,
                       function(input, output, session) {
+                         ns <- shiny::NS(id)
                         working_project=reactiveVal()
                         observe({
                           req(ProjectInfo)
@@ -139,6 +140,7 @@ wgcna_server <- function(id) {
                         })
                         
                         observeEvent(list(working_project(),input$WGCNAgenelable), {
+                          req(DataReactive())
                           DataIn = DataReactive()
                           req(DataIn$data_wide)
                           req(ProjectInfo$ProjectID)
@@ -301,6 +303,7 @@ wgcna_server <- function(id) {
                         # use input$WGCNAReactive() as event handler to ensure observeEvent() depends on it only
                         # and does not directly depends on input$, which ensure WGCNAReactive() will be calculated first.
                         observeEvent(WGCNAReactive(),{
+                          req(DataIn = DataReactive())
                           wgcna <- WGCNAReactive()
                           DataIn = DataReactive()
                           mergedColors = labels2colors(wgcna$colors)

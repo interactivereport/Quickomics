@@ -62,7 +62,7 @@ correlation_ui <- function(id) {
   fluidRow(
     column(3,
            wellPanel(
-             column(width=12,uiOutput("selectGroupSample")),
+             column(width=12,uiOutput(ns("selectGroupSample"))),
              radioButtons(ns("correlation_type"), "Correlation Type:", choices = c("Gene-Gene" = "gene", "Sample-Sample" = "sample", "Group-Group" = "group"), inline = TRUE, selected = "gene"),
              radioButtons(ns("gene_subset"),label="Genes Used in Correlation Analysis", choices=c(""),inline = TRUE),
              conditionalPanel(ns=ns, "input.gene_subset=='Select'",

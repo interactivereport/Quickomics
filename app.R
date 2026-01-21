@@ -512,7 +512,7 @@ tabPanel("Pattern Clustering",
 			tabsetPanel(id="Pattern_tabset",
 				#tabPanel(title="Optimal Number of Clusters", plotOutput("nbclust", height=800)),
 				tabPanel(title="Clustering of Centroid Profiles",actionButton("pattern", "Save to output"),plotOutput("pattern", height=800)),
-				tabPanel(title="Time Series Plot",actionButton("Pattern_data", "Save to output"), DT::dataTableOutput("dat_pattern")),
+				#tabPanel(title="Time Series Plot",actionButton("Pattern_data", "Save to output"), DT::dataTableOutput("dat_pattern")),
 				tabPanel(title="Data Table", DT::dataTableOutput("dat_pattern")),
 				tabPanel(title="Help", htmlOutput('help_pattern'))
 			)
