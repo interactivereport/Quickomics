@@ -255,6 +255,8 @@ observeEvent(input$uploadData, {
   ProjectInfo$ShortName=unlisted_project$ShortName
   ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
   ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
+  ProjectInfo$file3= paste("unlisted/wgcna_", ProjectID, ".RData", sep = "") #place holder for wgcna results, not generated at this time
+
 
   })
   cat("Finished processing data files for ", ProjectID, ".\n")
