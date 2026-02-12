@@ -143,6 +143,8 @@ correlation_server <- function(id) {
                  genelabel <- reactiveVal()
                  CorrMethod <- reactiveVal()
                  observe({
+                   req(DataReactive())
+                   req(input$gene_label)
                    DataIn = DataReactive()
                    ProteinGeneName = DataIn$ProteinGeneName
                    MetaData = DataIn$MetaData
@@ -214,6 +216,8 @@ correlation_server <- function(id) {
                  })
                  
                  observe({
+                   req(DataReactive())
+                   req(input$sel_test)
                    p_sel   <- input$psel
                    test_sel <- input$sel_test
                    FCcut <- log2(as.numeric(input$fccut))

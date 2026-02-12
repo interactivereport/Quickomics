@@ -194,7 +194,7 @@ wgcna_server <- function(id) {
                             })
                           } else {
                             print("no pre-computed wgcna file available and cannot load wgcna results")
-                            showNotification("Cannot find pre-calculated wgcna file and unable to load results", duration = 5, type = "warning")
+                            showNotification("Cannot find pre-calculated wgcna file, no WGCNA results loaded. ", duration = 1, type = "warning")
                             output$Dendrogram <- NULL
                             output$gene_cluster <- NULL
                           }
