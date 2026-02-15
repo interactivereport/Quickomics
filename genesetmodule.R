@@ -95,7 +95,7 @@ geneset_ui <- function(id) {
     column(3,
            wellPanel(
              uiOutput(ns('loadedprojects')),
-             selectizeInput(ns("geneset_test"),	label="Select Comparison for Gene Set Analysis", choices=NULL, multiple=TRUE, selected = NULL),
+             selectizeInput(ns("geneset_test"),	label="Select Comparisons for Gene Set Analysis", choices=NULL, multiple=TRUE, selected = NULL),
              conditionalPanel(ns = ns, "input.geneset_tabset=='Over-Representation Analysis (ORA)'",
                               radioButtons(ns("ORA_input_type"),label="Genes Used for ORA", choices=c("Subset from Comparison","Gene List"),inline = TRUE, selected="Subset from Comparison"),
                               conditionalPanel(ns = ns, "input.ORA_input_type=='Gene List'",
@@ -803,9 +803,10 @@ geneset_server <- function(id) {
                         # Get ORA input data from selected comparisons
                         DataGenesetReactive_ORA <- reactive({
                           req(DataReactive(), input$ORA_input_type, input$map_genes)
-                          req(all(input$geneset_test %in% DataReactive()$tests))
+                          
                           
                           if (input$ORA_input_type != "Gene List") {
+                            req(all(input$geneset_test %in% DataReactive()$tests))
                             DataIn <- DataReactive()
                             results_long <- DataIn$results_long
                             

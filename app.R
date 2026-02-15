@@ -15,6 +15,11 @@ ui <- fluidPage(
           windowTitle = "Quickomics",
           tagList(tags$head(tags$style(type = 'text/css','.navbar-brand{display:none;}')),
           useShinyjs(),
+          tags$head(
+            tags$link(rel = "stylesheet", type = "text/css",
+                      href = "https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"),
+            tags$script(src = "https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js")
+          ),
           titlePanel(
             fluidRow(
               column(4, img(height =75 , src = "Quickomics.png")),
@@ -718,16 +723,16 @@ server <- function(input, output, session) {
   source("venn.R",local = TRUE)
   source("genesetmodule.R",local = TRUE)
   insertTab(session=session,  inputId = "menu", target = "Expression Plot",  position = "after",
-              tabPanel("Gene Set Enrichment", geneset_ui(id = "GS")) )
+              tabPanel("Gene Set Enrichment", value = "gsea", geneset_ui(id = "GS")) )
   geneset_server(id = "GS")
   source("correlation.R",local = TRUE)
-  insertTab(session=session,  inputId = "menu", target = "Gene Set Enrichment",  position = "after",
+  insertTab(session=session,  inputId = "menu", target = "gsea",  position = "after",
             tabPanel("Correlation Analysis", correlation_ui(id = "Corr")) )
   correlation_server(id = "Corr")
   source("wgcna.R",local = TRUE)
-  insertTab(session=session,  inputId = "menu", target = "Gene Set Enrichment",  position = "after",
+  insertTab(session=session,  inputId = "menu", target = "gsea",  position = "after",
             tabPanel("WGCNA", wgcna_ui(id = "wgcna")) )
-  wgcna_server(id = "wgcna")
+  wgcna_server(id = "wgcna", parent_session = session)
   source("pattern.R",local = TRUE) 
   source("vennprojects.R",local = TRUE)
   source("network.R",local = TRUE)

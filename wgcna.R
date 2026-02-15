@@ -79,17 +79,25 @@ get_wgcna_table <-function(wgcna, ProteinGeneName, gene_label) {
       .groups = "drop"
     ) %>%
     dplyr::mutate(
-      copy = purrr::map_chr(seq_len(n()), ~ as.character(
-        rclipButton(
-          paste0("clipbtn_", .x),
-          label = "Copy all genes in cluster",
-          clipText = gene_group[.x],
-          icon = icon("copy", lib = "glyphicon"),
-          class = "btn-primary btn-sm"
+      copy = purrr::map_chr(seq_len(n()), ~ paste0(
+        as.character(
+          rclipButton(
+            paste0("clipbtn_", .x),
+            label = "Copy all genes",
+            clipText = gene_group[.x],
+            icon = icon("copy", lib = "glyphicon"),
+            class = "btn-primary btn-sm"
+          )
+        ),
+        " ",
+        sprintf(
+          '<button id="runORA_%s" class="btn btn-info btn-sm" data-genes="%s">Run ORA</button>',
+          .x,
+          gene_group[.x]
         )
       ))
-    ) %>%
-    dplyr::select(color, n_gene, copy, gene_group)
+  )  %>%
+  dplyr::select(color, n_gene, copy, gene_group)
   return(t2)
 }
 
@@ -113,14 +121,22 @@ wgcna_ui <- function(id) {
                        tabPanel(title="Dendrogram", value=ns("Dendrogram"),
                                 plotOutput(ns("Dendrogram"), height=800)
                        ),
-                       tabPanel(title="Gene Clusters", DT::dataTableOutput(ns("gene_cluster"))),
+                       tabPanel(title="Gene Clusters",
+                                DT::dataTableOutput(ns("gene_cluster")),
+                                tags$script(HTML(sprintf("
+                                  $(document).on('click', '[id^=runORA_]', function() {
+                                    var genes = $(this).attr('data-genes');
+                                    Shiny.setInputValue('%s', genes, {priority: 'event'});
+                                  });
+                                ", ns("runORA_trigger"))))
+                       ),
                        tabPanel(title="Help", htmlOutput('help_WGCNA'))
            )
     )
   )
 }
 
-wgcna_server <- function(id) {
+wgcna_server <- function(id, parent_session) {
   shiny::moduleServer(id,
                       function(input, output, session) {
                          ns <- shiny::NS(id)
@@ -333,6 +349,16 @@ wgcna_server <- function(id) {
                               colnames=c("Color of cluster", "Number of genes", "Action","Genes in cluster")
                             )
                           })
+                        })
+                        
+                        observeEvent(input$runORA_trigger, {
+                          gene_list <- input$runORA_trigger
+                          updateNavbarPage(parent_session, inputId = "menu", selected = "gsea")
+                          updateTabsetPanel(parent_session, inputId = "GS-geneset_tabset", selected = "Over-Representation Analysis (ORA)")
+                          parent_session$onFlushed(function() {
+                            updateSelectInput(parent_session, inputId = "GS-ORA_input_type", selected = "Gene List")
+                            updateTextAreaInput(parent_session, inputId = "GS-ORA_list", value = gene_list)
+                          }, once = TRUE)
                         })
                       }
   )
