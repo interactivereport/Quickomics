@@ -14,17 +14,14 @@
 ##########################################################################################################
 library(WGCNA)
 
-get_wgcna_netwk <-function(dataExpr, picked_power, scenario_number, set_maxBlockSize, ProjectID) {
+get_wgcna_netwk <-function(dataExpr, picked_power, scenario_number, set_mergeCutHeight, set_maxBlockSize, ProjectID) {
   if ( scenario_number == 1 ) {
-    set_saveTOMs = F
     set_loadTOM = TRUE
     TOMFileBase = paste0("./data/wgcna_data/TOM_", ProjectID)
   } else if ( scenario_number == 2 ) {
-    set_saveTOMs = F
     set_loadTOM = FALSE
     TOMFileBase = paste0("./data/wgcna_data/TOM_", ProjectID)
   } else if ( scenario_number == 3 ) {
-    set_saveTOMs = F
     set_loadTOM = FALSE
     TOMFileBase = "ER"
   }
@@ -48,9 +45,9 @@ get_wgcna_netwk <-function(dataExpr, picked_power, scenario_number, set_maxBlock
                             maxBlockSize = set_maxBlockSize,
                             # == Module Adjustments ==
                             reassignThreshold = 0,
-                            mergeCutHeight = input$mergeCutHeight,#,0.25,
+                            mergeCutHeight = set_mergeCutHeight,#,0.25,
                             # == TOM == Archive the run results in TOM file (saves time)
-                            saveTOMs = set_saveTOMs,
+                            saveTOMs = F,
                             loadTOM = set_loadTOM,
                             # Note: When launching from server, the path for TOM should be
                             # paste0("/mnt/depts/dept04/compbio/projects/xOmicsShiny/data/wgcna_data/TOM_",x)
@@ -139,7 +136,7 @@ wgcna_ui <- function(id) {
 wgcna_server <- function(id, parent_session) {
   shiny::moduleServer(id,
                       function(input, output, session) {
-                         ns <- shiny::NS(id)
+                        ns <- shiny::NS(id)
                         working_project=reactiveVal()
                         observe({
                           req(ProjectInfo)
@@ -155,31 +152,16 @@ wgcna_server <- function(id, parent_session) {
                                              label= "Select Top N Genes, where N is :",  value=default_n_gene, min=250L, step=25L, max = default_n_gene)
                         })
                         
-                        observeEvent(list(working_project(),input$WGCNAgenelable), {
-                          req(DataReactive())
-                          DataIn = DataReactive()
-                          req(DataIn$data_wide)
-                          req(ProjectInfo$ProjectID)
-                          req(DataIn$ProteinGeneName)
-
-                          data_wide <- DataIn$data_wide
-                          ProjectID <- ProjectInfo$ProjectID
-                          ProteinGeneName  <- DataIn$ProteinGeneName
+                        observeEvent(list(working_project(),input$WGCNAgenelable,parent_session$input$menu == "wgcna"), {
+                          req(ProjectInfo,DataReactive(),parent_session$input$menu == "wgcna")
+                          wgcnafile <- ProjectInfo$file3
                           gene_label <- input$WGCNAgenelable
 
-                          data_wide <- na.omit(DataIn$data_wide)
-                          diff <- apply(data_wide, 1, sd, na.rm = TRUE)/(rowMeans(data_wide) + median(rowMeans(data_wide)))
-                          data_wide=data_wide[order(diff, decreasing=TRUE), ]
-
-                          if (nrow(data_wide)>10000 ) {
-                            data_wide=data_wide[1:10000, ]
-                          }
-
-                          dataExpr <- data_wide
-
-                          wgcnafile <- ProjectInfo$file3
-
                           if(file.exists(wgcnafile)){
+                            DataIn = DataReactive()
+                            req(DataIn$ProteinGeneName)
+                            ProteinGeneName  <- DataIn$ProteinGeneName
+                            
                             load(wgcnafile)
                             wgcna <- netwk
                             mergedColors = labels2colors(wgcna$colors)
@@ -199,7 +181,7 @@ wgcna_server <- function(id, parent_session) {
 
                             # t0: merge WGCNA output with ProteinGeneName so that genes can be shown as UniqueID or Gene.Name
                             t2 <- get_wgcna_table(wgcna, ProteinGeneName, gene_label)
-
+                            
                             output$gene_cluster <- DT::renderDT({
                               DT::datatable(
                                 t2,
@@ -208,45 +190,43 @@ wgcna_server <- function(id, parent_session) {
                                 colnames=c("Color of cluster", "Number of genes", "Action","Genes in cluster")
                               )
                             })
-                          } else {
+                          } else if (parent_session$input$menu == "wgcna") {
                             print("no pre-computed wgcna file available and cannot load wgcna results")
-                            showNotification("Cannot find pre-calculated wgcna file, no WGCNA results loaded. ", duration = 1, type = "warning")
+                            showNotification("Cannot find pre-calculated wgcna file, no WGCNA results loaded. ", duration = 5, type = "warning")
                             output$Dendrogram <- NULL
                             output$gene_cluster <- NULL
                           }
                         })
                         
-
                         # use eventReactive to control reactivity of WGCNAReactive;
                         # otherwise, whenever an input change, WGCNAReactive will be re-calculated
                         # and its re-calculation could take a long time.
                         WGCNAReactive <- eventReactive(input$plotwgcna, {
                           withProgress(message = "Running WGCNA", detail = 'This may take a while...', value = 0.2, {
                             # what if the user-imported data doesn't have $data_wide, $ProjectID..etc?
+                            req(ProjectInfo, DataReactive(), ProjectInfo$ProjectID)
+
                             DataIn = DataReactive()
-                            
                             data_wide <- DataIn$data_wide
                             ProjectID <- ProjectInfo$ProjectID
-                            ProteinGeneName  <- DataIn$ProteinGeneName
-                            gene_label <- input$WGCNAgenelable
                             
-                            data_wide <- data_wide %>% na.omit()
-                            dataSD=apply(data_wide, 1, function(x) sd(x,na.rm=T))
-                            dataM=rowMeans(data_wide)
-                            diff=dataSD/(dataM+median(dataM))
-                            data_wide=data_wide[order(diff, decreasing=TRUE), ]
+                            data_wide <- na.omit(DataIn$data_wide)
+                            diff <- apply(data_wide, 1, sd, na.rm = TRUE)/(rowMeans(data_wide) + median(rowMeans(data_wide)))
+                            data_wide=data_wide[order(diff, decreasing=TRUE), ]                            
+
                             if (nrow(data_wide)>10000 ) {
                               data_wide=data_wide[1:10000, ] 
                               cat("reduce gene size to 10K for project ", ProjectID, "\n")
                             } 
-                            dataExpr <- data_wide
+                            # dataExpr_ori <- data_wide
                             
-                            print(paste0("**** dim of dataExpr after-preprocssing is ****", dim(dataExpr)))
+                            print(paste0("**** dim of dataExpr after-preprocssing is ****", dim(data_wide)))
+                            
+                            default_n_gene <- nrow(data_wide)
+                            
                             # Note: if launching app from the server, the path for `load_`  files should be
                             # paste0("/mnt/depts/dept04/compbio/projects/xOmicsShiny/data/wgcna_data/TOM
-                            load_wgcna_file <- ProjectInfo$file3
-                            
-                            default_n_gene <- min(10000, nrow(dataExpr))
+                            load_wgcna_file <- paste("data/wgcna_data/load_", ProjectID, ".RData", sep = "")
                             
                             if (file.exists(load_wgcna_file) & default_n_gene==input$WGCNAtopNum){
                               # Scenario 1: If file exist and the number of genes selected rename the same, load 
@@ -255,17 +235,19 @@ wgcna_server <- function(id, parent_session) {
                               # The load_*.RData contains two objects, dataExpr and picked_power, so that
                               # the app doesn't need to recalculate either from scratch
                               load(load_wgcna_file)
-                              netwk <- get_wgcna_netwk(dataExpr, picked_power, 1, input$WGCNAtopNum, ProjectID)
+                              netwk <- get_wgcna_netwk(dataExpr, picked_power, 1, input$mergeCutHeight, input$WGCNAtopNum, ProjectID)
                             } else if (file.exists(load_wgcna_file) & (default_n_gene - input$WGCNAtopNum)/default_n_gene < 0.1) {
                               # Scenario 2: If file exist and the number of genes selected is within 10% of 
                               # the default number of genes, load pre-computed result
                               # but do not load TOM file (blockwiseModules(loadTom = F))
                               load(load_wgcna_file)
                               dataExpr= dataExpr[,1L:input$WGCNAtopNum]
-                              netwk <- get_wgcna_netwk(dataExpr, picked_power, 2, input$WGCNAtopNum, ProjectID)
+                              netwk <- get_wgcna_netwk(dataExpr, picked_power, 2, input$mergeCutHeight, input$WGCNAtopNum, ProjectID)
                             } else {
                               # Scenario 3: Not scenario 1 or 2, and recalcuate everything
                               print(paste0("**** compute everything from scratch ****"))
+                              ProteinGeneName  <- DataIn$ProteinGeneName
+
                               ## Top number of genes
                               topNum <- as.numeric(input$WGCNAtopNum)
                               # Gene Label
@@ -293,9 +275,9 @@ wgcna_server <- function(id, parent_session) {
                               dataExpr= dataExpr[,1L:topNum]
                               
                               # Choose a set of soft-thresholding powers
-                              powers <- c(c(1L:10L), seq(from = 12L, to = 20L, by = 2L))
+                              powers <- c(1L:10L, seq(from = 12L, to = 20L, by = 2L))
                               t2 <- Sys.time()
-                              cor <- WGCNA::cor
+                              cor <- stats::cor
                               sft <- WGCNA::pickSoftThreshold(dataExpr, dataIsExpr = TRUE, powerVector = powers, corFnc = cor, corOptions = list(use = 'p'), networkType = "signed")
                               
                               # Generating adjacency and TOM similarity matrices based on the selected softpower
@@ -303,13 +285,13 @@ wgcna_server <- function(id, parent_session) {
                                 print("**** Pick power from sft$powerEstmate **** ")
                                 picked_power <- softPower <- sft$powerEstimate
                               } else {
-                                print("**** Pick power based on which.max(sft$fidIndices$truncated.R.sq) **** ")
-                                picked_power <- sft$fitIndices %>% dplyr::slice(which.max(truncated.R.sq)) %>% pull(Power)
+                                print("**** Use 6 as default if automatic selection fails **** ")
+                                picked_power <- 6L
                               }
                               
                               t3 <- Sys.time()
                               cat(paste0("scenario 3 computing softpower: ", round(difftime(t3, t2, units='mins'),2), " min\n"))
-                              netwk <- get_wgcna_netwk(dataExpr, picked_power, 3, input$WGCNAtopNum, ProjectID)
+                              netwk <- get_wgcna_netwk(dataExpr, picked_power, 3, input$mergeCutHeight, input$WGCNAtopNum, ProjectID)
                             }
                             netwk
                           })

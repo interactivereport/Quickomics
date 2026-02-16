@@ -731,7 +731,7 @@ server <- function(input, output, session) {
   correlation_server(id = "Corr")
   source("wgcna.R",local = TRUE)
   insertTab(session=session,  inputId = "menu", target = "gsea",  position = "after",
-            tabPanel("WGCNA", wgcna_ui(id = "wgcna")) )
+            tabPanel("WGCNA", value = "wgcna", wgcna_ui(id = "wgcna")) )
   wgcna_server(id = "wgcna", parent_session = session)
   source("pattern.R",local = TRUE) 
   source("vennprojects.R",local = TRUE)
