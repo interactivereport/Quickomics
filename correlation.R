@@ -350,10 +350,11 @@ correlation_server <- function(id) {
                        tibble::column_to_rownames("sampleid") %>%
                        as.matrix()
                    } else if (input$correlation_type=='group') {
-                     browser()
+                     #browser()
                      sel_group <- input$sel_group
                      validate(need(length(sel_group) > 1, message = "Please input at least 2 groups."))
-                     adding_number <- ifelse(exp_unit() == "Expression Level", 0, as.numeric(exp_unit()))
+                     adding_number <- ifelse(exp_unit() == "Expression Level", 0, as.numeric(str_extract(exp_unit(), "(?<=\\+)\\d*\\.?\\d+")))
+                     if (is.na(adding_number)) {adding_number=0}
                      data_long <- DataIn$data_long
                      sel_attribute <- input$sel_attribute
                      MetaData = DataIn$MetaData %>% filter(sampleid %in% sample_order(), !!sym(sel_attribute) %in% sel_group)
@@ -379,6 +380,7 @@ correlation_server <- function(id) {
                    toCheck_list <- colnames(t_exp_tmp)
                    
                    corr_method = tolower(CorrMethod())
+                   #browser()
 
                    res_corr <- do.call(rbind, combn(toCheck_list, 2, FUN = function(pair) {
                      stats <- get_regression_stats(t_exp_tmp[, pair[1]], t_exp_tmp[, pair[2]], corr_method)
