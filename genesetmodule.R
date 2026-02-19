@@ -212,7 +212,15 @@ geneset_ui <- function(id) {
                                 radioButtons(ns("kegg_mapsample"), label= "Map Symbols to KEGG Nodes?", choices= c("Yes"=TRUE, "No"=FALSE),inline = TRUE)),
                               conditionalPanel(ns = ns, "input.geneset_tabset=='MetaBase Pathway View'",
                                                selectInput(ns("obj_style"), label="Network Object Style", choices=c("icon", "polygon", "none"), selected="icon")),
-                              )
+                              ),
+            conditionalPanel(ns = ns, "input.geneset_tabset=='Wikipathways View'",
+                h5("Choose color to map logFC values:"),
+                column(width=3,colourInput(ns("wiki_low"), "Low", "green")),
+                column(width=3,colourInput(ns("wiki_mid"), "Mid", "gray90")),
+                column(width=3,colourInput(ns("wiki_high"), "High", "red")),
+                selectInput(ns("wiki_logFC"), label= "Gene log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
+                checkboxInput(ns("wiki_ctrl"), "Show Control Icon ",  TRUE, width="90%")
+                )               
            )
     ),
     column(9,
@@ -252,13 +260,15 @@ geneset_ui <- function(id) {
                                 #actionButton(ns("metabaseSave"), "Save to output"),
                                 uiOutput(ns("plot.metabase"))),
                        tabPanel(title="Wikipathways View",
-                                p("Select a wikipathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
+                                   p("Select a wikipathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
                                 selectizeInput(ns("sel_wikipathways_set"), label="Wikipathways for Visualization", choices = NULL, multiple = FALSE, width="600px", 
                                                options = list(placeholder =	'Type to search')),
-                                fluidRow( column(4,textInput(ns('analysis_type_3'), 'Analysis Type')%>%disabled()),
-                                          column(4,textInput(ns('comparison_name_3'), "Comparison"))),
                                 #actionButton(ns("metabaseSave"), "Save to output"),
-                                svgPanZoomOutput(ns("wikipathways_plot"),width = "100%", height = "800px") ),
+                                fluidRow( column( width = 4,  # adjust width as needed
+                                     plotOutput(ns("wiki_legend"), height = 50)
+                                  )),
+                                svgPanZoomOutput(ns("wikipathways_plot"),width = "100%", height = "100%")   
+                       ),
                        tabPanel(title="Dot Plot",
                                 actionButton(ns("create_dotplot"), "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
                                 actionButton(ns("dotplot"), "Save to output"),
@@ -1351,65 +1361,46 @@ geneset_server <- function(id) {
                         })
                         
 #############################  Wiki  ######                        
-                        output$wikipathways_plot <- renderSvgPanZoom({
-                          withProgress(message = 'Making WikiPathways View...', value = 0, {
-                            ID <- input$sel_wikipathways_set
-                            validate(need(ID != "", "Please select a Wikipathway to map logFC data to it."))
-                            validate(need(stringr::str_detect(ID, "WP\\d+$"),
-                                          "Only works on human/mouse/rat Wikipathways."))
-                            
-                            wiki_ID <- stringr::str_extract(ID, "WP\\d+$")
-                            species <- input$MSigDB_species
-                            
-                            dataIn <- DataReactive()
-                            results_long <- dataIn$results_long
-                            
-                            # values set by whichever table was last clicked
-                            comp_name <- input$comparison_name_3
-                            analysis_type <- input$analysis_type_3
-                            
-                            # --- build FC_df for the clicked comparison ---
-                            FC_df <- results_long %>%
-                              dplyr::filter(test == comp_name) %>%
-                              dplyr::select(UniqueID, logFC, Gene.Name)
-                            
-                            # gene mapping
-                            if (input$map_genes != "No Change (as it is)" &&
-                                !(ProjectInfo$Species == input$MSigDB_species && input$map_genes == "Homologous Genes")) {
-                              if (input$map_genes == "Change to UPPER case (human)") {
-                                mapped_symbols <- toupper(FC_df$Gene.Name)
-                              } else if (input$map_genes == "Change to Title Case (mouse/rat)") {
-                                mapped_symbols <- stringr::str_to_title(FC_df$Gene.Name)
-                              } else if (ProjectInfo$Species != input$MSigDB_species &&
-                                         input$map_genes == "Homologous Genes") {
-                                mapped_symbols <- homolog_mapping(FC_df$Gene.Name,
-                                                                  ProjectInfo$Species,
-                                                                  input$MSigDB_species,
-                                                                  homologs)
-                              }
-                              FC_df <- FC_df %>%
-                                dplyr::mutate(Gene.Name.Ori = Gene.Name,
-                                              Gene.Name = mapped_symbols) %>%
-                                dplyr::filter(!is.na(Gene.Name), Gene.Name != "")
-                            }
-                            
-                            FCdata <- FC_df$logFC
-                            names(FCdata) <- FC_df$Gene.Name
-                            
-                            # log what’s being plotted
-                            cat("WikiPathways:", wiki_ID,
-                                "Comparison:", comp_name,
-                                "Source:", analysis_type,
-                                "Genes mapped:", length(FCdata), "\n")
-                            
-                            # plot pathway
-                            p1 <- wpplot(wiki_ID)
-                            p2 <- wp_bgfill(p1, FCdata,
-                                            low = "darkgreen", high = "firebrick",
-                                            legend_x = .9, legend_y = .95)
-                            
-                            svgPanZoom(paste(p2$svg, collapse = "\n"), controlIconsEnabled = TRUE)
-                          })
+                        wiki_plot_results<-reactive({
+                          ID=input$sel_wikipathways_set
+                          shiny::validate(need(ID!="", message = "Please select a Wikipathway to map logFC data to it."))
+                          shiny::validate(need(str_detect(ID, "WP\\d+$"), message = "Only works on human/mouse/rat Wiki pathways."))
+                          wiki_ID=str_extract(ID, "WP\\d+$")
+                          species=input$MSigDB_species
+                          dataIn=DataReactive()
+                          results_long=dataIn$results_long
+                          ProteinGeneName = dataIn$ProteinGeneName
+                          comp_sel = input$geneset_test
+                          
+                          ##Make FCdata  from results_long
+                          FC_df<-results_long%>%dplyr::filter(test==comp_sel)%>%arrange(P.Value) %>% filter(!duplicated(Gene.Name)) %>% 
+                                 dplyr::select(UniqueID, logFC, Gene.Name) 
+                          if (input$map_genes!="No Change (as it is)" && !(ProjectInfo$Species==input$MSigDB_species && input$map_genes=="Homologous Genes") ) {
+                            if ( input$map_genes=="Change to UPPER case (human)" )  mapped_symbols<-toupper(FC_df$Gene.Name)
+                            if ( input$map_genes=="Change to Title Case (mouse/rat)" )  mapped_symbols<-str_to_title(FC_df$Gene.Name)
+                            if (ProjectInfo$Species!=input$MSigDB_species && input$map_genes=="Homologous Genes" ) {
+                              mapped_symbols<-homolog_mapping(FC_df$Gene.Name, ProjectInfo$Species, input$MSigDB_species, homologs) }	  
+                            FC_df<-FC_df%>%mutate(Gene.Name.Ori=Gene.Name, Gene.Name=mapped_symbols)%>%dplyr::filter(!is.na(Gene.Name), Gene.Name!="")
+                          }
+                          FCdata=FC_df$logFC; names(FCdata)=FC_df$Gene.Name
+                          
+                          cat(comp_sel, wiki_ID, length(FCdata), "\n")
+                          p1 <- wpplot(wiki_ID)
+                          p2 <- wp_bgfill_2025(p=p1, value=FCdata, logFC_max=input$wiki_logFC, high=input$wiki_high, mid=input$wiki_mid, low=input$wiki_low) 
+                          return(p2)
+                        })
+                        
+                        output$wikipathways_plot <- renderSvgPanZoom({withProgress(message = 'Making WikiPathways View...', value = 0, {
+                          p2=wiki_plot_results()
+                          fix_svg=paste(p2$p$svg, collapse="\n")
+                          svgPanZoom(fix_svg,  controlIconsEnabled = input$wiki_ctrl, fit=TRUE, center=TRUE)  
+                        } )
+                        })
+                        
+                        output$wiki_legend<-renderPlot({
+                          #validate(wiki_plot_results())
+                          p2=wiki_plot_results()
+                          draw(p2$lgd)
                         })
                         
 #############################  MetabaseR  ######                        

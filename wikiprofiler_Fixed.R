@@ -1,5 +1,4 @@
-##Fix color map issue with wikiprofiler.
-##Wil use wikipofiler package when the bug is fixed.
+##Fix download and color map issue with wikiprofiler.
 
 
 #' @title Input specific wikipathways ID to get an output in class of wpplot.
@@ -12,9 +11,20 @@
 wpplot <- function(ID) {
 #  url <- paste0('https://classic.wikipathways.org//wpi/wpi.php?action=',
 #                 'downloadFile&type=svg&pwTitle=Pathway:', ID)
-  url0 <- 'https://www.wikipathways.org/wikipathways-assets/pathways'
-  url <- sprintf("%s/%s/%s.svg", url0, ID, ID)
-  
+  Local=F
+  if (file.exists(("db/wiki_SVG/WP_Files.csv"))) {
+    WP_list=read_csv("db/wiki_SVG/WP_Files.csv", show_col_types = FALSE)
+    if (ID %in% WP_list$WP) {
+      file1<-WP_list$file[which(ID==WP_list$WP)]
+      url=str_c("db/wiki_SVG/", file1)
+      cat("use local file", file1, "\n")
+      Local=T
+    } 
+  } 
+  if (Local==F){
+    url0 <- 'https://www.wikipathways.org/wikipathways-assets/pathways'
+    url <- sprintf("%s/%s/%s.svg", url0, ID, ID)
+  }
   svg <- yulab.utils::yread(url)
   if (!any(grepl('<svg', svg[1:10]))) {
     stop("fail to read online wiki pathway file")
@@ -135,4 +145,3 @@ replace_bg2 <- function(svg, positions, color) {
 
   return(svg)
 }
-
