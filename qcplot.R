@@ -454,13 +454,9 @@ DataQCReactive <- reactive({
 	tmp_group = MetaData$group
 	tmp_sampleid = MetaData$sampleid
 	#data_wide  <- data_wide[apply(data_wide, 1, function(x) sum(length(which(x==0 | is.na(x)))) < 3),]
-	#clean up data
-	data_wide=na.omit(data_wide)
-	data_wide <- data_wide[apply(data_wide, 1, sd) != 0, ] #remove rows with all 0s, or the same value across all samples    
 	sel_sample_order2=match(tmp_sampleid, colnames(data_wide))
 	sel_sample_order2=sel_sample_order2[!is.na(sel_sample_order2)]
 	tmp_data_wide = data_wide[, sel_sample_order2] %>% as.matrix()
-	
 	return(list('tmp_data_wide'=tmp_data_wide,'tmp_data_long'=tmp_data_long,'tmp_group' = tmp_group, 'tmp_sampleid'=tmp_sampleid, "MetaData"=MetaData ))
 })
 
@@ -470,6 +466,9 @@ DataPCAReactive <- reactive({
 	validate(need(length(tmp_sampleid)>1, message = "Please select at least two samples (please note samples are filtered by group selection as well)."))
 	tmp_data_wide <- DataQC$tmp_data_wide
 	tmp_group = DataQC$tmp_group
+	#clean up data
+	tmp_data_wide=na.omit(tmp_data_wide)
+	tmp_data_wide <- tmp_data_wide[apply(tmp_data_wide, 1, sd) != 0, ] #remove rows with all 0s, or the same value across all samples   
 
 	#tmp_data_wide[is.na(tmp_data_wide)] <- 0 
 	pca <- 	prcomp(t(tmp_data_wide),rank. = 10, scale = TRUE)
