@@ -81,7 +81,7 @@ get_wgcna_table <-function(wgcna, ME_name_updated, ProteinGeneName, gene_label) 
       gene_group = paste0(gene, collapse = ","),
       .groups = "drop"
     ) %>%
-    dplyr::left_join(module_map, by = "color") %>%   # <-- add module label
+    dplyr::left_join(module_map, by = "color") %>%   
     dplyr::mutate(
       copy = purrr::map_chr(seq_len(n()), ~ paste0(
         as.character(
@@ -236,7 +236,8 @@ make_plotly_heatmap <- function(cor_mat, p_mat, row_labels, col_labels) {
     type = "heatmap",
     colors = colorRamp(c("blue", "white", "red")),
     text = hover_text,
-    hoverinfo = "text"
+    hoverinfo = "text",
+    source = "moduleTraitHeatmap"
   )
 }
 
@@ -258,13 +259,14 @@ wgcna_ui <- function(id) {
                               strong("Running the data could take 3-10 minutes",style="color:red"), span("depending on data size and complexity; once Run starts, please refrain from clicking the button repeatedly.",style="color:red", inline = TRUE),
              ),
              conditionalPanel(ns = ns, "input.WGCNA_tabset=='Module-Trait Relationships'",
-                              conditionalPanel(ns = ns, "input.Module_Trait=='Module Trait heatmap'",
+                              conditionalPanel(ns = ns, "input.Module_Trait=='Module Trait Heatmap'",
                                                selectizeInput(ns("WGCNA_trait_var"),label="Select attributes", choices = NULL,multiple = TRUE,options = list(placeholder = "Choose one or more attributes")),
                                                uiOutput(ns("attribute_settings_ui")),
                                                actionButton(ns("plot_module_trait"),"Plot Module Trait Correlation")
                               ),
                               conditionalPanel(ns = ns, "input.Module_Trait=='Hub Gene Identification Table' || input.Module_Trait == 'Hub Gene Identification Plot'",
                                                selectInput(ns("WGCNA_trait"),label="Select a trait", choices = NULL ,multiple = FALSE),
+                                               selectInput(ns("WGCNA_module"),label="Select a module (optional)", choices = NULL ,multiple = FALSE),
                                                actionButton(ns("plot_module_hub"),"Run")
                               )
              )
@@ -293,7 +295,7 @@ wgcna_ui <- function(id) {
                        ),
                        tabPanel(title="Module-Trait Relationships",
                                 tabsetPanel(id=ns("Module_Trait"),
-                                            tabPanel(title="Module Trait heatmap", 
+                                            tabPanel(title="Module Trait Heatmap", 
                                                      plotlyOutput(ns("module_trait_hmap"), height=800)
                                             ),
                                             tabPanel(title="Hub Gene Identification Table",
@@ -301,21 +303,35 @@ wgcna_ui <- function(id) {
                                             ),
                                             tabPanel(
                                               title = "Hub Gene Identification Plot",
+                                              br(),
+                                              br(),
                                               div(
-                                                style = "padding-top: 30px; padding-bottom: 40px;",
-                                                plotlyOutput(ns("plot_MMvsGS"), height = "1000px")
-                                              ),
-                                              div(
-                                                style = "padding-top: 40px;",
-                                                plotlyOutput(ns("plot_MMvsConnectivity"), height = "1000px")
+                                                style = "display: flex; gap: 20px;",
+                                                div(
+                                                  style = "flex: 1;",
+                                                  plotlyOutput(ns("plot_MMvsGS"), height = "700px")
+                                                ),
+                                                div(
+                                                  style = "flex: 1;",
+                                                  plotlyOutput(ns("plot_MMvsConnectivity"), height = "700px")
+                                                )
                                               )
+                                              
                                             )
                                 )
                        ),
                        tabPanel(title="WGCNA QC",
                                 tabsetPanel(id=ns("WGCNA_QC"),
                                             tabPanel(title="Soft-Thresholding Power", 
+                                                     br(),
+                                                     tags$style("#soft_threshold_table_note { font-size: 18px; color: steelblue; }"),
+                                                     htmlOutput(ns("soft_threshold_table_note")),
+                                                     br(),
                                                      DT::dataTableOutput(ns("soft_threshold_table")),
+                                                     br(),
+                                                     tags$style("#soft_threshold_diagnose_plot_note { font-size: 18px; color: steelblue; }"),
+                                                     htmlOutput(ns("soft_threshold_diagnose_plot_note")),
+                                                     br(),
                                                      plotOutput(ns("soft_threshold_diagnose_plot"), height=800)
                                             ),
                                             tabPanel(title="WGCNA Network",
@@ -401,6 +417,7 @@ wgcna_server <- function(id, parent_session) {
                             output$gene_cluster <- DT::renderDT({
                               DT::datatable(
                                 t2,
+                                rownames = FALSE,
                                 escape = FALSE,
                                 selection = "none",
                                 colnames=c("Cluster", "Number of genes", "Action","Genes in cluster")
@@ -444,29 +461,57 @@ wgcna_server <- function(id, parent_session) {
                                                     plotDendrograms = TRUE, 
                                                     plotHeatmaps = TRUE)
                             })
-
                             if (exists("sft")) {
-                              output$soft_threshold_table <- DT::renderDT({
-                                DT::datatable(
-                                  sft$fitIndices, 
-                                  rownames = FALSE,  extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
-                                  options = list(    dom = 'lBfrtip', pageLength = 15,
-                                                     buttons = list(
-                                                       list(extend = "csv", text = "Download Page", filename = "Page_results",
-                                                            exportOptions = list(modifier = list(page = "current"))),
-                                                       list(extend = "csv", text = "Download All", filename = "All_Results",
-                                                            exportOptions = list(modifier = list(page = "all")))
-                                                     )
-                                  )) %>% 
-                                  formatSignif(columns=names(Filter(is.numeric, sft$fitIndices)), digits=3)
+                              powers(sft$fitIndices$Power)
+                              
+                              output$soft_threshold_table_note <- renderText({
+                                HTML("In WGCNA, soft‑thresholding power (β) controls how strongly you emphasize large correlations and suppress small ones when building the adjacency matrix. The table below showed the result for all β candidates tested. <b>The row is highlighted for the picked power β.<b>")
                               })
+                              
+                              output$soft_threshold_table <- DT::renderDT({
+                                datatable(
+                                  sft$fitIndices,
+                                  rownames = FALSE, extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
+                                  options = list(dom = 'lBfrtip', pageLength = 15,
+                                                 buttons = list(
+                                                   list(extend = "csv", text = "Download Page", filename = "Page_results", 
+                                                        exportOptions = list(modifier = list(page = "current"))),
+                                                   list(extend = "csv", text = "Download All", filename = "All_Results",
+                                                        exportOptions = list(modifier = list(page = "all")))
+                                                   )
+                                                 )
+                                  ) %>% 
+                                  formatSignif(
+                                    columns = setdiff(names(Filter(is.numeric, sft$fitIndices)), "Power"),
+                                    digits = 3
+                                  ) %>% formatStyle(columns="Power", target="row", backgroundColor = styleEqual(picked_power, "skyblue", default='white'))
+                              })
+                              
+                              output$soft_threshold_diagnose_plot_note <- renderUI({
+                                HTML("
+                                In practice, soft‑thresholding power (β) is chosen with a balanced good scale‑free fit and reasonable connectivity.
+                                WGCNA recommends choosing the lowest power where R² ≥ 0.8 (or 0.9 for stricter networks). 
+                                And typical good range of mean connectivity is 20–200, depending on dataset size.
+                                <br><br>
+                                
+                                <b>Practical decision rules:</b><br>
+                                -- If R² rises and then plateaus, pick the lowest β at the plateau.<br>
+                                -- If R² rises slowly but connectivity is still good, pick β = 6–10 (signed).<br>
+                                -- If R² is flat and connectivity collapses at high β, pick a moderate β (6–8) to avoid oversparsifying.<br>
+                                -- If R² keeps rising up to the max tested power, increase the tested range (e.g., 1–30), but still avoid β > 20 unless absolutely necessary.<br>
+                                -- If estimated power is NA, use any number in the typical β range (6–12) for signed networks.
+                                     ")
+                              })
+                              
                               
                               output$soft_threshold_diagnose_plot <- renderPlot({
                                 plot_soft_threshold_diagnose(sft, powers())
                               })
                             } else if (input$WGCNA_tabset == 'WGCNA_QC' && input$WGCNA_QC == "Soft-Thresholding Power") {
                               showNotification("Pre-calculated wgcna file does not contain the soft_thresholding power testing result. No results loaded.", duration = 5, type = "warning")
+                              output$soft_threshold_table_note <- NULL
                               output$soft_threshold_table <- NULL
+                              output$soft_threshold_diagnose_plot_note <- NULL
                               output$soft_threshold_diagnose_plot <- NULL
                             }
                           } else if (parent_session$input$menu == "wgcna") {
@@ -474,6 +519,14 @@ wgcna_server <- function(id, parent_session) {
                             showNotification("Cannot find pre-calculated wgcna file, no WGCNA results loaded. ", duration = 5, type = "warning")
                             output$Dendrogram <- NULL
                             output$gene_cluster <- NULL
+                            output$MEs <- NULL
+                            output$Eigenene_Network <- NULL
+                            output$soft_threshold_table_note <- NULL
+                            output$soft_threshold_table <- NULL
+                            output$soft_threshold_diagnose_plot_note <- NULL
+                            output$soft_threshold_diagnose_plot <- NULL
+                            output$gene_variance_distribution_plot <- NULL
+                            output$sample_cluster_plot <- NULL
                           }
                         })
                         
@@ -663,18 +716,43 @@ wgcna_server <- function(id, parent_session) {
                           
                           if ("sft" %in% names(wgcna_out)) {
                             sft <- wgcna_out$sft
+                            output$soft_threshold_table_note <- renderText({
+                              HTML("In WGCNA, soft‑thresholding power (β) controls how strongly you emphasize large correlations and suppress small ones when building the adjacency matrix. The table below showed the result for all β candidates tested. <b>The row is highlighted for the picked power β.<b>")
+                            })
+                            
                             output$soft_threshold_table <- DT::renderDT({
-                              DT::datatable(
-                                sft$fitIndices, rownames = FALSE, extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
-                                options = list(    dom = 'lBfrtip', pageLength = 15,
-                                                   buttons = list(
-                                                     list(extend = "csv", text = "Download Page", filename = "Page_results",
-                                                          exportOptions = list(modifier = list(page = "current"))),
-                                                     list(extend = "csv", text = "Download All", filename = "All_Results",
-                                                          exportOptions = list(modifier = list(page = "all")))
-                                                   )
-                                )) %>% 
-                                formatSignif(columns=names(Filter(is.numeric, sft$fitIndices)), digits=3)
+                              datatable(
+                                sft$fitIndices,
+                                rownames = FALSE, extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
+                                options = list(dom = 'lBfrtip', pageLength = 15,
+                                               buttons = list(
+                                                 list(extend = "csv", text = "Download Page", filename = "Page_results", 
+                                                      exportOptions = list(modifier = list(page = "current"))),
+                                                 list(extend = "csv", text = "Download All", filename = "All_Results",
+                                                      exportOptions = list(modifier = list(page = "all")))
+                                               )
+                                )
+                              ) %>% 
+                                formatSignif(
+                                  columns = setdiff(names(Filter(is.numeric, sft$fitIndices)), "Power"),
+                                  digits = 3
+                                ) %>% formatStyle(columns="Power", target="row", backgroundColor = styleEqual(picked_power, "skyblue", default='white'))
+                            })
+                            
+                            output$soft_threshold_diagnose_plot_note <- renderUI({
+                              HTML("
+                                In practice, soft‑thresholding power (β) is chosen with a balanced good scale‑free fit and reasonable connectivity.
+                                WGCNA recommends choosing the lowest power where R² ≥ 0.8 (or 0.9 for stricter networks). 
+                                And typical good range of mean connectivity is 20–200, depending on dataset size.
+                                <br><br>
+                                
+                                <b>Practical decision rules:</b><br>
+                                -- If R² rises and then plateaus, pick the lowest β at the plateau.<br>
+                                -- If R² rises slowly but connectivity is still good, pick β = 6–10 (signed).<br>
+                                -- If R² is flat and connectivity collapses at high β, pick a moderate β (6–8) to avoid oversparsifying.<br>
+                                -- If R² keeps rising up to the max tested power, increase the tested range (e.g., 1–30), but still avoid β > 20 unless absolutely necessary.<br>
+                                -- If estimated power is NA, use any number in the typical β range (6–12) for signed networks.
+                                     ")
                             })
                             
                             output$soft_threshold_diagnose_plot <- renderPlot({
@@ -702,12 +780,13 @@ wgcna_server <- function(id, parent_session) {
                           MetaData = DataIn$MetaData
                           attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") ))
                           updateSelectizeInput(session, "WGCNA_trait_var", choices=attributes, selected="group")
-                          
                         })
                         
                         output$attribute_settings_ui <- renderUI({
-                          req(input$WGCNA_trait_var)
+                          req(input$WGCNA_trait_var, DataReactive())
                           
+                          DataIn = DataReactive()
+                          MetaData = DataIn$MetaData
                           # Only keep categorical attributes
                           categorical_attrs <- input$WGCNA_trait_var[
                             sapply(input$WGCNA_trait_var, function(a) is_categorical(MetaData[[a]]))
@@ -758,14 +837,29 @@ wgcna_server <- function(id, parent_session) {
                           WGCNA_mm_trait_Reactive()
                         })
                         
+                        observeEvent(event_data("plotly_click", source = "moduleTraitHeatmap"), {
+                          click <- event_data("plotly_click", source = "moduleTraitHeatmap")
+                          req(click)
+                          
+                          clicked_trait  <- click$x   # column label
+                          clicked_module <- click$y   # row label
+                          
+                          updateSelectInput(session, "WGCNA_trait",  selected = clicked_trait)
+                          updateSelectInput(session, "WGCNA_module", selected = clicked_module)
+                          updateTabsetPanel(session, "Module_Trait", selected = "Hub Gene Identification Table")
+                        })
+                        
+                        
                         observeEvent(trait_data(), {
                           updateSelectInput(session, "WGCNA_trait", choices=names(trait_data()), selected=character(0))
                         })
                         
+                        observeEvent(MEs_updated(), {
+                          updateSelectInput(session, "WGCNA_module", choices=names(MEs_updated()), selected=character(0))
+                        })
+                        
                         observeEvent(input$plot_module_hub, {
-                          browser()
                           req(WGCNA_mm_trait_Reactive())
-                          
                           
                           wgcna_out <- tryCatch(WGCNAReactive(), error = function(e) NULL)
                           if (is.null(wgcna_out)) {
@@ -789,11 +883,15 @@ wgcna_server <- function(id, parent_session) {
                           }
                           
                           selected_trait <- input$WGCNA_trait
-                          module_trait_cor <- moduleTraitCor()
-                          # Get the module most strongly associated with T_AKO
-                          selected_trait_correlations <- abs(module_trait_cor[, selected_trait])
-                          selected_trait_module <- MEs_name_updated()[which.max(selected_trait_correlations)]
-
+                          if (!is.null(input$WGCNA_module)) {
+                            selected_trait_module <- input$WGCNA_module
+                          } else {
+                            # Get the module most strongly associated with the trait
+                            module_trait_cor <- moduleTraitCor()
+                            selected_trait_correlations <- abs(module_trait_cor[, selected_trait])
+                            selected_trait_module <- MEs_name_updated()[which.max(selected_trait_correlations)]
+                          }
+                          
                           # Convert numeric module label to color name
                           parts <- strsplit(selected_trait_module, "_")[[1]]
                           numeric_label   <- sub("ME", "", parts[1])   # number
@@ -866,40 +964,64 @@ wgcna_server <- function(id, parent_session) {
                               formatSignif(columns=names(Filter(is.numeric, df_hub_gene())), digits=3)
                           })
                           
-                          # output$plot_MMvsGS <- renderPlot({
+                          # output$plot_MMvsGS <- renderPlotly({
                           #   module_gene_info <- df_hub_gene()
                           #   module_gene_info <- module_gene_info[order(-abs(module_gene_info$ModuleMembership)), ]
                           #   
-                          #   plot(abs(module_gene_info$ModuleMembership), 
-                          #        abs(module_gene_info$GeneSignificance),
-                          #        xlab = paste("Module Membership in", selected_trait_module, "module"),
-                          #        ylab = paste("Gene Significance for", selected_trait), 
-                          #        main = paste("MM vs GS in", selected_trait_module, "module"),
-                          #        pch = 20, 
-                          #        col = module_name,
-                          #        cex = 1.2)
+                          #   x <- abs(module_gene_info$ModuleMembership)
+                          #   y <- abs(module_gene_info$GeneSignificance)
                           #   
-                          #   # Add regression line
-                          #   abline(lm(abs(module_gene_info$GeneSignificance) ~ abs(module_gene_info$ModuleMembership)), 
-                          #          col = "red", lwd = 2)
+                          #   # Regression line
+                          #   fit <- lm(y ~ x)
+                          #   x_seq <- seq(min(x), max(x), length.out = 100)
+                          #   y_pred <- predict(fit, newdata = data.frame(x = x_seq))
                           #   
-                          #   # Calculate and display correlation
-                          #   mm_gs_cor <- cor(abs(module_gene_info$ModuleMembership), 
-                          #                    abs(module_gene_info$GeneSignificance),
-                          #                    use = "pairwise.complete.obs")
-                          #   text(x = 0.2, y = max(abs(module_gene_info$GeneSignificance)) * 0.95,
-                          #        labels = paste("cor =", round(mm_gs_cor, 3)),
-                          #        pos = 4, cex = 1.2)
+                          #   # Correlation
+                          #   mm_gs_cor <- cor(x, y, use = "pairwise.complete.obs")
+                          #   
+                          #   plot_ly() %>%
+                          #     add_markers(
+                          #       x = x,
+                          #       y = y,
+                          #       marker = list(color = module_name, size = 8),
+                          #       text = module_gene_info$Gene,
+                          #       hoverinfo = "text"
+                          #     ) %>%
+                          #     add_lines(
+                          #       x = x_seq,
+                          #       y = y_pred,
+                          #       line = list(color = "red", width = 2),
+                          #       name = "Regression"
+                          #     ) %>%
+                          #     layout(
+                          #       title = paste("MM vs GS in", selected_trait_module, "module"),
+                          #       xaxis = list(title = paste("Module Membership in", selected_trait_module, "module")),
+                          #       yaxis = list(title = paste("Gene Significance for", selected_trait)),
+                          #       annotations = list(
+                          #         list(
+                          #           x = min(x),
+                          #           y = max(y),
+                          #           text = paste("cor =", round(mm_gs_cor, 3)),
+                          #           xanchor = "left",
+                          #           yanchor = "top",
+                          #           showarrow = FALSE,
+                          #           font = list(size = 14)
+                          #         )
+                          #       )
+                          #     )
                           # })
                           
                           output$plot_MMvsGS <- renderPlotly({
                             module_gene_info <- df_hub_gene()
+                            
+                            # Sort
                             module_gene_info <- module_gene_info[order(-abs(module_gene_info$ModuleMembership)), ]
                             
+                            # x and y
                             x <- abs(module_gene_info$ModuleMembership)
                             y <- abs(module_gene_info$GeneSignificance)
                             
-                            # Regression line
+                            # Regression
                             fit <- lm(y ~ x)
                             x_seq <- seq(min(x), max(x), length.out = 100)
                             y_pred <- predict(fit, newdata = data.frame(x = x_seq))
@@ -907,13 +1029,39 @@ wgcna_server <- function(id, parent_session) {
                             # Correlation
                             mm_gs_cor <- cor(x, y, use = "pairwise.complete.obs")
                             
+                            char_df <- module_gene_info
+                            
+                            # Format numeric columns to 3 decimals (or whatever you want)
+                            num_cols <- sapply(char_df, is.numeric)
+                            char_df[num_cols] <- lapply(char_df[num_cols], function(x) sprintf("%.3f", x))
+                            
+                            # Convert everything to character
+                            char_df <- data.frame(lapply(char_df, as.character), stringsAsFactors = FALSE)
+                            
+                            cols <- colnames(char_df)
+                            
+                            hover_text <- apply(char_df, 1, function(row) {
+                              paste0("<b>", cols, ":</b> ", row, collapse = "<br>")
+                            })
+                            
+                            # Build hover template dynamically
+                            cols <- colnames(module_gene_info)
+                            hover_lines <- paste0(
+                              "<b>", cols, ":</b> %{customdata[", seq_along(cols) - 1, "]}", 
+                              collapse = "<br>"
+                            )
+                            hover_template <- paste0(hover_lines, "<extra></extra>")
+                            
                             plot_ly() %>%
                               add_markers(
                                 x = x,
                                 y = y,
+                                type = "scatter",
+                                mode = "markers", # Added this to ensure clean rendering
                                 marker = list(color = module_name, size = 8),
-                                text = module_gene_info$Gene,
-                                hoverinfo = "text"
+                                text = hover_text,                       # <--- Pass your pre-built R strings here
+                                hovertemplate = "%{text}<extra></extra>", # <--- Just tell Plotly to show the text
+                                name = 'Gene'
                               ) %>%
                               add_lines(
                                 x = x_seq,
@@ -939,56 +1087,85 @@ wgcna_server <- function(id, parent_session) {
                               )
                           })
                           
-                          # output$plot_MMvsConnectivity <- renderPlot({
+                          # output$plot_MMvsConnectivity <- renderPlotly({
                           #   hub_gene_info <- df_hub_gene()
-                          #   plot(hub_gene_info$ModuleMembership, 
-                          #        hub_gene_info$Connectivity,
-                          #        xlab = "Module Membership",
-                          #        ylab = "Connectivity (Intramodular)",
-                          #        main = paste("Hub Gene Identification in", selected_trait_module, "Module"),
-                          #        pch = 20,
-                          #        col = ifelse(hub_gene_info$Connectivity > quantile(hub_gene_info$Connectivity, 0.9),
-                          #                     "red", "black"))
-                          #   legend("topleft", 
-                          #          legend = c("Top 10% connected", "Other genes"),
-                          #          col = c("red", "black"),
-                          #          pch = 20)
+                          #   
+                          #   # Identify top 10% connected
+                          #   top_cutoff <- quantile(hub_gene_info$Connectivity, 0.9)
+                          #   colors <- ifelse(hub_gene_info$Connectivity > top_cutoff, "red", "black")
+                          #   
+                          #   plot_ly(
+                          #     x = hub_gene_info$ModuleMembership,
+                          #     y = hub_gene_info$Connectivity,
+                          #     type = "scatter",
+                          #     mode = "markers",
+                          #     marker = list(color = colors, size = 8),
+                          #     text = hub_gene_info$Gene,
+                          #     hoverinfo = "text"
+                          #   ) %>%
+                          #     layout(
+                          #       title = paste("Hub Gene Identification in", selected_trait_module, "Module"),
+                          #       xaxis = list(title = "Module Membership"),
+                          #       yaxis = list(title = "Connectivity (Intramodular)"),
+                          #       legend = list(orientation = "h"),
+                          #       shapes = list()  # placeholder if you want to add lines later
+                          #     ) %>%
+                          #     add_trace(
+                          #       x = NA, y = NA, mode = "markers",
+                          #       marker = list(color = "red"),
+                          #       name = "Top 10% connected"
+                          #     ) %>%
+                          #     add_trace(
+                          #       x = NA, y = NA, mode = "markers",
+                          #       marker = list(color = "black"),
+                          #       name = "Other genes"
+                          #     )
                           # })
                           output$plot_MMvsConnectivity <- renderPlotly({
                             hub_gene_info <- df_hub_gene()
                             
                             # Identify top 10% connected
                             top_cutoff <- quantile(hub_gene_info$Connectivity, 0.9)
-                            colors <- ifelse(hub_gene_info$Connectivity > top_cutoff, "red", "black")
+                            group <- ifelse(hub_gene_info$Connectivity > top_cutoff,
+                                            "Top 10% connected", "Other genes")
+                            
+                            # Build full-row hover text
+                            char_df <- hub_gene_info
+                            num_cols <- sapply(char_df, is.numeric)
+                            char_df[num_cols] <- lapply(char_df[num_cols], function(x) sprintf("%.3f", x))
+                            char_df <- data.frame(lapply(char_df, as.character), stringsAsFactors = FALSE)
+                            cols <- colnames(char_df)
+                            
+                            hover_text <- apply(char_df, 1, function(row) {
+                              paste0("<b>", cols, ":</b> ", row, collapse = "<br>")
+                            })
                             
                             plot_ly(
-                              x = hub_gene_info$ModuleMembership,
-                              y = hub_gene_info$Connectivity,
+                              data = hub_gene_info,
+                              x = ~ModuleMembership,
+                              y = ~Connectivity,
                               type = "scatter",
                               mode = "markers",
-                              marker = list(color = colors, size = 8),
-                              text = hub_gene_info$Gene,
-                              hoverinfo = "text"
+                              color = ~group,
+                              colors = c("Other genes" = "black", "Top 10% connected" = "red"),
+                              text = hover_text,
+                              hovertemplate = "%{text}<extra></extra>",
+                              marker = list(size = 8)
                             ) %>%
                               layout(
                                 title = paste("Hub Gene Identification in", selected_trait_module, "Module"),
                                 xaxis = list(title = "Module Membership"),
                                 yaxis = list(title = "Connectivity (Intramodular)"),
-                                legend = list(orientation = "h"),
-                                shapes = list()  # placeholder if you want to add lines later
-                              ) %>%
-                              add_trace(
-                                x = NA, y = NA, mode = "markers",
-                                marker = list(color = "red"),
-                                name = "Top 10% connected"
-                              ) %>%
-                              add_trace(
-                                x = NA, y = NA, mode = "markers",
-                                marker = list(color = "black"),
-                                name = "Other genes"
+                                legend = list(
+                                  x = 0,
+                                  y = 1,
+                                  xanchor = "left",
+                                  yanchor = "top",
+                                  orientation = "v",
+                                  font = list(size = 16)
+                                )
                               )
                           })
-                          
                         })
                       }
   )
