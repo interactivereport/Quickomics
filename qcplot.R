@@ -453,7 +453,10 @@ DataQCReactive <- reactive({
 	MetaData=MetaData[input_keep, ]
 	tmp_group = MetaData$group
 	tmp_sampleid = MetaData$sampleid
-	data_wide  <- data_wide[apply(data_wide, 1, function(x) sum(length(which(x==0 | is.na(x)))) < 3),]
+	#data_wide  <- data_wide[apply(data_wide, 1, function(x) sum(length(which(x==0 | is.na(x)))) < 3),]
+	#clean up data
+	data_wide=na.omit(data_wide)
+	data_wide <- data_wide[apply(data_wide, 1, sd) != 0, ] #remove rows with all 0s, or the same value across all samples    
 	sel_sample_order2=match(tmp_sampleid, colnames(data_wide))
 	sel_sample_order2=sel_sample_order2[!is.na(sel_sample_order2)]
 	tmp_data_wide = data_wide[, sel_sample_order2] %>% as.matrix()
@@ -468,8 +471,8 @@ DataPCAReactive <- reactive({
 	tmp_data_wide <- DataQC$tmp_data_wide
 	tmp_group = DataQC$tmp_group
 
-	tmp_data_wide[is.na(tmp_data_wide)] <- 0 
-	pca <- 	prcomp(t(tmp_data_wide),rank. = 10, scale = FALSE)
+	#tmp_data_wide[is.na(tmp_data_wide)] <- 0 
+	pca <- 	prcomp(t(tmp_data_wide),rank. = 10, scale = TRUE)
 	percentVar <- 	round((pca$sdev)^2/sum(pca$sdev^2), 3) * 100
 	scores <- as.data.frame(pca$x)
 	rownames(scores) <- tmp_sampleid
@@ -507,7 +510,8 @@ QCboxplot_out <- reactive({
 	withProgress(message = 'Making box plot', value = 0, {
 		DataQC <-  DataQCReactive()
 		tmp_sampleid <- DataQC$tmp_sampleid
-		tmp_data_long <- DataQC$tmp_data_long %>% dplyr::filter(expr !=0) %>% sample_n(1000)
+		#tmp_data_long <- DataQC$tmp_data_long %>% dplyr::filter(expr !=0) %>% sample_n(1000)
+		tmp_data_long<-DataQC$tmp_data_long%>% group_by(sampleid) %>% dplyr::slice_sample(n=2000) %>% ungroup #max 2K genes/proteins per sample	
 			
 		tmp_group = DataQC$tmp_group
 		#colorpal = get_palette("Dark2", length(tmp_sampleid))
