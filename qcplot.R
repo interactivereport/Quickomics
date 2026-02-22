@@ -453,11 +453,10 @@ DataQCReactive <- reactive({
 	MetaData=MetaData[input_keep, ]
 	tmp_group = MetaData$group
 	tmp_sampleid = MetaData$sampleid
-	data_wide  <- data_wide[apply(data_wide, 1, function(x) sum(length(which(x==0 | is.na(x)))) < 3),]
+	#data_wide  <- data_wide[apply(data_wide, 1, function(x) sum(length(which(x==0 | is.na(x)))) < 3),]
 	sel_sample_order2=match(tmp_sampleid, colnames(data_wide))
 	sel_sample_order2=sel_sample_order2[!is.na(sel_sample_order2)]
 	tmp_data_wide = data_wide[, sel_sample_order2] %>% as.matrix()
-	
 	return(list('tmp_data_wide'=tmp_data_wide,'tmp_data_long'=tmp_data_long,'tmp_group' = tmp_group, 'tmp_sampleid'=tmp_sampleid, "MetaData"=MetaData ))
 })
 
@@ -467,9 +466,12 @@ DataPCAReactive <- reactive({
 	validate(need(length(tmp_sampleid)>1, message = "Please select at least two samples (please note samples are filtered by group selection as well)."))
 	tmp_data_wide <- DataQC$tmp_data_wide
 	tmp_group = DataQC$tmp_group
+	#clean up data
+	tmp_data_wide=na.omit(tmp_data_wide)
+	tmp_data_wide <- tmp_data_wide[apply(tmp_data_wide, 1, sd) != 0, ] #remove rows with all 0s, or the same value across all samples   
 
-	tmp_data_wide[is.na(tmp_data_wide)] <- 0 
-	pca <- 	prcomp(t(tmp_data_wide),rank. = 10, scale = FALSE)
+	#tmp_data_wide[is.na(tmp_data_wide)] <- 0 
+	pca <- 	prcomp(t(tmp_data_wide),rank. = 10, scale = TRUE)
 	percentVar <- 	round((pca$sdev)^2/sum(pca$sdev^2), 3) * 100
 	scores <- as.data.frame(pca$x)
 	rownames(scores) <- tmp_sampleid
@@ -507,7 +509,8 @@ QCboxplot_out <- reactive({
 	withProgress(message = 'Making box plot', value = 0, {
 		DataQC <-  DataQCReactive()
 		tmp_sampleid <- DataQC$tmp_sampleid
-		tmp_data_long <- DataQC$tmp_data_long %>% dplyr::filter(expr !=0) %>% sample_n(1000)
+		#tmp_data_long <- DataQC$tmp_data_long %>% dplyr::filter(expr !=0) %>% sample_n(1000)
+		tmp_data_long<-DataQC$tmp_data_long%>% group_by(sampleid) %>% dplyr::slice_sample(n=2000) %>% ungroup #max 2K genes/proteins per sample	
 			
 		tmp_group = DataQC$tmp_group
 		#colorpal = get_palette("Dark2", length(tmp_sampleid))

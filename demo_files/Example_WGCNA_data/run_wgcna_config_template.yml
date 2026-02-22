@@ -20,7 +20,7 @@ basic:
   # (Optional) Soft-thresholding power (beta). 
   # ###################################################################
   # ##  Fill in ONLY if you are confident in the appropriate value.  ## 
-  # ##  Should be a positve integer.                                 ## 
+  # ##  Should be a positive integer.                                 ## 
   # ###################################################################
   power: 
 
