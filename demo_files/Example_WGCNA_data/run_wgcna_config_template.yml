@@ -12,6 +12,12 @@ critical:
   
   outout_dir: # the path to save the output files
   
+  # QC report type options:
+  #   None  – no QC output
+  #   Files – output CSV + combined PDF plots
+  #   PDF   – render full Rmd QC report
+  QC_report_type: Files
+
 basic:
   # Used to remove genes with very low variance, which provide little information for WGCNA analysis
   # Can be number of genes or a percentile of total number of genes 
@@ -20,7 +26,7 @@ basic:
   # (Optional) Soft-thresholding power (beta). 
   # ###################################################################
   # ##  Fill in ONLY if you are confident in the appropriate value.  ## 
-  # ##  Should be a positve integer.                                 ## 
+  # ##  Should be a positive integer.                                 ## 
   # ###################################################################
   power: 
 

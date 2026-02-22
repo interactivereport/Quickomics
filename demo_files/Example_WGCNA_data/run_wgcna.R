@@ -85,6 +85,86 @@ clean_expression_data <- function(df) {
   return(df)
 }
 
+prepare_soft_threshold_table <- function(sft, picked_power) {
+  # Extract the fit indices table
+  df <- sft$fitIndices
+  # Add derived columns
+  df$Power  <- df[, 1]
+  df$SFT_R2 <- -sign(df[, 3]) * df[, 2]
+  df$MeanK  <- df[, 5]
+  df$Picked <- ifelse(df$Power == picked_power, "picked", "")
+  # Round numeric columns except Power
+  num_cols <- sapply(df, is.numeric)
+  num_cols["Power"] <- FALSE
+  df[num_cols] <- lapply(df[num_cols], function(x) round(x, 2))
+  return(df)
+}
+
+
+save_qc_plots_pdf <- function(df, output_file) {
+  library(ggplot2)
+  library(patchwork)
+  
+  # Base themes with extra bottom margin to avoid cropping
+  base_theme <- theme_minimal() +
+    theme(
+      plot.margin = margin(t = 20, r = 25, b = 20, l = 25)
+    )
+  
+  # Plot 1: Scale Independence
+  p1 <- ggplot(df, aes(x = Power, y = SFT_R2)) +
+    geom_point(color = "red") +
+    geom_hline(yintercept = 0.8, linetype = "dashed", color = "red") +
+    labs(
+      title = "Scale Independence",
+      x = "Soft Threshold (power)",
+      y = "Signed R^2"
+    ) +
+    base_theme
+  
+  # Plot 2: Mean Connectivity
+  p2 <- ggplot(df, aes(x = Power, y = MeanK)) +
+    geom_point(color = "red") +
+    labs(
+      title = "Mean Connectivity",
+      x = "Soft Threshold (power)",
+      y = "Mean Connectivity"
+    ) +
+    base_theme
+  
+  # Practical decision rules text (plain, left-aligned)
+  rules_text <- paste(
+    "Practical decision rules:",
+    "",
+    "- If R² rises and then plateaus, pick the lowest beta at the plateau.",
+    "- If R² rises slowly but connectivity is still good, pick beta = 6-10 (signed).",
+    "- If R² is flat and connectivity collapses at high beta, pick beta = 6-8.",
+    "- If R² keeps rising up to the max tested power, expand the tested range (1-30).",
+    "- If estimated power is NA, use beta = 6-12 for signed networks.",
+    sep = "\n"
+  )
+  
+  combined <- (p1 + p2) +
+    plot_annotation(
+      caption = rules_text,
+      theme = theme(
+        plot.caption = element_text(
+          hjust = 0,          # left align
+          vjust = 1,
+          size  = 12,
+          margin = margin(t = 20, r = 25, b = 20, l = 25)
+        ),
+        plot.margin = margin(t = 20, r = 25, b = 20, l = 25)
+      )
+    )
+  
+  # Larger device to avoid cropping
+  pdf(output_file, width = 12, height = 8)
+  print(combined)
+  dev.off()
+}
+
+
 generate_soft_threshold_pdf <- function(sft,
                                         powers,
                                         picked_power,
@@ -100,24 +180,13 @@ generate_soft_threshold_pdf <- function(sft,
   )
   
   # ---- Prepare data ----
-  df <- sft$fitIndices
-  df$Power  <- df[, 1]
-  df$SFT_R2 <- -sign(df[, 3]) * df[, 2]
-  df$MeanK  <- df[, 5]
-  
-  table_df <- df
-  table_df$Picked <- ifelse(table_df$Power == picked_power, "picked", "")
-  
-  # Format numeric columns to 2 decimals (except Power)
-  num_cols <- sapply(table_df, is.numeric)
-  num_cols["Power"] <- FALSE
-  table_df[num_cols] <- lapply(table_df[num_cols], function(x) round(x, 2))
-  
+  table_df <- prepare_soft_threshold_table(sft, picked_power)
+
   # ---- Plots ----
   library(ggplot2)
   library(patchwork)
   
-  p1 <- ggplot(df, aes(x = Power, y = SFT_R2, label = powers)) +
+  p1 <- ggplot(table_df, aes(x = Power, y = SFT_R2, label = powers)) +
     geom_point(color = "red") +
     geom_text(vjust = -0.5, color = "red", size = 3) +
     geom_hline(yintercept = 0.8, linetype = "dashed", color = "red") +
@@ -128,7 +197,7 @@ generate_soft_threshold_pdf <- function(sft,
     ) +
     theme_minimal(base_size = 11)
   
-  p2 <- ggplot(df, aes(x = Power, y = MeanK, label = powers)) +
+  p2 <- ggplot(table_df, aes(x = Power, y = MeanK, label = powers)) +
     geom_point(color = "red") +
     geom_text(vjust = -0.5, color = "red", size = 3) +
     labs(
@@ -327,13 +396,6 @@ if (is.null(config$basic$power)) {
   t3 <- Sys.time()
 }
 
-generate_soft_threshold_pdf(
-  sft = sft,
-  powers = powers,
-  picked_power = picked_power,
-  output_file = file.path(out_dir, "soft_threshold_QC_report.pdf")
-)
-
 cor <- WGCNA::cor 
 netwk <- blockwiseModules(
   dataExpr,
@@ -358,10 +420,37 @@ cor <- stats::cor
 # -----------------------------
 # Step 5: Save results
 # -----------------------------
+QC_type <- config$critical$QC_report_type
+message("QC report type: ", QC_type)
+
+# Always save RData files (unchanged)
 # File 1: load_<project_name>.RData (contains dataExpr and picked_power)
 save(dataExpr, picked_power, sft, file = file.path(out_dir, paste0("load_", project_name, ".RData")))
-
 # File 2: wgcna_<project_name>.RData (contains netwk)
 save(netwk, file = file.path(out_dir, paste0("wgcna_", project_name, ".RData")))
 
+# QC branching
+if (QC_type == "None") {
+  message("Skipping QC output (QC_report_type = None).")
+} else if (QC_type == "Files") {
+  message("Generating QC files (CSV + combined PDF plots).")
+  # 1. Save soft-threshold table
+  qc_table_file <- file.path(out_dir, "soft_threshold_table.csv")
+  # ---- Prepare data ----
+  table_df <- prepare_soft_threshold_table(sft, picked_power)
+  write.csv(table_df, qc_table_file, row.names = FALSE)
+  
+  # 2. Save combined QC plots
+  qc_plot_file <- file.path(out_dir, "soft_threshold_QC_plots.pdf")
+  # df <- sft$fitIndices
+  save_qc_plots_pdf(table_df, qc_plot_file)
+} else if (QC_type == "PDF") {
+  message("Rendering full QC PDF report via Rmd.")
+  generate_soft_threshold_pdf(
+    sft = sft,
+    powers = powers,
+    picked_power = picked_power,
+    output_file = file.path(out_dir, "soft_threshold_QC_report.pdf")
+  )
+} 
 cat("✅ WGCNA analysis complete. Results saved as load_", project_name, ".RData and wgcna_", project_name, ".RData\n", sep = "")
