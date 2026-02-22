@@ -1,0 +1,81 @@
+# ============================================================
+# WGCNA Configuration File
+# ------------------------------------------------------------
+# Load in R using:
+#   config <- yaml::read_yaml("wgcna_config.yaml")
+# ============================================================
+
+critical:
+  project_name: # Unique project_name, if RNASequest pipeline is run, should be the same as prj_name value in the RNASequence config file
+  
+  expression_datafile: # Expression matrix file (log2(TPM+1), genes as rows, samples as columns) or RNASequest expression RData file
+  
+  outout_dir: # the path to save the output files
+  
+basic:
+  # Used to remove genes with very low variance, which provide little information for WGCNA analysis
+  # Can be number of genes or a percentile of total number of genes 
+  top_variable_genes: 10000
+  
+  # (Optional) Soft-thresholding power (beta). 
+  # ###################################################################
+  # ##  Fill in ONLY if you are confident in the appropriate value.  ## 
+  # ##  Should be a positve integer.                                 ## 
+  # ###################################################################
+  power: 
+
+  # Save the consensus topological overlap matrices for each block.
+  # Can save the processing time for future reanalysis
+  # Files are vary big.
+  saveTOMs_files: FALSE
+  
+  # Character string containing the file name base 
+  # Fill in ONLY if saveTOMs_files is set to TRUE
+  saveTOMFileBase:
+  
+  # Load the previously saved TOM files to save computation time.
+  # If loadTOM is TRUE but the files cannot be found, or don't contain the correct TOM data, TOM will be recalculated.
+  loadTOM: TRUE
+  
+advanced:
+  # largest Soft-thresholding power (beta) to test for 
+  power_limit: 20
+
+  # Labele the module by by numbers (TRUE), or colors (FALSE)
+  # Set it to TRUE to be compatible with QuickOmics.
+  numericLabels: TRUE
+
+  # Sensitivity of module detection.
+  # Range: 0–4. Higher = more modules (more splitting).
+  deepSplit: 2
+
+  # Minimum number of genes per module.
+  # Smaller values detect more fine-grained modules but may include noise
+  # Typical values: 30-50 genes for large datasets
+  minModuleSize: 30
+
+  # Threshold for merging similar modules.
+  # Typical value: 0.25 (modules with >75% similar eigengenes are merged)
+  # Lower values keep modules separate; higher values merge more aggressively.
+  mergeCutHeight: 0.25
+
+  # Maximum number of genes processed per block.
+  # Increase if you have >16GB RAM to avoid splitting.
+  maxBlockSize: 50000
+
+  # How to treat negative correlations.
+  # Options: "unsigned", "signed", "signed hybrid".
+  # "signed": preserves direction (positive or negative correlation); is recommended for biological networks.
+  networkType: "signed"
+
+  # Correlation method: "pearson" (default) or "bicor".
+  # Use "bicor" for outlier‑robust networks.
+  corType: "pearson"
+
+  # Only used when corType = "bicor".
+  # Controls how aggressively bicor downweights outliers.
+  maxPOutliers: 0.1
+
+  # TRUE = conservative assignment (default).
+  # FALSE = more aggressive reassignment of grey genes (choose if you want PAM to “fix” noisy dendrogram assignments).
+  pamRespectsDendro: true

@@ -15,6 +15,19 @@
 library(WGCNA)
 library(plotly)
 
+clean_expression_data <- function(df) {
+  df <- as.data.frame(df)
+  numeric_cols <- sapply(df, is.numeric)
+  df <- df[, numeric_cols, drop = FALSE]
+  is_inf <- is.infinite(as.matrix(df))
+  if (any(is_inf)) {
+    message("Converting ", sum(is_inf), " infinite values to NA")
+    df[is_inf] <- NA
+  }
+  keep <- complete.cases(df)
+  df <- df[keep, , drop = FALSE]
+  return(df)
+}
 get_wgcna_netwk <-function(dataExpr, picked_power, scenario_number, set_mergeCutHeight, set_maxBlockSize, ProjectID) {
   if ( scenario_number == 1 ) {
     set_loadTOM = TRUE
@@ -228,7 +241,6 @@ make_plotly_heatmap <- function(cor_mat, p_mat, row_labels, col_labels) {
       )
     }
   }
-  
   plot_ly(
     x = col_labels,
     y = row_labels,
@@ -238,6 +250,20 @@ make_plotly_heatmap <- function(cor_mat, p_mat, row_labels, col_labels) {
     text = hover_text,
     hoverinfo = "text",
     source = "moduleTraitHeatmap"
+  )
+}
+
+compute_module_trait_heatmap <- function(MEs, trait_matrix) {
+  nSamples <- nrow(trait_matrix)
+  
+  cor_matrix <- cor(MEs, trait_matrix, use = "pairwise.complete.obs")
+  p_mat  <- corPvalueStudent(cor_matrix, nSamples)
+  
+  make_plotly_heatmap(
+    cor_mat = cor_matrix,
+    p_mat = p_mat,
+    row_labels = colnames(MEs),
+    col_labels = colnames(trait_matrix)
   )
 }
 
@@ -293,7 +319,7 @@ wgcna_ui <- function(id) {
                                             tabPanel(title = "Eigengene Network",plotOutput(ns("Eigenene_Network"), height = "1000px"))
                                 )
                        ),
-                       tabPanel(title="Module-Trait Relationships",
+                       tabPanel(title="Module-Trait Relationships", 
                                 tabsetPanel(id=ns("Module_Trait"),
                                             tabPanel(title="Module Trait Heatmap", 
                                                      plotlyOutput(ns("module_trait_hmap"), height=800)
@@ -358,45 +384,95 @@ wgcna_server <- function(id, parent_session) {
                         trait_data <- reactiveVal() 
                         moduleTraitCor <- reactiveVal()
                         df_hub_gene <- reactiveVal() 
-                        wgcna_run_control<-reactiveVal(0)
-                        
-                    
+                        # wgcna_run_control<-reactiveVal(0)
+                        module_trait_plot <- reactiveVal(NULL)
+
                         observe({
                           req(ProjectInfo)
                           working_project(ProjectInfo$ProjectID)
                         })
-                        
+
                         observe({
                           DataIn <- DataReactive()
                           data_wide <- na.omit(DataIn$data_wide)
                           default_n_gene <- min(10000, nrow(data_wide))
-                          
                           updateNumericInput(session, "WGCNAtopNum", 
                                              label= "Select Top N Genes, where N is :",  value=default_n_gene, min=250L, step=25L, max = default_n_gene)
+                          working_project(ProjectInfo$ProjectID)
                         })
                         
+                        # reset all results for new project
+                        observeEvent(working_project(), {
+                          output$Dendrogram <- NULL
+                          output$gene_cluster <- NULL
+                          output$MEs <- NULL
+                          output$Eigenene_Network <- NULL
+                          output$soft_threshold_table_note <- NULL
+                          output$soft_threshold_table <- NULL
+                          output$soft_threshold_diagnose_plot_note <- NULL
+                          output$soft_threshold_diagnose_plot <- NULL
+                          output$gene_variance_distribution_plot <- NULL
+                          output$sample_cluster_plot <- NULL
+                          module_trait_plot(NULL)
+                          output$hub_gene_table <- DT::renderDT({NULL})
+                          output$plot_MMvsGS <- renderPlotly({NULL})
+                          output$plot_MMvsConnectivity <- renderPlotly({NULL})
+                        })
+                        
+                        observeEvent(input$plotwgcna, {
+                          # output$MEs <- NULL
+                          output$Eigenene_Network <- NULL
+                          output$soft_threshold_table_note <- NULL
+                          output$soft_threshold_table <- NULL
+                          output$soft_threshold_diagnose_plot_note <- NULL
+                          output$soft_threshold_diagnose_plot <- NULL
+                          output$gene_variance_distribution_plot <- NULL
+                          output$sample_cluster_plot <- NULL
+                          module_trait_plot(NULL)
+                          output$hub_gene_table <- DT::renderDT({NULL})
+                          output$plot_MMvsGS <- renderPlotly({NULL})
+                          output$plot_MMvsConnectivity <- renderPlotly({NULL})
+                        })
+                        
+                        observeEvent(list(input$WGCNA_trait, input$WGCNA_module), {
+                          output$hub_gene_table <- DT::renderDT({NULL})
+                          output$plot_MMvsGS <- renderPlotly({NULL})
+                          output$plot_MMvsConnectivity <- renderPlotly({NULL})
+                        })
+                        
+                        # Display precomputed results if exists.
                         observeEvent(list(working_project(),input$WGCNAgenelable,parent_session$input$menu == "wgcna"), {
-                          req(ProjectInfo,DataReactive(),parent_session$input$menu == "wgcna")
+                          req(ProjectInfo, DataReactive(), parent_session$input$menu == "wgcna")
                           ProjectID <- ProjectInfo$ProjectID
                           wgcnafile <- ProjectInfo$file3
+                          load_wgcna_file <- file.path(dirname(wgcnafile), sub("^wgcna", "load", basename(wgcnafile)))
+                          
                           gene_label <- input$WGCNAgenelable
+                          DataIn = DataReactive()
+                          req(DataIn$ProteinGeneName)
+                          ProteinGeneName  <- DataIn$ProteinGeneName
                           
-                          load_wgcna_file <- paste("data/wgcna_data/load_", ProjectID, ".RData", sep = "")
-                          
-                          if(file.exists(wgcnafile) & file.exists(load_wgcna_file)){
-                            DataIn = DataReactive()
-                            req(DataIn$ProteinGeneName)
-                            ProteinGeneName  <- DataIn$ProteinGeneName
+                          wgcna_out <- tryCatch(WGCNAReactive(), error = function(e) NULL)
+                          if (! is.null(wgcna_out)) {
+                            wgcna <- wgcna_out$netwk
+                            if ("sft" %in% names(wgcna_out)) {
+                              sft <- wgcna_out$sft
+                            }
+                          } else if(file.exists(wgcnafile) & file.exists(load_wgcna_file)) {
                             load(wgcnafile)
                             load(load_wgcna_file)
                             wgcna <- netwk
+                          }
+                          
+                          if(exists('wgcna')){
                             mergedColors = labels2colors(wgcna$colors)
                             
                             MEs <- wgcna$MEs
                             moduleColors <- wgcna$colors
                             MEs_updated(rename_MEs_blockwise(MEs, moduleColors))
                             MEs_name_updated(colnames(MEs_updated()))
-
+                            
+                            # showTab(session = session, inputId = "WGCNA_tabset", target = "Module-Trait Relationships")
                             output$Dendrogram <- renderPlot({
                               withProgress(message = "Creating plot using pre-calculated data", value = 0, {
                                 plotDendroAndColors(
@@ -435,7 +511,6 @@ wgcna_server <- function(id, parent_session) {
                             output$sample_cluster_plot <- renderPlot({
                               plot_sample_clustering(data_wide)
                             })
-                            
                             output$MEs <- DT::renderDT({
                               DT::datatable(
                                 MEs_updated(),  extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
@@ -450,7 +525,6 @@ wgcna_server <- function(id, parent_session) {
                                 formatSignif(columns=names(MEs_updated()), digits=3)
                             })
                             
-
                             output$Eigenene_Network <- renderPlot({
                               MEs <- MEs_updated()
                               validate(need(ncol(MEs) > 2,"Eigengene Network requires at least 2 module eigengenes."))
@@ -503,62 +577,47 @@ wgcna_server <- function(id, parent_session) {
                                      ")
                               })
                               
-                              
                               output$soft_threshold_diagnose_plot <- renderPlot({
                                 plot_soft_threshold_diagnose(sft, powers())
                               })
                             } else if (input$WGCNA_tabset == 'WGCNA_QC' && input$WGCNA_QC == "Soft-Thresholding Power") {
                               showNotification("Pre-calculated wgcna file does not contain the soft_thresholding power testing result. No results loaded.", duration = 5, type = "warning")
-                              output$soft_threshold_table_note <- NULL
-                              output$soft_threshold_table <- NULL
-                              output$soft_threshold_diagnose_plot_note <- NULL
-                              output$soft_threshold_diagnose_plot <- NULL
                             }
                           } else if (parent_session$input$menu == "wgcna") {
+                            # hideTab(session = session, inputId = "WGCNA_tabset", target = "Module-Trait Relationships")
                             print("no pre-computed wgcna file available and cannot load wgcna results")
-                            showNotification("Cannot find pre-calculated wgcna file, no WGCNA results loaded. ", duration = 5, type = "warning")
-                            output$Dendrogram <- NULL
-                            output$gene_cluster <- NULL
-                            output$MEs <- NULL
-                            output$Eigenene_Network <- NULL
-                            output$soft_threshold_table_note <- NULL
-                            output$soft_threshold_table <- NULL
-                            output$soft_threshold_diagnose_plot_note <- NULL
-                            output$soft_threshold_diagnose_plot <- NULL
-                            output$gene_variance_distribution_plot <- NULL
-                            output$sample_cluster_plot <- NULL
+                            showNotification("Cannot find pre-calculated wgcna file, no WGCNA results loaded.", duration = 5, type = "warning")
                           }
                         })
                         
+                        # Run WGCNA, get dataExpr, network, picked_power, sft(if exists or computed) 
                         # use eventReactive to control reactivity of WGCNAReactive;
                         # otherwise, whenever an input change, WGCNAReactive will be re-calculated
                         # and its re-calculation could take a long time.
                         WGCNAReactive <- eventReactive(input$plotwgcna, {
                           withProgress(message = "Running WGCNA", detail = 'This may take a while...', value = 0.2, {
                             # what if the user-imported data doesn't have $data_wide, $ProjectID..etc?
-                            req(ProjectInfo, DataReactive(), ProjectInfo$ProjectID)
-
-                            DataIn = DataReactive()
-                            data_wide <- DataIn$data_wide
-                            ProjectID <- ProjectInfo$ProjectID
+                            req(ProjectInfo, DataReactive()$data_wide, ProjectInfo$ProjectID)
+                            # showTab(session = session, inputId = "WGCNA_tabset", target = "Module-Trait Relationships")
                             
+                            DataIn = DataReactive()
                             data_wide <- na.omit(DataIn$data_wide)
+                            ProjectID <- ProjectInfo$ProjectID
+                            wgcnafile <- ProjectInfo$file3
+                            
                             diff <- apply(data_wide, 1, sd, na.rm = TRUE)/(rowMeans(data_wide) + median(rowMeans(data_wide)))
                             data_wide=data_wide[order(diff, decreasing=TRUE), ]                            
-
+                            
                             if (nrow(data_wide)>10000 ) {
                               data_wide=data_wide[1:10000, ] 
                               cat("reduce gene size to 10K for project ", ProjectID, "\n")
                             } 
-                            # dataExpr_ori <- data_wide
-                            
+
                             print(paste0("**** dim of dataExpr after-preprocssing is ****", dim(data_wide)))
                             
                             default_n_gene <- nrow(data_wide)
                             
-                            # Note: if launching app from the server, the path for `load_`  files should be
-                            # paste0("/mnt/depts/dept04/compbio/projects/xOmicsShiny/data/wgcna_data/TOM
-                            load_wgcna_file <- paste("data/wgcna_data/load_", ProjectID, ".RData", sep = "")
+                            load_wgcna_file <- file.path(dirname(wgcnafile), sub("^wgcna", "load", basename(wgcnafile)))
                             
                             if (file.exists(load_wgcna_file) & default_n_gene==input$WGCNAtopNum){
                               # Scenario 1: If file exist and the number of genes selected rename the same, load 
@@ -576,34 +635,14 @@ wgcna_server <- function(id, parent_session) {
                               dataExpr= dataExpr[,1L:input$WGCNAtopNum]
                               netwk <- get_wgcna_netwk(dataExpr, picked_power, 2, input$mergeCutHeight, input$WGCNAtopNum, ProjectID)
                             } else {
-                              # Scenario 3: Not scenario 1 or 2, and recalcuate everything
+                              # Scenario 3: Not scenario 1 or 2, and recalculate everything
                               print(paste0("**** compute everything from scratch ****"))
                               ProteinGeneName  <- DataIn$ProteinGeneName
-
-                              ## Top number of genes
                               topNum <- as.numeric(input$WGCNAtopNum)
-                              # Gene Label
                               gene_label <- input$WGCNAgenelable
-                              dataExpr <- data_wide %>%
-                                na.omit() %>%
-                                tibble::rownames_to_column("UniqueID") %>%
-                                dplyr::left_join(ProteinGeneName, by = "UniqueID") %>%
-                                dplyr::select(-id, -Gene.Name, -Protein.ID) %>%
-                                tibble::column_to_rownames("UniqueID")
-                              
-                              # Replace Inf or NA with NA
-                              dataExpr[dataExpr == "Inf" | is.na(dataExpr)] <- NA
-                              
-                              gene.names <- rownames(dataExpr)                              
-                              SubGeneNames=gene.names[1L:topNum]
-                              
-                              # Ensure all columns are numeric before transposing; otherwise cell values may
-                              # become character, causing problems in WGCNA::blockwiseModules, as happened to
-                              # the Mouse_microglia_RNA-Seq data
-                              dataExpr <-  dataExpr %>%
-                                dplyr::select(tidyselect::where(is.numeric))
-                              
-                              dataExpr = as.data.frame(t(dataExpr))
+
+                              data_wide <- clean_expression_data(data_wide)
+                              dataExpr = as.data.frame(t(data_wide))
                               dataExpr= dataExpr[,1L:topNum]
                               
                               # Choose a set of soft-thresholding powers
@@ -633,16 +672,11 @@ wgcna_server <- function(id, parent_session) {
                           })
                         })
                         
-                        observeEvent(input$plotwgcna, {
-                          wgcna_run_control(wgcna_run_control()+1)
-                        })
-                        
-                        
-                        #### generate dendrogram and gene cluster table #####
+                        # Show WGCNA QC and result tables and plots #####
                         # use input$WGCNAReactive() as event handler to ensure observeEvent() depends on it only
                         # and does not directly depends on input$, which ensure WGCNAReactive() will be calculated first.
-                        observeEvent(wgcna_run_control(),{
-                          req(DataReactive())
+                        observeEvent(input$plotwgcna,{
+                          req(DataReactive(),WGCNAReactive())
                           wgcna_out <- WGCNAReactive()
                           wgcna <- wgcna_out$netwk
                           picked_power <- wgcna_out$picked_power
@@ -650,9 +684,9 @@ wgcna_server <- function(id, parent_session) {
                           mergedColors = labels2colors(wgcna$colors)
                           
                           MEs <- wgcna$MEs
-                          moduleColors <- wgcna$colors
-                          MEs_updated <- rename_MEs_blockwise(MEs, moduleColors)
-                          MEs_name_updated(colnames(MEs_updated))
+                          moduleColors <- wgcna$colors # here are numbers
+                          MEs_updated(rename_MEs_blockwise(MEs, moduleColors))
+                          MEs_name_updated(colnames(MEs_updated()))
 
                           output$Dendrogram <- renderPlot({
                             plotDendroAndColors(
@@ -681,11 +715,6 @@ wgcna_server <- function(id, parent_session) {
                             )
                           })
                           
-                          MEs <- wgcna$MEs
-                          moduleColors <- wgcna$colors
-                          MEs_updated(rename_MEs_blockwise(MEs, moduleColors))
-                          MEs_name_updated <- colnames(MEs_updated())
-                          
                           output$MEs <- DT::renderDT({
                             DT::datatable(
                               MEs_updated(),  extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
@@ -702,8 +731,7 @@ wgcna_server <- function(id, parent_session) {
                           
                           output$Eigenene_Network <- renderPlot({
                             MEs <- MEs_updated()
-                             validate(need(ncol(MEs) > 2,"Eigengene Network requires at least 2 module eigengenes."))
-                            
+                            validate(need(ncol(MEs) > 2,"Eigengene Network requires at least 2 module eigengenes."))
                             plotEigengeneNetworks(MEs,
                                                   "Eigengene Network",
                                                   marDendro = c(2,3,2,1),
@@ -712,7 +740,6 @@ wgcna_server <- function(id, parent_session) {
                                                   plotHeatmaps = TRUE
                                                   )
                           })
-                          
                           
                           if ("sft" %in% names(wgcna_out)) {
                             sft <- wgcna_out$sft
@@ -760,8 +787,8 @@ wgcna_server <- function(id, parent_session) {
                             })
                           } else if (input$WGCNA_QC == "Soft-Thresholding Power") {
                             showNotification("Pre-calculated wgcna file does not contain the soft_thresholding power testing result. No results loaded.", duration = 5, type = "warning")
-                            output$soft_threshold_table <- NULL
-                            output$soft_threshold_diagnose_plot <- NULL
+                            # output$soft_threshold_table <- NULL
+                            # output$soft_threshold_diagnose_plot <- NULL
                           }
                         })
                         
@@ -775,6 +802,7 @@ wgcna_server <- function(id, parent_session) {
                           }, once = TRUE)
                         })
                         
+                        # Update Module-Trait Relationships menu
                         observe({
                           DataIn = DataReactive()
                           MetaData = DataIn$MetaData
@@ -806,84 +834,91 @@ wgcna_server <- function(id, parent_session) {
                           })
                         })
                         
-                        WGCNA_mm_trait_Reactive <- reactive({
-                          req(DataReactive(), MEs_updated(),input$plot_module_trait, wgcna_run_control())
-
+                        # Create trait_data() and calculate moduleTraitCor() whenever wgcna result (MEs_updated()) changes or trait information (input$plot_module_trait) changes
+                        observeEvent(list(MEs_updated(),input$plot_module_trait), {
+                          req(DataReactive(), MEs_updated())
+                          
                           DataIn <- DataReactive()
                           MetaData <- DataIn$MetaData
                           attrs <- input$WGCNA_trait_var
-                         # Only categorical attributes have base_* inputs
+                          # Only categorical attributes have base_* inputs
                           categorical_attrs <- attrs[
                             sapply(attrs, function(a) is_categorical(MetaData[[a]]))
                           ]
                           base_levels <- sapply(categorical_attrs, function(a) input[[paste0("base_", a)]])
-
                           trait_data(build_traits_matrix(MetaData, attrs, base_levels))
 
                           nSamples <- nrow(trait_data())
                           moduleTraitCor(cor(MEs_updated(), trait_data(), use = "p"))
-                          moduleTraitPvalue <- corPvalueStudent(moduleTraitCor(), nSamples)
-
-                          p <- make_plotly_heatmap(
-                            cor_mat = moduleTraitCor(),
-                            p_mat = moduleTraitPvalue,
-                            row_labels = colnames(MEs_updated()),
-                            col_labels = colnames(trait_data())
-                          )
-                          p
                         })
-
+                        
+                        # Create Module-Trait correlation heatmap object and reset hub gene results
+                        observeEvent(input$plot_module_trait, {
+                          req(MEs_updated(),trait_data())
+                          p <- compute_module_trait_heatmap(
+                            MEs = MEs_updated(),
+                            trait_mat = trait_data()
+                          ) 
+                          module_trait_plot(p)
+                          # reset the dependent data
+                          output$hub_gene_table <- DT::renderDT({NULL})
+                          output$plot_MMvsGS <- renderPlotly({NULL})
+                          output$plot_MMvsConnectivity <- renderPlotly({NULL})
+                        })
+                        
                         output$module_trait_hmap <- renderPlotly({
-                          WGCNA_mm_trait_Reactive()
+                          module_trait_plot()
                         })
                         
                         observeEvent(event_data("plotly_click", source = "moduleTraitHeatmap"), {
+                          req(input$plot_module_trait,module_trait_plot())
                           click <- event_data("plotly_click", source = "moduleTraitHeatmap")
                           req(click)
-                          
-                          clicked_trait  <- click$x   # column label
-                          clicked_module <- click$y   # row label
-                          
-                          updateSelectInput(session, "WGCNA_trait",  selected = clicked_trait)
-                          updateSelectInput(session, "WGCNA_module", selected = clicked_module)
+                          updateSelectInput(session, "WGCNA_trait",  selected = click$x)
+                          updateSelectInput(session, "WGCNA_module", selected = click$y)
                           updateTabsetPanel(session, "Module_Trait", selected = "Hub Gene Identification Table")
-                        })
-                        
-                        
-                        observeEvent(trait_data(), {
+                          }, ignoreNULL = TRUE)
+
+                        # Update trait and module menu whenever the trait_data() changes.
+                        observeEvent(list(trait_data(),input$plot_module_trait), {
                           updateSelectInput(session, "WGCNA_trait", choices=names(trait_data()), selected=character(0))
                         })
-                        
-                        observeEvent(MEs_updated(), {
+                        observeEvent(list(MEs_updated(),input$plot_module_trait), {
                           updateSelectInput(session, "WGCNA_module", choices=names(MEs_updated()), selected=character(0))
                         })
                         
                         observeEvent(input$plot_module_hub, {
-                          req(WGCNA_mm_trait_Reactive())
+                          req(moduleTraitCor())
+                          if (is.null(input$WGCNA_trait) || input$WGCNA_trait == "") { 
+                            showNotification("Selecting a trait is required to run the analysis.", type = "error") 
+                            return() 
+                          }
                           
+                          # Retrive pre-computed wgcna result (load_wgcna_file) or on-the-fly result(WGCNAReactive()) 
+                          # compute hub gene results
                           wgcna_out <- tryCatch(WGCNAReactive(), error = function(e) NULL)
                           if (is.null(wgcna_out)) {
                             req(ProjectInfo,DataReactive())
                             ProjectID <- ProjectInfo$ProjectID
-                            load_wgcna_file <- paste("data/wgcna_data/load_", ProjectID, ".RData", sep = "")
+                            wgcnafile <- ProjectInfo$file3
+                            load(wgcnafile)
+                            wgcna <- netwk
+                            load_wgcna_file <- file.path(dirname(wgcnafile), sub("^wgcna", "load", basename(wgcnafile)))
                             load(load_wgcna_file)
                           } else {
                             picked_power <- wgcna_out$picked_power
                             dataExpr <- wgcna_out$dataExpr
+                            wgcna <- wgcna_out$netwk
                           }
                           gene_label <- input$WGCNAgenelable
                           DataIn = DataReactive()
                           req(DataIn$ProteinGeneName)
                           ProteinGeneName  <- DataIn$ProteinGeneName
-                          if (! all(names(dataExpr) %in% ProteinGeneName[, gene_label])) {
-                            current_label <- setdiff(c("UniqueID","Gene.Name"), gene_label)
-                            id_to_gene <- setNames(ProteinGeneName[ , gene_label], ProteinGeneName[ , current_label])
-                            new_names <- id_to_gene[colnames(dataExpr)]
-                            colnames(dataExpr) <- new_names
-                          }
+
+                          selected_trait <- input$WGCNA_trait     # trait is required 
                           
-                          selected_trait <- input$WGCNA_trait
-                          if (!is.null(input$WGCNA_module)) {
+                          # module is optional, if not selected, then identify the one with strongest correlation
+                          if (!is.null(input$WGCNA_module) && input$WGCNA_module != "") {
                             selected_trait_module <- input$WGCNA_module
                           } else {
                             # Get the module most strongly associated with the trait
@@ -898,15 +933,17 @@ wgcna_server <- function(id, parent_session) {
                           module_name <- parts[2]                  # color
                           
                           # Get genes in this module
-                          module_genes <- df_gene_clusters() %>%
-                            dplyr::filter(color == selected_trait_module) %>%
-                            dplyr::pull(gene_group) %>% 
+                          module_genes <- tibble::tibble(
+                            UniqueID = names(wgcna$colors),
+                            color = labels2colors(wgcna$colors)
+                          ) %>%
+                            dplyr::filter(color == module_name) %>%
+                            pull(UniqueID) %>% 
                             strsplit(",") %>% 
                             unlist() %>% 
-                            trimws() 
+                            trimws()  
                           
                           module_genes <- module_genes[module_genes != ""]
-                          
                           module_genes <- intersect(module_genes, colnames(dataExpr))
 
                           # Calculate connectivity 
@@ -934,16 +971,25 @@ wgcna_server <- function(id, parent_session) {
                           names(gene_trait_cor) <- colnames(dataExpr)
                           names(gene_trait_pvalue) <- colnames(dataExpr)
                           
+                          if (! all(names(dataExpr) %in% ProteinGeneName[, gene_label])) {
+                            current_label <- setdiff(c("UniqueID","Gene.Name"), gene_label)
+                            id_to_gene <- setNames(ProteinGeneName[ , gene_label], ProteinGeneName[ , current_label])
+                            module_genes_display = id_to_gene[module_genes]
+                          } else {
+                            module_genes_display = module_genes
+                          }
+                          
                           # Combine all metrics for hub gene identification
                           hub_gene_info <- data.frame(
-                            Gene = module_genes,
+                            Gene = module_genes_display,
                             Connectivity = connectivity,
                             ModuleMembership = as.numeric(gene_module_membership),
                             MM_pvalue = corPvalueStudent(as.numeric(gene_module_membership), nSamples),
                             GeneSignificance = gene_trait_cor[module_genes],
                             GS_pvalue = gene_trait_pvalue[module_genes],
                             stringsAsFactors = FALSE
-                          )
+                          ) %>% 
+                            dplyr::filter(Gene != "")
                           
                           # Sort by connectivity to identify hubs
                           hub_gene_info <- hub_gene_info[order(-hub_gene_info$Connectivity), ]
@@ -964,53 +1010,7 @@ wgcna_server <- function(id, parent_session) {
                               formatSignif(columns=names(Filter(is.numeric, df_hub_gene())), digits=3)
                           })
                           
-                          # output$plot_MMvsGS <- renderPlotly({
-                          #   module_gene_info <- df_hub_gene()
-                          #   module_gene_info <- module_gene_info[order(-abs(module_gene_info$ModuleMembership)), ]
-                          #   
-                          #   x <- abs(module_gene_info$ModuleMembership)
-                          #   y <- abs(module_gene_info$GeneSignificance)
-                          #   
-                          #   # Regression line
-                          #   fit <- lm(y ~ x)
-                          #   x_seq <- seq(min(x), max(x), length.out = 100)
-                          #   y_pred <- predict(fit, newdata = data.frame(x = x_seq))
-                          #   
-                          #   # Correlation
-                          #   mm_gs_cor <- cor(x, y, use = "pairwise.complete.obs")
-                          #   
-                          #   plot_ly() %>%
-                          #     add_markers(
-                          #       x = x,
-                          #       y = y,
-                          #       marker = list(color = module_name, size = 8),
-                          #       text = module_gene_info$Gene,
-                          #       hoverinfo = "text"
-                          #     ) %>%
-                          #     add_lines(
-                          #       x = x_seq,
-                          #       y = y_pred,
-                          #       line = list(color = "red", width = 2),
-                          #       name = "Regression"
-                          #     ) %>%
-                          #     layout(
-                          #       title = paste("MM vs GS in", selected_trait_module, "module"),
-                          #       xaxis = list(title = paste("Module Membership in", selected_trait_module, "module")),
-                          #       yaxis = list(title = paste("Gene Significance for", selected_trait)),
-                          #       annotations = list(
-                          #         list(
-                          #           x = min(x),
-                          #           y = max(y),
-                          #           text = paste("cor =", round(mm_gs_cor, 3)),
-                          #           xanchor = "left",
-                          #           yanchor = "top",
-                          #           showarrow = FALSE,
-                          #           font = list(size = 14)
-                          #         )
-                          #       )
-                          #     )
-                          # })
-                          
+
                           output$plot_MMvsGS <- renderPlotly({
                             module_gene_info <- df_hub_gene()
                             
@@ -1087,40 +1087,6 @@ wgcna_server <- function(id, parent_session) {
                               )
                           })
                           
-                          # output$plot_MMvsConnectivity <- renderPlotly({
-                          #   hub_gene_info <- df_hub_gene()
-                          #   
-                          #   # Identify top 10% connected
-                          #   top_cutoff <- quantile(hub_gene_info$Connectivity, 0.9)
-                          #   colors <- ifelse(hub_gene_info$Connectivity > top_cutoff, "red", "black")
-                          #   
-                          #   plot_ly(
-                          #     x = hub_gene_info$ModuleMembership,
-                          #     y = hub_gene_info$Connectivity,
-                          #     type = "scatter",
-                          #     mode = "markers",
-                          #     marker = list(color = colors, size = 8),
-                          #     text = hub_gene_info$Gene,
-                          #     hoverinfo = "text"
-                          #   ) %>%
-                          #     layout(
-                          #       title = paste("Hub Gene Identification in", selected_trait_module, "Module"),
-                          #       xaxis = list(title = "Module Membership"),
-                          #       yaxis = list(title = "Connectivity (Intramodular)"),
-                          #       legend = list(orientation = "h"),
-                          #       shapes = list()  # placeholder if you want to add lines later
-                          #     ) %>%
-                          #     add_trace(
-                          #       x = NA, y = NA, mode = "markers",
-                          #       marker = list(color = "red"),
-                          #       name = "Top 10% connected"
-                          #     ) %>%
-                          #     add_trace(
-                          #       x = NA, y = NA, mode = "markers",
-                          #       marker = list(color = "black"),
-                          #       name = "Other genes"
-                          #     )
-                          # })
                           output$plot_MMvsConnectivity <- renderPlotly({
                             hub_gene_info <- df_hub_gene()
                             
@@ -1167,6 +1133,5 @@ wgcna_server <- function(id, parent_session) {
                               )
                           })
                         })
-                      }
-  )
+                      })
 }
