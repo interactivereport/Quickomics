@@ -140,6 +140,7 @@ save_qc_plots_pdf <- function(df, output_file) {
     "- If R² rises slowly but connectivity is still good, pick beta = 6-10 (signed).",
     "- If R² is flat and connectivity collapses at high beta, pick beta = 6-8.",
     "- If R² keeps rising up to the max tested power, expand the tested range (1-30).",
+    "- Ensure mean connectivity is not too low. It should > ~ 20 (for typical datasets).",
     "- If estimated power is NA, use beta = 6-12 for signed networks.",
     sep = "\n"
   )
@@ -224,7 +225,8 @@ The table below shows the result for all beta candidates tested.
 - If R² rises and then plateaus, pick the lowest beta at the plateau.  
 - If R² rises slowly but connectivity is still good, pick beta = 6–10 (signed).  
 - If R² is flat and connectivity collapses at high beta, pick beta = 6–8.  
-- If R² keeps rising up to the max tested power, expand the tested range (1–30).  
+- If R² keeps rising up to the max tested power, expand the tested range (1–30).
+- Ensure mean connectivity is not too low. It should > ~ 20 (for typical datasets).
 - If estimated power is NA, use beta = 6–12 for signed networks.  
 "
   

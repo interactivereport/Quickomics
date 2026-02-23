@@ -573,6 +573,7 @@ wgcna_server <- function(id, parent_session) {
                                 -- If R² rises slowly but connectivity is still good, pick β = 6–10 (signed).<br>
                                 -- If R² is flat and connectivity collapses at high β, pick a moderate β (6–8) to avoid oversparsifying.<br>
                                 -- If R² keeps rising up to the max tested power, increase the tested range (e.g., 1–30), but still avoid β > 20 unless absolutely necessary.<br>
+                                -- Ensure mean connectivity is not too low. It should > ~ 20 (for typical datasets).<br>
                                 -- If estimated power is NA, use any number in the typical β range (6–12) for signed networks.
                                      ")
                               })
@@ -778,6 +779,7 @@ wgcna_server <- function(id, parent_session) {
                                 -- If R² rises slowly but connectivity is still good, pick β = 6–10 (signed).<br>
                                 -- If R² is flat and connectivity collapses at high β, pick a moderate β (6–8) to avoid oversparsifying.<br>
                                 -- If R² keeps rising up to the max tested power, increase the tested range (e.g., 1–30), but still avoid β > 20 unless absolutely necessary.<br>
+                                -- Ensure mean connectivity is not too low. It should > ~ 20 (for typical datasets).<br>
                                 -- If estimated power is NA, use any number in the typical β range (6–12) for signed networks.
                                      ")
                             })
