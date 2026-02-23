@@ -62,7 +62,7 @@ correlation_ui <- function(id) {
   fluidRow(
     column(3,
            wellPanel(
-             column(width=12,uiOutput(ns("selectGroupSample"))),
+             column(width=12,uiOutput(ns("selectGroupSampleCorr"))),
              radioButtons(ns("correlation_type"), "Correlation Type:", choices = c("Gene-Gene" = "gene", "Sample-Sample" = "sample", "Group-Group" = "group"), inline = TRUE, selected = "gene"),
              radioButtons(ns("gene_subset"),label="Genes Used in Correlation Analysis", choices=c(""),inline = TRUE),
              conditionalPanel(ns=ns, "input.gene_subset=='Select'",
@@ -484,6 +484,16 @@ correlation_server <- function(id) {
                      updateTabsetPanel(session, "correlation_tabset", selected = "Correlation Plot")
                    }
                  })
+                 output$selectGroupSampleCorr<- renderUI({ 
+                    sample_info=paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
+                                   length(sample_order()), " out of ", length(all_samples()), 
+                                   " Samples. (Update Selection at: Top Menu -> Groups and Samples.)", sep="")
+                    tagList(
+                      tags$p(sample_info),
+                      tags$hr()
+                    )
+                  })
+
                  
                  output$data_table <- DT::renderDataTable({
                    req(public_dataset)

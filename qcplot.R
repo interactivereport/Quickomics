@@ -192,8 +192,8 @@ observeEvent(input$QC_groups, {
   group_order(input$QC_groups)
 })
 
-output$selectGroupSample <- renderText({ paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
-                                               length(sample_order()), " out of ", length(all_samples()), " Samples.", sep="")})
+#output$selectGroupSample <- renderText({ paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
+#                                               length(sample_order()), " out of ", length(all_samples()), " Samples.", sep="")})
 
 
 #update sample list and sample order if group changes

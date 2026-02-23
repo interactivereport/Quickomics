@@ -86,7 +86,7 @@ tabPanel("Groups and Samples",
                     conditionalPanel("input.QC_comp2sample==1",
                                      uiOutput("QC_samples_from_comp")	),
                     selectizeInput("QC_samples", label="Select Samples", choices=NULL,multiple=TRUE),
-                    column(width=12,textOutput("selectGroupSample")),
+                    column(width=12,uiOutput("selectGroupSample")),
                     tags$hr()
                   )),
            column(8,
