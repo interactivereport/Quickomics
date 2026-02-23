@@ -354,7 +354,11 @@ if (0 < number_top_genes && number_top_genes < 1) {
     { as.data.frame(t(.)) }
 }
 
-enableWGCNAThreads()
+if (as.numeric(config$critical$WGCNAThreads) == 0) {
+  enableWGCNAThreads()
+} else {
+  enableWGCNAThreads(as.numeric(config$critical$WGCNAThreads))
+}
 
 # ---- Pick soft-thresholding power ---- 
 t2 <- Sys.time()
@@ -435,13 +439,13 @@ if (QC_type == "None") {
 } else if (QC_type == "Files") {
   message("Generating QC files (CSV + combined PDF plots).")
   # 1. Save soft-threshold table
-  qc_table_file <- file.path(out_dir, "soft_threshold_table.csv")
+  qc_table_file <- file.path(out_dir, paste0(project_name, "_soft_threshold_table.csv"))
   # ---- Prepare data ----
   table_df <- prepare_soft_threshold_table(sft, picked_power)
   write.csv(table_df, qc_table_file, row.names = FALSE)
   
   # 2. Save combined QC plots
-  qc_plot_file <- file.path(out_dir, "soft_threshold_QC_plots.pdf")
+  qc_plot_file <- file.path(out_dir, paste0(project_name, "_soft_threshold_QC_plots.pdf"))
   # df <- sft$fitIndices
   save_qc_plots_pdf(table_df, qc_plot_file)
 } else if (QC_type == "PDF") {
@@ -450,7 +454,7 @@ if (QC_type == "None") {
     sft = sft,
     powers = powers,
     picked_power = picked_power,
-    output_file = file.path(out_dir, "soft_threshold_QC_report.pdf")
+    output_file = file.path(out_dir, paste0(project_name, "_soft_threshold_QC_report.pdf"))
   )
 } 
 cat("✅ WGCNA analysis complete. Results saved as load_", project_name, ".RData and wgcna_", project_name, ".RData\n", sep = "")

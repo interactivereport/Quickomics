@@ -219,14 +219,14 @@ build_traits_matrix <- function(MetaData, attrs, base_levels) {
   })
   factor_traits <- as.data.frame(factor_traits)
   names(factor_traits) <- categorical_cols
-  numeric_traits <- MetaData[, sapply(MetaData, is.numeric), drop = FALSE]
   if (ncol(factor_traits) > 0) {
     dummy_traits <- model.matrix(~ . - 1, data = factor_traits)
     dummy_traits <- as.data.frame(dummy_traits)
+    return(cbind(numeric_traits, dummy_traits))
   } else {
     dummy_traits <- NULL
+    return(numeric_traits)
   }
-  cbind(numeric_traits, dummy_traits)
 }
 
 make_plotly_heatmap <- function(cor_mat, p_mat, row_labels, col_labels) {
@@ -837,7 +837,6 @@ wgcna_server <- function(id, parent_session) {
                         # Create trait_data() and calculate moduleTraitCor() whenever wgcna result (MEs_updated()) changes or trait information (input$plot_module_trait) changes
                         observeEvent(list(MEs_updated(),input$plot_module_trait), {
                           req(DataReactive(), MEs_updated())
-                          
                           DataIn <- DataReactive()
                           MetaData <- DataIn$MetaData
                           attrs <- input$WGCNA_trait_var

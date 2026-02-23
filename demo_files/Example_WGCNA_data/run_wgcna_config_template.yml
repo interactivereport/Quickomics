@@ -17,6 +17,11 @@ critical:
   #   Files – output CSV + combined PDF plots
   #   PDF   – render full Rmd QC report
   QC_report_type: Files
+  
+  # multi‑threaded parallel computation setting for WGCNA
+  # set to 0 to auto-detects the number of available CPU cores
+  # set to other number to save HPC resources
+  WGCNAThreads: 16
 
 basic:
   # Used to remove genes with very low variance, which provide little information for WGCNA analysis
@@ -41,7 +46,7 @@ basic:
   
   # Load the previously saved TOM files to save computation time.
   # If loadTOM is TRUE but the files cannot be found, or don't contain the correct TOM data, TOM will be recalculated.
-  loadTOM: TRUE
+  loadTOM: FALSE
   
 advanced:
   # largest Soft-thresholding power (beta) to test for 
