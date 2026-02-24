@@ -200,12 +200,6 @@ geneset_ui <- function(id) {
                               column(width=6,sliderInput(ns("geneset_dotplot_height"), "Dot Plot Height:", min = 200, max = 3000, step = 50, value = 800))
              ),
              conditionalPanel(ns = ns, "input.geneset_tabset=='KEGG Pathway View' || input.geneset_tabset=='MetaBase Pathway View' ",
-                              # radioButtons(ns("kegg_more_tests"), label= "Add more comparisons?", choices= c("Yes", "No"),selected="No", inline = TRUE),
-                              # conditionalPanel(ns = ns, "input.kegg_more_tests=='Yes'",
-                              #                  selectInput(ns("geneset_test2"), label="2nd Comparison", choices=NULL),
-                              #                  selectInput(ns("geneset_test3"), label="3rd Comparison", choices=NULL),
-                              #                  selectInput(ns("geneset_test4"), label="4th Comparison", choices=NULL),
-                              #                  selectInput(ns("geneset_test5"), label="5th Comparison", choices=NULL)),
                               conditionalPanel(ns = ns, "input.geneset_tabset=='KEGG Pathway View'",
                                  selectInput(ns("kegg_logFC"), label= "Gene log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
                                  selectInput(ns("kegg_logFC_cpd"), label= "Compound log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
@@ -270,9 +264,15 @@ geneset_ui <- function(id) {
                                 svgPanZoomOutput(ns("wikipathways_plot"),width = "100%", height = "100%")   
                        ),
                        tabPanel(title="Dot Plot",
+                                h4("Select and Order Comparisons for making the Dot Plot"),
+                                checkboxGroupInput(ns("cmp_subset"), "Choose comparisons to plot:", choices = NULL, selected = NULL, inline = TRUE),
+                                radioButtons(ns("cmp_select_mode"), label = "",choices = c("Select All" = "all", "None" = "none"), inline = TRUE),
+                                actionButton(ns("cmp_subset_confirm"), "Select comparisons"),
+                                uiOutput(ns('cmp_subset_order')),
+                                tags$hr(),
                                 actionButton(ns("create_dotplot"), "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
                                 actionButton(ns("dotplot"), "Save to output"),
-                                tags$br(),br(),
+                                tags$br(),tags$br(),
                                 DT::dataTableOutput(ns("GS_top_count"), width = "50%"),
                                 tags$br(),
                                 textOutput(ns("geneset_filtered_comparison")),
@@ -293,6 +293,9 @@ geneset_server <- function(id) {
                         
                         combined_ora_res <- reactiveVal()
                         combined_ora_res_filtered <- reactiveVal()
+                        
+                        GSEA_selected_comp <- reactiveVal()
+                        ORA_selected_comp <- reactiveVal()
                         
                         #Use metabaser only when the gmt file exists
                         if (!file.exists("db/human/metabase_maps_genesymbols.gmt")) {
@@ -416,14 +419,6 @@ geneset_server <- function(id) {
                           DataIn = DataReactive()
                           tests=DataIn$tests
                           updateSelectizeInput(session,'geneset_test',choices=tests, selected=tests[1])
-                          
-                         # active_tests(tests)
-                          #cat("Update tests.", working_project(),  tests, "\n")
-                          # tests_more=c("None", tests)
-                          # updateSelectizeInput(session,'geneset_test2',choices=tests_more, selected="None")
-                          # updateSelectizeInput(session,'geneset_test3',choices=tests_more, selected="None")
-                          # updateSelectizeInput(session,'geneset_test4',choices=tests_more, selected="None")
-                          # updateSelectizeInput(session,'geneset_test5',choices=tests_more, selected="None")
                         })
 
                         
@@ -539,6 +534,7 @@ geneset_server <- function(id) {
                           ProteinGeneName <- DataIn$ProteinGeneName
                           
                           comp_sel <- input$geneset_test   # can be a vector now
+                          GSEA_selected_comp(comp_sel)
                           
                           # iterate over each selected comparison
                           out_list <- lapply(comp_sel, function(comp) {
@@ -633,51 +629,7 @@ geneset_server <- function(id) {
                           gsea_control(gsea_control()+1)
                         })
                         
-                        # gsea_results <- eventReactive(gsea_control(), {
-                        #   withProgress(message = 'Running GSEA, please be patient...', value = 0, {
-                        # 
-                        #     getresults <- DataGenesetReactive_GSEA()   # now a named list by comparison
-                        #     gsets_GSEA <- gsets_Reactive()
-                        #     validate(need(length(gsets_GSEA) > 0, "Please select at least one gene set."))
-                        # 
-                        #     gsMin <- input$gsetMin
-                        #     gsMax <- input$gsetMax
-                        # 
-                        #     # iterate over each comparison
-                        #     res_list <- lapply(names(getresults), function(comp) {
-                        #       logFC_list <- getresults[[comp]]$gene_list
-                        # 
-                        #       output <- fgseaMultilevel(gsets_GSEA, logFC_list, minSize = gsMin, maxSize = gsMax)
-                        # 
-                        #       if (input$gsea_collapase) {
-                        #         collapsed_set <- collapsePathways(
-                        #           # output[order(pval)][padj <= input$gsea_FDR],
-                        #           output[order(pval)],
-                        #           gsets_GSEA,
-                        #           logFC_list
-                        #         )
-                        #         output <- output[pathway %in% collapsed_set$mainPathways]
-                        #       }
-                        # 
-                        #       res <- output %>%
-                        #         dplyr::mutate_if(is.numeric, signif, digits = 3) %>%
-                        #         dplyr::rename(GeneSet = pathway) %>%
-                        #         dplyr::select(-ES, -log2err) %>%
-                        #         dplyr::arrange(padj, dplyr::desc(abs(NES))) %>%
-                        #         # dplyr::filter(padj <= input$gsea_FDR) %>%      # move filter to render table
-                        #         tibble::rownames_to_column("rank") %>%
-                        #         dplyr::relocate(GeneSet)
-                        # 
-                        #       res$comparison <- comp   # tag with comparison name
-                        #       res
-                        #     })
-                        # 
-                        #     # return as a named list or bind into one data frame
-                        #     names(res_list) <- names(getresults)
-                        #     res_list
-                        #   })
-                        # })
-                        
+
                         # Create GSEA complete raw result list, one item per comparison
                         gsea_raw <- eventReactive(gsea_control(), {
                           getresults <- DataGenesetReactive_GSEA()
@@ -820,6 +772,7 @@ geneset_server <- function(id) {
                             results_long <- DataIn$results_long
                             
                             comp_sel <- input$geneset_test   # can be a vector now
+                            ORA_selected_comp(comp_sel)
                             
                             absFCcut <- log2(as.numeric(input$geneset_FCcut))
                             pvalcut  <- as.numeric(input$geneset_pvalcut)
@@ -1692,34 +1645,68 @@ geneset_server <- function(id) {
                         
 #############################  Dot plot  ######                        
                         gset_plot <- reactiveVal(NULL)
-                        
                         current_plot <- reactiveVal(NULL)
-                        
                         gset_top_count <- reactiveVal(NULL)
-                        
                         gset_dotplot_warning_text <- reactiveVal(NULL)
 
                         observe({
                           gs_text <- paste(gset_plot(), collapse = "\n")
                           updateTextAreaInput(session, "geneset_dotplot_geneset_list", value = gs_text)
                         })
+                        
+                        geneset_comps <- reactive({
+                          req(input$geneset_test)
+                          req(input$analysis_type)
+                          analysis_type <- input$analysis_type
+                          if (analysis_type == "GSEA") {
+                            req(filtered_gsea())
+                            comps <- names(gsea_results())
+                          } else if (analysis_type == "ORA") {
+                            req(filtered_ora())
+                            comps <- names(ora_results())
+                          } else {
+                            comps <- NULL
+                          }
+                          comps
+                        })
+                        
+                        observeEvent(geneset_comps(), {
+                          comps <- geneset_comps()
+                          req(comps)
+                          updateCheckboxGroupInput(session, "cmp_subset", choices = comps, selected = comps, inline = TRUE)
+                        })
+                        
+
+                        observeEvent(input$cmp_select_mode, {
+                          mode <- input$cmp_select_mode
+                          if (mode == "all") {
+                            updateCheckboxGroupInput(session, "cmp_subset",selected = geneset_comps())
+                          }
+                          if (mode == "none") {
+                            updateCheckboxGroupInput(session, "cmp_subset",selected = character(0))
+                          }
+                        })
+                        
+                        observeEvent(input$cmp_subset_confirm, {
+                          selected <- input$cmp_subset
+                          if (length(selected) == 0) {
+                            showNotification("Please select at least one comparison.", type = "error")
+                            return()
+                          }
+                          output$cmp_subset_order <- renderUI({
+                            orderInput(inputId = ns("cmp_order"), label = "Drag and Drop to Reorder Comparisons.", items = selected,width = "90%",item_class = "primary",legacy = TRUE)
+                          })
+                        })
 
                         observeEvent(input$create_dotplot, {
+                          req(input$cmp_order_order)
                           # Determine which analysis type is selected
                           analysis_type <- input$analysis_type
-                          selected_test <- input$geneset_test
-                          
-                          # Extract the correct result list based on analysis type
-                          if (analysis_type == "GSEA") {
-                            result_comp_names <- names(gsea_results())
-                          } else if (analysis_type == "ORA") {
-                            result_comp_names <- names(ora_results())
-                          } else {
-                            result_comp_names <- NULL
-                          }
+                          selected_analysis_test <- geneset_comps()
+                          selected_dotplot_test <- input$cmp_order_order
                           
                           # Validate: selected_test must match result_comp_names (order does not matter)
-                          if (is.null(result_comp_names) || !setequal(selected_test, result_comp_names)) {
+                          if (length(setdiff(selected_dotplot_test, selected_analysis_test)) > 0) {
                             showNotification(
                               "Please run the analysis for the latest comparison list first before making the dot plot.",
                               type = "error",
@@ -1732,10 +1719,11 @@ geneset_server <- function(id) {
                             if (input$analysis_type == "ORA") {
                               withProgress(message = 'Making ORA dot plot...', value = 0, {
                                 # req(combined_ora_res(), combined_ora_res_filtered())
-                                GS_all <- combined_ora_res()
+                                GS_all <- combined_ora_res() %>%
+                                  dplyr::filter(comparison %in% selected_dotplot_test)
                                 GS_all$Negative.log10.padj <- -log10(GS_all$p.adj)
-                                n_comp = length(unique(GS_all$comparison))
-                                GS_top <- combined_ora_res_filtered()
+                                GS_top <- combined_ora_res_filtered() %>%
+                                  dplyr::filter(comparison %in% selected_dotplot_test)
                                 
                                 if (input$selection_type == "individual comparison separately") {
                                   current_plot(NULL)
@@ -1810,7 +1798,10 @@ geneset_server <- function(id) {
                                   gset_plot(gset_list)
                                 }
                                 
-                                GS_plot <- GS_all[GS_all$GeneSet %in% gset_plot(), ]
+                                GS_plot <- GS_all %>%
+                                  filter(GeneSet %in% gset_plot()) %>%
+                                  mutate(comparison = factor(comparison, levels = selected_dotplot_test))
+                                
                                 GS_plot$GeneSet_wrapped <- gsub("REACTOME_", "R_", GS_plot$GeneSet)
                                 GS_plot$GeneSet_wrapped <- gsub("_", " ", GS_plot$GeneSet)
                                 if (input$geneset_dotplot_trim) {
@@ -1837,10 +1828,11 @@ geneset_server <- function(id) {
                               })
                             } else if (input$analysis_type == "GSEA") {
                               withProgress(message = 'Making GSEA dot plot...', value = 0, {
-                                GS_all <- combined_gsea_res()
+                                GS_all <- combined_gsea_res() %>%
+                                  dplyr::filter(comparison %in% selected_dotplot_test)
                                 GS_all$Negative.log10.padj <- -log10(GS_all$padj)
-                                n_comp = length(unique(GS_all$comparison))
-                                GS_top <- combined_gsea_res_filtered()
+                                GS_top <- combined_gsea_res_filtered() %>%
+                                  dplyr::filter(comparison %in% selected_dotplot_test)
                                 
                                 if (input$selection_type == "individual comparison separately") {
                                   current_plot(NULL)
@@ -1916,6 +1908,10 @@ geneset_server <- function(id) {
                                 }
                                 
                                 GS_plot <- GS_all[GS_all$GeneSet %in% gset_plot(), ]
+                                GS_plot <- GS_all %>%
+                                  filter(GeneSet %in% gset_plot()) %>%
+                                  mutate(comparison = factor(comparison, levels = selected_dotplot_test))
+                                
                                 GS_plot$GeneSet_wrapped <- gsub("REACTOME_", "R_", GS_plot$GeneSet)
                                 GS_plot$GeneSet_wrapped <- gsub("_", " ", GS_plot$GeneSet)
                                 if (input$geneset_dotplot_trim) {
