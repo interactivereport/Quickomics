@@ -96,6 +96,7 @@ geneset_ui <- function(id) {
            wellPanel(
              uiOutput(ns('loadedprojects')),
              selectizeInput(ns("geneset_test"),	label="Select Comparisons for Gene Set Analysis", choices=NULL, multiple=TRUE, selected = NULL),
+             checkboxInput(ns("all_test"), "Select All Comparisons",  FALSE, width="90%"),
              conditionalPanel(ns = ns, "input.geneset_tabset=='Over-Representation Analysis (ORA)'",
                               radioButtons(ns("ORA_input_type"),label="Genes Used for ORA", choices=c("Subset from Comparison","Gene List"),inline = TRUE, selected="Subset from Comparison"),
                               conditionalPanel(ns = ns, "input.ORA_input_type=='Gene List'",
@@ -169,6 +170,11 @@ geneset_ui <- function(id) {
                                            choices=c("individual comparison separately","all comparisons together", "customized gene set list"),
                                            inline = FALSE, 
                                            selected="all comparisons together"),
+                              radioButtons(ns("plot_filtered"),
+                                           label="Plot Complete or Significant Results", 
+                                           choices=c("Show all results","Show significant results only"),
+                                           inline = FALSE, 
+                                           selected="Show all results"),
                               conditionalPanel(ns = ns, "input.selection_type=='individual comparison separately'",
                                                sliderInput(ns("geneset_dotplot_ind_top_n"), 
                                                            label = "Limit the Number of Gene Sets per Comparison to:", 
@@ -421,6 +427,13 @@ geneset_server <- function(id) {
                           updateSelectizeInput(session,'geneset_test',choices=tests, selected=tests[1])
                         })
 
+                        observeEvent(input$all_test==TRUE, {
+                          req(working_project())
+                          req(DataReactive())
+                          DataIn = DataReactive()
+                          tests=DataIn$tests
+                          updateSelectizeInput(session,'geneset_test',choices=tests, selected=tests)
+                        })
                         
                         observe({
                           if (!is.null(gmt_file_info)) {  #update gmt file choices
@@ -1716,10 +1729,17 @@ geneset_server <- function(id) {
                             gset_dotplot_warning_text(NULL)
                             current_plot(NULL)
                           } else {
+                            show_filterd_results <- ifelse(input$plot_filtered == "Show significant results only", TRUE, FALSE)
+                            
                             if (input$analysis_type == "ORA") {
                               withProgress(message = 'Making ORA dot plot...', value = 0, {
                                 # req(combined_ora_res(), combined_ora_res_filtered())
-                                GS_all <- combined_ora_res() %>%
+                                GS_all <- if (show_filterd_results) {
+                                  combined_ora_res_filtered()
+                                } else {
+                                  combined_ora_res()
+                                }
+                                GS_all <- GS_all %>%
                                   dplyr::filter(comparison %in% selected_dotplot_test)
                                 GS_all$Negative.log10.padj <- -log10(GS_all$p.adj)
                                 GS_top <- combined_ora_res_filtered() %>%
@@ -1734,11 +1754,18 @@ geneset_server <- function(id) {
                                     dplyr::slice_head(n = ind_n) %>%                  
                                     dplyr::ungroup() 
                                   
-                                  GS_top_count <- GS_all %>%
-                                    dplyr::distinct(comparison) %>% 
-                                    dplyr::left_join(top_ind_gs %>% dplyr::count(comparison, name = "GeneSet_count"), by = "comparison") %>%
-                                    dplyr::mutate(GeneSet_count = replace_na(GeneSet_count, 0)) %>% 
-                                    dplyr::arrange(desc(GeneSet_count))
+                                  GS_top_count <- 
+                                    tibble::tibble(comparison = selected_dotplot_test) %>% 
+                                    dplyr::left_join(
+                                      top_ind_gs %>% dplyr::count(comparison, name = "GeneSet_count"),
+                                      by = "comparison"
+                                    ) %>%
+                                    dplyr::mutate(
+                                      GeneSet_count = tidyr::replace_na(GeneSet_count, 0),
+                                      zero_flag = GeneSet_count == 0
+                                    ) %>%
+                                    dplyr::arrange(zero_flag, dplyr::desc(GeneSet_count)) %>% 
+                                    dplyr::select(-zero_flag)
                                   
                                   top_ind_gs <- top_ind_gs %>%
                                     dplyr::pull(GeneSet) %>%
@@ -1761,11 +1788,18 @@ geneset_server <- function(id) {
                                     distinct(GeneSet, .keep_all = TRUE) %>% 
                                     slice_head(n = top_n) 
                                   
-                                  GS_top_count <- GS_all %>%
-                                    dplyr::distinct(comparison) %>% 
-                                    dplyr::left_join(top_n_gs %>% dplyr::count(comparison, name = "GeneSet_count"), by = "comparison") %>%
-                                    dplyr::mutate(GeneSet_count = replace_na(GeneSet_count, 0)) %>% 
-                                    dplyr::arrange(desc(GeneSet_count))
+                                  GS_top_count <- 
+                                    tibble::tibble(comparison = selected_dotplot_test) %>% 
+                                    dplyr::left_join(
+                                      top_n_gs %>% dplyr::count(comparison, name = "GeneSet_count"),
+                                      by = "comparison"
+                                    ) %>%
+                                    dplyr::mutate(
+                                      GeneSet_count = tidyr::replace_na(GeneSet_count, 0),
+                                      zero_flag = GeneSet_count == 0
+                                    ) %>%
+                                    dplyr::arrange(zero_flag, dplyr::desc(GeneSet_count)) %>% 
+                                    dplyr::select(-zero_flag)
                                   
                                   top_n_gs <- top_n_gs %>%  
                                     pull(GeneSet)
@@ -1828,7 +1862,13 @@ geneset_server <- function(id) {
                               })
                             } else if (input$analysis_type == "GSEA") {
                               withProgress(message = 'Making GSEA dot plot...', value = 0, {
-                                GS_all <- combined_gsea_res() %>%
+                                GS_all <- if (show_filterd_results) {
+                                  combined_gsea_res_filtered()
+                                } else {
+                                  combined_gsea_res()
+                                }
+                                
+                                GS_all <- GS_all %>%
                                   dplyr::filter(comparison %in% selected_dotplot_test)
                                 GS_all$Negative.log10.padj <- -log10(GS_all$padj)
                                 GS_top <- combined_gsea_res_filtered() %>%
@@ -1843,11 +1883,18 @@ geneset_server <- function(id) {
                                     dplyr::slice_head(n = ind_n) %>%                  
                                     dplyr::ungroup() 
                                   
-                                  GS_top_count <- GS_all %>%
-                                    dplyr::distinct(comparison) %>% 
-                                    dplyr::left_join(top_ind_gs %>% dplyr::count(comparison, name = "GeneSet_count"), by = "comparison") %>%
-                                    dplyr::mutate(GeneSet_count = replace_na(GeneSet_count, 0)) %>% 
-                                    dplyr::arrange(desc(GeneSet_count))
+                                  GS_top_count <- 
+                                    tibble::tibble(comparison = selected_dotplot_test) %>% 
+                                    dplyr::left_join(
+                                      top_ind_gs %>% dplyr::count(comparison, name = "GeneSet_count"),
+                                      by = "comparison"
+                                    ) %>%
+                                    dplyr::mutate(
+                                      GeneSet_count = tidyr::replace_na(GeneSet_count, 0),
+                                      zero_flag = GeneSet_count == 0
+                                    ) %>%
+                                    dplyr::arrange(zero_flag, dplyr::desc(GeneSet_count)) %>% 
+                                    dplyr::select(-zero_flag)
                                   
                                   top_ind_gs <- top_ind_gs %>%
                                     dplyr::pull(GeneSet) %>%
@@ -1870,11 +1917,18 @@ geneset_server <- function(id) {
                                     distinct(GeneSet, .keep_all = TRUE) %>% 
                                     slice_head(n = top_n)
                                   
-                                  GS_top_count <- GS_all %>%
-                                    dplyr::distinct(comparison) %>% 
-                                    dplyr::left_join(top_n_gs %>% dplyr::count(comparison, name = "GeneSet_count"), by = "comparison") %>%
-                                    dplyr::mutate(GeneSet_count = replace_na(GeneSet_count, 0)) %>% 
-                                    dplyr::arrange(desc(GeneSet_count))
+                                  GS_top_count <- 
+                                    tibble::tibble(comparison = selected_dotplot_test) %>% 
+                                    dplyr::left_join(
+                                      top_n_gs %>% dplyr::count(comparison, name = "GeneSet_count"),
+                                      by = "comparison"
+                                    ) %>%
+                                    dplyr::mutate(
+                                      GeneSet_count = tidyr::replace_na(GeneSet_count, 0),
+                                      zero_flag = GeneSet_count == 0
+                                    ) %>%
+                                    dplyr::arrange(zero_flag, dplyr::desc(GeneSet_count)) %>% 
+                                    dplyr::select(-zero_flag)
                                   
                                   top_n_gs <- top_n_gs %>%  
                                     pull(GeneSet)
