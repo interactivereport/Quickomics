@@ -95,7 +95,7 @@ geneset_ui <- function(id) {
     column(3,
            wellPanel(
              uiOutput(ns('loadedprojects')),
-             selectizeInput(ns("geneset_test"),	label="Select Comparisons for Gene Set Analysis", choices=NULL, multiple=TRUE, selected = NULL),
+             selectizeInput(ns("geneset_test"),	label="Select 1 or More Comparisons for Analysis", choices=NULL, multiple=TRUE, selected = NULL),
              checkboxInput(ns("all_test"), "Select All Comparisons",  FALSE, width="90%"),
              conditionalPanel(ns = ns, "input.geneset_tabset=='Over-Representation Analysis (ORA)'",
                               radioButtons(ns("ORA_input_type"),label="Genes Used for ORA", choices=c("Subset from Comparison","Gene List"),inline = TRUE, selected="Subset from Comparison"),
@@ -270,7 +270,9 @@ geneset_ui <- function(id) {
                                 svgPanZoomOutput(ns("wikipathways_plot"),width = "100%", height = "100%")   
                        ),
                        tabPanel(title="Dot Plot",
-                                h4("Select and Order Comparisons for making the Dot Plot"),
+                                tags$p("Step for making Dot Plot: 1) Run GSEA or ORA and choose the correct Analysis Type from the left menu; 2) Select comparions to plot and click the select comparison button, optionally reorder them;  3) Adjust other settings from left menu as needed, and click the Plot/Refresh button."),
+                                tags$hr(),
+                                h4("Select and Order Comparisons for the Dot Plot"),
                                 checkboxGroupInput(ns("cmp_subset"), "Choose comparisons to plot:", choices = NULL, selected = NULL, inline = TRUE),
                                 radioButtons(ns("cmp_select_mode"), label = "",choices = c("Select All" = "all", "None" = "none"), inline = TRUE),
                                 actionButton(ns("cmp_subset_confirm"), "Select comparisons"),
@@ -427,12 +429,16 @@ geneset_server <- function(id) {
                           updateSelectizeInput(session,'geneset_test',choices=tests, selected=tests[1])
                         })
 
-                        observeEvent(input$all_test==TRUE, {
+                        observeEvent(input$all_test, {
                           req(working_project())
                           req(DataReactive())
                           DataIn = DataReactive()
                           tests=DataIn$tests
-                          updateSelectizeInput(session,'geneset_test',choices=tests, selected=tests)
+                          if (input$all_test) { #TRUE, select all test
+                            updateSelectizeInput(session,'geneset_test',choices=tests, selected=tests)
+                          } else { #FALSE, only show the first test
+                            updateSelectizeInput(session,'geneset_test',choices=tests, selected=tests[1])
+                          }
                         })
                         
                         observe({
@@ -644,7 +650,7 @@ geneset_server <- function(id) {
                         
 
                         # Create GSEA complete raw result list, one item per comparison
-                        gsea_raw <- eventReactive(gsea_control(), {
+                        gsea_raw <- eventReactive(input$compute_gsea, {
                           getresults <- DataGenesetReactive_GSEA()
                           gsets_GSEA <- gsets_Reactive()
                           validate(need(length(gsets_GSEA) > 0, "Please select at least one gene set."))
@@ -675,6 +681,8 @@ geneset_server <- function(id) {
                                 dplyr::mutate(comparison = comp)
                             })
                             names(res_list) <- names(res_list_raw)
+                            res_filter <- res_list %>% purrr::discard(~ nrow(.x) == 0)
+                            if (length(res_filter)>0) {  #run the following steps only when there are GSEA results
                             res <- res_list %>%
                               purrr::discard(~ nrow(.x) == 0) %>%
                               dplyr::bind_rows(.id = "comparison") %>%
@@ -705,7 +713,8 @@ geneset_server <- function(id) {
                                 dplyr::bind_rows(.id = "comparison") %>%
                                 dplyr::relocate(comparison, .after = 1)
                               combined_gsea_res_filtered(res)
-                            }	
+                            }
+                            }
                             res_list
                           })
                         })
@@ -714,10 +723,14 @@ geneset_server <- function(id) {
                         filtered_gsea <- reactive({
                           res_list <- gsea_results()
                           res <- res_list %>%
-                            purrr::discard(~ nrow(.x) == 0) %>%
+                            purrr::discard(~ nrow(.x) == 0)
+                          if (length(res)>0) { #only process if has valid GSEA results
+                          res <- res%>%
                             dplyr::bind_rows(.id = "comparison") %>%
                             dplyr::relocate(comparison, .after = 1) %>% 
                             dplyr::filter(padj <= input$gsea_FDR)
+                          } 
+                          res
                         })
                         
                         output$MSigDB_GSEA <-  DT::renderDT(server=FALSE,{ withProgress(message = 'Processing...', value = 0, {
@@ -916,7 +929,7 @@ geneset_server <- function(id) {
                         })
                         
                         # Create ORA complete raw result list, one item per comparison
-                        ora_raw <- eventReactive(ora_control(), {
+                        ora_raw <- eventReactive(input$compute_ora, {
                           getresults <- DataGenesetReactive_ORA()
                           gsets_ORA <- gsets_Reactive()
                           validate(need(length(gsets_ORA) > 0, "Please select at least one gene set."))
