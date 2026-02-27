@@ -146,7 +146,7 @@ Compute_Corr_Anova<-function(exp, meta, PC_cutoff=5) {
   meta=meta[sel,,drop=F ]
   stopifnot(identical(colnames(exp), rownames(meta)))
   exp[is.na(exp)]=0
-  pca <- 	prcomp(t(exp),rank. = 10, scale = FALSE)
+  pca <- 	prcomp(t(exp),rank. = 10, scale = TRUE)
   percentVar <- 	round((pca$sdev)^2/sum(pca$sdev^2), 3) * 100
   scores <- as.data.frame(pca$x)
   Npc=max(2,min(sum(percentVar>PC_cutoff), 10))

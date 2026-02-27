@@ -469,10 +469,10 @@ DataPCAReactive <- reactive({
 	#clean up data
 	tmp_data_wide=na.omit(tmp_data_wide)
 	tmp_data_wide <- tmp_data_wide[apply(tmp_data_wide, 1, sd) != 0, ] #remove rows with all 0s, or the same value across all samples   
-
 	#tmp_data_wide[is.na(tmp_data_wide)] <- 0 
 	pca <- 	prcomp(t(tmp_data_wide),rank. = 10, scale = TRUE)
 	percentVar <- 	round((pca$sdev)^2/sum(pca$sdev^2), 3) * 100
+	#print(percentVar) #debug
 	scores <- as.data.frame(pca$x)
 	rownames(scores) <- tmp_sampleid
 	scores$group <- factor(tmp_group, levels = group_order())
@@ -818,8 +818,12 @@ PC_covariates_out <-  eventReactive(input$compute_PC,{
   meta=meta[, (colnames(meta) %in% input$covar_variates), drop=FALSE]
   rownames(meta)=MetaData$sampleid
   #browser() #debug
+  #clean up data
+	tmp_data_wide=na.omit(tmp_data_wide)
+	tmp_data_wide <- tmp_data_wide[apply(tmp_data_wide, 1, sd) != 0, ] #remove rows with all 0s, or the same value across all samples 
   res<-Covariate_PC_Analysis(tmp_data_wide, meta, out_prefix=NULL, PC_cutoff=input$covar_PC_cutoff, 
             FDR_cutoff=input$covar_FDR_cutoff, N_col=input$covar_ncol)
+  #print(res$PC_info) #debug, should match main PCA results
   return(res)
 })
 
