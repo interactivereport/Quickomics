@@ -246,7 +246,7 @@ boxplot_out <- eventReactive(input$plot_exp,  {
     if (Val_colorby!="None" ) {
       #browser()
       N_color<-data_long_tmp%>%dplyr::select(!!colorby)%>%unlist%>%unname%>%as.character%>%unique%>%length
-      use_color=colorRampPalette(brewer.pal(8, input$colpalette))(N_color)
+      use_color=get_pal_ramp(input$colpalette, N_color)
       if (input$plotformat == "line") {
         p <- p +scale_color_manual(values=use_color)+ scale_fill_manual(values =use_color)
       } else {p <- p + scale_fill_manual(values =use_color)}
@@ -423,7 +423,7 @@ browsing_out <- eventReactive(plot_exp_control(),{
 	if (Val_colorby!="None" ) {
 	    #browser()
 	    N_color<-data_long_tmp%>%dplyr::select(!!colorby)%>%unlist%>%unname%>%as.character%>%unique%>%length
-	    use_color=colorRampPalette(brewer.pal(8, input$colpalette))(N_color)
+	    use_color=get_pal_ramp(input$colpalette, N_color)
 			if (input$plotformat == "line") {
 			  p <- p +scale_color_manual(values=use_color)+ scale_fill_manual(values =use_color)
 			} else {p <- p + scale_fill_manual(values =use_color)}
