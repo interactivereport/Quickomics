@@ -11,7 +11,7 @@
 
 observe({
   #DataIn = DataReactive()
-  tests = all_tests()
+  tests = test_order()
   ProteinGeneName_Header = ProteinGeneNameHeader()
   updateRadioButtons(session,'volcano_genelabel', inline = TRUE, choices=ProteinGeneName_Header[-1], selected="Gene.Name")
   updateSelectizeInput(session,'volcano_test',choices=tests, selected=tests[1])
@@ -22,8 +22,8 @@ observe({
 
 
 observe({
-  DataIn = DataReactive()
-  results_long = DataIn$results_long
+  DataIn = DataQCReactive()
+  results_long = DataIn$tmp_results_long
   if (!is.null(results_long)) {
     test_sel = input$volcano_test
     FCcut = log2(as.numeric(input$volcano_FCcut))
@@ -46,8 +46,8 @@ observe({
 
 
 DatavolcanoReactive <- reactive({
-  DataIn = DataReactive()
-  results_long = DataIn$results_long
+  DataIn = DataQCReactive()
+  results_long = DataIn$tmp_results_long
   res=NULL
   if (!is.null(results_long)){
     test_sel = input$volcano_test
@@ -84,14 +84,12 @@ DatavolcanoReactive <- reactive({
       res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
     }
   }
-
-  
   return(res)
 })
 
 DatavolcanoReactive1 <- reactive({
-  DataIn = DataReactive()
-  results_long = DataIn$results_long
+  DataIn = DataQCReactive()
+  results_long = DataIn$tmp_results_long
   res=NULL
   if (!is.null(results_long)){
     test_sel = input$volcano_test1
@@ -128,13 +126,12 @@ DatavolcanoReactive1 <- reactive({
       res<-res%>%mutate(logFC=ifelse(logFC>=0, pmin(input$Max_logFC, logFC), pmax(0-input$Max_logFC, logFC) ) )
     }
   }
-  
   return(res)
 })
 
 DatavolcanoReactive2 <- reactive({
-  DataIn = DataReactive()
-  results_long = DataIn$results_long
+  DataIn = DataQCReactive()
+  results_long = DataIn$tmp_results_long
   res=NULL
   if (!is.null(results_long)) {
     test_sel = input$volcano_test2
@@ -211,7 +208,7 @@ output$volcanoplot <- renderPlotly({
 
 volcanoplotstatic_out <- reactive({
   res = DatavolcanoReactive()
-  DataIn = DataReactive()
+  DataIn = DataQCReactive()
   ProteinGeneName = DataIn$ProteinGeneName
   test_sel = input$volcano_test
   FCcut = log2(as.numeric(input$volcano_FCcut))
@@ -300,7 +297,7 @@ output$volcanoplotstatic <- renderPlot({
 DEG_Compare <- reactive({
   res = DatavolcanoReactive1()
   res2=DatavolcanoReactive2()
-  DataIn = DataReactive()
+  DataIn = DataQCReactive()
   ProteinGeneName = DataIn$ProteinGeneName  
   test_sel = input$volcano_test1
   test_sel2 = input$volcano_test2	
@@ -413,8 +410,8 @@ observeEvent(input$DEG_comp, {
 })
 
 DEG_data <-reactive ({
-  DataIn = DataReactive()
-  results_long = DataIn$results_long
+  DataIn = DataQCReactive()
+  results_long = DataIn$tmp_results_long
   test_sel = input$volcano_test
   FCcut = log2(as.numeric(input$volcano_FCcut))
   pvalcut = as.numeric(input$volcano_pvalcut)
@@ -428,19 +425,19 @@ DEG_data <-reactive ({
 })
 output$volcanoData <- DT::renderDataTable({
   DT::datatable(DEG_data(),extensions = 'Buttons',  options = list(
-    dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 20), rownames= FALSE)
-})
+    dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'), pageLength = 20), rownames= FALSE) %>% 
+    formatSignif(columns=c('Adj.P.Value', 'P.Value', 'logFC'), digits=3)
+}) 
 
 observeEvent(input$DEG_data, {
   saved_table$DEG_data <- DEG_data()
 })
 
 deg_counts_data <-reactive ({
-  DataIn = DataReactive()
-  results_long = DataIn$results_long
+  DataIn = DataQCReactive()
+  results_long = DataIn$tmp_results_long
   FCcut = log2(as.numeric(input$volcano_FCcut))
   pvalcut = as.numeric(input$volcano_pvalcut)
-
   if (input$volcano_psel == "Padj") {
     tmpdat = results_long %>% dplyr::filter( Adj.P.Value < pvalcut & abs(logFC) > FCcut) 
   } else {
@@ -451,17 +448,9 @@ deg_counts_data <-reactive ({
   more_comp=setdiff(unique(results_long$test), deg_stat$Comparison)
   if (length(more_comp)>0) {deg_stat<-rbind(deg_stat, data.frame(Comparison=more_comp, DEG=0, Up=0, Down=0))}
   deg_stat<-deg_stat%>%arrange(Comparison)%>%filter(!is.na(Comparison))
-  #reorder according to comp_info
-  comp_info=DataIn$comp_info
-  if (!is.null(comp_info)) {
-    name1=rownames(comp_info)
-    if ( all(sort(name1)==sort(deg_stat$Comparison)) ) {
-      new_order=match(name1, deg_stat$Comparison)
-      deg_stat=deg_stat[new_order, ]
-    } else {
-      cat("comp_info row names doesn't match comparison data results!\n")
-    }
-  }
+  #reorder according to test_order()
+  new_order=match(test_order(), deg_stat$Comparison)
+  deg_stat=deg_stat[new_order, ]
   return(deg_stat)
 })
 output$deg_counts <- DT::renderDT(server=FALSE,{

@@ -117,7 +117,7 @@ geneset_ui <- function(id) {
              radioButtons(ns("MSigDB_species"), label= "Gene Set Species",choices=c("human","mouse", "rat"), inline = TRUE, selected = "human"),
              span(textOutput(ns("SpeciesGSEAInfo")), style = "color:red; font-size:13px; font-family:arial; font-style:italic"),
              selectInput(ns("map_genes"), "Gene Symbol Mapping", choices = c("Homologous Genes", "Change to UPPER case (human)", 
-                                                                              "Change to Title Case (mouse/rat)", "No Change (as it is)"), selected="Homologous Genes"),
+                                                                             "Change to Title Case (mouse/rat)", "No Change (as it is)"), selected="Homologous Genes"),
              conditionalPanel(ns = ns, "input.geneset_tabset=='Gene Set Enrichment Analysis (GSEA)' || input.geneset_tabset=='Over-Representation Analysis (ORA)' || input.geneset_tabset=='Gene Expression'",
                               conditionalPanel(ns = ns, "input.geneset_tabset=='Gene Set Enrichment Analysis (GSEA)'",
                                                radioButtons(ns("gene_rank_method"), label= "Rank Genes By",choices=c("logFC","-log(P-Value)"), inline = TRUE, selected = "logFC"),
@@ -125,11 +125,11 @@ geneset_ui <- function(id) {
                                                column(width=6,numericInput(ns("gsetMax"), label= "GeneSet Max Size",  value = 1000, min=100, step=1)),
                                                sliderInput(ns("gsea_FDR"), "GSEA Adjusted P-Value Cutoff", min = 0, max = 1, step = 0.01, value = 0.25),
                                                checkboxInput(ns("gsea_collapase"), "Collapse Gene Sets",  FALSE, width="90%"),
-                                               ),
+                              ),
                               conditionalPanel(ns = ns, "input.geneset_tabset=='Over-Representation Analysis (ORA)'",
                                                sliderInput(ns("ora_pvalue"), "ORA p.adj Cutoff:", min = 0, max = 1, step = 0.01, value = 0.05),
                                                checkboxInput(ns("ora_collapase"), "Collapse Gene Sets",  FALSE, width="90%"),
-                                               ),
+                              ),
                               conditionalPanel(ns = ns, "input.MSigDB_species=='human'",
                                                checkboxGroupInput(ns("MSigDB_species_human_GSEA"), label= "Human Collections",
                                                                   choices= NULL, selected = NULL) ),
@@ -143,13 +143,13 @@ geneset_ui <- function(id) {
                               conditionalPanel(ns = ns, "input.use_customset==1",
                                                radioButtons(ns("custom_set_option"), label= "Custom GeneSet From",choices=c("Text Box","File"), inline = TRUE, selected = "Text Box"),
                                                conditionalPanel(ns = ns, "input.custom_set_option=='Text Box'",
-                                                 textAreaInput(ns("CustomGeneset"), "Enter gene symbols", "", cols = 5, rows=6) ),
+                                                                textAreaInput(ns("CustomGeneset"), "Enter gene symbols", "", cols = 5, rows=6) ),
                                                conditionalPanel(ns = ns, "input.custom_set_option=='File'",
                                                                 p("Prepare your own geneset in GMT format. One geneset per row;  each row has name, description, and the gene symbols in the gene set separated by tabs. Description is ignored, you can just put NA for it.", 
                                                                   style = "color:red; font-size:11px; font-family:arial; font-style:italic"),
                                                                 tags$a(href="CustomGeneSets.gmt", "Download example custom GMT file with three human gene sets"),
                                                                 fileInput(ns("custom_gmt_file"), "Choose geneset GMT file") )
-
+                                               
                               )
              ),
              conditionalPanel(ns = ns, "input.geneset_tabset=='Gene Set Heatmap'",
@@ -207,20 +207,20 @@ geneset_ui <- function(id) {
              ),
              conditionalPanel(ns = ns, "input.geneset_tabset=='KEGG Pathway View' || input.geneset_tabset=='MetaBase Pathway View' ",
                               conditionalPanel(ns = ns, "input.geneset_tabset=='KEGG Pathway View'",
-                                 selectInput(ns("kegg_logFC"), label= "Gene log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
-                                 selectInput(ns("kegg_logFC_cpd"), label= "Compound log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
-                                radioButtons(ns("kegg_mapsample"), label= "Map Symbols to KEGG Nodes?", choices= c("Yes"=TRUE, "No"=FALSE),inline = TRUE)),
+                                               selectInput(ns("kegg_logFC"), label= "Gene log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
+                                               selectInput(ns("kegg_logFC_cpd"), label= "Compound log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
+                                               radioButtons(ns("kegg_mapsample"), label= "Map Symbols to KEGG Nodes?", choices= c("Yes"=TRUE, "No"=FALSE),inline = TRUE)),
                               conditionalPanel(ns = ns, "input.geneset_tabset=='MetaBase Pathway View'",
                                                selectInput(ns("obj_style"), label="Network Object Style", choices=c("icon", "polygon", "none"), selected="icon")),
-                              ),
-            conditionalPanel(ns = ns, "input.geneset_tabset=='Wikipathways View'",
-                h5("Choose color to map logFC values:"),
-                column(width=3,colourInput(ns("wiki_low"), "Low", "green")),
-                column(width=3,colourInput(ns("wiki_mid"), "Mid", "gray90")),
-                column(width=3,colourInput(ns("wiki_high"), "High", "red")),
-                selectInput(ns("wiki_logFC"), label= "Gene log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
-                checkboxInput(ns("wiki_ctrl"), "Show Control Icon ",  TRUE, width="90%")
-                )               
+             ),
+             conditionalPanel(ns = ns, "input.geneset_tabset=='Wikipathways View'",
+                              h5("Choose color to map logFC values:"),
+                              column(width=3,colourInput(ns("wiki_low"), "Low", "green")),
+                              column(width=3,colourInput(ns("wiki_mid"), "Mid", "gray90")),
+                              column(width=3,colourInput(ns("wiki_high"), "High", "red")),
+                              selectInput(ns("wiki_logFC"), label= "Gene log2FC Range:", choices= c(0.5, 1, 2, 3), selected=1),
+                              checkboxInput(ns("wiki_ctrl"), "Show Control Icon ",  TRUE, width="90%")
+             )               
            )
     ),
     column(9,
@@ -249,7 +249,7 @@ geneset_ui <- function(id) {
                                 actionButton(ns("genesetheatmap"), "Save to output"),
                                 uiOutput(ns("plot.geneset.heatmap"))),
                        tabPanel(title="KEGG Pathway View",
-                              p("Select a KEGG Pathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
+                                p("Select a KEGG Pathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
                                 selectizeInput(ns("sel_kegg_set"), label="KEGG Pathway for Visualization", choices = NULL, multiple = FALSE, width="600px", 
                                                options = list(placeholder =	'Type to search')),
                                 actionButton(ns("keggSave"), "Save to output"),plotOutput(ns('keggView'))),
@@ -260,23 +260,24 @@ geneset_ui <- function(id) {
                                 #actionButton(ns("metabaseSave"), "Save to output"),
                                 uiOutput(ns("plot.metabase"))),
                        tabPanel(title="Wikipathways View",
-                                   p("Select a wikipathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
+                                p("Select a wikipathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
                                 selectizeInput(ns("sel_wikipathways_set"), label="Wikipathways for Visualization", choices = NULL, multiple = FALSE, width="600px", 
                                                options = list(placeholder =	'Type to search')),
                                 #actionButton(ns("metabaseSave"), "Save to output"),
                                 fluidRow( column( width = 4,  # adjust width as needed
-                                     plotOutput(ns("wiki_legend"), height = 50)
-                                  )),
+                                                  plotOutput(ns("wiki_legend"), height = 50)
+                                )),
                                 svgPanZoomOutput(ns("wikipathways_plot"),width = "100%", height = "100%")   
                        ),
                        tabPanel(title="Dot Plot",
                                 tags$p("Step for making Dot Plot: 1) Run GSEA or ORA and choose the correct Analysis Type from the left menu; 2) Select comparions to plot and click the select comparison button, optionally reorder them;  3) Adjust other settings from left menu as needed, and click the Plot/Refresh button."),
                                 tags$hr(),
                                 h4("Select and Order Comparisons for the Dot Plot"),
-                                checkboxGroupInput(ns("cmp_subset"), "Choose comparisons to plot:", choices = NULL, selected = NULL, inline = TRUE),
-                                radioButtons(ns("cmp_select_mode"), label = "",choices = c("Select All" = "all", "None" = "none"), inline = TRUE),
-                                actionButton(ns("cmp_subset_confirm"), "Select comparisons"),
-                                uiOutput(ns('cmp_subset_order')),
+                                # checkboxGroupInput(ns("cmp_subset"), "Choose comparisons to plot:", choices = NULL, selected = NULL, inline = TRUE),
+                                # radioButtons(ns("cmp_select_mode"), label = "",choices = c("Select All" = "all", "None" = "none"), inline = TRUE),
+                                # actionButton(ns("cmp_subset_confirm"), "Select comparisons"),
+                                uiOutput(ns('ui_sel_order_comp')),
+                                uiOutput(ns('reset_comp')),
                                 tags$hr(),
                                 actionButton(ns("create_dotplot"), "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
                                 actionButton(ns("dotplot"), "Save to output"),
@@ -320,7 +321,7 @@ geneset_server <- function(id) {
                           }
                         }
                         #cat(system_info, date(), "\n")
-
+                        
                         ###Modify UI and input data based on QuickOmics or xOmicsShiny system
                         if (system %in% c("QuickOmics", "RNAView")) {
                           #shinyjs::hide(id = "comparison_2")
@@ -350,7 +351,7 @@ geneset_server <- function(id) {
                             )
                           })
                           
-
+                          
                           observeEvent(input$dataset_2, {
                             req(input$dataset_2)
                             if (input$dataset_2!="None"){
@@ -411,7 +412,7 @@ geneset_server <- function(id) {
                                     }
                                     
                                   }
-
+                                  
                                 }
                               }
                             } 
@@ -428,7 +429,7 @@ geneset_server <- function(id) {
                           tests=DataIn$tests
                           updateSelectizeInput(session,'geneset_test',choices=tests, selected=tests[1])
                         })
-
+                        
                         observeEvent(input$all_test, {
                           req(working_project())
                           req(DataReactive())
@@ -462,7 +463,7 @@ geneset_server <- function(id) {
                             prj_species=tolower(str_trim(ProjectInfo$Species))
                             if (prj_species %in% c("human","mouse", "rat") ) {
                               updateRadioButtons(session, "MSigDB_species", selected = prj_species)
-                             # cat("Speceis choice updatef, species is", ProjectInfo$Species, "\n")
+                              # cat("Speceis choice updatef, species is", ProjectInfo$Species, "\n")
                             } else if (prj_species %in% c("cho","chinese hamster", "mus musculus") ) {
                               updateRadioButtons(session, "MSigDB_species", selected = "mouse")
                               # cat("Speceis choice updatef, species is", ProjectInfo$Species, "\n")
@@ -477,7 +478,7 @@ geneset_server <- function(id) {
                             if (ProjectInfo$Species!=input$MSigDB_species) {
                               updateSelectizeInput(session,'map_genes', selected="Homologous Genes")
                               species_info=str_c(species_info, ", but gene set is from ", input$MSigDB_species, ". Choose how to map to ", 
-                                    input$MSigDB_species, " genes.")
+                                                 input$MSigDB_species, " genes.")
                             } else {
                               updateSelectizeInput(session,'map_genes', selected="No Change (as it is)")
                             }
@@ -545,7 +546,7 @@ geneset_server <- function(id) {
                           }
                         } ) 
                         
-############################################## GSEA ####
+                        ############################################## GSEA ####
                         # Get GSEA input data from selected comparisons
                         DataGenesetReactive_GSEA <- reactive({
                           DataIn <- DataReactive()
@@ -638,7 +639,7 @@ geneset_server <- function(id) {
                               #browser() 
                               gsets_GSEA=c(gsets_GSEA, CustomGeneset)
                             }
-
+                            
                             #browser() #debug
                           }
                           return(gsets_GSEA)
@@ -648,7 +649,7 @@ geneset_server <- function(id) {
                           gsea_control(gsea_control()+1)
                         })
                         
-
+                        
                         # Create GSEA complete raw result list, one item per comparison
                         gsea_raw <- eventReactive(input$compute_gsea, {
                           getresults <- DataGenesetReactive_GSEA()
@@ -683,37 +684,37 @@ geneset_server <- function(id) {
                             names(res_list) <- names(res_list_raw)
                             res_filter <- res_list %>% purrr::discard(~ nrow(.x) == 0)
                             if (length(res_filter)>0) {  #run the following steps only when there are GSEA results
-                            res <- res_list %>%
-                              purrr::discard(~ nrow(.x) == 0) %>%
-                              dplyr::bind_rows(.id = "comparison") %>%
-                              dplyr::relocate(comparison, .after = 1)
-                            combined_gsea_res(res)  # unfiltered combined GSEA result table
-                            if (input$gsea_collapase) {
-                              res_list <- lapply(names(res_list_raw), function(comp) {
-                                output <- res_list_raw[[comp]]
-                                logFC_list <- DataGenesetReactive_GSEA()[[comp]]$gene_list
-                                collapsed_set <- collapsePathways(
-                                  output[order(pval)][padj <= input$gsea_FDR],
-                                  gsets_Reactive(),
-                                  logFC_list
-                                )
-                                output <- output[pathway %in% collapsed_set$mainPathways]
-                                output %>%
-                                  dplyr::mutate_if(is.numeric, signif, digits = 3) %>%
-                                  dplyr::rename(GeneSet = pathway) %>%
-                                  dplyr::select(-ES, -log2err) %>%
-                                  dplyr::arrange(padj, dplyr::desc(abs(NES))) %>%
-                                  tibble::rownames_to_column("rank") %>%
-                                  dplyr::relocate(GeneSet) %>%
-                                  dplyr::mutate(comparison = comp)
-                              })
-                              names(res_list) <- names(res_list_raw)
                               res <- res_list %>%
                                 purrr::discard(~ nrow(.x) == 0) %>%
                                 dplyr::bind_rows(.id = "comparison") %>%
                                 dplyr::relocate(comparison, .after = 1)
-                              combined_gsea_res_filtered(res)
-                            }
+                              combined_gsea_res(res)  # unfiltered combined GSEA result table
+                              if (input$gsea_collapase) {
+                                res_list <- lapply(names(res_list_raw), function(comp) {
+                                  output <- res_list_raw[[comp]]
+                                  logFC_list <- DataGenesetReactive_GSEA()[[comp]]$gene_list
+                                  collapsed_set <- collapsePathways(
+                                    output[order(pval)][padj <= input$gsea_FDR],
+                                    gsets_Reactive(),
+                                    logFC_list
+                                  )
+                                  output <- output[pathway %in% collapsed_set$mainPathways]
+                                  output %>%
+                                    dplyr::mutate_if(is.numeric, signif, digits = 3) %>%
+                                    dplyr::rename(GeneSet = pathway) %>%
+                                    dplyr::select(-ES, -log2err) %>%
+                                    dplyr::arrange(padj, dplyr::desc(abs(NES))) %>%
+                                    tibble::rownames_to_column("rank") %>%
+                                    dplyr::relocate(GeneSet) %>%
+                                    dplyr::mutate(comparison = comp)
+                                })
+                                names(res_list) <- names(res_list_raw)
+                                res <- res_list %>%
+                                  purrr::discard(~ nrow(.x) == 0) %>%
+                                  dplyr::bind_rows(.id = "comparison") %>%
+                                  dplyr::relocate(comparison, .after = 1)
+                                combined_gsea_res_filtered(res)
+                              }
                             }
                             res_list
                           })
@@ -725,10 +726,10 @@ geneset_server <- function(id) {
                           res <- res_list %>%
                             purrr::discard(~ nrow(.x) == 0)
                           if (length(res)>0) { #only process if has valid GSEA results
-                          res <- res%>%
-                            dplyr::bind_rows(.id = "comparison") %>%
-                            dplyr::relocate(comparison, .after = 1) %>% 
-                            dplyr::filter(padj <= input$gsea_FDR)
+                            res <- res%>%
+                              dplyr::bind_rows(.id = "comparison") %>%
+                              dplyr::relocate(comparison, .after = 1) %>% 
+                              dplyr::filter(padj <= input$gsea_FDR)
                           } 
                           res
                         })
@@ -787,7 +788,7 @@ geneset_server <- function(id) {
                         })
                         
                         
-############################################## ORA ####
+                        ############################################## ORA ####
                         # Get ORA input data from selected comparisons
                         DataGenesetReactive_ORA <- reactive({
                           req(DataReactive(), input$ORA_input_type, input$map_genes)
@@ -802,7 +803,6 @@ geneset_server <- function(id) {
                             
                             absFCcut <- log2(as.numeric(input$geneset_FCcut))
                             pvalcut  <- as.numeric(input$geneset_pvalcut)
-                            
                             # iterate over each comparison
                             out_list <- lapply(comp_sel, function(comp) {
                               
@@ -874,7 +874,7 @@ geneset_server <- function(id) {
                             return(out_list)
                           }
                         })
-
+                        
                         # Get ORA input data from uploaded gene list
                         DataGenesetReactive_ORA_list <- reactive({        
                           if (input$ORA_input_type=='Gene List') {
@@ -923,7 +923,7 @@ geneset_server <- function(id) {
                           DEGs=names(tmpdat)
                           updateTextAreaInput(session, "ORA_list", value=paste(DEGs, collapse="\n"))
                         })
-
+                        
                         observeEvent(input$compute_ora, {
                           ora_control(ora_control()+1)
                         })
@@ -992,7 +992,7 @@ geneset_server <- function(id) {
                             res_list
                           })
                         })
-                          
+                        
                         # filter with the ORA adjusted p-value cutoff    
                         filtered_ora <- reactive({
                           req(input$geneset_test)
@@ -1011,10 +1011,10 @@ geneset_server <- function(id) {
                         output$MSigDB_ORA <- DT::renderDT(server = FALSE, {
                           withProgress(message = 'Processing...', value = 0, {
                             res <- combined_ora_res_filtered()   
-
+                            
                             validate(need(nrow(res) > 0,
                                           "No results. Try to increase p.adj cutoff, or adjust DEG cutoff."))
-
+                            
                             # add copy buttons
                             res$Action <- vapply(seq_len(nrow(res)), function(i) {
                               as.character(
@@ -1027,9 +1027,9 @@ geneset_server <- function(id) {
                                 )
                               )
                             }, character(1L))
-
+                            
                             res <- res %>% dplyr::relocate(Action, .before = DeGene_in_Set)
-
+                            
                             DT::datatable(
                               res,
                               extensions = 'Buttons',
@@ -1073,7 +1073,7 @@ geneset_server <- function(id) {
                           })
                         })
                         
-
+                        
                         output$MSigDB_ORA_list <-DT::renderDT(server=FALSE,{ withProgress(message = 'Processing...', value = 0, {
                           res<-ora_results_list()
                           validate(need(nrow(res)>0,"No results. Try to increase p.adj cutoff, or use a different list."))
@@ -1126,7 +1126,7 @@ geneset_server <- function(id) {
                         })
                         
                         
-############################################## GSEA selected gene set result table ####
+                        ############################################## GSEA selected gene set result table ####
                         output$ui.GSEA_GEX <- renderUI({
                           tagList(
                             DT::dataTableOutput(ns('selected_GSEA_set')),
@@ -1181,7 +1181,7 @@ geneset_server <- function(id) {
                           }
                         }, height = 400)
                         
-############################################## ORA selected gene set result table ####
+                        ############################################## ORA selected gene set result table ####
                         output$ui.ORA_GEX <- renderUI({
                           tagList(
                             DT::dataTableOutput(ns('selected_ORA_set')),
@@ -1211,7 +1211,7 @@ geneset_server <- function(id) {
                           DT::datatable(sel_ORA_set()$table, rownames=F, options = list(dom="t", ordering=F))%>%formatSignif(columns=c('p.value', "p.adj"), digits=3)
                         } )
                         
-#############################  KEGG  ######                        
+                        #############################  KEGG  ######                        
                         keggView_out <- reactive({
                           withProgress(message = 'Making KEGG Pathway View...', value = 0, {
                             ID <- input$sel_kegg_set
@@ -1339,7 +1339,7 @@ geneset_server <- function(id) {
                           })
                         })
                         
-#############################  Wiki  ######                        
+                        #############################  Wiki  ######                        
                         wiki_plot_results<-reactive({
                           ID=input$sel_wikipathways_set
                           shiny::validate(need(ID!="", message = "Please select a Wikipathway to map logFC data to it."))
@@ -1353,7 +1353,7 @@ geneset_server <- function(id) {
                           
                           ##Make FCdata  from results_long
                           FC_df<-results_long%>%dplyr::filter(test==comp_sel)%>%arrange(P.Value) %>% filter(!duplicated(Gene.Name)) %>% 
-                                 dplyr::select(UniqueID, logFC, Gene.Name) 
+                            dplyr::select(UniqueID, logFC, Gene.Name) 
                           if (input$map_genes!="No Change (as it is)" && !(ProjectInfo$Species==input$MSigDB_species && input$map_genes=="Homologous Genes") ) {
                             if ( input$map_genes=="Change to UPPER case (human)" )  mapped_symbols<-toupper(FC_df$Gene.Name)
                             if ( input$map_genes=="Change to Title Case (mouse/rat)" )  mapped_symbols<-str_to_title(FC_df$Gene.Name)
@@ -1382,7 +1382,7 @@ geneset_server <- function(id) {
                           draw(p2$lgd)
                         })
                         
-#############################  MetabaseR  ######                        
+                        #############################  MetabaseR  ######                        
                         ##MetabaseR map, only when human gene set is selected
                         Data_metabase <- reactive({
                           req(DataReactive())
@@ -1401,7 +1401,7 @@ geneset_server <- function(id) {
                             }
                             #gene entrezID
                             Name_list<-ProteinGeneName%>%dplyr::filter(!is.na(Gene.Name), Gene.Name!="", Gene.Name!="NA")%>%
-                                dplyr::select(Gene.Name)%>%unlist%>%unname
+                              dplyr::select(Gene.Name)%>%unlist%>%unname
                             Gene2ID=mapIds(org.Hs.eg.db, keys=Name_list, column="ENTREZID", keytype="SYMBOL")
                             #browser()
                             df_ID<-data.frame(Gene.Name=names(Gene2ID), EntrezID=Gene2ID)%>%filter(!is.na(Gene.Name), Gene.Name!="", 
@@ -1424,7 +1424,7 @@ geneset_server <- function(id) {
                             }
                             return(data_plot)
                           }
-                    
+                          
                         })
                         
                         output$plot.metabase=renderUI({
@@ -1435,9 +1435,9 @@ geneset_server <- function(id) {
                             tmp<-try(view.map(input$sel_metabase_set)) #test if the metabaseR map can be loaded, some like "Oxidative phosphorylation" has issues
                             if (class(tmp)[1]=="try-error") {
                               cat(input$sel_metabase_set, "can't be plotted\n")
-                                tagList(tags$div(
-                                  tags$p("This Metabase pathway cannot be drawn. Please select another pathway.")
-                                )) 
+                              tagList(tags$div(
+                                tags$p("This Metabase pathway cannot be drawn. Please select another pathway.")
+                              )) 
                             } else {
                               withProgress(message = 'Plotting metabase pathway...', value = 0, {
                                 cat(input$sel_metabase_set, "\n") #for debug
@@ -1449,7 +1449,7 @@ geneset_server <- function(id) {
                                 MetabaseOutput(ns("my_widget"), width = plot_width, height = plot_height)
                               })
                             }
-                            }
+                          }
                         })
                         
                         observeEvent(input$keggSave, {
@@ -1469,7 +1469,7 @@ geneset_server <- function(id) {
                           }
                         }, deleteFile = FALSE)
                         
-#############################  heatmap  ######                        
+                        #############################  heatmap  ######                        
                         genesetheatmap_out <- reactive({
                           withProgress(message = 'Making heatmap...', value = 0, {
                             analysis_type <- input$analysis_type_2
@@ -1669,67 +1669,159 @@ geneset_server <- function(id) {
                             ))) %>% formatStyle(columns="Gene.Name", target="row",   backgroundColor = styleEqual(genes, "lightgreen", default='white'))
                         })
                         
-#############################  Dot plot  ######                        
+                        #############################  Dot plot  ######
+                        analysis_type <- reactiveVal(NULL)
+                        # geneset_comps <- reactiveVal(NULL)
+                        # 
                         gset_plot <- reactiveVal(NULL)
                         current_plot <- reactiveVal(NULL)
                         gset_top_count <- reactiveVal(NULL)
                         gset_dotplot_warning_text <- reactiveVal(NULL)
-
+                        all_gsea_comps <- reactiveVal(NULL)
+                        all_ora_comps <- reactiveVal(NULL)
+                        selected_ordered_gsea_comps <- reactiveVal(NULL)
+                        selected_ordered_ora_comps <- reactiveVal(NULL)
+                        
                         observe({
                           gs_text <- paste(gset_plot(), collapse = "\n")
                           updateTextAreaInput(session, "geneset_dotplot_geneset_list", value = gs_text)
                         })
                         
-                        geneset_comps <- reactive({
-                          req(input$geneset_test)
-                          req(input$analysis_type)
-                          analysis_type <- input$analysis_type
-                          if (analysis_type == "GSEA") {
-                            req(filtered_gsea())
-                            comps <- names(gsea_results())
-                          } else if (analysis_type == "ORA") {
-                            req(filtered_ora())
-                            comps <- names(ora_results())
-                          } else {
-                            comps <- NULL
-                          }
-                          comps
+                        
+                        gsea_ready <- reactive({
+                          tryCatch(gsea_results(), error = function(e) NULL)
                         })
+                        
+                        ora_ready <- reactive({
+                          tryCatch(ora_results(), error = function(e) NULL)
+                        })
+                        
+                        geneset_comps <- eventReactive(
+                          list(input$analysis_type, gsea_ready(), ora_ready()),
+                          {
+                            analysis_type <- input$analysis_type
+                            if (is.null(analysis_type)) {
+                              return()
+                            }
+                            
+                            safe_gsea <- gsea_ready()
+                            safe_ora  <- ora_ready()
+                            
+                            switch(
+                              analysis_type,
+                              "GSEA" = if (is.null(safe_gsea)) character(0) else names(safe_gsea),
+                              "ORA"  = if (is.null(safe_ora))  character(0) else names(safe_ora),
+                              character(0)
+                            )
+                          },
+                          ignoreNULL = FALSE
+                        )
                         
                         observeEvent(geneset_comps(), {
-                          comps <- geneset_comps()
-                          req(comps)
-                          updateCheckboxGroupInput(session, "cmp_subset", choices = comps, selected = comps, inline = TRUE)
-                        })
-                        
+                          comps_all <- geneset_comps()
+                          req(comps_all)
+                          if (input$analysis_type == "ORA") {
+                            if (is.null(all_ora_comps()) || !identical(all_ora_comps(), comps_all)) {
+                              all_ora_comps(comps_all)
+                              selected_comps <- comps_all
+                              removed_comps <- NULL
+                            } else {
+                              selected_comps = selected_ordered_ora_comps()
+                              removed_comps <- comps_all[!(comps_all %in% selected_comps)]
+                            }
+                          } else if (input$analysis_type == "GSEA") {
+                            if (is.null(all_gsea_comps()) || !identical(all_gsea_comps(), comps_all)) {
+                              all_gsea_comps(comps_all)
+                              selected_comps <- comps_all
+                              removed_comps <- NULL
+                            } else {
+                              selected_comps = selected_ordered_gsea_comps()
+                              removed_comps <- comps_all[!(comps_all %in% selected_comps)]
+                            }
+                          }
+                          output$ui_sel_order_comp <- renderUI({
+                            tags$div(fluidRow(
+                              column(7, shinyjqui::orderInput(
+                                inputId = ns("cmp_source"),
+                                label = "Comparisons to Plot:",
+                                items = selected_comps,
+                                width = "100%",
+                                item_class = "success",
+                                connect = ns("cmp_dest")
+                              )),
+                              column(3, shinyjqui::orderInput(
+                                inputId = ns("cmp_dest"),
+                                label = "Drag Here to Remove:",
+                                items = removed_comps,
+                                width = "100%",
+                                placeholder = "Drop items here...",
+                                item_class = "danger",
+                                connect = ns("cmp_source")
+                              ))
+                            )
+                            )
+                          })
 
-                        observeEvent(input$cmp_select_mode, {
-                          mode <- input$cmp_select_mode
-                          if (mode == "all") {
-                            updateCheckboxGroupInput(session, "cmp_subset",selected = geneset_comps())
-                          }
-                          if (mode == "none") {
-                            updateCheckboxGroupInput(session, "cmp_subset",selected = character(0))
-                          }
-                        })
+                          output$reset_comp <- renderUI({
+                            actionButton(ns("reset_comp"),"Reset")
+                          })
+                        }, ignoreInit = FALSE)
                         
-                        observeEvent(input$cmp_subset_confirm, {
-                          selected <- input$cmp_subset
-                          if (length(selected) == 0) {
-                            showNotification("Please select at least one comparison.", type = "error")
-                            return()
+                        observeEvent(input$analysis_type, {
+                          gset_top_count(NULL)
+                          gset_dotplot_warning_text(NULL)
+                          current_plot(NULL)
+                        }) 
+                        
+                        observeEvent(input$cmp_source, {
+                          selected_comps = input$cmp_source
+                          if (input$analysis_type == "ORA") {
+                            if (is.null(selected_ordered_ora_comps()) || !identical(selected_ordered_ora_comps(), selected_comps)) {
+                              selected_ordered_ora_comps(selected_comps)
+                           } 
+                          } else if (input$analysis_type == "GSEA") {
+                            if (is.null(selected_ordered_gsea_comps()) || !identical(selected_ordered_gsea_comps(), selected_comps)) {
+                              selected_ordered_gsea_comps(selected_comps)
+                            } 
                           }
-                          output$cmp_subset_order <- renderUI({
-                            orderInput(inputId = ns("cmp_order"), label = "Drag and Drop to Reorder Comparisons.", items = selected,width = "90%",item_class = "primary",legacy = TRUE)
+                        }, ignoreInit = TRUE)
+                        
+                        observeEvent(input$reset_comp, {
+                          if (input$analysis_type == "ORA") {
+                            comp_all <- all_ora_comps()
+                          } else if (input$analysis_type == "GSEA") {
+                            comp_all <- all_gsea_comps()
+                          }
+                          output$ui_sel_order_comp <- renderUI({
+                            tags$div(fluidRow(
+                              column(7, shinyjqui::orderInput(
+                                inputId = ns("cmp_source"),
+                                label = "Comparisons to Plot:",
+                                items = comp_all,
+                                width = "100%",
+                                item_class = "success",
+                                connect = ns("cmp_dest")
+                              )),
+                              column(3, shinyjqui::orderInput(
+                                inputId = ns("cmp_dest"),
+                                label = "Drag Here to Remove:",
+                                items = NULL,
+                                width = "100%",
+                                placeholder = "Drop items here...",
+                                item_class = "danger",
+                                connect = ns("cmp_source")
+                              ))
+                            )
+                            )
                           })
                         })
-
+                        
                         observeEvent(input$create_dotplot, {
-                          req(input$cmp_order_order)
+                          req(input$cmp_source)
                           # Determine which analysis type is selected
                           analysis_type <- input$analysis_type
                           selected_analysis_test <- geneset_comps()
-                          selected_dotplot_test <- input$cmp_order_order
+                          selected_dotplot_test <- input$cmp_source
                           
                           # Validate: selected_test must match result_comp_names (order does not matter)
                           if (length(setdiff(selected_dotplot_test, selected_analysis_test)) > 0) {
@@ -2024,6 +2116,11 @@ geneset_server <- function(id) {
                             current_plot()
                           }, width = function() input$geneset_dotplot_width,
                           height = function() input$geneset_dotplot_height)
+                        })
+                        
+                        observeEvent(input$dotplot, {
+                          saved.num <- length(saved_plots$dotplot) + 1
+                          saved_plots$boxplot[[saved.num]] <- current_plot()
                         })
                       })
 }

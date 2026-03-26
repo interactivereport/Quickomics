@@ -75,33 +75,67 @@ tabPanel("Dataset",
 ## Groups and Samples
 ##########################################################################################################
 tabPanel("Groups and Samples",
-         fluidRow(
-           column(4,
-                  wellPanel(
-                    tags$style(mycss),
-                    actionButton("reset_group", "Reset Groups and Samples"),
-                    tags$p("Use the boxes below to remove or add groups/samples. Use the tools at right side for advanced selection and ordering."),
-                    selectizeInput("QC_groups", label="Select Groups", choices=NULL, multiple=TRUE),
-                    checkboxInput("QC_comp2sample", "Use Samples in Subset/Comparison?",  FALSE, width="90%"),
-                    conditionalPanel("input.QC_comp2sample==1",
-                                     uiOutput("QC_samples_from_comp")	),
-                    selectizeInput("QC_samples", label="Select Samples", choices=NULL,multiple=TRUE),
-                    column(width=12,uiOutput("selectGroupSample")),
-                    tags$hr()
-                  )),
-           column(8,
-             tags$br(),
-             tags$hr(style="border-color: RoyalBlue;"),
-             uiOutput('reorder_group'),
-             uiOutput('sample_choose_order')),
-
+        #  fluidRow(
+        #    column(4,
+        #           wellPanel(
+        #             tags$style(mycss),
+        #             actionButton("reset_group", "Reset Groups and Samples"),
+        #             tags$p("Use the boxes below to remove or add groups/samples. Use the tools at right side for advanced selection and ordering."),
+        #             selectInput("QC_groups_var", label="Select a Attribute (Covariate)", choices=NULL),
+        #             selectizeInput("QC_groups", label="Select Groups", choices=NULL, multiple=TRUE),
+        #             checkboxInput("QC_comp2sample", "Use Samples in Subset/Comparison?",  FALSE, width="90%"),
+        #             conditionalPanel("input.QC_comp2sample==1",
+        #                              uiOutput("QC_samples_from_comp")	),
+        #             selectizeInput("QC_samples", label="Select Samples", choices=NULL,multiple=TRUE),
+        #             column(width=12,uiOutput("selectGroupSample")),
+        #             tags$hr()
+        #           )),
+        #    column(8,
+        #      tags$br(),
+        #      tags$hr(style="border-color: RoyalBlue;"),
+        #      uiOutput('reorder_group'),
+        #      uiOutput('sample_choose_order')),
+        # 
+        # )
+        fluidRow(
+          column(1,
+          ),
+          column(10,
+                 wellPanel(
+                   actionButton("reset_all_types", "Reset All"),
+                   
+                   # dynamic UI region
+                   div(
+                     uiOutput('ui_all_types'),
+                     tags$hr(style="border-color: black;"),
+                     uiOutput("ui_source_s"),
+                     uiOutput("ui_dest_s"),
+                     tags$hr(style="border-color: black;"),
+                     uiOutput("ui_source_test"),
+                     uiOutput("ui_dest_test"),
+                     uiOutput("reset_test"),
+                     tags$hr(style="border-color: black;")
+                   ),
+                   
+                   # static summary region (must NOT be inside dynamic UI)
+                   div(
+                     span(textOutput("selectGroupSample"),
+                          style = "color:red; font-size:20px; font-family:arial; font-style:italic"),
+                     tags$hr(style="border-color: grey;"),
+                     span(verbatimTextOutput("summaryDetail"),
+                          style = "color:red; font-size:20px; font-family:arial; font-style:italic")
+                   )
+                 )
+          ),
+          column(1,
+          )
         )
 ),
 
 ##########################################################################################################
 ## QC Plots
 ##########################################################################################################
-tabPanel("QC Plots",
+tabPanel("QC Plots", value = "QC_Plots",
 	fluidRow(
 		column(3,
 			wellPanel(
@@ -216,6 +250,201 @@ tabPanel("QC Plots",
 ),
 
 ##########################################################################################################
+## Gene/Protein Expression Plot
+##########################################################################################################
+tabPanel("Expression Plot", value = 'Exp_Plot',
+         fluidRow(
+           column(3,
+                  wellPanel(
+                    conditionalPanel("input.expression_tabset=='Searched Expression Data' | input.expression_tabset=='Browsing' ",
+                                     # selectizeInput("sel_group", label="Select Groups", choices=NULL, multiple=TRUE),
+                                     column(width=12,uiOutput("selectGroupSampleExpression"))
+                    ),
+                    conditionalPanel("input.expression_tabset=='Searched Expression Data' || input.expression_tabset=='Rank Abundance Curve'",
+                                     radioButtons("exp_subset",label="Genes Used in Plot", choices=c("Select", "Upload Genes", "Geneset"),inline = TRUE, selected="Select"),
+                                     conditionalPanel("input.exp_subset=='Upload Genes'",
+                                                      textAreaInput("exp_list", "Enter Gene List", "", cols = 5, rows=6)),
+                                     conditionalPanel("input.exp_subset=='Select'",
+                                                      radioButtons("exp_label",label="Select Gene Label",inline = TRUE, choices=c("UniqueID", "Gene.Name"), selected="Gene.Name"),
+                                                      selectizeInput("sel_gene",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search'))),
+                                     conditionalPanel("input.exp_subset=='Geneset'",   uiOutput("html_geneset_exp") ) ),
+                    conditionalPanel("input.expression_tabset=='Searched Expression Data'",
+                                     radioButtons("SeparateOnePlot", label="Separate or One Plot", inline = TRUE, choices = c("Separate" = "Separate", "OnePlot" = "OnePlot"))),
+                    conditionalPanel("input.expression_tabset=='Browsing'",
+                                     column(width=6,numericInput("expression_fccut", label= "Choose Fold Change Threshold",  value = 1.2, min=1, step=0.1)),
+                                     column(width=6,numericInput("expression_pvalcut", label= "Choose P-value Threshold",  value=0.01, min=0, step=0.001)),
+                                     radioButtons("expression_psel", label= "P value or P.adj Value?",
+                                                  choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+                                     selectInput("expression_test", label="Select Test", choices=NULL),
+                                     textOutput("expfilteredgene"),
+                                     tags$head(tags$style("#expfilteredgene{color: red; font-size: 20px; font-style: italic;}")),
+                                     column(width=6,selectInput("sel_page",	label="Select Page",	choices = 1,	selected=1)),
+                                     column(width=6,selectInput("numperpage", label= "Plot Number per Page", choices= c("4"=4,"6"=6,"9"=9), selected=6)),
+                                     radioButtons("browsing_gene_order", label="Order Genes by", inline = TRUE, choices = c("abs(Fold Change)","P value"))),
+                    conditionalPanel("input.expression_tabset=='Searched Expression Data' | input.expression_tabset=='Browsing' ",
+                                     #  selectizeInput("sel_group", label="Select Groups", choices=NULL, multiple=TRUE),
+                                     # column(width=12,textOutput("selectGroupSampleExpression")),
+                                     radioButtons("sel_geneid",label="Select Gene Label",inline = TRUE, choices=""),
+                                     radioButtons("plotformat", label="Select Plot Format", inline = TRUE, choices = c("Box Plot" = "boxplot","Bar Plot" = "barplot", "violin" = "violin","line" = "line")),
+                                     conditionalPanel("input.SeparateOnePlot=='OnePlot' & input.expression_tabset=='Searched Expression Data'",
+                                                      h5("OnePlot only supports Bar and Line plots")),
+                                     radioButtons("IndividualPoint", label="Show Individual Point?", inline = TRUE, choices = c("YES" = "YES","NO" = "NO")),
+                                     selectizeInput("plotx", label="X Axis", choices=NULL, multiple = FALSE),
+                                     conditionalPanel("input.SeparateOnePlot!='OnePlot' | input.expression_tabset=='Browsing'",
+                                                      selectizeInput("colorby", label="Color By:", choices=NULL, multiple = FALSE)),
+                                     conditionalPanel("input.colorby=='None'",
+                                                      colourInput("barcol", "Select colour", "#1E90FF", palette = "limited")),
+                                     conditionalPanel("input.colorby!='None'",
+                                                      selectInput("colpalette", label= "Select palette", choices=c("Accent"="Accent","Dark2"="Dark2","Paired"="Paired","Pastel1"="Pastel1","Pastel2"="Pastel2","Set1"="Set1","Set2"="Set2","Set3"="Set3"), selected="Dark2")),
+                                     #radioButtons("ColPattern", label="Bar Colors", inline = TRUE, choices = c("Palette" = "Palette", "Single" = "Single")),
+                                     sliderInput("expression_axisfontsize", "Axis Font Size:", min = 10, max = 28, step = 1, value = 16),
+                                     sliderInput("expression_titlefontsize", "Title Font Size:", min = 12, max = 28, step = 1, value = 16),
+                                     sliderInput("exp_plot_ncol", label= "Column Number", min = 1, max = 6, step = 1, value = 3),
+                                     textInput("Ylab", "Y label", width = "100%"),
+                                     textInput("Xlab", "X label", width = "100%"),
+                                     sliderInput("Xangle", label= "X Angle", min = 0, max = 90, step = 5, value = 90),
+                                     radioButtons("exp_plot_Y_scale", label="Y Axis Scale", inline = TRUE, choices = c("Log","Linear"), selected = "Log"),
+                                     conditionalPanel("input.exp_plot_Y_scale=='Linear'",
+                                                      tags$p("Linear values are computed using the log base and samll value from the log based expression unit, e.g. log2(TPM+0.25). Please update the values below and the Y Label above as needed."),
+                                                      column(width=6,numericInput("linear_base", label= "log Base",  value = 2)),
+                                                      column(width=6,numericInput("linear_small_value", label= "Small Value",  value=0.25))),
+                                     radioButtons("exp_plot_Y_range", label="Y Axis Range", inline = TRUE, choices = c("Auto","Manual"), selected = "Auto"),
+                                     conditionalPanel("input.exp_plot_Y_range=='Manual'",
+                                                      column(width=6,numericInput("exp_plot_Ymin", label= "Y Min",  value = 0, step=0.1)),
+                                                      column(width=6,numericInput("exp_plot_Ymax", label= "Y Max",  value=5, step=0.1))),
+                                     h5("After changing parameters, please click Plot/Refresh button in the plot panel to generate expression plot.")),
+                    conditionalPanel("input.expression_tabset=='Rank Abundance Curve'",
+                                     sliderInput("scurve_axisfontsize", "Axis Font Size:", min = 12, max = 28, step = 4, value = 16),
+                                     sliderInput("scurve_labelfontsize", "Label Font Size:", min = 2, max = 12, step = 1, value = 6),
+                                     textInput("scurveYlab", "Y label", value="Abundance", width = "100%"),
+                                     textInput("scurveXlab", "X label", value="Rank", width = "100%"),
+                                     sliderInput("scurveXangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45),
+                                     radioButtons("scurveright", label="Density or histogram on Right:", inline = TRUE, choices = c("densigram" = "densigram", "density" = "density","histogram" = "histogram","boxplot" = "boxplot", "violin"= "violin"))),
+                    conditionalPanel("input.expression_tabset=='Data Table' || input.expression_tabset=='Result Table' ",
+                                     h5("Enter some genes in Search Expression Data tab, then come here for data table."))
+                  )
+           ),
+           column(9,
+                  tabsetPanel(id="expression_tabset",
+                              tabPanel(title="Browsing",actionButton("browsing", "Save to output"),
+                                       actionButton("plot_browsing", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
+                                       plotOutput("browsing", height=800)),
+                              tabPanel(title="Searched Expression Data",actionButton("boxplot", "Save to output"),
+                                       verbatimTextOutput("geneSearchInfo"),
+                                       actionButton("plot_exp", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
+                                       uiOutput("plot.exp")),
+                              tabPanel(title="Data Table",	value="expression_plot_data", DT::dataTableOutput("dat_dotplot")),
+                              tabPanel(title="Result Table",	DT::dataTableOutput("res_dotplot")),
+                              tabPanel(title="Rank Abundance Curve",plotOutput("SCurve", height=800)),
+                              tabPanel(title="Help", htmlOutput('help_expression'))
+                  )
+           )
+         )
+),
+
+##########################################################################################################
+## Heatmap
+##########################################################################################################
+tabPanel("Heatmap", value = 'Heatmap',
+         fluidRow(
+           column(3,
+                  wellPanel(
+                    #actionButton("action_heatmaps","Generate Interactive Heatmap"),
+                    #selectizeInput("heatmap_groups", label="Select Groups", choices=NULL, multiple=TRUE),
+                    #checkboxInput("HM_comp2sample", "Use Samples in Subset/Comparison?",  FALSE, width="90%"),
+                    #conditionalPanel("input.HM_comp2sample==1",
+                    #                 uiOutput("HM_samples_from_comp")	),
+                    #selectizeInput("heatmap_samples", label="Select Samples", choices=NULL, multiple=TRUE),
+                    column(width=12,uiOutput("selectGroupSampleHeatmap")),
+                    radioButtons("heatmap_subset",label="Genes used for heatmap", choices=c("All","Subset","Upload Genes", "Geneset"),inline = TRUE, selected="All"),
+                    conditionalPanel("input.heatmap_subset=='Upload Genes'",
+                                     radioButtons("heatmap_upload_type", label="Select upload type", inline = TRUE, choices = c("Gene List","Annotated Gene File"), selected = "Gene List"),
+                                     conditionalPanel("input.heatmap_upload_type=='Gene List'",
+                                                      textAreaInput("heatmap_list", "Enter Gene List", "", cols = 5, rows=6)),
+                                     conditionalPanel("input.heatmap_upload_type=='Annotated Gene File'",
+                                                      uiOutput("gene_annot_file"))),
+                    conditionalPanel("input.heatmap_subset=='Geneset'",   uiOutput("html_geneset_hm") ),
+                    conditionalPanel("input.heatmap_subset=='All'",
+                                     radioButtons("heatmap_submethod", label= "Plot Random Genes or Variable Genes", choices= c("Random"="Random","Variable"="Variable"),inline = TRUE),
+                                     numericInput("maxgenes",label="Set Number of Genes to Plot", min=1, max= 5000, value=100, step=1)),
+                    conditionalPanel("input.heatmap_subset=='Subset'",
+                                     selectInput("heatmap_test", label="Select Genes from Test:", choices=NULL),
+                                     column(width=6,numericInput("heatmap_fccut", label= "Fold Change Cutoff", value = 1.2, min=1, step=0.1)),
+                                     column(width=6,numericInput("heatmap_pvalcut", label= "P Value Cutoff", value=0.01, min=0, step=0.001)),
+                                     radioButtons("heatmap_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
+                                     column(width=12,textOutput("heatmapfilteredgene"),
+                                            tags$head(tags$style("#heatmapfilteredgene{color: red; font-size: 16px; font-style: italic; }"))),
+                                     uiOutput("Test_to_sample"),
+                                     tags$hr()
+                    ),
+                    conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
+                                      selectizeInput("heatmap_annot", label="Annotate Samples", choices=NULL, multiple = TRUE)),
+                    column(width=5,selectInput("dendrogram", "Apply Clustering:", c("both" ,"none", "row", "column"))),
+                    column(width=5,selectInput("scale", "Apply Scaling:", c("none","row", "column"),selected="row")),
+                    conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 2'",
+                                      column(width=5,selectInput("key", "Color Key:", c("TRUE", "FALSE"))),
+                                      column(width=5,selectInput("srtCol", "angle of label", c("45", "60","90"))),
+                                      column(width=5,sliderInput("hxfontsize", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
+                                      column(width=5,sliderInput("hyfontsize", "Row Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
+                                      column(width=5,sliderInput("right", "Set Margin Width", min = 0, max = 20, value = 5)),
+                                      column(width=5,sliderInput("bottom", "Set Margin Height", min = 0, max = 20, value = 5))
+                    ),
+                    conditionalPanel( "input.heatmap_tabset=='Interactive Heatmap'",
+                                      column(width=5,selectInput("key", "Color Key:", c("TRUE", "FALSE"))),
+                                      column(width=5,selectInput("srtCol", "angle of label", c("45", "60","90"))),
+                                      column(width=5,sliderInput("hxfontsizei", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
+                                      column(width=5,sliderInput("hyfontsizei", "Row Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
+                                      column(width=5,sliderInput("l", "Set Margin Width", min = 0, max = 200, value = 120)),
+                                      column(width=5,	sliderInput("b", "Set Margin Height", min = 0, max = 200, value = 120))
+                    ),
+                    conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
+                                      column(width=5,sliderInput("hxfontsizep", "Column Font Size:", min = 0, max = 20, step = 1, value = 10)),
+                                      column(width=5,sliderInput("hyfontsizep", "Row Font Size:", min = 0, max = 20, step = 1, value = 7)),
+                                      radioButtons("heatmap_label",label="Gene Label",inline = TRUE, choices=""),
+                                      sliderInput("heatmap_N_genes", "Max Number of Genes to Label:", min = 0, max = 500, step = 10, value = 100),
+                                      h5("After changing parameters, please click Plot/Refresh button in the plot panel to generate heatmap."),
+                                      radioButtons("heatmap_highlight", label="Highlight Subset of Genes:", inline = TRUE, choices = c("Yes","No"), selected = "No"),
+                                      conditionalPanel("input.heatmap_highlight=='Yes'",
+                                                       uiOutput("gene_highlight_file"),
+                                                       sliderInput("hl_font_size", "Font Size:", min = 0, max = 20, step = 1, value = 9)),
+                                      radioButtons("heatmap_more_options", label="Show More Options", inline = TRUE, choices = c("Yes","No"), selected = "No"),
+                                      conditionalPanel("input.heatmap_more_options=='Yes'",
+                                                       sliderInput("heatmap_height", "Heatmap Height:", min = 200, max = 3000, step = 50, value = 800),
+                                                       radioButtons("heatmap_row_dend", label="Show row dendrogram", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE), selected = TRUE),
+                                                       radioButtons("heatmap_col_dend", label="Show column dendrogram", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE), selected = TRUE),
+                                                       column(width=3,colourInput("lowColor", "Low", "blue")),
+                                                       column(width=3,colourInput("midColor", "Mid", "white")),
+                                                       column(width=3,colourInput("highColor", "High", "red")),
+                                                       column(width=5,selectInput("distanceMethod", "Distance Metric:", c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski"))),
+                                                       column(width=5,selectInput("agglomerationMethod", "Linkage Algorithm:", c("complete", "single", "average", "centroid", "median", "mcquitty", "ward.D", "ward.D2"))),
+                                                       column(width=5,sliderInput("cutreerows", "cutree_rows:", min = 0, max = 8, step = 1, value = 0)),
+                                                       column(width=5,sliderInput("cutreecols", "cutree_cols:", min = 0, max = 8, step = 1, value = 0)),
+                                                       radioButtons("custom_color", label="Upload Colors for Annotations", inline = TRUE, choices = c("Yes","No"), selected = "No"),
+                                                       conditionalPanel("input.custom_color=='Yes'",
+                                                                        uiOutput("annot_color_file")),
+                                                       textInput("heatmap_row_title", "Row Title", width = "100%"),
+                                                       sliderInput("heatmap_row_title_font_size", "Row Title Font Size:", min = 0, max = 30, step = 1, value = 16),
+                                                       textInput("heatmap_column_title", "Column Title", width = "100%"),
+                                                       sliderInput("heatmap_column_title_font_size", "Column Title Font Size:", min = 0, max = 30, step = 1, value = 16)
+                                      )
+                    )
+                  )
+           ),
+           column(9,
+                  tabsetPanel(id="heatmap_tabset",
+                              tabPanel(title="Static Heatmap Layout 1",actionButton("pheatmap2", "Save to output"),
+                                       actionButton("plot_heatmap", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
+                                       uiOutput("plot.heatmap")),
+                              tabPanel(title="Static Heatmap Layout 2", actionButton("staticheatmap", "Save to output"), plotOutput("staticheatmap", height = 800)),
+                              tabPanel(title="Interactive Heatmap",textOutput("text"), p(), plotlyOutput("interactiveheatmap", height = 800)),
+                              tabPanel(title="Help", htmlOutput('help_heatmap'))
+                  )
+           )
+         )
+),
+
+
+##########################################################################################################
 ## Volcano Plot
 ##########################################################################################################
 tabPanel("DEGs",
@@ -280,201 +509,6 @@ tabPanel("DEGs",
 ),
 
 ##########################################################################################################
-## Heatmap
-##########################################################################################################
-tabPanel("Heatmap",
-	fluidRow(
-		column(3,
-			wellPanel(
-				#actionButton("action_heatmaps","Generate Interactive Heatmap"),
-				#selectizeInput("heatmap_groups", label="Select Groups", choices=NULL, multiple=TRUE),
-				#checkboxInput("HM_comp2sample", "Use Samples in Subset/Comparison?",  FALSE, width="90%"),
-				#conditionalPanel("input.HM_comp2sample==1",
-				#                 uiOutput("HM_samples_from_comp")	),
-				#selectizeInput("heatmap_samples", label="Select Samples", choices=NULL, multiple=TRUE),
-				column(width=12,uiOutput("selectGroupSampleHeatmap")),
-				radioButtons("heatmap_subset",label="Genes used for heatmap", choices=c("All","Subset","Upload Genes", "Geneset"),inline = TRUE, selected="All"),
-				conditionalPanel("input.heatmap_subset=='Upload Genes'",
-				  radioButtons("heatmap_upload_type", label="Select upload type", inline = TRUE, choices = c("Gene List","Annotated Gene File"), selected = "Gene List"),
-				    conditionalPanel("input.heatmap_upload_type=='Gene List'",
-				          textAreaInput("heatmap_list", "Enter Gene List", "", cols = 5, rows=6)),
-				    conditionalPanel("input.heatmap_upload_type=='Annotated Gene File'",
-				          uiOutput("gene_annot_file"))),
-				conditionalPanel("input.heatmap_subset=='Geneset'",   uiOutput("html_geneset_hm") ),
-				conditionalPanel("input.heatmap_subset=='All'",
-          radioButtons("heatmap_submethod", label= "Plot Random Genes or Variable Genes", choices= c("Random"="Random","Variable"="Variable"),inline = TRUE),
-				  numericInput("maxgenes",label="Choose Gene Number", min=1, max= 5000, value=100, step=1)),
-				conditionalPanel("input.heatmap_subset=='Subset'",
-					selectInput("heatmap_test", label="Select Genes from Test:", choices=NULL),
-					column(width=6,numericInput("heatmap_fccut", label= "Fold Change Cutoff", value = 1.2, min=1, step=0.1)),
-					column(width=6,numericInput("heatmap_pvalcut", label= "P Value Cutoff", value=0.01, min=0, step=0.001)),
-					radioButtons("heatmap_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
-					column(width=12,textOutput("heatmapfilteredgene"),
-					tags$head(tags$style("#heatmapfilteredgene{color: red; font-size: 16px; font-style: italic; }"))),
-					uiOutput("Test_to_sample"),
-					tags$hr()
-					),
-				conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
-				    selectizeInput("heatmap_annot", label="Annotate Samples", choices=NULL, multiple = TRUE)),
-				    column(width=5,selectInput("dendrogram", "Apply Clustering:", c("both" ,"none", "row", "column"))),
-				    column(width=5,selectInput("scale", "Apply Scaling:", c("none","row", "column"),selected="row")),
-				conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 2'",
-					column(width=5,selectInput("key", "Color Key:", c("TRUE", "FALSE"))),
-					column(width=5,selectInput("srtCol", "angle of label", c("45", "60","90"))),
-					column(width=5,sliderInput("hxfontsize", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
-					column(width=5,sliderInput("hyfontsize", "Row Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
-					column(width=5,sliderInput("right", "Set Margin Width", min = 0, max = 20, value = 5)),
-					column(width=5,sliderInput("bottom", "Set Margin Height", min = 0, max = 20, value = 5))
-				),
-				conditionalPanel( "input.heatmap_tabset=='Interactive Heatmap'",
-					column(width=5,selectInput("key", "Color Key:", c("TRUE", "FALSE"))),
-					column(width=5,selectInput("srtCol", "angle of label", c("45", "60","90"))),
-					column(width=5,sliderInput("hxfontsizei", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
-					column(width=5,sliderInput("hyfontsizei", "Row Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
-					column(width=5,sliderInput("l", "Set Margin Width", min = 0, max = 200, value = 120)),
-					column(width=5,	sliderInput("b", "Set Margin Height", min = 0, max = 200, value = 120))
-				),
-				conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
-				  column(width=5,sliderInput("hxfontsizep", "Column Font Size:", min = 0, max = 20, step = 1, value = 10)),
-					column(width=5,sliderInput("hyfontsizep", "Row Font Size:", min = 0, max = 20, step = 1, value = 7)),
-				  radioButtons("heatmap_label",label="Gene Label",inline = TRUE, choices=""),
-				  sliderInput("heatmap_N_genes", "Max Number of Genes to Label:", min = 0, max = 500, step = 10, value = 100),
-  				h5("After changing parameters, please click Plot/Refresh button in the plot panel to generate heatmap."),
-					radioButtons("heatmap_highlight", label="Highlight Subset of Genes:", inline = TRUE, choices = c("Yes","No"), selected = "No"),
-					conditionalPanel("input.heatmap_highlight=='Yes'",
-					               uiOutput("gene_highlight_file"),
-					              sliderInput("hl_font_size", "Font Size:", min = 0, max = 20, step = 1, value = 9)),
-	  			radioButtons("heatmap_more_options", label="Show More Options", inline = TRUE, choices = c("Yes","No"), selected = "No"),
-		  		conditionalPanel("input.heatmap_more_options=='Yes'",
-				                 sliderInput("heatmap_height", "Heatmap Height:", min = 200, max = 3000, step = 50, value = 800),
-				                 radioButtons("heatmap_row_dend", label="Show row dendrogram", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE), selected = TRUE),
-				                 radioButtons("heatmap_col_dend", label="Show column dendrogram", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE), selected = TRUE),
-				                 column(width=3,colourInput("lowColor", "Low", "blue")),
-				                 column(width=3,colourInput("midColor", "Mid", "white")),
-				                 column(width=3,colourInput("highColor", "High", "red")),
-				                 column(width=5,selectInput("distanceMethod", "Distance Metric:", c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski"))),
-				                 column(width=5,selectInput("agglomerationMethod", "Linkage Algorithm:", c("complete", "single", "average", "centroid", "median", "mcquitty", "ward.D", "ward.D2"))),
-				                 column(width=5,sliderInput("cutreerows", "cutree_rows:", min = 0, max = 8, step = 1, value = 0)),
-				                 column(width=5,sliderInput("cutreecols", "cutree_cols:", min = 0, max = 8, step = 1, value = 0)),
-				                 radioButtons("custom_color", label="Upload Colors for Annotations", inline = TRUE, choices = c("Yes","No"), selected = "No"),
-				                 conditionalPanel("input.custom_color=='Yes'",
-				                                  uiOutput("annot_color_file")),
-				                 textInput("heatmap_row_title", "Row Title", width = "100%"),
-				                 sliderInput("heatmap_row_title_font_size", "Row Title Font Size:", min = 0, max = 30, step = 1, value = 16),
-				                 textInput("heatmap_column_title", "Column Title", width = "100%"),
-					               sliderInput("heatmap_column_title_font_size", "Column Title Font Size:", min = 0, max = 30, step = 1, value = 16)
-				)
-				)
-			)
-		),
-		column(9,
-			tabsetPanel(id="heatmap_tabset",
-				tabPanel(title="Static Heatmap Layout 1",actionButton("pheatmap2", "Save to output"),
-				         actionButton("plot_heatmap", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
-				         uiOutput("plot.heatmap")),
-				tabPanel(title="Static Heatmap Layout 2", actionButton("staticheatmap", "Save to output"), plotOutput("staticheatmap", height = 800)),
-				tabPanel(title="Interactive Heatmap",textOutput("text"), p(), plotlyOutput("interactiveheatmap", height = 800)),
-				tabPanel(title="Help", htmlOutput('help_heatmap'))
-			)
-		)
-	)
-),
-
-
-##########################################################################################################
-## Gene/Protein Expression Plot
-##########################################################################################################
-tabPanel("Expression Plot",
-         fluidRow(
-           column(3,
-                  wellPanel(
-                    conditionalPanel("input.expression_tabset=='Searched Expression Data' | input.expression_tabset=='Browsing' ",
-                                    # selectizeInput("sel_group", label="Select Groups", choices=NULL, multiple=TRUE),
-                                     column(width=12,uiOutput("selectGroupSampleExpression"))
-                                     ),
-                    conditionalPanel("input.expression_tabset=='Searched Expression Data' || input.expression_tabset=='Rank Abundance Curve'",
-                                     radioButtons("exp_subset",label="Genes Used in Plot", choices=c("Select", "Upload Genes", "Geneset"),inline = TRUE, selected="Select"),
-                                     conditionalPanel("input.exp_subset=='Upload Genes'",
-                                                      textAreaInput("exp_list", "Enter Gene List", "", cols = 5, rows=6)),
-                                     conditionalPanel("input.exp_subset=='Select'",
-                                                      radioButtons("exp_label",label="Select Gene Label",inline = TRUE, choices=c("UniqueID", "Gene.Name"), selected="Gene.Name"),
-                                                      selectizeInput("sel_gene",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search'))),
-                                     conditionalPanel("input.exp_subset=='Geneset'",   uiOutput("html_geneset_exp") ) ),
-                    conditionalPanel("input.expression_tabset=='Searched Expression Data'",
-                                     radioButtons("SeparateOnePlot", label="Separate or One Plot", inline = TRUE, choices = c("Separate" = "Separate", "OnePlot" = "OnePlot"))),
-                    conditionalPanel("input.expression_tabset=='Browsing'",
-                                     column(width=6,numericInput("expression_fccut", label= "Choose Fold Change Threshold",  value = 1.2, min=1, step=0.1)),
-                                     column(width=6,numericInput("expression_pvalcut", label= "Choose P-value Threshold",  value=0.01, min=0, step=0.001)),
-                                     radioButtons("expression_psel", label= "P value or P.adj Value?",
-                                                  choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),
-                                     selectInput("expression_test", label="Select Test", choices=NULL),
-                                     textOutput("expfilteredgene"),
-                                     tags$head(tags$style("#expfilteredgene{color: red; font-size: 20px; font-style: italic;}")),
-                                     column(width=6,selectInput("sel_page",	label="Select Page",	choices = NULL,	selected=1)),
-                                     column(width=6,selectInput("numperpage", label= "Plot Number per Page", choices= c("4"=4,"6"=6,"9"=9), selected=6)),
-                                     radioButtons("browsing_gene_order", label="Order Genes by", inline = TRUE, choices = c("abs(Fold Change)","P value"))),
-                    conditionalPanel("input.expression_tabset=='Searched Expression Data' | input.expression_tabset=='Browsing' ",
-                                   #  selectizeInput("sel_group", label="Select Groups", choices=NULL, multiple=TRUE),
-                                    # column(width=12,textOutput("selectGroupSampleExpression")),
-                                     radioButtons("sel_geneid",label="Select Gene Label",inline = TRUE, choices=""),
-                                     radioButtons("plotformat", label="Select Plot Format", inline = TRUE, choices = c("Box Plot" = "boxplot","Bar Plot" = "barplot", "violin" = "violin","line" = "line")),
-                                     conditionalPanel("input.SeparateOnePlot=='OnePlot' & input.expression_tabset=='Searched Expression Data'",
-                                                      h5("OnePlot only supports Bar and Line plots")),
-                                     radioButtons("IndividualPoint", label="Show Individual Point?", inline = TRUE, choices = c("YES" = "YES","NO" = "NO")),
-                                     selectizeInput("plotx", label="X Axis", choices=NULL, multiple = FALSE),
-                                     conditionalPanel("input.SeparateOnePlot!='OnePlot' | input.expression_tabset=='Browsing'",
-                                       selectizeInput("colorby", label="Color By:", choices=NULL, multiple = FALSE)),
-                                     conditionalPanel("input.colorby=='None'",
-                                                      colourInput("barcol", "Select colour", "#1E90FF", palette = "limited")),
-                                     conditionalPanel("input.colorby!='None'",
-                                                      selectInput("colpalette", label= "Select palette", choices=c("Accent"="Accent","Dark2"="Dark2","Paired"="Paired","Pastel1"="Pastel1","Pastel2"="Pastel2","Set1"="Set1","Set2"="Set2","Set3"="Set3"), selected="Dark2")),
-                                     #radioButtons("ColPattern", label="Bar Colors", inline = TRUE, choices = c("Palette" = "Palette", "Single" = "Single")),
-                                     sliderInput("expression_axisfontsize", "Axis Font Size:", min = 10, max = 28, step = 1, value = 16),
-                                     sliderInput("expression_titlefontsize", "Title Font Size:", min = 12, max = 28, step = 1, value = 16),
-                                     sliderInput("exp_plot_ncol", label= "Column Number", min = 1, max = 6, step = 1, value = 3),
-                                     textInput("Ylab", "Y label", width = "100%"),
-                                     textInput("Xlab", "X label", width = "100%"),
-                                     sliderInput("Xangle", label= "X Angle", min = 0, max = 90, step = 5, value = 90),
-                                     radioButtons("exp_plot_Y_scale", label="Y Axis Scale", inline = TRUE, choices = c("Log","Linear"), selected = "Log"),
-                                     conditionalPanel("input.exp_plot_Y_scale=='Linear'",
-                                                    tags$p("Linear values are computed using the log base and samll value from the log based expression unit, e.g. log2(TPM+0.25). Please update the values below and the Y Label above as needed."),
-                                                    column(width=6,numericInput("linear_base", label= "log Base",  value = 2)),
-                                                    column(width=6,numericInput("linear_small_value", label= "Small Value",  value=0.25))),
-                                     radioButtons("exp_plot_Y_range", label="Y Axis Range", inline = TRUE, choices = c("Auto","Manual"), selected = "Auto"),
-                                     conditionalPanel("input.exp_plot_Y_range=='Manual'",
-                                                      column(width=6,numericInput("exp_plot_Ymin", label= "Y Min",  value = 0, step=0.1)),
-                                                      column(width=6,numericInput("exp_plot_Ymax", label= "Y Max",  value=5, step=0.1))),
-                                    h5("After changing parameters, please click Plot/Refresh button in the plot panel to generate expression plot.")),
-                    conditionalPanel("input.expression_tabset=='Rank Abundance Curve'",
-                                     sliderInput("scurve_axisfontsize", "Axis Font Size:", min = 12, max = 28, step = 4, value = 16),
-                                     sliderInput("scurve_labelfontsize", "Label Font Size:", min = 2, max = 12, step = 1, value = 6),
-                                     textInput("scurveYlab", "Y label", value="Abundance", width = "100%"),
-                                     textInput("scurveXlab", "X label", value="Rank", width = "100%"),
-                                     sliderInput("scurveXangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45),
-                                     radioButtons("scurveright", label="Density or histogram on Right:", inline = TRUE, choices = c("densigram" = "densigram", "density" = "density","histogram" = "histogram","boxplot" = "boxplot", "violin"= "violin"))),
-                    conditionalPanel("input.expression_tabset=='Data Table' || input.expression_tabset=='Result Table' ",
-                                     h5("Enter some genes in Search Expression Data tab, then come here for data table."))
-                  )
-           ),
-           column(9,
-                  tabsetPanel(id="expression_tabset",
-                              tabPanel(title="Browsing",actionButton("browsing", "Save to output"),
-                                       actionButton("plot_browsing", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
-                                       plotOutput("browsing", height=800)),
-                              tabPanel(title="Searched Expression Data",actionButton("boxplot", "Save to output"),
-                                       verbatimTextOutput("geneSearchInfo"),
-                                       actionButton("plot_exp", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
-                                       uiOutput("plot.exp")),
-                              tabPanel(title="Data Table",	value="expression_plot_data", DT::dataTableOutput("dat_dotplot")),
-                              tabPanel(title="Result Table",	DT::dataTableOutput("res_dotplot")),
-                              tabPanel(title="Rank Abundance Curve",plotOutput("SCurve", height=800)),
-                              tabPanel(title="Help", htmlOutput('help_expression'))
-                  )
-           )
-   )
-),
-
-##########################################################################################################
 ## Gene Set Enrichment
 ##########################################################################################################
 #tabPanel("Gene Set Enrichment", geneset_ui(id = "GS")), 
@@ -485,7 +519,7 @@ tabPanel("Expression Plot",
 ##########################################################################################################
 ## 10/08/2020
 ## eidted by bgao, add gene upload box and more plotting options
-tabPanel("Pattern Clustering",
+tabPanel("Pattern Clustering", value = 'Pattern_Clustering',
 	fluidRow(
 		column(3,
 			wellPanel(
@@ -501,10 +535,12 @@ tabPanel("Pattern Clustering",
 				conditionalPanel("input.pattern_subset=='upload genes'", textAreaInput("pattern_list", "list", "", cols = 5, rows=6)),
 
 				tags$head(tags$style("#patternfilteredgene{color: red; font-size: 20px; font-style: italic; }")),
-				selectizeInput("pattern_group", label="Select Groups (re-order under Groups and Samples tab)", choices=NULL, multiple=TRUE),
-				radioButtons("ClusterMehtod", label="Cluster Method", inline = FALSE, choices = c("Soft Clustering" = "mfuzz", "K-means" = "kmeans")),
+				tags$br(),
+				selectInput("pattern_attr", label="Select Pattern Variable", choices=NULL),
+				# selectizeInput("pattern_group", label="Select Groups (re-order under Groups and Samples tab)", choices=NULL, multiple=TRUE),
+				radioButtons("ClusterMethod", label="Cluster Method", inline = FALSE, choices = c("Soft Clustering" = "mfuzz", "K-means" = "kmeans")),
 				sliderInput("k", "Cluster Number:", min = 3, max = 12, step = 1, value = 6),
-				conditionalPanel("input.ClusterMehtod=='kmeans'",
+				conditionalPanel("input.ClusterMethod=='kmeans'",
 				                 sliderInput("pattern_font", "Font Size:", min = 12, max = 24, step = 1, value = 14),
 				                 sliderInput("pattern_Xangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45)),
 				sliderInput("pattern_ncol", label= "Column Number", min = 1, max = 6, step = 1, value = 3),
@@ -516,7 +552,14 @@ tabPanel("Pattern Clustering",
 		column(9,
 			tabsetPanel(id="Pattern_tabset",
 				#tabPanel(title="Optimal Number of Clusters", plotOutput("nbclust", height=800)),
-				tabPanel(title="Clustering of Centroid Profiles",actionButton("pattern", "Save to output"),plotOutput("pattern", height=800)),
+				tabPanel(title="Clustering of Centroid Profiles",
+				         uiOutput('ui_sel_order_group'),
+				         uiOutput('reset_group'),
+				         tags$br(),
+				         actionButton("pattern_plot", "Plot", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
+				         tags$br(),tags$hr(),
+				         actionButton("pattern", "Save to output"),
+				         plotOutput("pattern", height=800)),
 				#tabPanel(title="Time Series Plot",actionButton("Pattern_data", "Save to output"), DT::dataTableOutput("dat_pattern")),
 				tabPanel(title="Data Table", DT::dataTableOutput("dat_pattern")),
 				tabPanel(title="Help", htmlOutput('help_pattern'))
@@ -528,7 +571,7 @@ tabPanel("Pattern Clustering",
 ##########################################################################################################
 ## Correlation Network
 ##########################################################################################################
-tabPanel("Correlation Network",
+tabPanel("Correlation Network", value = 'Correlation_Network',
 	fluidRow(
 		column(3,
 			wellPanel(
@@ -715,6 +758,7 @@ footer= HTML(footer_text)
 server <- function(input, output, session) {
   source("inputdata.R",local = TRUE)
   source("process_uploaded_files.R",local = TRUE)
+  source("groupandsample.R",local=TRUE)
   source("qcplot.R",local=TRUE)
   source("alignQC.R",local=TRUE)
   source("volcano.R",local = TRUE)
@@ -722,18 +766,22 @@ server <- function(input, output, session) {
   source("barboxplot.R",local = TRUE)
   source("venn.R",local = TRUE)
   source("genesetmodule.R",local = TRUE)
-  insertTab(session=session,  inputId = "menu", target = "Expression Plot",  position = "after",
+  insertTab(session=session,  inputId = "menu", target = "DEGs",  position = "after",
               tabPanel("Gene Set Enrichment", value = "gsea", geneset_ui(id = "GS")) )
   geneset_server(id = "GS")
-  source("correlation.R",local = TRUE)
-  insertTab(session=session,  inputId = "menu", target = "gsea",  position = "after",
-            tabPanel("Correlation Analysis", correlation_ui(id = "Corr")) )
-  correlation_server(id = "Corr")
   source("wgcna.R",local = TRUE)
   insertTab(session=session,  inputId = "menu", target = "gsea",  position = "after",
             tabPanel("WGCNA", value = "wgcna", wgcna_ui(id = "wgcna")) )
   wgcna_server(id = "wgcna", parent_session = session)
+  source("correlation.R",local = TRUE)
+  insertTab(session=session,  inputId = "menu", target = "wgcna",  position = "after",
+            tabPanel("Correlation Analysis", value = "Correlation", correlation_ui(id = "Corr")) )
+  correlation_server(id = "Corr")
   source("pattern.R",local = TRUE) 
+  source("TimeSeries.R",local = TRUE)
+  insertTab(session=session,  inputId = "menu", target = "Pattern_Clustering",  position = "after",
+            tabPanel("Time Course Analysis", value = "time_series", TimeSeries_ui(id = "time_series")) )
+  TimeSeries_server(id = "time_series", parent_session = session)
   source("vennprojects.R",local = TRUE)
   source("network.R",local = TRUE)
   source("help.R",local = TRUE)

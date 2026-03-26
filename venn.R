@@ -13,6 +13,7 @@
 observe({
 	DataIn = DataReactive()
 	tmptests = DataIn$tests
+	req(tmptests)
 	ntest <- length(tmptests)
 	if (ntest >= 5) 	{
 		ntest = 5

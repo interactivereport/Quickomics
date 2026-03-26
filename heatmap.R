@@ -8,12 +8,12 @@
 ##@Date : 5/16/2018
 ##@version 1.0
 ###########################################################################################################
-
+test2samples <- reactiveVal(NULL) 
 
 observe({
   #DataIn = DataReactive()
   MetaData=all_metadata()
-  tests = all_tests()
+  tests = test_order()    # all_tests()
   updateSelectizeInput(session,'heatmap_test',choices=tests, selected=tests[1])
   ProteinGeneName_Headers = ProteinGeneNameHeader()
   updateRadioButtons(session,'heatmap_label', inline = TRUE, choices=ProteinGeneName_Headers[-1], selected="Gene.Name")
@@ -21,18 +21,6 @@ observe({
   updateSelectInput(session, "heatmap_annot", choices=attributes, selected="group")  
 })
 
-#use groups and samples from QC_Plots tab
-#observe({
-  #DataIn = DataReactive()
- # groups = group_order()
-#  allsamples = all_samples()
-#  samples <- sample_order()
-#  tests = all_tests()
-#  allgroups = all_groups()
-#  updateSelectizeInput(session,'heatmap_groups', choices=allgroups, selected=groups)
-  #cat("show all samples", length(samples), length(groups), "\n") #debug
-#  updateSelectizeInput(session,'heatmap_samples', choices=allsamples, selected=samples)
-#})
 
 output$Test_to_sample<-renderUI({
   sel_comp=DataReactive()$sel_comp
@@ -44,15 +32,7 @@ output$Test_to_sample<-renderUI({
   } 
 })
 
-output$selectGroupSample <- output$selectGroupSampleHeatmap <- output$selectGroupSampleExpression <- output$selectGroupSampleQC <- renderUI({ 
-  sample_info=paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
-                 length(sample_order()), " out of ", length(all_samples()), 
-                 " Samples. (Update Selection at: Top Menu -> Groups and Samples.)", sep="")
-  tagList(
-    tags$p(sample_info),
-    tags$hr()
-  )
-})
+output$selectGroupSampleHeatmap <- renderUI(shared_header_content())
 
 observeEvent(input$heatmap_test2sample, {  
   comp1<-input$heatmap_test
@@ -60,7 +40,7 @@ observeEvent(input$heatmap_test2sample, {
   if (!is.null(sel_comp)) {
     samples=sel_comp$sample_list[sel_comp$Comparison==comp1]
     samples=str_split(samples, ",")[[1]]
-    sample_order(samples)
+    test2samples(samples)
     attribute_filters("")
     samples_excludeM(""); samples_excludeF("")
   }
@@ -76,9 +56,9 @@ filteredGene=reactive({
   heatmap_test = input$heatmap_test
   heatmap_fccut =log2(as.numeric(input$heatmap_fccut))
   heatmap_pvalcut = as.numeric(input$heatmap_pvalcut)
-  DataIn = DataReactive()
-  results_long = DataIn$results_long
-  
+  DataIn = DataQCReactive()   # DataReactive()
+  results_long = DataIn$tmp_results_long
+
   if (input$heatmap_psel == "Padj") {
     filteredGene = results_long %>% filter(test %in% heatmap_test & abs(logFC) > heatmap_fccut & Adj.P.Value < heatmap_pvalcut) %>%
       dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
@@ -102,38 +82,29 @@ output$heatmapfilteredgene <- renderText({ paste("Selected Genes:",length(filter
 
 
 DataHeatMapReactive <- reactive({
-  validate(need(group_order(), FALSE))
   validate(need(sample_order(), FALSE))
+  require(DataQCReactive())
   DataIn = DataReactive()
-  results_long = DataIn$results_long
   ProteinGeneName = DataIn$ProteinGeneName
-  MetaData = DataIn$MetaData
-  #cat("work on Data for Heatmap", date(), "\n") #debug
-  tmpgroups = group_order() #input$heatmap_groups
-  #group_order(input$heatmap_groups)
-  tmpsamples = sample_order() #input$heatmap_samples
-  tmpkeep = which((MetaData$group %in% tmpgroups)&(MetaData$sampleid %in% tmpsamples))
+  tmpDataIn = DataQCReactive()
+  tmpdat = tmpDataIn$tmp_data_wide
+  MetaData = tmpDataIn$MetaData
   gene_annot_info=NULL
-  tmp_group = MetaData$group[tmpkeep]
-  tmp_sampleid = MetaData$sampleid[tmpkeep]
+  tmp_group = MetaData$group
+  tmp_sampleid = tmpDataIn$tmp_sampleid
   annotation = data.frame("group" = tmp_group, sampleid=tmp_sampleid)
   rownames(annotation) <- tmp_sampleid
   annotation<-annotation%>%left_join(MetaData)
-  annotation$group = factor(tmp_group, levels=group_order() )
-  if(length(tmpkeep)>0) {
-    y <- group_order() #input$heatmap_groups
-    x= MetaData$group[tmpkeep]
-    z = MetaData$sampleid[tmpkeep]
-    new_order <- as.character(z[order(match(x, y))])
-    tmpdat  <- DataIn$data_wide %>% dplyr::select(all_of(new_order))
-    tmpdat[is.na(tmpdat)] <- 0
-    rownames(tmpdat) <-  rownames(DataIn$data_wide)
-  }
+  sel_group <- tmpDataIn$tmp_group$group
+  annotation$group = factor(tmp_group, levels=sel_group)
   
   if (input$heatmap_subset == "Subset") {
     if(length(filteredGene())>0) {
       gene_list=intersect(rownames(tmpdat), filteredGene()) #user only genes that are in expression.
       tmpdat  <-  tmpdat[gene_list,]
+      if (!is.null(test2samples())) {
+        tmpdat  <-  tmpdat[, test2samples()]
+      }
     }
   }
   
@@ -160,7 +131,7 @@ DataHeatMapReactive <- reactive({
         heatmap_list <-  stringr::str_split(heatmap_list, ",")[[1]]
       }
     } else {
-    req(input$file_gene_annot)
+      req(input$file_gene_annot)
       annot_genes=read_csv(input$file_gene_annot$datapath)
       heatmap_list=unlist(annot_genes[, 1])
     }
@@ -177,9 +148,9 @@ DataHeatMapReactive <- reactive({
     #restore order of the input list
     sel1=match(uploadlist, ProteinGeneName$UniqueID)
     ID_order<-ProteinGeneName[sel1, ]%>%mutate(N1=match(UniqueID, heatmap_list), N2=match(Protein.ID, heatmap_list), 
-                        N3=match(toupper(Gene.Name), toupper(heatmap_list)), N=pmin(N1, N2, N3, na.rm=T))%>%arrange(N)
+                                               N3=match(toupper(Gene.Name), toupper(heatmap_list)), N=pmin(N1, N2, N3, na.rm=T))%>%arrange(N)
     tmpdat  <-  tmpdat[ID_order$UniqueID,]
-     sel_rows1=rowSums(is.na(tmpdat))<ncol(tmpdat) #remove data rows with all NAs
+    sel_rows1=rowSums(is.na(tmpdat))<ncol(tmpdat) #remove data rows with all NAs
     sel_rows2=rownames(tmpdat) %in% rownames(DataIn$data_wide) #remove duplicate rows caused by matching (e.g."ALDH7A1_P49419"   "ALDH7A1_P49419-2")
     tmpdat  <-  tmpdat[sel_rows1 & sel_rows2, ]
     if (input$heatmap_upload_type=='Annotated Gene File') {
@@ -200,10 +171,10 @@ DataHeatMapReactive <- reactive({
     
     heatmap_list <- gsub(" ", "", heatmap_list, fixed = TRUE)
     heatmap_list <- unique(heatmap_list[heatmap_list != ""])
-
+    
     
     uploadlist <- dplyr::filter(ProteinGeneName, (toupper(UniqueID) %in% toupper(heatmap_list)) | 
-                    (toupper(Protein.ID) %in% toupper(heatmap_list))  | (toupper(Gene.Name) %in% toupper(heatmap_list)))  %>%
+                                  (toupper(Protein.ID) %in% toupper(heatmap_list))  | (toupper(Gene.Name) %in% toupper(heatmap_list)))  %>%
       dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
     
     validate(need(length(uploadlist)>2, message = "Please select at least 2 valid genes."))    
@@ -212,7 +183,7 @@ DataHeatMapReactive <- reactive({
     sel_rows2=rownames(tmpdat) %in% rownames(DataIn$data_wide) #remove duplicate rows caused by matching (e.g."ALDH7A1_P49419"   "ALDH7A1_P49419-2")
     tmpdat  <-  tmpdat[sel_rows1 & sel_rows2, ]
   }
-    
+  
   if (nrow(tmpdat)>5000 ) {tmpdat=tmpdat[sample(1:nrow(tmpdat), 5000),]; cat("Reduce data pionts to 5K\n")} #Use at most 5000 genes so the App won't crash
   
   df <- data.matrix(tmpdat)

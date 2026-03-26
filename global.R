@@ -58,6 +58,8 @@ suppressPackageStartupMessages({
   #library(DEGreport)
   library(rclipboard)
   library(WGCNA)
+  library(DEGreport)
+  library(gprofiler2)
 })
 
 
@@ -114,6 +116,11 @@ ProcessUploadGeneList <- function(gene_list) {
   gene_list <- gsub(" ", "", gene_list, fixed = TRUE)
   gene_list <- unique(gene_list[gene_list != ""])
   return(gene_list)
+}
+
+GetProteinGeneNames <- function(species) {
+  load("db/ProteinGeneName.RData")
+  return(ProteinGeneName[[species]])
 }
 
 LoadedData <- reactiveValues()

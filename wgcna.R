@@ -304,6 +304,7 @@ wgcna_ui <- function(id) {
                                 tabsetPanel(id=ns("WGCNA_Result"),
                                             tabPanel(title="Dendrogram", plotOutput(ns("Dendrogram"), height=800)),
                                             tabPanel(title="Gene Clusters",
+                                                     br(),
                                                      DT::dataTableOutput(ns("gene_cluster")),
                                                      tags$script(HTML(sprintf("
                                                      $(document).on('click', '[id^=runORA_]', function() {
@@ -315,22 +316,31 @@ wgcna_ui <- function(id) {
                        ),
                        tabPanel(title="Module Eigengenes",
                                 tabsetPanel(id=ns("Module_Eigengenes"),
-                                            tabPanel(title="Eigengene table", DT::dataTableOutput(ns("MEs"))),
-                                            tabPanel(title = "Eigengene Network",plotOutput(ns("Eigenene_Network"), height = "1000px"))
+                                            tabPanel(title="Eigengene table", 
+                                                     br(),
+                                                     actionButton(ns("Eigengene"), "Save to output"),
+                                                     br(),
+                                                     DT::dataTableOutput(ns("MEs"))),
+                                            tabPanel(title = "Eigengene Network",
+                                                     br(),
+                                                     plotOutput(ns("Eigenene_Network"), height = "1000px"))
                                 )
                        ),
                        tabPanel(title="Module-Trait Relationships", 
                                 tabsetPanel(id=ns("Module_Trait"),
                                             tabPanel(title="Module Trait Heatmap", 
+                                                     br(),
                                                      plotlyOutput(ns("module_trait_hmap"), height=800)
                                             ),
                                             tabPanel(title="Hub Gene Identification Table",
+                                                     br(),
+                                                     actionButton(ns("hub_gene"), "Save to output"),
+                                                     br(),
                                                      DT::dataTableOutput(ns("hub_gene_table"))
                                             ),
                                             tabPanel(
                                               title = "Hub Gene Identification Plot",
-                                              br(),
-                                              br(),
+                                              br(),br(),
                                               div(
                                                 style = "display: flex; gap: 20px;",
                                                 div(
@@ -394,6 +404,7 @@ wgcna_server <- function(id, parent_session) {
 
                         observe({
                           DataIn <- DataReactive()
+                          req(DataIn$data_wide)
                           data_wide <- na.omit(DataIn$data_wide)
                           default_n_gene <- min(10000, nrow(data_wide))
                           updateNumericInput(session, "WGCNAtopNum", 
@@ -491,12 +502,15 @@ wgcna_server <- function(id, parent_session) {
                             df_gene_clusters(t2)
                             
                             output$gene_cluster <- DT::renderDT({
-                              DT::datatable(
-                                t2,
-                                rownames = FALSE,
-                                escape = FALSE,
-                                selection = "none",
-                                colnames=c("Cluster", "Number of genes", "Action","Genes in cluster")
+                              DT::datatable(t2,
+                                            rownames = FALSE,
+                                            escape = FALSE,
+                                            selection = "none",
+                                            colnames=c("Cluster", "Number of genes", "Action","Genes in cluster"),
+                                            extensions = 'Buttons', 
+                                            options = list(dom = "Blfrtip", 
+                                                           buttons = c("csv", "excel", "print")
+                                            )
                               )
                             })
                             
@@ -673,6 +687,11 @@ wgcna_server <- function(id, parent_session) {
                           })
                         })
                         
+                        observeEvent(input$Eigengene, {
+                          browser()
+                          saved_table$Eigengene <- MEs_updated()
+                        })
+                        
                         # Show WGCNA QC and result tables and plots #####
                         # use input$WGCNAReactive() as event handler to ensure observeEvent() depends on it only
                         # and does not directly depends on input$, which ensure WGCNAReactive() will be calculated first.
@@ -708,25 +727,28 @@ wgcna_server <- function(id, parent_session) {
                           df_gene_clusters(t2)
 
                           output$gene_cluster <- DT::renderDT({
-                            DT::datatable(
-                              t2,
-                              escape = FALSE,
-                              selection = "none",
-                              colnames=c("Cluster", "Number of genes", "Action","Genes in cluster")
+                            DT::datatable(t2,
+                                          rownames = FALSE,
+                                          escape = FALSE,
+                                          selection = "none",
+                                          colnames=c("Cluster", "Number of genes", "Action","Genes in cluster"),
+                                          extensions = 'Buttons', 
+                                          options = list(dom = "Blfrtip", 
+                                                         buttons = c("csv", "excel", "print")
+                                          )
                             )
                           })
                           
                           output$MEs <- DT::renderDT({
-                            DT::datatable(
-                              MEs_updated(),  extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
-                              options = list(    dom = 'lBfrtip', pageLength = 15,
-                                                 buttons = list(
-                                                   list(extend = "csv", text = "Download Page", filename = "Page_results",
-                                                        exportOptions = list(modifier = list(page = "current"))),
-                                                   list(extend = "csv", text = "Download All", filename = "All_Results",
-                                                        exportOptions = list(modifier = list(page = "all")))
-                                                 )
-                              )) %>% 
+                            DT::datatable(MEs_updated(),  
+                                          extensions = 'Buttons', 
+                                          escape = FALSE, 
+                                          selection = 'none', 
+                                          class = 'cell-border strip hover',
+                                          options = list(dom = "Blfrtip", 
+                                                         buttons = c("csv", "excel", "print")
+                                                         )
+                                          ) %>% 
                               formatSignif(columns=names(MEs_updated()), digits=3)
                           })
                           
@@ -808,6 +830,7 @@ wgcna_server <- function(id, parent_session) {
                         observe({
                           DataIn = DataReactive()
                           MetaData = DataIn$MetaData
+                          req(MetaData)
                           attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") ))
                           updateSelectizeInput(session, "WGCNA_trait_var", choices=attributes, selected="group")
                         })
@@ -889,204 +912,209 @@ wgcna_server <- function(id, parent_session) {
                         })
                         
                         observeEvent(input$plot_module_hub, {
-                          req(moduleTraitCor())
-                          if (is.null(input$WGCNA_trait) || input$WGCNA_trait == "") { 
-                            showNotification("Selecting a trait is required to run the analysis.", type = "error") 
-                            return() 
-                          }
-                          
-                          # Retrive pre-computed wgcna result (load_wgcna_file) or on-the-fly result(WGCNAReactive()) 
-                          # compute hub gene results
-                          wgcna_out <- tryCatch(WGCNAReactive(), error = function(e) NULL)
-                          if (is.null(wgcna_out)) {
-                            req(ProjectInfo,DataReactive())
-                            ProjectID <- ProjectInfo$ProjectID
-                            wgcnafile <- ProjectInfo$file3
-                            load(wgcnafile)
-                            wgcna <- netwk
-                            load_wgcna_file <- file.path(dirname(wgcnafile), sub("^wgcna", "load", basename(wgcnafile)))
-                            load(load_wgcna_file)
-                          } else {
-                            picked_power <- wgcna_out$picked_power
-                            dataExpr <- wgcna_out$dataExpr
-                            wgcna <- wgcna_out$netwk
-                          }
-                          gene_label <- input$WGCNAgenelable
-                          DataIn = DataReactive()
-                          req(DataIn$ProteinGeneName)
-                          ProteinGeneName  <- DataIn$ProteinGeneName
-
-                          selected_trait <- input$WGCNA_trait     # trait is required 
-                          
-                          # module is optional, if not selected, then identify the one with strongest correlation
-                          if (!is.null(input$WGCNA_module) && input$WGCNA_module != "") {
-                            selected_trait_module <- input$WGCNA_module
-                          } else {
-                            # Get the module most strongly associated with the trait
-                            module_trait_cor <- moduleTraitCor()
-                            selected_trait_correlations <- abs(module_trait_cor[, selected_trait])
-                            selected_trait_module <- MEs_name_updated()[which.max(selected_trait_correlations)]
-                          }
-                          
-                          # Convert numeric module label to color name
-                          parts <- strsplit(selected_trait_module, "_")[[1]]
-                          numeric_label   <- sub("ME", "", parts[1])   # number
-                          module_name <- parts[2]                  # color
-                          
-                          # Get genes in this module
-                          module_genes <- tibble::tibble(
-                            UniqueID = names(wgcna$colors),
-                            color = labels2colors(wgcna$colors)
-                          ) %>%
-                            dplyr::filter(color == module_name) %>%
-                            pull(UniqueID) %>% 
-                            strsplit(",") %>% 
-                            unlist() %>% 
-                            trimws()  
-                          
-                          module_genes <- module_genes[module_genes != ""]
-                          module_genes <- intersect(module_genes, colnames(dataExpr))
-
-                          # Calculate connectivity 
-                          # First, calculate adjacency matrix for genes in this module
-                          adjacency_matrix <- adjacency(
-                            dataExpr[, module_genes],
-                            power = picked_power,
-                            type = "signed"
-                          )
-                          # Calculate connectivity: sum of connection weights for each gene (subtract 1 to exclude self-connection)
-                          connectivity <- rowSums(adjacency_matrix) - 1
-                          
-                          # Calculate module membership for these genes
-                          # MM measures how correlated each gene is with the module eigengene
-                          gene_module_membership <- cor(dataExpr[, module_genes],
-                                                        MEs_updated()[, selected_trait_module],
-                                                        use = "pairwise.complete.obs")
-                        
-                          # Calculate gene significance (correlation with trait)
-                          nSamples = nrow(trait_data())
-                          gene_trait_cor <- cor(dataExpr, trait_data()[ , selected_trait], use = "pairwise.complete.obs")
-                          gene_trait_pvalue <- corPvalueStudent(as.numeric(gene_trait_cor), nSamples)
-                          
-                          # Add gene names to the p-value vector
-                          names(gene_trait_cor) <- colnames(dataExpr)
-                          names(gene_trait_pvalue) <- colnames(dataExpr)
-                          
-                          if (! all(names(dataExpr) %in% ProteinGeneName[, gene_label])) {
-                            current_label <- setdiff(c("UniqueID","Gene.Name"), gene_label)
-                            id_to_gene <- setNames(ProteinGeneName[ , gene_label], ProteinGeneName[ , current_label])
-                            module_genes_display = id_to_gene[module_genes]
-                          } else {
-                            module_genes_display = module_genes
-                          }
-                          
-                          # Combine all metrics for hub gene identification
-                          hub_gene_info <- data.frame(
-                            Gene = module_genes_display,
-                            Connectivity = connectivity,
-                            ModuleMembership = as.numeric(gene_module_membership),
-                            MM_pvalue = corPvalueStudent(as.numeric(gene_module_membership), nSamples),
-                            GeneSignificance = gene_trait_cor[module_genes],
-                            GS_pvalue = gene_trait_pvalue[module_genes],
-                            stringsAsFactors = FALSE
-                          ) %>% 
-                            dplyr::filter(Gene != "")
-                          
-                          # Sort by connectivity to identify hubs
-                          hub_gene_info <- hub_gene_info[order(-hub_gene_info$Connectivity), ]
-                          
-                          df_hub_gene(hub_gene_info)
+                          withProgress(message = 'Processing...', value = 0, {
+                            req(moduleTraitCor())
+                            if (is.null(input$WGCNA_trait) || input$WGCNA_trait == "") { 
+                              showNotification("Selecting a trait is required to run the analysis.", type = "error") 
+                              return() 
+                            }
+                            
+                            # Retrive pre-computed wgcna result (load_wgcna_file) or on-the-fly result(WGCNAReactive()) 
+                            # compute hub gene results
+                            wgcna_out <- tryCatch(WGCNAReactive(), error = function(e) NULL)
+                            if (is.null(wgcna_out)) {
+                              req(ProjectInfo,DataReactive())
+                              ProjectID <- ProjectInfo$ProjectID
+                              wgcnafile <- ProjectInfo$file3
+                              load(wgcnafile)
+                              wgcna <- netwk
+                              load_wgcna_file <- file.path(dirname(wgcnafile), sub("^wgcna", "load", basename(wgcnafile)))
+                              load(load_wgcna_file)
+                            } else {
+                              picked_power <- wgcna_out$picked_power
+                              dataExpr <- wgcna_out$dataExpr
+                              wgcna <- wgcna_out$netwk
+                            }
+                            gene_label <- input$WGCNAgenelable
+                            DataIn = DataReactive()
+                            req(DataIn$ProteinGeneName)
+                            ProteinGeneName  <- DataIn$ProteinGeneName
+                            
+                            selected_trait <- input$WGCNA_trait     # trait is required 
+                            
+                            # module is optional, if not selected, then identify the one with strongest correlation
+                            if (!is.null(input$WGCNA_module) && input$WGCNA_module != "") {
+                              selected_trait_module <- input$WGCNA_module
+                            } else {
+                              # Get the module most strongly associated with the trait
+                              module_trait_cor <- moduleTraitCor()
+                              selected_trait_correlations <- abs(module_trait_cor[, selected_trait])
+                              selected_trait_module <- MEs_name_updated()[which.max(selected_trait_correlations)]
+                            }
+                            
+                            # Convert numeric module label to color name
+                            parts <- strsplit(selected_trait_module, "_")[[1]]
+                            numeric_label   <- sub("ME", "", parts[1])   # number
+                            module_name <- parts[2]                  # color
+                            
+                            # Get genes in this module
+                            module_genes <- tibble::tibble(
+                              UniqueID = names(wgcna$colors),
+                              color = labels2colors(wgcna$colors)
+                            ) %>%
+                              dplyr::filter(color == module_name) %>%
+                              pull(UniqueID) %>% 
+                              strsplit(",") %>% 
+                              unlist() %>% 
+                              trimws()  
+                            
+                            module_genes <- module_genes[module_genes != ""]
+                            module_genes <- intersect(module_genes, colnames(dataExpr))
+                            
+                            # Calculate connectivity 
+                            # First, calculate adjacency matrix for genes in this module
+                            adjacency_matrix <- adjacency(
+                              dataExpr[, module_genes],
+                              power = picked_power,
+                              type = "signed"
+                            )
+                            # Calculate connectivity: sum of connection weights for each gene (subtract 1 to exclude self-connection)
+                            connectivity <- rowSums(adjacency_matrix) - 1
+                            
+                            # Calculate module membership for these genes
+                            # MM measures how correlated each gene is with the module eigengene
+                            gene_module_membership <- cor(dataExpr[, module_genes],
+                                                          MEs_updated()[, selected_trait_module],
+                                                          use = "pairwise.complete.obs")
+                            
+                            # Calculate gene significance (correlation with trait)
+                            nSamples = nrow(trait_data())
+                            gene_trait_cor <- cor(dataExpr, trait_data()[ , selected_trait], use = "pairwise.complete.obs")
+                            gene_trait_pvalue <- corPvalueStudent(as.numeric(gene_trait_cor), nSamples)
+                            
+                            # Add gene names to the p-value vector
+                            names(gene_trait_cor) <- colnames(dataExpr)
+                            names(gene_trait_pvalue) <- colnames(dataExpr)
+                            
+                            if (! all(names(dataExpr) %in% ProteinGeneName[, gene_label])) {
+                              current_label <- setdiff(c("UniqueID","Gene.Name"), gene_label)
+                              id_to_gene <- setNames(ProteinGeneName[ , gene_label], ProteinGeneName[ , current_label])
+                              module_genes_display = id_to_gene[module_genes]
+                            } else {
+                              module_genes_display = module_genes
+                            }
+                            
+                            # Combine all metrics for hub gene identification
+                            hub_gene_info <- data.frame(
+                              Gene = module_genes_display,
+                              Connectivity = connectivity,
+                              ModuleMembership = as.numeric(gene_module_membership),
+                              MM_pvalue = corPvalueStudent(as.numeric(gene_module_membership), nSamples),
+                              GeneSignificance = gene_trait_cor[module_genes],
+                              GS_pvalue = gene_trait_pvalue[module_genes],
+                              stringsAsFactors = FALSE
+                            ) %>% 
+                              dplyr::filter(Gene != "")
+                            
+                            # Sort by connectivity to identify hubs
+                            hub_gene_info <- hub_gene_info[order(-hub_gene_info$Connectivity), ]
+                            
+                            df_hub_gene(hub_gene_info)
+                          })
                           
                           output$hub_gene_table <- DT::renderDT({
-                            DT::datatable(
-                              df_hub_gene(),rownames = FALSE, extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
-                              options = list(    dom = 'lBfrtip', pageLength = 15,
-                                                 buttons = list(
-                                                   list(extend = "csv", text = "Download Page", filename = "Page_results",
-                                                        exportOptions = list(modifier = list(page = "current"))),
-                                                   list(extend = "csv", text = "Download All", filename = "All_Results",
-                                                        exportOptions = list(modifier = list(page = "all")))
-                                                 )
-                              )) %>% 
-                              formatSignif(columns=names(Filter(is.numeric, df_hub_gene())), digits=3)
-                          })
-                          
-
-                          output$plot_MMvsGS <- renderPlotly({
-                            module_gene_info <- df_hub_gene()
-                            
-                            # Sort
-                            module_gene_info <- module_gene_info[order(-abs(module_gene_info$ModuleMembership)), ]
-                            
-                            # x and y
-                            x <- abs(module_gene_info$ModuleMembership)
-                            y <- abs(module_gene_info$GeneSignificance)
-                            
-                            # Regression
-                            fit <- lm(y ~ x)
-                            x_seq <- seq(min(x), max(x), length.out = 100)
-                            y_pred <- predict(fit, newdata = data.frame(x = x_seq))
-                            
-                            # Correlation
-                            mm_gs_cor <- cor(x, y, use = "pairwise.complete.obs")
-                            
-                            char_df <- module_gene_info
-                            
-                            # Format numeric columns to 3 decimals (or whatever you want)
-                            num_cols <- sapply(char_df, is.numeric)
-                            char_df[num_cols] <- lapply(char_df[num_cols], function(x) sprintf("%.3f", x))
-                            
-                            # Convert everything to character
-                            char_df <- data.frame(lapply(char_df, as.character), stringsAsFactors = FALSE)
-                            
-                            cols <- colnames(char_df)
-                            
-                            hover_text <- apply(char_df, 1, function(row) {
-                              paste0("<b>", cols, ":</b> ", row, collapse = "<br>")
+                              DT::datatable(df_hub_gene(),
+                                            rownames = FALSE, 
+                                            extensions = 'Buttons', 
+                                            escape = FALSE, 
+                                            selection = 'none', 
+                                            class = 'cell-border strip hover',
+                                            options = list(dom = "Blfrtip", 
+                                                           buttons = c("csv", "excel", "print")
+                                            )
+                              ) %>% 
+                                formatSignif(columns=names(Filter(is.numeric, df_hub_gene())), digits=3)
                             })
                             
-                            # Build hover template dynamically
-                            cols <- colnames(module_gene_info)
-                            hover_lines <- paste0(
-                              "<b>", cols, ":</b> %{customdata[", seq_along(cols) - 1, "]}", 
-                              collapse = "<br>"
-                            )
-                            hover_template <- paste0(hover_lines, "<extra></extra>")
-                            
-                            plot_ly() %>%
-                              add_markers(
-                                x = x,
-                                y = y,
-                                type = "scatter",
-                                mode = "markers", # Added this to ensure clean rendering
-                                marker = list(color = module_name, size = 8),
-                                text = hover_text,                       # <--- Pass your pre-built R strings here
-                                hovertemplate = "%{text}<extra></extra>", # <--- Just tell Plotly to show the text
-                                name = 'Gene'
-                              ) %>%
-                              add_lines(
-                                x = x_seq,
-                                y = y_pred,
-                                line = list(color = "red", width = 2),
-                                name = "Regression"
-                              ) %>%
-                              layout(
-                                title = paste("MM vs GS in", selected_trait_module, "module"),
-                                xaxis = list(title = paste("Module Membership in", selected_trait_module, "module")),
-                                yaxis = list(title = paste("Gene Significance for", selected_trait)),
-                                annotations = list(
-                                  list(
-                                    x = min(x),
-                                    y = max(y),
-                                    text = paste("cor =", round(mm_gs_cor, 3)),
-                                    xanchor = "left",
-                                    yanchor = "top",
-                                    showarrow = FALSE,
-                                    font = list(size = 14)
+                          observeEvent(input$hub_gene, {
+                            saved_table$hub_gene <- df_hub_gene()
+                          })
+                          
+                          output$plot_MMvsGS <- renderPlotly({
+                              module_gene_info <- df_hub_gene()
+                              
+                              # Sort
+                              module_gene_info <- module_gene_info[order(-abs(module_gene_info$ModuleMembership)), ]
+                              
+                              # x and y
+                              x <- abs(module_gene_info$ModuleMembership)
+                              y <- abs(module_gene_info$GeneSignificance)
+                              
+                              # Regression
+                              fit <- lm(y ~ x)
+                              x_seq <- seq(min(x), max(x), length.out = 100)
+                              y_pred <- predict(fit, newdata = data.frame(x = x_seq))
+                              
+                              # Correlation
+                              mm_gs_cor <- cor(x, y, use = "pairwise.complete.obs")
+                              
+                              char_df <- module_gene_info
+                              
+                              # Format numeric columns to 3 decimals (or whatever you want)
+                              num_cols <- sapply(char_df, is.numeric)
+                              char_df[num_cols] <- lapply(char_df[num_cols], function(x) sprintf("%.3f", x))
+                              
+                              # Convert everything to character
+                              char_df <- data.frame(lapply(char_df, as.character), stringsAsFactors = FALSE)
+                              
+                              cols <- colnames(char_df)
+                              
+                              hover_text <- apply(char_df, 1, function(row) {
+                                paste0("<b>", cols, ":</b> ", row, collapse = "<br>")
+                              })
+                              
+                              # Build hover template dynamically
+                              cols <- colnames(module_gene_info)
+                              hover_lines <- paste0(
+                                "<b>", cols, ":</b> %{customdata[", seq_along(cols) - 1, "]}", 
+                                collapse = "<br>"
+                              )
+                              hover_template <- paste0(hover_lines, "<extra></extra>")
+                              
+                              plot_ly() %>%
+                                add_markers(
+                                  x = x,
+                                  y = y,
+                                  type = "scatter",
+                                  mode = "markers", # Added this to ensure clean rendering
+                                  marker = list(color = module_name, size = 8),
+                                  text = hover_text,                       # <--- Pass your pre-built R strings here
+                                  hovertemplate = "%{text}<extra></extra>", # <--- Just tell Plotly to show the text
+                                  name = 'Gene'
+                                ) %>%
+                                add_lines(
+                                  x = x_seq,
+                                  y = y_pred,
+                                  line = list(color = "red", width = 2),
+                                  name = "Regression"
+                                ) %>%
+                                layout(
+                                  title = paste("MM vs GS in", selected_trait_module, "module"),
+                                  xaxis = list(title = paste("Module Membership in", selected_trait_module, "module")),
+                                  yaxis = list(title = paste("Gene Significance for", selected_trait)),
+                                  annotations = list(
+                                    list(
+                                      x = min(x),
+                                      y = max(y),
+                                      text = paste("cor =", round(mm_gs_cor, 3)),
+                                      xanchor = "left",
+                                      yanchor = "top",
+                                      showarrow = FALSE,
+                                      font = list(size = 14)
+                                    )
                                   )
                                 )
-                              )
-                          })
+                            })
                           
                           output$plot_MMvsConnectivity <- renderPlotly({
                             hub_gene_info <- df_hub_gene()

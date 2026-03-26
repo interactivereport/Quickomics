@@ -109,6 +109,19 @@ output$downloadPDF <- downloadHandler(
 			}
 		}
 
+		## Geneset dot plot
+		if (!is.null(saved_plots$dotplot)){
+		  for (i in 1:length(names(saved_plots$dotplot))) {
+		    title_tmp <- paste("KEGG View (", i,")",sep="")
+		    if (title_tmp %in% plots_checked) {
+		      par(mai=c(0,0,0,0))
+		      plot(c(0,1),c(0,1),type="n")
+		      rasterImage(saved_plots$dotplot[[i]],0,0,1,1)
+		      Np=Np+1
+		    }
+		  }
+		}
+		
 		### boxplot plot
 		if (!is.null(saved_plots$boxplot)){
 			for (i in 1:length(saved_plots$boxplot)) {
@@ -129,6 +142,17 @@ output$downloadPDF <- downloadHandler(
 					Np=Np+1
 				}
 			}
+		}
+		
+		### Time Series Cluster
+		if (!is.null(saved_plots$ts_cluster_plot)){
+		  for (i in 1:length(saved_plots$ts_cluster_plot)) {
+		    title_tmp <- paste("Time Series Cluster Plot (",i,")",sep="")
+		    if (title_tmp %in% plots_checked) {
+		      print(saved_plots$ts_cluster_plot[[i]])
+		      Np=Np+1
+		    }
+		  }
 		}
 		
 		###vennDiagram
@@ -252,7 +276,14 @@ observe({
 		}
 	}
 
-
+	## Geneset dotplot
+	if (!is.null(saved_plots$dotplot)){
+	  for (i in 1:length(names(saved_plots$dotplot))) {
+	    title_tmp <- paste("pathway dot plot (", i,")",sep="")
+	    summary=c(summary,  title_tmp)
+	  }
+	}
+	
 	### boxplot plot
 	if (!is.null(saved_plots$boxplot)){
 		for (i in 1:length(saved_plots$boxplot)) {
@@ -295,6 +326,14 @@ observe({
 	    p.name <- names(saved_plots$CorrPlot)[i]
 	    title_tmp <- paste("Correlation Plot (",p.name,")",sep="")
 	    summary=c(summary,  title_tmp)
+	  }
+	}
+	
+	## Time Series Cluster
+	if (!is.null(saved_plots$ts_cluster_plot)){
+	  for (i in 1:length(saved_plots$ts_cluster_plot)) {
+	    title_tmp <- paste("Time Series Cluster Plot (",i,")",sep="")
+	    summary=c(summary, title_tmp)
 	  }
 	}
 	

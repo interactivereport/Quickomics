@@ -62,7 +62,7 @@ correlation_ui <- function(id) {
   fluidRow(
     column(3,
            wellPanel(
-             column(width=12,uiOutput(ns("selectGroupSampleCorr"))),
+             column(width=12,uiOutput(ns("selectGroupSampleCorr"))), 
              radioButtons(ns("correlation_type"), "Correlation Type:", choices = c("Gene-Gene" = "gene", "Sample-Sample" = "sample", "Group-Group" = "group"), inline = TRUE, selected = "gene"),
              radioButtons(ns("gene_subset"),label="Genes Used in Correlation Analysis", choices=c(""),inline = TRUE),
              conditionalPanel(ns=ns, "input.gene_subset=='Select'",
@@ -143,10 +143,11 @@ correlation_server <- function(id) {
                  genelabel <- reactiveVal()
                  CorrMethod <- reactiveVal()
                  observe({
-                   req(DataReactive())
+                   req(DataQCReactive())
                    req(input$gene_label)
-                   DataIn = DataReactive()
+                   DataIn = DataQCReactive()
                    ProteinGeneName = DataIn$ProteinGeneName
+                   req(ProteinGeneName)
                    MetaData = DataIn$MetaData
                    
                    if (input$gene_label=="UniqueID") {
@@ -158,7 +159,7 @@ correlation_server <- function(id) {
                  })
                  
                  observe({
-                   tests = all_tests()
+                   tests = test_order()
                    ProteinGeneName_Header = ProteinGeneNameHeader()
                    updateSelectizeInput(session,'sel_test',choices=tests, selected=tests[1])
                  })
@@ -169,9 +170,13 @@ correlation_server <- function(id) {
                  })
                  
                  observe({
-                   DataIn = DataReactive()
+                   DataIn = DataQCReactive()
                    MetaData = DataIn$MetaData
-                   preset_group=group_order() 
+                   if ('group' %in% names(DataIn$tmp_group)) {
+                     preset_group <- as.factor(DataIn$tmp_group$group)
+                   } else {
+                     preset_group <- as.factor(all_group_list()$group)
+                   }
                    attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") ))
                    updateSelectInput(session, "sel_attribute", choices=attributes, selected="group")
                    updateSelectizeInput(session,'sel_group',choices=preset_group)
@@ -204,7 +209,7 @@ correlation_server <- function(id) {
                  observeEvent(input$sel_gene, {
                    req(input$gene_subset == "Select")
                    req(input$sel_gene!="")
-                   DataIn = DataReactive()
+                   DataIn = DataQCReactive()
                    ProteinGeneName = DataIn$ProteinGeneName
                    gene_list = input$sel_gene
                    res_gene_count <- get_gene_counts(ProteinGeneName, gene_list)
@@ -216,7 +221,7 @@ correlation_server <- function(id) {
                  })
                  
                  observe({
-                   req(DataReactive())
+                   req(DataQCReactive())
                    req(input$sel_test)
                    p_sel   <- input$psel
                    test_sel <- input$sel_test
@@ -224,8 +229,8 @@ correlation_server <- function(id) {
                    pvalcut <- as.numeric(input$pvalcut)
                    Updown <- input$updown
                    
-                   DataIn = DataReactive()
-                   results_long = DataIn$results_long
+                   DataIn = DataQCReactive()
+                   results_long = DataIn$tmp_results_long
                    ProteinGeneName = DataIn$ProteinGeneName
 
                    tmpdat <- GeneFilter(results_long, test_sel, p_sel, Updown, pvalcut, FCcut,'UniqueID')
@@ -245,7 +250,7 @@ correlation_server <- function(id) {
                    gene_list <- input$gene_list
                    gene_list <- ProcessUploadGeneList(gene_list)
 
-                   DataIn = DataReactive()
+                   DataIn = DataQCReactive()
                    ProteinGeneName = DataIn$ProteinGeneName
 
                    res_gene_count <- get_gene_counts(ProteinGeneName, gene_list)
@@ -269,7 +274,7 @@ correlation_server <- function(id) {
                    gene_list <- GetGenesFromGeneSet(sel_geneset)
                    updateTextAreaInput(session, "geneset_genes", value=paste(gene_list, collapse=","))
                    
-                   DataIn = DataReactive()
+                   DataIn = DataQCReactive()
                    ProteinGeneName = DataIn$ProteinGeneName
 
                    res_gene_count <- get_gene_counts(ProteinGeneName, gene_list)
@@ -292,9 +297,15 @@ correlation_server <- function(id) {
                  
                  observeEvent(input$sel_attribute, {
                    req(input$sel_attribute)
-                   DataIn = DataReactive()
-                   MetaData = DataIn$MetaData %>% filter(sampleid %in% sample_order())
-                   groups = unique(MetaData[, input$sel_attribute])
+                   DataIn = DataQCReactive()
+                   MetaData = DataIn$MetaData # %>% filter(sampleid %in% sample_order())
+                   # groups = unique(MetaData[, input$sel_attribute])
+                   if (input$sel_attribute %in% names(DataIn$tmp_group)) {
+                     groups <- DataIn$tmp_group[[input$sel_attribute]]
+                   } else {
+                     groups <- all_group_list()[[input$sel_attribute]]
+                   }
+                   
                    updateSelectizeInput(session,'sel_group',choices=groups)
                    output$Selected_groups <- renderText({""})
                  })
@@ -312,10 +323,10 @@ correlation_server <- function(id) {
                  })
 
                  CorrResult <- eventReactive(input$compute_corr, { 
-                   DataIn <- DataReactive()
-                   data_long <- DataIn$data_long
-                   preset_group=group_order() 
-                   preset_samples=sample_order()
+                   DataIn <- DataQCReactive()
+                   data_long <- DataIn$tmp_data_long
+                   # preset_group=group_order() 
+                   # preset_samples=sample_order()
                    if (input$gene_subset == "All") {
                      tmpids <- DataIn$ProteinGeneName %>% dplyr::pull(UniqueID) %>% unique()
                    } else {
@@ -326,7 +337,7 @@ correlation_server <- function(id) {
                    }
                    if (input$correlation_type=='gene') {
                      exp_tmp = data_long %>% 
-                       dplyr::filter(UniqueID %in% tmpids, group %in% preset_group, sampleid %in% preset_samples) %>%
+                       dplyr::filter(UniqueID %in% tmpids) %>%        #, group %in% preset_group, sampleid %in% preset_samples) %>%
                        dplyr::select(gene = !!sym(genelabel), sampleid, expr) %>%
                        dplyr::filter(!is.na(expr)) %>% 
                        tidyr::pivot_wider(
@@ -339,7 +350,7 @@ correlation_server <- function(id) {
                    } else if (input$correlation_type=='sample') {
                      validate(need(length(input$sel_sample) > 1, message = "Please input at least 2 samples."))
                      exp_tmp = data_long %>% 
-                       dplyr::filter(UniqueID %in% tmpids, group %in% preset_group, sampleid %in% input$sel_sample) %>%
+                       dplyr::filter(UniqueID %in% tmpids, sampleid %in% input$sel_sample) %>%        # , group %in% preset_group, sampleid %in% input$sel_sample) %>%
                        dplyr::select(gene = UniqueID, sampleid, expr) %>%
                        dplyr::filter(!is.na(expr)) %>% 
                        tidyr::pivot_wider(
@@ -355,13 +366,13 @@ correlation_server <- function(id) {
                      validate(need(length(sel_group) > 1, message = "Please input at least 2 groups."))
                      adding_number <- ifelse(exp_unit() == "Expression Level", 0, as.numeric(str_extract(exp_unit(), "(?<=\\+)\\d*\\.?\\d+")))
                      if (is.na(adding_number)) {adding_number=0}
-                     data_long <- DataIn$data_long
+                     # data_long <- DataIn$data_long
                      sel_attribute <- input$sel_attribute
-                     MetaData = DataIn$MetaData %>% filter(sampleid %in% sample_order(), !!sym(sel_attribute) %in% sel_group)
+                     MetaData = DataIn$MetaData # %>% filter(sampleid %in% sample_order(), !!sym(sel_attribute) %in% sel_group)
                      
                      exp_tmp = data_long %>% 
-                       dplyr::left_join(MetaData %>% dplyr::select(sampleid, !!sym(sel_attribute)), by = "sampleid", suffix = c("", "_meta")) %>%
-                       dplyr::filter(UniqueID %in% tmpids, sampleid %in% MetaData$sampleid) %>%
+                       # dplyr::left_join(MetaData %>% dplyr::select(sampleid, !!sym(sel_attribute)), by = "sampleid", suffix = c("", "_meta")) %>%
+                       dplyr::filter(UniqueID %in% tmpids) %>%       # , sampleid %in% MetaData$sampleid) %>%
                        dplyr::select(gene = UniqueID, !!sym(sel_attribute), expr) %>%
                        dplyr::filter(!is.na(expr)) %>% 
                        dplyr::mutate(TPM = 2^expr-adding_number) %>%
@@ -396,6 +407,14 @@ correlation_server <- function(id) {
                    res_corr_sorted <- res_corr[order(-res_corr$correlation), ]
                    rownames(res_corr_sorted) <- seq(1:nrow(res_corr_sorted))
                    res_corr_sorted$rank <- rownames(res_corr_sorted)
+                   
+                   browser()
+                   
+                   res_corr_sorted$Action <- "View Correlation Plot"
+                   res_corr_sorted <- res_corr_sorted %>% 
+                     dplyr::relocate(Action, .before = intercept) %>%
+                     dplyr::relocate(rank, .before = 1)
+                   
                    return(list("corr_table" = res_corr_sorted, "exp_filtered" = exp_tmp ))
                  })
                  
@@ -403,18 +422,18 @@ correlation_server <- function(id) {
                    res <- CorrResult()
                    corr_table <- res$corr_table
                    
-                   DT::datatable(
-                     corr_table,  extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
-                     options = list(    dom = 'lBfrtip', pageLength = 15,
-                                        buttons = list(
-                                          list(extend = "csv", text = "Download Page", filename = "Page_results",
-                                               exportOptions = list(modifier = list(page = "current"))),
-                                          list(extend = "csv", text = "Download All", filename = "All_Results",
-                                               exportOptions = list(modifier = list(page = "all")))
-                                        )
+                   DT::datatable(corr_table,  
+                                 rownames = FALSE, extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
+                                 options = list(dom = 'lBfrtip', pageLength = 15,
+                                                buttons = list(
+                                                  list(extend = "csv", text = "Download Page", filename = "Page_results",
+                                                       exportOptions = list(modifier = list(page = "current"))),
+                                                  list(extend = "csv", text = "Download All", filename = "All_Results",
+                                                       exportOptions = list(modifier = list(page = "all")))
+                                                  )
                      )) %>% 
                      formatSignif(columns=c('intercept', 'slope', 'r_squared', 'correlation', 'p.value'), digits=3) %>% 
-                     formatStyle(8, cursor = 'pointer',color='blue')
+                     formatStyle(4, cursor = 'pointer',color='blue')
                  })
                  
                  observeEvent(input$corr_table_cell_clicked, {
@@ -426,8 +445,8 @@ correlation_server <- function(id) {
                    
                    if (length(clicked) > 0) {
                      row <- clicked$row
-                     gene1 <- corr_table[row, 1]
-                     gene2 <- corr_table[row, 2]
+                     gene1 <- corr_table[row, 2]
+                     gene2 <- corr_table[row, 3]
                      
                      eqn <- sprintf("Correlation: %.3f\ny = %.3f %+.3fx\nR² = %.3f, p.value = %.3f",
                                     corr_table$correlation[row],
@@ -484,17 +503,8 @@ correlation_server <- function(id) {
                      updateTabsetPanel(session, "correlation_tabset", selected = "Correlation Plot")
                    }
                  })
-                 output$selectGroupSampleCorr<- renderUI({ 
-                    sample_info=paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ", 
-                                   length(sample_order()), " out of ", length(all_samples()), 
-                                   " Samples. (Update Selection at: Top Menu -> Groups and Samples.)", sep="")
-                    tagList(
-                      tags$p(sample_info),
-                      tags$hr()
-                    )
-                  })
+                 output$selectGroupSampleCorr<- renderUI(shared_header_content())
 
-                 
                  output$data_table <- DT::renderDataTable({
                    req(public_dataset)
                    res <- CorrResult()

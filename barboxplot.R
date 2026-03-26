@@ -9,9 +9,12 @@
 ##@version 1.0
 ###########################################################################################################
 
+output$selectGroupSampleExpression <- renderUI(shared_header_content())
+
 observe({
-  MetaData=all_metadata()
-	DataIn = DataReactive()
+  req(DataQCReactive())
+	DataIn = DataQCReactive()      #  DataReactive()
+	MetaData=DataIn$MetaData
 	ProteinGeneName = DataIn$ProteinGeneName
 	#ProteinGeneName = DataIn$data_results
 	#DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
@@ -27,19 +30,13 @@ observe({
 })
 
 observe({
-	#DataIn = DataReactive()
-	#groups = group_order()
-	tests = all_tests()
-	allgroups = all_groups()
+  req(DataQCReactive())
+  DataIn = DataQCReactive()
+	tests = test_order()    #   all_tests()
 	ProteinGeneName_Header = ProteinGeneNameHeader()
-	#updateSelectizeInput(session,'sel_group', choices=allgroups, selected=groups)
 	updateRadioButtons(session,'sel_geneid', inline = TRUE, choices=c(ProteinGeneName_Header[-1], "Gene.Name_UniqueID"), selected="Gene.Name")
 	updateSelectizeInput(session,'expression_test',choices=tests, selected=tests[1])
 })
-
-#no longer needed, assign at heatmap.R
-#output$selectGroupSampleExpression <- renderText({ paste("Selected ",length(group_order()), " out of ", length(all_groups()), " Groups, ",
-#     length(sample_order()), " out of ", length(all_samples()), " Samples.", " (Update Selection at: QC Plots->Groups and Samples.)", sep="")})
 
 #linear value parameters
 observe( {
@@ -57,8 +54,8 @@ observe( {
 })
 
 observe({
-	DataIn = DataReactive()
-	results_long = DataIn$results_long
+	DataIn = DataQCReactive()         # DataReactive()
+	results_long = DataIn$tmp_results_long
 	if (!is.null(results_long)){
   	expression_test =input$expression_test
   	expression_fccut = log2(as.numeric(input$expression_fccut))
@@ -74,7 +71,6 @@ observe({
   		dplyr::filter(abs(logFC) > expression_fccut & P.Value < expression_pvalcut) %>%
   		dplyr::filter(test == expression_test)
   	}
-  
   	output$expfilteredgene <- renderText({paste("Selected Genes:",nrow(filteredgene),sep="")})
   	updateSelectInput(session,'sel_page', choices= seq_len(ceiling(nrow(filteredgene)/numperpage)))
 	}
@@ -82,18 +78,20 @@ observe({
 
 
 DataExpReactive <- reactive({
+  DataIn = DataQCReactive()
+	validate(need(length(DataIn$tmp_group$group)>0,"Please select group(s)."))
 
-	validate(need(length(group_order())>0,"Please select group(s)."))
-
-	DataIn = DataReactive()
-	data_long = DataIn$data_long
-	results_long = DataIn$results_long
+	data_long = DataIn$tmp_data_long
+	results_long = DataIn$tmp_results_long
 	ProteinGeneName = DataIn$ProteinGeneName
-	sel_group=group_order() #input$sel_group
 	sel_gene=input$sel_gene
 	genelabel=input$sel_geneid
-	#group_order(input$sel_group)
-	sel_samples=sample_order()
+	if ('group' %in% names(DataIn$tmp_group)) {
+	  sel_group <- DataIn$tmp_group$group
+	} else {
+	  sel_group <- all_group_list()$group
+	}
+	
 
 	if (input$exp_subset == "Select") {
 	  validate(need(length(input$sel_gene)>0,"Please select a gene."))
@@ -134,35 +132,34 @@ DataExpReactive <- reactive({
 	}
 	if (length(tmpids)>100) {cat("show only first 100 genes in exprssion plot.\n"); tmpids=tmpids[1:100]}
 
-	data_long_tmp = filter(data_long, UniqueID %in% tmpids, group %in% sel_group, sampleid %in% sel_samples) %>%
-	filter(!is.na(expr)) %>% as.data.frame()
-	data_long_tmp<-data_long_tmp%>%mutate(Gene.Name_UniqueID=str_c(Gene.Name, "_", UniqueID))
+	data_long_tmp <- filter(data_long, UniqueID %in% tmpids) %>% 
+	  filter(!is.na(expr)) %>% as.data.frame()
+	data_long_tmp <- data_long_tmp %>% mutate(Gene.Name_UniqueID=str_c(Gene.Name, "_", UniqueID))
 	data_long_tmp$labelgeneid = data_long_tmp[,match(genelabel,colnames(data_long_tmp))]
 	data_long_tmp$group = factor(data_long_tmp$group,levels = sel_group)
 	if (input$exp_plot_Y_scale=='Linear') {
-	  data_long_tmp<-data_long_tmp%>%mutate(expr=input$linear_base^(expr-input$linear_small_value))
+	  data_long_tmp <- data_long_tmp %>% mutate(expr=input$linear_base^(expr-input$linear_small_value))
 	}
 	result_long_tmp=NULL
 	if (!is.null(results_long)) {
 	  result_long_tmp = filter(results_long, UniqueID %in% tmpids) %>%  as.data.frame()
-	  gene_multi_uid<-result_long_tmp%>%distinct(Gene.Name, UniqueID)%>%group_by(Gene.Name)%>%dplyr::count()%>%dplyr::filter(n>1)
-	  if (nrow(gene_multi_uid)>0) {search_gene_info<-str_c(search_gene_info, 
-	                                                       "\nPlease note some gene names map to mulitiple UniqueIDs, we recommend using Gene.Name_UniqueID as Gene Label to separate the UniqueIDs in the plot.")}
+	  gene_multi_uid <- result_long_tmp %>% distinct(Gene.Name, UniqueID) %>% group_by(Gene.Name) %>% dplyr::count() %>% dplyr::filter(n>1)
 	}
 	Ng=length(unique(data_long_tmp$Gene.Name)); Nuid=length(unique(data_long_tmp$UniqueID))
 	search_gene_info<-str_c("Displaying ", Ng, " Gene.Names from ", Nuid, " UniqueIDs.")
+	if (exists('gene_multi_uid') & nrow(gene_multi_uid)>0) {
+	  search_gene_info<-str_c(search_gene_info, "\nPlease note some gene names map to mulitiple UniqueIDs, we recommend using Gene.Name_UniqueID as Gene Label to separate the UniqueIDs in the plot.")
+	}
+	
 	#browser()
 	output$geneSearchInfo<-renderText({search_gene_info})
-	#browser() #debug
 	return(list("data_long_tmp"=data_long_tmp,"result_long_tmp"= result_long_tmp, "tmpids"=tmpids))
-
 })
 
 output$dat_dotplot <- DT::renderDT(server=FALSE, {
 	data_long_tmp <- DataExpReactive()$data_long_tmp
 	data_long_tmp <- data_long_tmp %>%dplyr::select(-labelgeneid, -Gene.Name_UniqueID)
 	data_long_tmp[,sapply(data_long_tmp,is.numeric)] <- signif(data_long_tmp[,sapply(data_long_tmp,is.numeric)],3)
-	#data_long_tmp <- data_long_tmp[,-7]
 	DT::datatable(data_long_tmp,  extensions = 'Buttons',  options = list(
 	  dom = 'lBfrtip', pageLength = 15,
 	  buttons = list(
@@ -199,26 +196,15 @@ output$res_dotplot <- DT::renderDT(server=FALSE,{
 
 boxplot_out <- eventReactive(input$plot_exp,  {
   barcol = input$barcol
-  sel_group=group_order() #input$sel_group
-  #group_order(sel_group)
-  DataIn = DataReactive()
+  DataIn = DataQCReactive()   #DataReactive()
   colorby=sym(input$colorby)
   Val_colorby=input$colorby
   MetaData=DataIn$MetaData
   plotx=sym(input$plotx)
   ncol=input$exp_plot_ncol
   data_long_tmp <- DataExpReactive()$data_long_tmp
-  if (Val_colorby!="None" & Val_colorby!="group" ) { #add coloyby column
-    data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!colorby))
-  } else {
-    data_long_tmp$None="None"
-  }
-  if (input$plotx!="group" ) { #add plotx column
-    data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!plotx))
-  }
 
   if (input$SeparateOnePlot == "Separate") {
-
     p <- ggplot(data_long_tmp,aes(x=!!plotx,y=expr,fill=!!colorby)) +
       facet_wrap(~ labelgeneid, scales = "free", ncol = ncol)
     if (input$plotformat == "boxplot") {
@@ -334,20 +320,25 @@ observeEvent(input$plot_browsing, {
 })
 
 browsing_out <- eventReactive(plot_exp_control(),{
-	validate(need(length(group_order())>0,"Please select group(s)."))
+  req(DataQCReactive())
+  DataIn = DataQCReactive()        # DataReactive()
+  # req(input$sel_page)
+  MetaData=DataIn$MetaData
+  validate(need(length(MetaData$group)>0,"Please select group(s)."))
 	barcol = input$barcol
-	DataIn = DataReactive()
-	data_long = DataIn$data_long
-	results_long = DataIn$results_long
+	data_long = DataIn$tmp_data_long
+	results_long = DataIn$tmp_results_long
 	ProteinGeneName = DataIn$ProteinGeneName
 	colorby=sym(input$colorby)
 	Val_colorby=input$colorby
-	MetaData=DataIn$MetaData
 	plotx=sym(input$plotx)
 	genelabel=input$sel_geneid
-	sel_group=group_order() #input$sel_group
+	if ('group' %in% names(DataIn$tmp_group)) {
+	  sel_group <- DataIn$tmp_group$group
+	} else {
+	  sel_group <- all_group_list()$group
+	}
 	sel_samples=sample_order()
-	#group_order(sel_group)
 	expression_test = input$expression_test
 	expression_fccut =log2(as.numeric(input$expression_fccut))
 	expression_pvalcut = as.numeric(input$expression_pvalcut)
@@ -360,7 +351,6 @@ browsing_out <- eventReactive(plot_exp_control(),{
 	endslice = startslice + numperpage -1
 	if (input$browsing_gene_order=="P value") {results_long<-results_long%>%arrange(P.Value)
 	} else {results_long<-results_long%>%arrange(dplyr::desc(abs(logFC)))}
-
 	if (input$expression_psel == "Padj") {
 		sel_gene = results_long %>% filter(test %in% expression_test & abs(logFC) > expression_fccut & Adj.P.Value < expression_pvalcut) %>%
 		dplyr::slice(startslice:endslice) %>%
@@ -375,17 +365,9 @@ browsing_out <- eventReactive(plot_exp_control(),{
 
 	tmpids = ProteinGeneName[unique(na.omit(c(apply(ProteinGeneName,2,function(k) match(sel_gene,k))))),]
 
-	data_long_tmp = filter(data_long, UniqueID %in% tmpids$UniqueID, group %in% sel_group, sampleid %in% sel_samples) %>%
-	filter(!is.na(expr)) %>% as.data.frame()
-	if (Val_colorby!="None" & Val_colorby!="group" ) { #add coloyby column
-	  data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!colorby))
-	} else {
-	  data_long_tmp$None="None"
-	}
-	if (input$plotx!="group" ) { #add plotx column
-	  data_long_tmp<-data_long_tmp%>%left_join(MetaData%>%dplyr::select(sampleid, !!plotx))
-	}
-#	browser() #debug
+	data_long_tmp = filter(data_long, UniqueID %in% tmpids$UniqueID ) %>%  
+	  filter(!is.na(expr)) %>% as.data.frame()
+# browser() #debug
 	data_long_tmp<-data_long_tmp%>%mutate(Gene.Name_UniqueID=str_c(Gene.Name, "_", UniqueID))
 	data_long_tmp$labelgeneid = data_long_tmp[,match(genelabel,colnames(data_long_tmp))]
 	data_long_tmp$group = factor(data_long_tmp$group,levels = sel_group)

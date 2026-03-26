@@ -1,6 +1,7 @@
 observe({
   DataIn = DataQCReactive()
   MetaData=DataIn$MetaData
+  req(MetaData)
   graph_width=max(800, nrow(MetaData)*15)
   updateSliderInput(session, "alignQC_width", value = graph_width)
   #select Numeric variables

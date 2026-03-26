@@ -49,7 +49,7 @@ output$upload.message <- renderText({upload_message()})
 
 showAlert("None")
 
-observeEvent(input$uploadData, {  
+observeEvent(input$uploadData, {
   upload_message(up_message1) 
   URL_host <-(session$clientData$url_hostname)
   URL_port <- (session$clientData$url_port)
@@ -77,192 +77,293 @@ observeEvent(input$uploadData, {
   ProjectID=str_c(ProjectID,"_", stri_rand_strings(1,6) )
   #get expression data
   withProgress(message = 'Processing...', value = 0, {
-  MetaData=read.csv(input$F_sample$datapath, header=T, check.names=F)
-  MetaData=cleanup_empty(MetaData)
-  exp_file=input$F_exp$datapath
-  if (str_detect(exp_file, "gz$") ) {exp_file=gzfile(exp_file, "rt")}
-  if (str_detect(exp_file, "zip$") ) {
-    fnames = as.character(unzip(exp_file, list = TRUE)$Name)
-    exp_file=unz(exp_file, fnames[1])
-  }
-  data_wide=read.csv(exp_file, row.name=1, header=T, check.names=F)
-  data_wide=cleanup_empty(data_wide)
-  
-  comp_file=input$F_comp$datapath
-  if (str_detect(comp_file, "gz$") ) {comp_file=gzfile(comp_file, "rt")}
-  if (str_detect(comp_file, "zip$") ) {
-    fnames = as.character(unzip(comp_file, list = TRUE)$Name)
-    comp_file=unz(comp_file, fnames[1])
-  }
-  results_long=read.csv(comp_file, header=T, check.names=F)
-  results_long=cleanup_empty(results_long)
-  species=input$Fspecies
-  IDs=rownames(data_wide);
-  IDs2=results_long$UniqueID
-  IDall=unique(c(IDs, IDs2)); 
-  IDall=IDall[!is.na(IDall)] 
-  IDall=IDall[!(IDall=="")] 
-  setProgress(0.1, detail = "Data files loaded. Work on Gene/Protein Name..."); Sys.sleep(0.1)
-  #get gene or protein name
-  #browser() #bebug
-  if (input$F_annot_auto==0) {
-    ProteinGeneName=read.csv(input$F_annot$datapath)
-    ProteinGeneName=cleanup_empty(ProteinGeneName)
-    ProteinGeneName<-ProteinGeneName%>%dplyr::filter(UniqueID %in% IDall)
-    if (!"Protein.ID" %in% names(ProteinGeneName)) {ProteinGeneName$Protein.ID=NA} #Add Protein.ID column as it is required for certain tools.
-    setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
-  } else {
-    if (str_detect(input$F_ID_type, "UniProt") ) { #protein name match
-      ProteinInfo<-readRDS('db/ProteinInfo.rds')%>%mutate(Gene_Name=str_replace(Gene_Name, " .+", "")) #replace space, as UniProt put alias here
-     if (input$F_ID_type=="UniProtKB Protein ID" ) {
-      ProteinGeneName<-data.frame(id=1:length(IDall), UniqueID=IDall)%>%left_join(ProteinInfo%>%
-                transmute(UniqueID=UniProtKB.AC, Gene.Name=Gene_Name, Protein.ID=UniProtKB.AC, Description=Protein_Name)%>%dplyr::filter(!duplicated(UniqueID)) )
-     } else {
-       ProteinGeneName<-data.frame(id=1:length(IDall), UniqueID=IDall)%>%left_join(ProteinInfo%>%
-                transmute(UniqueID=UniProtKB.ID, Gene.Name=Gene_Name, Protein.ID=UniProtKB.AC, Description=Protein_Name)%>%dplyr::filter(!duplicated(UniqueID)) )
-     }
-    if (input$F_description==0) {ProteinGeneName<-ProteinGeneName%>%dplyr::select(-Description)} 
-    if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
-    setProgress(0.2, detail = "Loaded Protein Names"); Sys.sleep(0.1)
-      
-      
-    } else { #gene
-      cat("working on ",species," genes for project", ProjectID, "\n")
-      if (species=="rat") {
-       ensembl <- useEnsembl(biomart = "ensembl", dataset="rnorvegicus_gene_ensembl")
-      } else if (species=="mouse") {
-        ensembl <- useEnsembl(biomart = "ensembl", dataset="mmusculus_gene_ensembl")
-      } else {
-        ensembl <- useEnsembl(biomart = "ensembl", dataset = "hsapiens_gene_ensembl")
+    species=input$Fspecies
+    
+    if (species == 'human') {
+      org = 'hsapiens'
+    } else if (species == 'mouse') {
+      org = 'mmusculus'
+    } else if (species == 'rat') {
+      org = 'rnorvegicus'
+    } 
+    
+    if (is.null(input$F_sample$datapath) &
+        is.null(input$F_exp$datapath) &
+        input$F_annot_auto == 1 ) {
+      comp_file=input$F_comp$datapath
+      if (str_detect(comp_file, "gz$") ) {comp_file=gzfile(comp_file, "rt")}
+      if (str_detect(comp_file, "zip$") ) {
+        fnames = as.character(unzip(comp_file, list = TRUE)$Name)
+        comp_file=unz(comp_file, fnames[1])
       }
-      setProgress(0.2, detail = "Connected to Biomart, converting IDs to gene names..."); Sys.sleep(0.1)
+      
+      file_ext <- tools::file_ext(comp_file)
+      if (file_ext == "csv") {
+        results_long=read.csv(comp_file, header=T, check.names=F)
+      } else if (file_ext == "txt" || file_ext == "tsv") {
+        results_long=read.table(comp_file, header=T, check.names=F)
+      }
+      results_long=cleanup_empty(results_long) 
+      IDs2=results_long$UniqueID
+      
+      IDall= unique(IDs2) 
+      IDall=IDall[!is.na(IDall)] 
+      IDall=IDall[!(IDall=="")]
+      
+      # if (input$F_ID_type=="Ensembl Gene ID" ) {
+      #   IDall_old = IDall
+      #   IDall = stringr::str_replace(IDall, "\\.\\d+$", "")
+      #   EID = data.frame(IDall_old, IDall)
+      # }
+      
+      setProgress(0.1, detail = "Data files loaded. Work on Gene/Protein Name..."); Sys.sleep(0.1)
+      
+      if (str_detect(input$F_ID_type, "UniProt") ) { #protein name match
+        if (input$F_ID_type=="UniProtKB Protein ID" ) {
+          ProteinGeneName <- gconvert(query = IDall, organism = org, target="ENSG", mthreshold = Inf, filter_na = TRUE) %>%
+            data.frame() %>% 
+            transmute(id = input_number, UniqueID= input, Gene.Name = name, Protein.ID=input, Description=sub(" \\[.*$", "", description)) %>%
+            dplyr::filter(!duplicated(UniqueID))
+        } else {
+          ProteinInfo<-readRDS('db/ProteinInfo.rds') %>% mutate(Gene_Name=str_replace(Gene_Name, " .+", "")) #replace space, as UniProt put alias here
+          ProteinGeneName <- data.frame(id=1:length(IDall), UniqueID=IDall) %>% 
+            left_join(ProteinInfo %>% 
+                        transmute(UniqueID=UniProtKB.ID, Gene.Name=Gene_Name, Protein.ID=UniProtKB.AC, Description=Protein_Name) %>% 
+                        dplyr::filter(!duplicated(UniqueID)) )
+        } 
+        if (input$F_description==0) { ProteinGeneName <- ProteinGeneName %>% dplyr::select(-Description)} 
+        if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
+        setProgress(0.2, detail = "Loaded Protein Names"); Sys.sleep(0.1)
+      } else { #gene
+        cat("working on ",species," genes for project", ProjectID, "\n")
+        setProgress(0.1, detail = "Converting IDs to gene names..."); Sys.sleep(0.1)
+        browser() #bebug
+        
+        if (input$F_ID_type=="Ensembl Gene ID" ) {
+          IDall_old = IDall
+          IDall = stringr::str_replace(IDall, "\\.\\d+$", "")
+          EID = data.frame(IDall_old, IDall)
+          
+          ProteinGeneName <- gconvert(query = EID$IDall, organism = org, target="ENSG", mthreshold = Inf, filter_na = TRUE) %>%
+            data.frame() %>% 
+            transmute(id = input_number, UniqueID= input, EnsemblID=target, Gene.Name = name, Description=sub(" \\[.*$", "", description)) %>%
+            dplyr::filter(!duplicated(UniqueID)) %>%
+            dplyr:: right_join(EID, by=c('EnsemblID' = 'IDall')) %>% 
+            dplyr::select(-c('UniqueID', 'EnsemblID')) %>% 
+            dplyr::rename(UniqueID=IDall_old) 
+        } else {
+          ProteinGeneName <- gconvert(query = IDall, organism = org, target="ENSG", mthreshold = Inf, filter_na = TRUE) %>%
+            data.frame() %>% 
+            transmute(id = input_number, UniqueID= input, EnsemblID=target, Gene.Name = name, Description=sub(" \\[.*$", "", description)) %>%
+            dplyr::filter(!duplicated(UniqueID))
+        }
+        
+        ProteinGeneName$Protein.ID=NA
+        ProteinGeneName <- ProteinGeneName %>% 
+          dplyr::select(id,UniqueID, Gene.Name, Protein.ID, Description)
+        if (input$F_description==0) {ProteinGeneName<-ProteinGeneName%>%dplyr::select(-Description)}  
+        if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
+        # browser() #bebug
+        setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
+      }
+      
+      strOut=str_c("unlisted/", ProjectID, ".RData")
+      save(results_long, ProteinGeneName, file=strOut)
+      cat("File ", strOut, " Saved\n" )
+      
+      setProgress(1.6, detail ="Rdata file is created. Finished!")
+      
+      #Load the data as an unlisted project
+      #browser()
+      unlisted_project<-data.frame(Name=Project_name,  ShortName=Project_name, 
+                                   ProjectID, Species=species)
+      write.csv(unlisted_project, str_c("unlisted/", ProjectID, ".csv") )
+      unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
+      ProjectInfo$ProjectID=ProjectID
+      ProjectInfo$Name=unlisted_project$Name
+      ProjectInfo$Species=unlisted_project$Species
+      ProjectInfo$ShortName=unlisted_project$ShortName
+      ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
+    } else {
+      MetaData=read.csv(input$F_sample$datapath, header=T, check.names=F)
+      MetaData=cleanup_empty(MetaData)
+      
+      exp_file=input$F_exp$datapath
+      if (str_detect(exp_file, "gz$") ) {exp_file=gzfile(exp_file, "rt")}
+      if (str_detect(exp_file, "zip$") ) {
+        fnames = as.character(unzip(exp_file, list = TRUE)$Name)
+        exp_file=unz(exp_file, fnames[1])
+      }
+      data_wide=read.csv(exp_file, row.name=1, header=T, check.names=F)
+      data_wide=cleanup_empty(data_wide)
+      IDs=rownames(data_wide);
+      
+      comp_file=input$F_comp$datapath
+      if (str_detect(comp_file, "gz$") ) {comp_file=gzfile(comp_file, "rt")}
+      if (str_detect(comp_file, "zip$") ) {
+        fnames = as.character(unzip(comp_file, list = TRUE)$Name)
+        comp_file=unz(comp_file, fnames[1])
+      }
+      
+      results_long=read.csv(comp_file, header=T, check.names=F)
+      results_long=cleanup_empty(results_long) 
+      IDs2=results_long$UniqueID
+      
+      IDall= unique(c(IDs, IDs2)) 
+      IDall=IDall[!is.na(IDall)] 
+      IDall=IDall[!(IDall=="")] 
+      
+      setProgress(0.1, detail = "Data files loaded. Work on Gene/Protein Name..."); Sys.sleep(0.1)
+      #get gene or protein name
       #browser() #bebug
-      if (input$F_ID_type=="Ensembl Gene ID" ) {
-        filter_type="ensembl_gene_id"
-        IDall_old=IDall
-        IDall=str_replace(IDall, "\\.\\d+$", "")
-        EID=data.frame(IDall_old, IDall)
-      } else if (input$F_ID_type=="NCBI GeneID" ) { filter_type="entrezgene_id"
-      } else if (input$F_ID_type=="Gene Symbol" ) { filter_type="external_gene_name"}
-      E_attributes<-c( 'ensembl_gene_id', "external_gene_name", "gene_biotype","entrezgene_id")
-      if (input$F_description==1) {E_attributes<-c(E_attributes, "description") }
-      system.time( output<-getBM(attributes = E_attributes,filters = filter_type, values = IDall, mart = ensembl, useCache=FALSE) )
-      if (nrow(output)==0) {
-        error_message="No gene annotation extracted from Biomart. Did you select the correct Species and Unique ID Type?"
-        setProgress(0.9, detail = error_message); Sys.sleep(3)
-        upload_message(error_message)}
-      validate(need(nrow(output)>0, message = "No gene annotation extracted from Biomart. Did you select the correct Species and Unique ID Type?"))
-      
-      output<-output%>%arrange(entrezgene_id, ensembl_gene_id) #Favor IDs with smaller numbers
-      if (input$F_description==0) {output$description=NA}
-      F_TYPE=sym(filter_type)
-
-      ProteinGeneName<-data.frame(id=1:length(IDall), UniqueID=IDall)%>%left_join(output%>%
-                          transmute(UniqueID=!!F_TYPE, Gene.Name=external_gene_name, GeneType=gene_biotype, Description=description)%>%dplyr::filter(!duplicated(UniqueID)) )
-      if (input$F_ID_type=="Ensembl Gene ID" ) {
-        ProteinGeneName<-EID%>%transmute(UniqueID=IDall_old, Unique1=IDall)%>%left_join(ProteinGeneName%>%mutate(Unique1=UniqueID)%>%dplyr::select(-UniqueID))%>%dplyr::select(-Unique1)
+      if (input$F_annot_auto==0) {
+        ProteinGeneName=read.csv(input$F_annot$datapath)
+        ProteinGeneName=cleanup_empty(ProteinGeneName)
+        ProteinGeneName<-ProteinGeneName%>%dplyr::filter(UniqueID %in% IDall)
+        
+        if (!"Protein.ID" %in% names(ProteinGeneName)) {ProteinGeneName$Protein.ID=NA} #Add Protein.ID column as it is required for certain tools.
+        setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
+      } else {
+        if (str_detect(input$F_ID_type, "UniProt") ) { #protein name match
+          if (input$F_ID_type=="UniProtKB Protein ID" ) {
+            ProteinGeneName <- gconvert(query = IDall, organism = org, target="ENSG", mthreshold = Inf, filter_na = TRUE) %>%
+              data.frame() %>% 
+              transmute(id = input_number, UniqueID= input, Gene.Name = name, Protein.ID=input, Description=sub(" \\[.*$", "", description)) %>%
+              dplyr::filter(!duplicated(UniqueID))
+          } else {
+            ProteinInfo<-readRDS('db/ProteinInfo.rds') %>% mutate(Gene_Name=str_replace(Gene_Name, " .+", "")) #replace space, as UniProt put alias here
+            ProteinGeneName <- data.frame(id=1:length(IDall), UniqueID=IDall) %>% 
+              left_join(ProteinInfo %>% 
+                          transmute(UniqueID=UniProtKB.ID, Gene.Name=Gene_Name, Protein.ID=UniProtKB.AC, Description=Protein_Name) %>% 
+                          dplyr::filter(!duplicated(UniqueID)) )
+          } 
+          if (input$F_description==0) { ProteinGeneName <- ProteinGeneName %>% dplyr::select(-Description)} 
+          if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
+          setProgress(0.2, detail = "Loaded Protein Names"); Sys.sleep(0.1)
+        } else { #gene
+          cat("working on ",species," genes for project", ProjectID, "\n")
+          setProgress(0.1, detail = "Converting IDs to gene names..."); Sys.sleep(0.1)
+          #browser() #bebug
+          if (input$F_ID_type=="Ensembl Gene ID" ) {
+            IDall_old = IDall
+            IDall = stringr::str_replace(IDall, "\\.\\d+$", "")
+            EID = data.frame(IDall_old, IDall)
+            
+            ProteinGeneName <- gconvert(query = EID$IDall, organism = org, target="ENSG", mthreshold = Inf, filter_na = TRUE) %>%
+              data.frame() %>% 
+              transmute(id = input_number, UniqueID= input, EnsemblID=target, Gene.Name = name, Description=sub(" \\[.*$", "", description)) %>%
+              dplyr::filter(!duplicated(UniqueID)) %>%
+              dplyr:: right_join(EID, by=c('EnsemblID' = 'IDall')) %>% 
+              dplyr::select(-c('UniqueID', 'EnsemblID')) %>% 
+              dplyr::rename(UniqueID=IDall_old) 
+          } else {
+            ProteinGeneName <- gconvert(query = IDall, organism = org, target="ENSG", mthreshold = Inf, filter_na = TRUE) %>%
+              data.frame() %>% 
+              transmute(id = input_number, UniqueID= input, EnsemblID=target, Gene.Name = name, Description=sub(" \\[.*$", "", description)) %>%
+              dplyr::filter(!duplicated(UniqueID))
+          }
+          
+          browser()
+          ProteinGeneName$Protein.ID=NA
+          ProteinGeneName <- ProteinGeneName %>% 
+            dplyr::select(id,UniqueID, Gene.Name, Protein.ID, Description)
+          if (input$F_description==0) {ProteinGeneName<-ProteinGeneName%>%dplyr::select(-Description)}  
+          if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
+          # browser() #bebug
+          setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
+        }
       }
       
-      ProteinGeneName$Protein.ID=NA
-      ProteinGeneName<-ProteinGeneName%>%dplyr::select(id,UniqueID, Gene.Name, Protein.ID, GeneType, Description)
-      if (input$F_description==0) {ProteinGeneName<-ProteinGeneName%>%dplyr::select(-Description)}  
-      if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
-     # browser() #bebug
-      setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
+      #now process data
+      data_long <- melt(as.matrix(data_wide))
+      colnames(data_long) <- c("UniqueID","sampleid","expr")
+      data_long<-data_long%>%mutate(sampleid=as.character(sampleid))
+      data_long <- data_long%>%left_join(MetaData%>%dplyr::select(sampleid, group) )
       
-    
+      groups=sort(unique(MetaData$group))
+      tests=sort(unique(results_long$test))
+      if (!("ComparePairs" %in% names(MetaData))) {
+        MetaData$ComparePairs=""; MetaData$ComparePairs[1:length(tests)]=tests
+      }
+      if (!("Order" %in% names(MetaData))) {
+        MetaData$Order=""; MetaData$Order[1:length(groups)]=groups
+      }
+      #browser() #bebug
+      data_results <- ProteinGeneName[,c("id", "UniqueID","Gene.Name","Protein.ID")]%>%
+        left_join(data.frame(UniqueID=rownames(data_wide), Intensity=apply(data_wide,1,mean))%>%dplyr::filter(!duplicated(UniqueID)))
+      sinfo1<-data.frame(sampleid=names(data_wide))%>%left_join(MetaData%>%dplyr::select(sampleid, group))
+      for(grp in unique(sinfo1$group) ){
+        subdata<-data.frame(UniqueID=rownames(data_wide), t(apply(data_wide[,sinfo1$group==grp, drop=FALSE],1,function(x)return(setNames(c(mean(x),sd(x)),paste(grp,c("Mean","sd"),sep="_"))))), check.names=FALSE )
+        data_results<-data_results%>%left_join(subdata%>%dplyr::filter(!duplicated(UniqueID)))
+      }
+      for (ctr in tests) {
+        subdata<-results_long%>%dplyr::filter(test==ctr)%>%dplyr::select(UniqueID, logFC, P.Value, Adj.P.Value)
+        names(subdata)[2:4]=str_c(ctr, "_", names(subdata)[2:4])
+        data_results<-data_results%>%left_join(subdata%>%dplyr::filter(!duplicated(UniqueID)))
+      }
+      
+      strOut=str_c("unlisted/", ProjectID, ".RData")
+      save(data_long,data_results,data_wide,MetaData,ProteinGeneName,results_long,file=strOut)
+      cat("File ", strOut, " Saved\n" )
+      setProgress(0.5, detail ="Rdata files created. Now working on network, this may take a while...")
+      
+      #network
+      #if data_wide has many genes, trim down to 10K
+      if (nrow(data_wide)>10000 ) {
+        dataSD=apply(data_wide, 1, function(x) sd(x,na.rm=T))
+        dataM=rowMeans(data_wide)
+        diff=dataSD/(dataM+median(dataM))
+        data_wide=data_wide[order(diff, decreasing=TRUE)[1:10000], ]	 
+        cat("reduce gene size to 10K for project ", ProjectID, "\n")
+      }
+      
+      system.time(cor_res <- Hmisc::rcorr(as.matrix(t(data_wide))) ) #120 seconds
+      cormat <- cor_res$r
+      pmat <- cor_res$P
+      ut <- upper.tri(cormat)
+      network <- tibble (
+        from = rownames(cormat)[row(cormat)[ut]],
+        to = rownames(cormat)[col(cormat)[ut]],
+        cor  = signif(cormat[ut], 2),
+        p = signif(pmat[ut], 2),
+        direction = as.integer(sign(cormat[ut]))
+      )
+      cat(ProjectID," network size ", nrow(network), "\n" )
+      network <- network %>% mutate_if(is.factor, as.character) %>%
+        dplyr::filter(!is.na(cor) & abs(cor) > 0.7 & p < 0.05)
+      if (nrow(network)>2e6) {
+        network <- network %>% mutate_if(is.factor, as.character) %>%
+          dplyr::filter(!is.na(cor) & abs(cor) > 0.8 & p < 0.005)
+      }
+      if (nrow(network)>2e6) {
+        network <- network %>% mutate_if(is.factor, as.character) %>%
+          dplyr::filter(!is.na(cor) & abs(cor) > 0.85 & p < 0.005)
+      }
+      cat(ProjectID," final network size ", nrow(network), "\n" )
+      
+      save(network,file=str_c("unlisted/", ProjectID, "_network.RData") )
+      setProgress(1.6, detail =str_c("Finished computing network. Final nodes: ", nrow(network)))
+      
+      #Load the data as an unlisted project
+      #browser()
+      unlisted_project<-data.frame(Name=Project_name,  ShortName=Project_name, 
+                                   ProjectID, Species=species)
+      write.csv(unlisted_project, str_c("unlisted/", ProjectID, ".csv") )
+      unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
+      ProjectInfo$ProjectID=ProjectID
+      ProjectInfo$Name=unlisted_project$Name
+      ProjectInfo$Species=unlisted_project$Species
+      ProjectInfo$ShortName=unlisted_project$ShortName
+      ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
+      ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
+      ProjectInfo$file3= paste("unlisted/wgcna_", ProjectID, ".RData", sep = "") #place holder for wgcna results, not generated at this time
     }
-  }
-  #now process data
-  data_long <- melt(as.matrix(data_wide))
-  colnames(data_long) <- c("UniqueID","sampleid","expr")
-  data_long<-data_long%>%mutate(sampleid=as.character(sampleid))
-  data_long <- data_long%>%left_join(MetaData%>%dplyr::select(sampleid, group) )
-  
-  groups=sort(unique(MetaData$group))
-  tests=sort(unique(results_long$test))
-  if (!("ComparePairs" %in% names(MetaData))) {
-    MetaData$ComparePairs=""; MetaData$ComparePairs[1:length(tests)]=tests
-  }
-  if (!("Order" %in% names(MetaData))) {
-   MetaData$Order=""; MetaData$Order[1:length(groups)]=groups
-  }
-  #browser() #bebug
-  data_results <- ProteinGeneName[,c("id", "UniqueID","Gene.Name","Protein.ID")]%>%
-    left_join(data.frame(UniqueID=rownames(data_wide), Intensity=apply(data_wide,1,mean))%>%dplyr::filter(!duplicated(UniqueID)))
-  sinfo1<-data.frame(sampleid=names(data_wide))%>%left_join(MetaData%>%dplyr::select(sampleid, group))
-  for(grp in unique(sinfo1$group) ){
-    subdata<-data.frame(UniqueID=rownames(data_wide), t(apply(data_wide[,sinfo1$group==grp, drop=FALSE],1,function(x)return(setNames(c(mean(x),sd(x)),paste(grp,c("Mean","sd"),sep="_"))))), check.names=FALSE )
-    data_results<-data_results%>%left_join(subdata%>%dplyr::filter(!duplicated(UniqueID)))
-  }
-  for (ctr in tests) {
-    subdata<-results_long%>%dplyr::filter(test==ctr)%>%dplyr::select(UniqueID, logFC, P.Value, Adj.P.Value)
-    names(subdata)[2:4]=str_c(ctr, "_", names(subdata)[2:4])
-    data_results<-data_results%>%left_join(subdata%>%dplyr::filter(!duplicated(UniqueID)))
-  }
     
-  strOut=str_c("unlisted/", ProjectID, ".RData")
-  save(data_long,data_results,data_wide,MetaData,ProteinGeneName,results_long,file=strOut)
-  cat("File ", strOut, " Saved\n" )
-  setProgress(0.5, detail ="Rdata files created. Now working on network, this may take a while...")
-  
-  #network
-  #if data_wide has many genes, trim down to 10K
-  if (nrow(data_wide)>10000 ) {
-    dataSD=apply(data_wide, 1, function(x) sd(x,na.rm=T))
-    dataM=rowMeans(data_wide)
-    diff=dataSD/(dataM+median(dataM))
-    data_wide=data_wide[order(diff, decreasing=TRUE)[1:10000], ]	 
-    cat("reduce gene size to 10K for project ", ProjectID, "\n")
-  }
-  
-  system.time(cor_res <- Hmisc::rcorr(as.matrix(t(data_wide))) ) #120 seconds
-  cormat <- cor_res$r
-  pmat <- cor_res$P
-  ut <- upper.tri(cormat)
-  network <- tibble (
-    from = rownames(cormat)[row(cormat)[ut]],
-    to = rownames(cormat)[col(cormat)[ut]],
-    cor  = signif(cormat[ut], 2),
-    p = signif(pmat[ut], 2),
-    direction = as.integer(sign(cormat[ut]))
-  )
-  cat(ProjectID," network size ", nrow(network), "\n" )
-  network <- network %>% mutate_if(is.factor, as.character) %>%
-    dplyr::filter(!is.na(cor) & abs(cor) > 0.7 & p < 0.05)
-  if (nrow(network)>2e6) {
-    network <- network %>% mutate_if(is.factor, as.character) %>%
-      dplyr::filter(!is.na(cor) & abs(cor) > 0.8 & p < 0.005)
-  }
-  if (nrow(network)>2e6) {
-    network <- network %>% mutate_if(is.factor, as.character) %>%
-      dplyr::filter(!is.na(cor) & abs(cor) > 0.85 & p < 0.005)
-  }
-  cat(ProjectID," final network size ", nrow(network), "\n" )
-  
-  save(network,file=str_c("unlisted/", ProjectID, "_network.RData") )
-  setProgress(1.6, detail =str_c("Finished computing network. Final nodes: ", nrow(network)))
-  
-  #Load the data as an unlisted project
-  #browser()
-  unlisted_project<-data.frame(Name=Project_name,  ShortName=Project_name, 
-                               ProjectID, Species=species)
-  write.csv(unlisted_project, str_c("unlisted/", ProjectID, ".csv") )
-  unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
-  ProjectInfo$ProjectID=ProjectID
-  ProjectInfo$Name=unlisted_project$Name
-  ProjectInfo$Species=unlisted_project$Species
-  ProjectInfo$ShortName=unlisted_project$ShortName
-  ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
-  ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
-  ProjectInfo$file3= paste("unlisted/wgcna_", ProjectID, ".RData", sep = "") #place holder for wgcna results, not generated at this time
-
-
+    cat("Finished processing data files for ", ProjectID, ".\n")
+    up_message2=str_c("The direct URL for the uploaded dataset is: ", URL, "/?unlisted=", ProjectID)
+    upload_message(up_message2) 
+    showAlert(str_c(URL, "/?unlisted=", ProjectID))
   })
-  cat("Finished processing data files for ", ProjectID, ".\n")
-  up_message2=str_c("The direct URL for the uploaded dataset is: ", URL, "/?unlisted=", ProjectID)
-  upload_message(up_message2) 
-  showAlert(str_c(URL, "/?unlisted=", ProjectID))
   
 #  alert(str_c("Data files processed successfully; please go to another tab to start using the system. In the future, you can use the following URL to access this dataset: ",URL, "/?unlisted=", ProjectID, " (this URL is also listed under the submit button of this page. Copy the URL and save it for future use." ) )
 })

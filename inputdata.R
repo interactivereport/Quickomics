@@ -12,9 +12,6 @@
 #global reactive values
 saved_plots <- reactiveValues()  
 saved_table <- reactiveValues() 
-group_order <- reactiveVal()
-sample_order <- reactiveVal()
-all_samples <-reactiveVal()
 samples_excludeM<-reactiveVal() #manually excluded samples
 samples_excludeF<-reactiveVal() #samples excluded from filtering on sample attributes
 samples_excludeM(""); samples_excludeF("")
@@ -22,8 +19,13 @@ attribute_filters<-reactiveVal()
 attribute_filters(NULL)
 resetComp2Sample<-reactiveVal(); resetComp2Sample(FALSE) #control when to reset the tool to Get Samples from Comparison.,
 all_groups <-reactiveVal()
+group_order <- reactiveVal()
+all_samples <-reactiveVal()
+sample_order <- reactiveVal()
 all_tests<-reactiveVal()
+test_order<-reactiveVal()
 all_metadata<-reactiveVal()
+MetaData_long <-reactiveVal()
 upload_message <- reactiveVal()
 ProteinGeneNameHeader<- reactiveVal()
 exp_unit<-reactiveVal()
@@ -193,74 +195,123 @@ observeEvent(input$customData, {
 })
 
 
+observe({
+  RDataFile <- ProjectInfo$file1
+  req(RDataFile)
+  objs <- load(RDataFile)
+  
+  comp_only <- identical(objs, c("results_long", "ProteinGeneName"))
+  
+  all_tabs <- c("Groups and Samples", "QC_Plots", "Heatmap", "Exp_Plot", "Pattern_Clustering", "time_series", "Correlation_Network", "Correlation", 'wgcna')
+  all_data_tables <- c("sample_table", "Result Table", "data_table")
+  
+  if (comp_only) {
+    # hide everything
+    lapply(all_tabs, function(t) hideTab("menu", t))
+    lapply(all_data_tables, function(t) hideTab("Tables", t))
+  } else {
+    lapply(all_tabs, function(t) showTab("menu", t))
+    lapply(all_data_tables, function(t) showTab("Tables", t))
+  }
+})
+
 DataReactive <- reactive({
   req(ProjectInfo$ProjectID)
   withProgress(message = 'Fetching data.',
                detail = 'This may take a while...',
                value = 0,
                {
- 
-               RDataFile <- ProjectInfo$file1
- 
-               comp_info=NULL;  
-               load(RDataFile)
-               if (!is.data.frame(data_wide)) {data_wide=data.frame(data_wide, check.names = FALSE)}  #change data_wide to data frame from numeric matrix if needed
-               if (!"Protein.ID" %in% names(ProteinGeneName)) {ProteinGeneName$Protein.ID=NA} #Add Protein.ID column as it is required for certain tools.
-                 #if (!exists("comp_info")) {comp_info=NULL}
-                 results_long <-
-                   results_long %>% mutate_if(is.factor, as.character)  %>% left_join(ProteinGeneName, by = "UniqueID")
-                 data_long <-
-                   data_long %>% mutate_if(is.factor, as.character)  %>% left_join(ProteinGeneName, by = "UniqueID")
-                 
-                 group_names <- as.character(unique((MetaData$Order[MetaData$Order != "" & !is.na(MetaData$Order)])))
-                 if (length(group_names) == 0) {
-                   group_names <- as.character(unique(MetaData$group))
-                 }
-                 tests  <-
-                   as.character(MetaData$ComparePairs[MetaData$ComparePairs != ""])
-                 tests<-unique(tests[!is.na(tests)])
-		             comp_tests=as.character(unique(results_long$test))
-		             if (!all(tests %in% comp_tests) ) { tests <-  gsub("-", "vs", tests) } #for projects where - used in MetaData, "vs" used in results_long
-                 if (length(tests) == 0) {
-                   tests = unique(as.character(results_long$test))
-                 }
-		             samples <- as.character( MetaData$sampleid[order(match(MetaData$group,group_names))])
-                 group_order(group_names)
-                 sample_order(samples)
-                 all_samples(samples)
-                 all_groups(group_names)
-                 all_metadata(MetaData)
-                 all_tests(tests)
-                 ProteinGeneNameHeader(colnames(ProteinGeneName))
-                 sel_comp=NULL
-                 #browser() #debug
-                 if (!is.null(comp_info)){
-                   sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%dplyr::filter(Group_name!="", !is.na(Group_name)); dim(sel_comp)
-                   #sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%dplyr::filter(str_detect(Subsetting_group, ":")); dim(sel_comp)
-                   if (nrow(sel_comp)>0) {
-                     sel_comp<-sel_comp%>%dplyr::mutate(N_samples=0, sample_list=NA, subset_list=NA)
-                      for (i in 1:nrow(sel_comp)) {
-                        sel_samples<-rep(TRUE, nrow(MetaData))
-                        if  (str_detect(sel_comp$Subsetting_group[i], ":")){
-                          sg1<-str_split(sel_comp$Subsetting_group[i], ";")[[1]]
-                          for (j in 1:length(sg1)){
-                            sub_values=str_split(sg1[j], ":")[[1]]
-                            sel_j=MetaData[[sub_values[1]]]==sub_values[2]
-                            sel_samples=sel_samples & sel_j
-                          }
-                          #sel_comp$N_samples[i]=sum(sel_samples)
-                          sel_comp$subset_list[i]=paste(MetaData$sampleid[sel_samples], collapse = ",")
-                        }
-                        #now further filter for Group_test and Group_ctrl
-                        sel_DEG_samples<- (MetaData[[sel_comp$Group_name[i]]] %in% c(sel_comp$Group_test[i], sel_comp$Group_ctrl[i]) )
-                        sel_samples = sel_samples & sel_DEG_samples
-                        sel_comp$N_samples[i]=sum(sel_samples)
-                        sel_comp$sample_list[i]=paste(MetaData$sampleid[sel_samples], collapse = ",")
-                        }
-                       # cat(i, sg1, sum(sel_samples), paste(MetaData$sampleid[sel_samples], collapse = ","), "\n\n")
+                 RDataFile <- ProjectInfo$file1
+                 comp_info <- NULL 
+                 objs <- load(RDataFile)
+                 if (identical(objs, c("results_long", "ProteinGeneName"))) {
+                   tests <- unique(as.character(results_long$test))                     
+                   group_names <- NULL
+                   MetaData <- NULL
+                   data_long <- NULL
+                   # ProteinGeneName <- GetProteinGeneNames(ProjectInfo$species)
+                   results_long <- results_long %>% 
+                     mutate_if(is.factor, as.character) %>% 
+                     dplyr::select(UniqueID, test, logFC, P.Value, Adj.P.Value) %>%
+                     # mutate(UniqueID = stringr::str_replace(UniqueID, "\\.\\d+$", "")) %>%
+                     left_join(ProteinGeneName, by = "UniqueID")
+                   data_wide <- NULL
+                   data_results <- NULL
+                   comp_info <- NULL
+                   sel_comp <- NULL
+                   all_tests(tests)
+                   test_order(tests)
+                   ProteinGeneNameHeader(colnames(ProteinGeneName))
+                 } else {
+                   if (!is.data.frame(data_wide)) {data_wide=data.frame(data_wide, check.names = FALSE)}  #change data_wide to data frame from numeric matrix if needed
+                   if (!"Protein.ID" %in% names(ProteinGeneName)) {ProteinGeneName$Protein.ID=NA} #Add Protein.ID column as it is required for certain tools.
+                   
+                   MetaData_long <- MetaData %>%
+                     dplyr::select(-any_of(c("Order", "ComparePairs", "Treatments"))) %>%
+                     #dplyr::mutate_if(is.numeric, as.character) %>% #this will fail when there are columns in Time format
+                     dplyr::mutate_all(as.character) %>%
+                     tidyr::pivot_longer(cols = -sampleid,  names_to = "type",values_to = "group")
+                   
+                   results_long <-
+                     results_long %>% mutate_if(is.factor, as.character)  %>% dplyr::select(UniqueID, test, logFC, P.Value, Adj.P.Value) %>% 
+                     # mutate(UniqueID = stringr::str_replace(UniqueID, "\\.\\d+$", "")) %>%
+                     left_join(ProteinGeneName, by = "UniqueID")
+                   data_long <-
+                     data_long %>% mutate_if(is.factor, as.character)  %>% left_join(ProteinGeneName, by = "UniqueID") %>%
+                     left_join(MetaData %>% dplyr::select(-any_of(c('group', "Order", "ComparePairs", "Treatments"))), by = "sampleid")
+                   
+                   group_names <- as.character(unique((MetaData$Order[MetaData$Order != "" & !is.na(MetaData$Order)])))
+                   if (length(group_names) == 0) {
+                     group_names <- as.character(unique(MetaData$group))
                    }
-                   sel_comp<-sel_comp%>%dplyr::filter(N_samples>0)
-                   if (nrow(sel_comp)==0) {sel_comp=NULL}
+                   tests  <-
+                     as.character(MetaData$ComparePairs[MetaData$ComparePairs != ""])
+                   tests<-unique(tests[!is.na(tests)])
+                   comp_tests=as.character(unique(results_long$test))
+                   if (!all(tests %in% comp_tests) ) { tests <-  gsub("-", "vs", tests) } #for projects where - used in MetaData, "vs" used in results_long
+                   if (length(tests) == 0) {
+                     tests = unique(as.character(results_long$test))
+                   }
+                   samples <- as.character( MetaData$sampleid[order(match(MetaData$group,group_names))])
+                   group_order(group_names)
+                   sample_order(samples)
+                   all_samples(samples)
+                   all_groups(group_names)
+                   all_metadata(MetaData)
+                   MetaData_long(MetaData_long)
+                   all_tests(tests)
+                   test_order(tests)
+                   ProteinGeneNameHeader(colnames(ProteinGeneName))
+                   sel_comp=NULL
+                   #browser() #debug
+                   if (!is.null(comp_info)){
+                     sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%dplyr::filter(Group_name!="", !is.na(Group_name)); dim(sel_comp)
+                     #sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%dplyr::filter(str_detect(Subsetting_group, ":")); dim(sel_comp)
+                     if (nrow(sel_comp)>0) {
+                       sel_comp<-sel_comp%>%dplyr::mutate(N_samples=0, sample_list=NA, subset_list=NA)
+                       for (i in 1:nrow(sel_comp)) {
+                         sel_samples<-rep(TRUE, nrow(MetaData))
+                         if  (str_detect(sel_comp$Subsetting_group[i], ":")){
+                           sg1<-str_split(sel_comp$Subsetting_group[i], ";")[[1]]
+                           for (j in 1:length(sg1)){
+                             sub_values=str_split(sg1[j], ":")[[1]]
+                             sel_j=MetaData[[sub_values[1]]]==sub_values[2]
+                             sel_samples=sel_samples & sel_j
+                           }
+                           #sel_comp$N_samples[i]=sum(sel_samples)
+                           sel_comp$subset_list[i]=paste(MetaData$sampleid[sel_samples], collapse = ",")
+                         }
+                         #now further filter for Group_test and Group_ctrl
+                         sel_DEG_samples<- (MetaData[[sel_comp$Group_name[i]]] %in% c(sel_comp$Group_test[i], sel_comp$Group_ctrl[i]) )
+                         sel_samples = sel_samples & sel_DEG_samples
+                         sel_comp$N_samples[i]=sum(sel_samples)
+                         sel_comp$sample_list[i]=paste(MetaData$sampleid[sel_samples], collapse = ",")
+                       }
+                       # cat(i, sg1, sum(sel_samples), paste(MetaData$sampleid[sel_samples], collapse = ","), "\n\n")
+                     }
+                     sel_comp<-sel_comp%>%dplyr::filter(N_samples>0)
+                     if (nrow(sel_comp)==0) {sel_comp=NULL}
+                   }
                  }
                  return(
                    list(
@@ -281,236 +332,204 @@ DataReactive <- reactive({
 })
 
 observeEvent(DataReactive(), {
+  req(DataReactive()$MetaData)
   plot_pca_control(plot_pca_control()+1)
   plot_heatmap_control( plot_heatmap_control()+1)
   plot_exp_control(plot_exp_control()+1)
+})
+
+observeEvent(DataReactive(), {
+  req(DataReactive()$results_long)
   gsea_control(gsea_control()+1)
   ora_control(ora_control()+1)
 })
+
 project_summary<-reactive({
   req(DataReactive())
   DataIn = DataReactive()
-  groups=DataIn$groups
-  tests=DataIn$tests
   restricted_msg <- if (!public_dataset) {
     "<h4>This project is loaded in restricted mode. Individual sample data have been masked for privacy.</h4><br>"
   } else {
     ""
   }
   
-  summary=str_c('<style type="text/css">
-.disc {
- list-style-type: disc;
-}
-.square {
- list-style-type: square;
- margin-left: -2em;
- font-size: small
-}
-</style>',
-"<h2>Project ", ProjectInfo$ShortName, "</h2><br>",
-restricted_msg,
-    '<ul class="disc"><li>Species: ', ProjectInfo$Species, "</li>",
-"<li>Description: ", ProjectInfo$Name, "</li>",
-"<li>Data Path: ", ProjectInfo$Path, "</li>",
-    "<li>Number of Samples: ", nrow(DataIn$MetaData), "</li>",
-    "<li>Number of Groups: ", length(groups), " (please see group table below)</li>",  
-"<li>Number of Genes/Proteins: ", nrow(DataIn$data_wide), "</li>",
-"<li>Number of Comparison Tests: ", length(tests), "</li>",
-'<ul class="square">', paste(str_c("<li>", tests, "</li>"), collapse=""), "</ul></li></ul><br><hr>",
-"<h4>Number of Samples in Each Group</h4>")
+  if (is.null(DataIn$MetaData)) {
+    tests=DataIn$tests
+    summary=str_c('<style type="text/css">
+    .disc {
+    list-style-type: disc;
+    }
+    .square {
+    list-style-type: square;
+    margin-left: -2em;
+    font-size: small
+    }
+    </style>',
+                  "<h2>Project ", ProjectInfo$ShortName, "</h2><br>",
+                  restricted_msg,
+                  '<ul class="disc"><li>Species: ', ProjectInfo$Species, "</li>",
+                  "<li>Description: ", ProjectInfo$Name, "</li>",
+                  "<li>Data Path: ", ProjectInfo$Path, "</li>",
+                  "<li>This is a project only has comparison results</li>",
+                  "<li>Number of Comparison Tests: ", length(tests), "</li>",
+                  '<ul class="square">', paste(str_c("<li>", tests, "</li>"), collapse=""), "</ul></li></ul><br><hr>")
+  } else {
+    groups=DataIn$groups
+    tests=DataIn$tests
+    
+    summary=str_c('<style type="text/css">
+    .disc {
+    list-style-type: disc;
+    }
+    .square {
+    list-style-type: square;
+    margin-left: -2em;
+    font-size: small
+    }
+    </style>',
+                  "<h2>Project ", ProjectInfo$ShortName, "</h2><br>",
+                  restricted_msg,
+                  '<ul class="disc"><li>Species: ', ProjectInfo$Species, "</li>",
+                  "<li>Description: ", ProjectInfo$Name, "</li>",
+                  "<li>Data Path: ", ProjectInfo$Path, "</li>",
+                  "<li>Number of Samples: ", nrow(DataIn$MetaData), "</li>",
+                  "<li>Number of Groups: ", length(groups), " (please see group table below)</li>",  
+                  "<li>Number of Genes/Proteins: ", nrow(DataIn$data_wide), "</li>",
+                  "<li>Number of Comparison Tests: ", length(tests), "</li>",
+                  '<ul class="square">', paste(str_c("<li>", tests, "</li>"), collapse=""), "</ul></li></ul><br><hr>",
+                  "<h4>Number of Samples in Each Group</h4>")
+    
+  }
 })
-output$summary=renderText(project_summary())
-
-group_info<-reactive({
-  DataIn <- DataReactive()
-  group_info<-DataIn$MetaData%>%group_by(group)%>%dplyr::count()
-  #browser() #bebug
-  return(t(group_info))
-})
-output$group_table=renderTable(group_info(), colnames=F)
-
-
-
-DataNetworkReactive <- reactive({
-  DataIn = DataReactive()
-  ProteinGeneName <- DataIn$ProteinGeneName
-  #query <- parseQueryString(session$clientData$url_search)
-  Pinfo=ProjectInfo
-  run_network=FALSE
-  CorResFile <- ProjectInfo$file2
-  if (is.null(CorResFile))  {
-    run_network=TRUE
-  } else if (file.exists(CorResFile)) {
-    load(CorResFile)
-  } else { run_network=TRUE}
-  
-  if (run_network) {
-    withProgress(message = 'Compute correlation network data.',
-                 detail = 'This may take a few minutes...',
-                 value = 0,
-                 {
-    data_wide <- DataIn$data_wide
-    #if data_wide has many genes, trim down to 10K
-    if (nrow(data_wide)>10000 ) {
-      dataSD=apply(data_wide, 1, function(x) sd(x,na.rm=T))
-      dataM=rowMeans(data_wide)
-      diff=dataSD/(dataM+median(dataM))
-      data_wide=data_wide[order(diff, decreasing=TRUE)[1:10000], ]	 
-      cat("reduce gene size to 10K for project ", ProjectID, "\n")
-    }
-    cor_res <- Hmisc::rcorr(as.matrix(t(data_wide)))
-    cormat <- cor_res$r
-    pmat <- cor_res$P
-    ut <- upper.tri(cormat)
-    network <- tibble (
-      from = rownames(cormat)[row(cormat)[ut]],
-      to = rownames(cormat)[col(cormat)[ut]],
-      cor  = signif(cormat[ut], 2),
-      p = signif(pmat[ut], 2),
-      direction = as.integer(sign(cormat[ut]))
-    )
-    network <- network %>% mutate_if(is.factor, as.character) %>%
-      dplyr::filter(!is.na(cor) & abs(cor) > 0.7 & p < 0.05)
-    if (nrow(network)>2e6) {
-      network <- network %>% mutate_if(is.factor, as.character) %>%
-        dplyr::filter(!is.na(cor) & abs(cor) > 0.8 & p < 0.005)
-    }
-    if (nrow(network)>2e6) {
-      network <- network %>% mutate_if(is.factor, as.character) %>%
-        dplyr::filter(!is.na(cor) & abs(cor) > 0.85 & p < 0.005)
-    }
-    save(network,
-         file =  paste("networkdata/", Pinfo$ProjectID, ".RData", sep = ""))
-    ProjectInfo$file2=paste("networkdata/", Pinfo$ProjectID, ".RData", sep = "")
+    
+    output$summary=renderText(project_summary())
+    
+    group_info<-reactive({
+      req(DataReactive()$MetaData)
+      DataIn <- DataReactive()
+      group_info<-DataIn$MetaData%>%group_by(group)%>%dplyr::count()
+      #browser() #bebug
+      return(t(group_info))
     })
-  }
-  
-  sel_gene = input$sel_net_gene
-  tmpids = ProteinGeneName[unique(na.omit(c(
-    apply(ProteinGeneName, 2, function(k)
-      match(sel_gene, k))
-  ))), ]
-  
-  edges.sel <-
-    network %>% dplyr::filter((from %in% tmpids$UniqueID) |
-                         (to %in% tmpids$UniqueID))
-  rcutoff <- as.numeric(input$network_rcut)
-  pvalcutoff <- as.numeric(as.character(input$network_pcut))
-  edges <-
-    dplyr::filter(edges.sel, abs(cor) > rcutoff & p < pvalcutoff)
-  networks_ids <-
-    unique(c(as.character(edges$from), as.character(edges$to)))
-  nodes <-
-    ProteinGeneName %>% dplyr::filter(UniqueID %in% networks_ids) %>%
-    dplyr::select(UniqueID, Gene.Name) %>%
-    dplyr::rename(id = UniqueID, label = Gene.Name)
-  net <- list("nodes" = nodes, "edges" = edges)
-  return(net)
-})
-
-output$results <- DT::renderDataTable({
-	DataIn <- DataReactive()
-	results <- DataIn$data_results %>%
-	dplyr::select(-one_of(c("Fasta.headers","UniqueID","id")))
-	results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
-	DT::datatable(results,  extensions = 'Buttons',
-  options = list(
-    dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
-  	pageLength = 15
-  ),rownames= T)
-})
-
-output$sample <-  DT::renderDT(server=FALSE,{
-  req(public_dataset)
-  meta<-DataReactive()$MetaData%>%dplyr::select(-Order, -ComparePairs)
-	DT::datatable(meta,  extensions = 'Buttons',  options = list(
-	  dom = 'lBfrtip', pageLength = 15,
-	  buttons = list(
-	    list(extend = "csv", text = "Download Page", filename = "Page_Samples",
-	         exportOptions = list(modifier = list(page = "current"))),
-	    list(extend = "csv", text = "Download All", filename = "All_Samples",
-	         exportOptions = list(modifier = list(page = "all")))
-	  )
-	), rownames= F)
-})
-
-observe({
-  if (public_dataset) {
-    showTab(inputId = "Tables", target = "sample_table")
-  } else {
-    hideTab(inputId = "Tables", target = "sample_table")
-  }
-})
-
-
-output$comp_info <- renderUI ({
-  if (is.null(DataReactive()$comp_info)) return()
-  output$comparison <-  DT::renderDT(server=FALSE,{
-    DT::datatable(DataReactive()$comp_info,  extensions = 'Buttons',  options = list(
-      dom = 'lBfrtip', pageLength = 15,
-      buttons = list(
-        list(extend = "csv", text = "Download Page", filename = "Page_results",
-             exportOptions = list(modifier = list(page = "current"))),
-        list(extend = "csv", text = "Download All", filename = "All_Results",
-             exportOptions = list(modifier = list(page = "all")))
+    
+    output$group_table <- renderTable({
+      req(group_info())   # stops if NULL
+      group_info()
+    }, colnames = FALSE)
+    
+    
+    output$results <- DT::renderDataTable({
+      DataIn <- DataReactive()
+      req(DataIn$data_results) 
+      results <- DataIn$data_results %>%
+        dplyr::select(-one_of(c("Fasta.headers","UniqueID","id")))
+      results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
+      DT::datatable(results,  extensions = 'Buttons',
+                    options = list(
+                      dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
+                      pageLength = 15
+                    ),rownames= T)
+    })
+    
+    output$sample <-  DT::renderDT(server=FALSE,{
+      req(public_dataset)
+      req(DataReactive()$MetaData)
+      meta<-DataReactive()$MetaData%>%dplyr::select(-Order, -ComparePairs)
+      DT::datatable(meta,  extensions = 'Buttons',  options = list(
+        dom = 'lBfrtip', pageLength = 15,
+        buttons = list(
+          list(extend = "csv", text = "Download Page", filename = "Page_Samples",
+               exportOptions = list(modifier = list(page = "current"))),
+          list(extend = "csv", text = "Download All", filename = "All_Samples",
+               exportOptions = list(modifier = list(page = "all")))
+        )
+      ), rownames= F)
+    })
+    
+    observe({
+      if (public_dataset) {
+        showTab(inputId = "Tables", target = "sample_table")
+      } else {
+        hideTab(inputId = "Tables", target = "sample_table")
+      }
+    })
+    
+    output$comp_info <- renderUI ({
+      if (is.null(DataReactive()$comp_info)) return()
+      output$comparison <-  DT::renderDT(server=FALSE,{
+        DT::datatable(DataReactive()$comp_info,  extensions = 'Buttons',  options = list(
+          dom = 'lBfrtip', pageLength = 15,
+          buttons = list(
+            list(extend = "csv", text = "Download Page", filename = "Page_results",
+                 exportOptions = list(modifier = list(page = "current"))),
+            list(extend = "csv", text = "Download All", filename = "All_Results",
+                 exportOptions = list(modifier = list(page = "all")))
+          )
+        )
+        )
+      })
+      tagList(
+        h4("Comparison Table (shown only when RData file contains comp_info)"),
+        dataTableOutput('comparison')
       )
-    )
-      )
-  })
-  tagList(
-    h4("Comparison Table (shown only when RData file contains comp_info)"),
-    dataTableOutput('comparison')
-  )
-})
-
-
-
-output$data_wide <- DT::renderDataTable({
-  req(public_dataset)
-  data_w<-DataReactive()$data_wide
-  data_w=round(data_w*1000)/1000
-	DT::datatable(data_w, extensions = c('FixedColumns', 'Buttons'),
-  options = list(
-  	pageLength = 15,
-  	dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
-    scrollX = TRUE,
-    fixedColumns = list(leftColumns = 1)
-  ))
-})
-
-observe({
-  if (public_dataset) {
-    showTab(inputId = "Tables", target = "data_table")
-  } else {
-    hideTab(inputId = "Tables", target = "data_table")
-  }
-})
-
-output$ProteinGeneName <- DT::renderDataTable({
-	DT::datatable(DataReactive()$ProteinGeneName, extensions = 'Buttons', options = list(
-	  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
-	  pageLength = 15),rownames= FALSE)
-})
-
-observeEvent(input$results, {
-	DataIn <- DataReactive()
-	results = DataIn$data_results 
-	results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
-	saved_table$results <- results
-})
-
-observeEvent(input$sample, {
-	saved_table$sample <- DataReactive()$MetaData
-})
-
-observeEvent(input$data_wide, {
-	saved_table$data <- DataReactive()$data_wide
-})
-
-observeEvent(input$ProteinGeneName, {
-	saved_table$ProteinGeneName <- DataReactive()$ProteinGeneName
-})
-
-
-
+    })
+    
+    output$data_wide <- DT::renderDataTable({
+      req(public_dataset)
+      data_w<-DataReactive()$data_wide
+      req(data_w)
+      data_w=round(data_w*1000)/1000
+      DT::datatable(data_w, extensions = c('FixedColumns', 'Buttons'),
+                    options = list(
+                      pageLength = 15,
+                      dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
+                      scrollX = TRUE,
+                      fixedColumns = list(leftColumns = 1)
+                    ))
+    })
+    
+    observe({
+      if (public_dataset) {
+        showTab(inputId = "Tables", target = "data_table")
+      } else {
+        hideTab(inputId = "Tables", target = "data_table")
+      }
+    })
+    
+    output$ProteinGeneName <- DT::renderDataTable({
+      if (is.null(DataReactive()$ProteinGeneName)) return()
+      DT::datatable(DataReactive()$ProteinGeneName, extensions = 'Buttons', options = list(
+        dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
+        pageLength = 15),rownames= FALSE)
+    })
+    
+    observeEvent(input$results, {
+      DataIn <- DataReactive()
+      results = DataIn$data_results 
+      results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
+      saved_table$results <- results
+    })
+    
+    observeEvent(input$sample, {
+      saved_table$sample <- DataReactive()$MetaData
+    })
+    
+    observeEvent(input$data_wide, {
+      saved_table$data <- DataReactive()$data_wide
+    })
+    
+    observeEvent(input$ProteinGeneName, {
+      saved_table$ProteinGeneName <- DataReactive()$ProteinGeneName
+    })
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
