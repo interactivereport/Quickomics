@@ -1,4 +1,4 @@
-###########################################################################################################
+ ###########################################################################################################
 ##This software belongs to Biogen Inc. All right reserved.
 ##
 ##@file: TimeSeriesmodule.R
@@ -189,7 +189,16 @@ run_timecourse_DEG <- function(MetaData, count_mtx,time_variable,Condition) {
   
   # Use validate to show the message in the UI
   validate(
-    need(!is.character(dds) || dds != "RANK_ERROR", "Error: The model is not full rank. Check your metadata for confounded variables.")
+    need(!is.character(dds) || dds != "RANK_ERROR", 
+      paste(
+      "Design Matrix Error: The variables in your formula are confounded.",
+      "Possible causes:",
+      "- One variable (e.g., 'Batch') perfectly overlaps with another (e.g., 'Condition').",
+      "- A column in your metadata contains only one unique value.",
+      "- Some combinations of your variables have zero samples.",
+      "Please simplify your design formula or check your sample metadata for redundant columns.",
+      sep = "\n"
+    ))
   )
   
   # Filter low-count genes
@@ -283,10 +292,10 @@ TimeSeries_ui <- function(id) {
                                   ),
                                   tags$div(
                                     style = "padding: 15px; background-color: #f0f7fb; border-left: 5px solid #007bff; margin-top: 10px;",
-                                    tags$p("DESeq2 offers the Likelihood ratio test (LRT) test which is used to identify any genes that show change in expression across the different time points."),
+                                    tags$p("DESeq2 offers the Likelihood ratio test (LRT) test which is used to identify genes whose expression changes over time differently between your selected condition groups."),
                                     tags$p(
                                       "The LRT is comparing the full model to the reduced model to identify significant genes. ", 
-                                      tags$strong("The p-values are determined solely by the difference in deviance between the ‘full’ and ‘reduced’ model formula (not log2 fold changes)."), 
+                                      tags$strong("The resulting p-values don't tell you about a single fold-change. They tell you if the gene's entire trend is significantly different between your groups."), 
                                       "Essentially the LRT test is testing whether the term(s) removed in the ‘reduced’ model explains a significant amount of variation in the data"
                                     ),
                                     tags$p(tags$strong("Example:")),
