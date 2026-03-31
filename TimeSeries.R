@@ -174,16 +174,29 @@ run_timecourse_DEG <- function(MetaData, count_mtx,time_variable,Condition) {
   # -----------------------------
   # 3. Build DESeq2 object
   # -----------------------------
-  dds <- DESeqDataSetFromMatrix(
-    countData = count_mtx,
-    colData   = sample_meta,
-    design    = full_formula
+  dds <- tryCatch({
+    DESeqDataSetFromMatrix(
+      countData = count_mtx,
+      colData   = sample_meta,
+      design    = full_formula
+    )
+  }, error = function(e) {
+    if (grepl("full rank", e$message)) {
+      return("RANK_ERROR")
+    }
+    stop(e$message)
+  })
+  
+  # Use validate to show the message in the UI
+  validate(
+    need(!is.character(dds) || dds != "RANK_ERROR", "Error: The model is not full rank. Check your metadata for confounded variables.")
   )
   
   # Filter low-count genes
   dds <- dds[rowSums(counts(dds)) > 1, ]
   # LRT test
   dds <- DESeq(dds, test = "LRT", reduced = reduced_formula)
+  
   # # -----------------------------
   # # 4. Extract LRT results
   # # -----------------------------
@@ -263,12 +276,88 @@ TimeSeries_ui <- function(id) {
            tabsetPanel(id = ns("TimeSeries_tabset"),
                        tabPanel(title="Time-Series DE Analysis",
                                 br(),
+                                tags$details(
+                                  tags$summary(
+                                    tags$strong("Click to view DESeq2 LRT Methodology & Example", 
+                                                style = "color: #007bff; cursor: pointer;")
+                                  ),
+                                  tags$div(
+                                    style = "padding: 15px; background-color: #f0f7fb; border-left: 5px solid #007bff; margin-top: 10px;",
+                                    tags$p("DESeq2 offers the Likelihood ratio test (LRT) test which is used to identify any genes that show change in expression across the different time points."),
+                                    tags$p(
+                                      "The LRT is comparing the full model to the reduced model to identify significant genes. ", 
+                                      tags$strong("The p-values are determined solely by the difference in deviance between the ‘full’ and ‘reduced’ model formula (not log2 fold changes)."), 
+                                      "Essentially the LRT test is testing whether the term(s) removed in the ‘reduced’ model explains a significant amount of variation in the data"
+                                    ),
+                                    tags$p(tags$strong("Example:")),
+                                    tags$p(
+                                      "User select ", 
+                                      tags$strong("Age"), 
+                                      " as the Time Variable and ",
+                                      tags$strong("Tissue, Treatment"),     
+                                      " as the Condition Variables."
+                                    ),
+                                    tags$p("Then the full model will be:"),
+                                    tags$p(tags$strong("Tissue + Treatment + Treatment:Age")),
+                                    tags$p(" and the reduced module will be:"),
+                                    tags$p(tags$strong("Tissue + Treatment")),
+                                    tags$p(
+                                      "It always test the effect of the last variable in the Select Condition Variables input box with time. ",
+                                      tags$strong("Any DEGs identified will show different time-course trends between the Condition groups.")
+                                    )
+                                  )
+                                ),
+                                br(),
                                 actionButton(ns("save_ts_deg"), "Save to output"),
                                 br(),br(),
                                 DT::DTOutput(ns("ts_deg"))),
                        tabPanel(title="DEG Clustering Analysis",
                                 tabsetPanel(id=ns("ts_cluster_tabset"),
                                             tabPanel(title = "Time Series Plot",
+                                                     br(),
+                                                     tags$details(
+                                                       # This is the clickable header that is always visible
+                                                       tags$summary(
+                                                         tags$strong("Click to view Clustering Methodology (degPatterns & DIANA)", 
+                                                                     style = "color: #007bff; cursor: pointer;")
+                                                       ),
+                                                       # Everything inside this div is hidden until expanded
+                                                       tags$div(
+                                                         style = "padding: 15px; background-color: #f8f9fa; border-radius: 5px; margin-top: 10px;",
+                                                         tags$p(tags$strong("The degPatterns() R function in DEGreport library is used to do the DEG clustering.")),
+                                                         tags$p(
+                                                           "It can work with one or more groups with 2 or more several time points. Before calculating the genes similarity among samples, all samples inside the same time point (time parameter) and group (col parameter) are collapsed together, and the mean value is the representation of the group for the gene abundance. Then, all pair-wise gene expression is calculated using cor.test R function using kendall as the statistical method. A distance matrix is created from those values. After that, cluster::diana() is used for the clustering of gene-gene distance matrix and cut the tree using the divisive coefficient of the clustering, giving as well by diana."
+                                                         ),
+                                                         tags$p(tags$strong("How cluster::diana() Calculates Clusters")),
+                                                         tags$p(
+                                                           'The cluster::diana() function, which stands for DIvisive ANAlysis, is a "top-down" hierarchical clustering algorithm. Unlike common "bottom-up" (agglomerative) methods like hclust, it starts with all your data in one single cluster and systematically splits them. The algorithm follows a divisive process to build a hierarchy:'
+                                                         ), 
+                                                         tags$p(
+                                                           tags$strong("Start at the Top:"), 
+                                                           " Initially, all observations (genes, in your case) are in one large cluster."
+                                                         ),
+                                                         tags$p(
+                                                           tags$strong('Find the "Splinter" Group:'), 
+                                                           " In each step, the algorithm identifies the cluster with the largest diameter (the maximum distance between any two elements)."
+                                                         ),
+                                                         tags$p(
+                                                           tags$strong("The Seed:"), 
+                                                           'Within that cluster, it finds the most "disparate" element—the one with the highest average distance to all other elements in the cluster. This element starts a new "splinter group."'
+                                                         ),
+                                                         tags$p(
+                                                           tags$strong("Reassignment:"), 
+                                                           " The algorithm then looks at all other elements in the original cluster. If an element is closer to the splinter group than to the remainder of the original group, it is moved to the splinter group."
+                                                         ),
+                                                         tags$p(
+                                                           tags$strong("Iterate:"), 
+                                                           " This process repeats until every observation is its own individual cluster, creating a dendrogram (tree)."
+                                                         ),
+                                                         tags$p(
+                                                           tags$strong("Distance Metric:"), 
+                                                           " By default, it uses Euclidean distance, though the degPatterns function specifically calculates a distance matrix using Kendall correlation before passing it to diana()."
+                                                         )
+                                                       )
+                                                     ),
                                                      br(),
                                                      actionButton(ns("ts_cluster_plot"), "Save to output"),
                                                      br(),br(),

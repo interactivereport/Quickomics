@@ -1,6 +1,22 @@
 output$upload.files.ui <- renderUI({
  tagList(tags$div(
-  tags$p("Prepare your own data files in Excel, save them as csv files and upload here. The system will automatically process the files and create the R data files. You need sample metadata file, expression data file, and comparison data file. The system can create gene/protein annotation based on the IDs from data files, or you can upload your own Gene/Protein Name file.")),
+  tags$p("Prepare your own data files in Excel, save them as csv files and upload here. The system will automatically process the files and create the R data files."),
+  tags$p(
+    tags$strong("Uploading tool supports complete sets of data files and comparison-only data file."),
+    style = "color: blue;"
+  ),
+  tags$p(
+    tags$strong("Upload complete data files: "),
+    tags$span("You need sample metadata file, expression data file, and comparison data file.")
+  ),
+  tags$p(
+    tags$strong("Upload comparison data file only: "),
+    tags$span("You need a comparison data file that meets the comparison data file header requirement shown right above the comparison data file uploading box.")
+  ),
+  tags$p(
+    tags$em("In both cases, the system can create gene/protein annotation based on the IDs from data files, or you can upload your own Gene/Protein Name file."),
+    style = "color: blue;"
+  )),
   tags$a(href="RNA_Seq_Demo.zip", "Download RNA-Seq example csv files (200 genes from mouse microglia dataset)"),
   tags$br(),
   tags$a(href="Proteomics_Demo.zip", "Download Proteomics example csv files (200 proteins from AD PD dataset)"),
@@ -14,7 +30,11 @@ output$upload.files.ui <- renderUI({
   tags$p("Expression data should be matrix of expression values with genes/proteins as rows, and samples as columns.  The unique IDs for genes/proteins are in the first column. We recommend using log of normalized expression values (e.g. log2(TPM+1). Upload csv file, can be compressed as .gz or .zip file."),
   fileInput("F_exp", "Expression Data File"),
   tags$hr(),
-  tags$p("Comparison data should have five columns, UniqueID, test, Adj.P.Value, P.Value and logFC. The comparison names are listed in test column. Upload csv file, can be compressed as .gz or .zip file."),
+  tags$p(
+    "Comparison data should have ", 
+    tags$strong("five columns, UniqueID, test, Adj.P.Value, P.Value and logFC"), 
+    ". The comparison names are listed in test column. Upload csv or txt file, can be compressed as .gz or .zip file."
+  ),
   fileInput("F_comp", "Comparison Data File"),
   tags$hr(),
   checkboxInput("F_annot_auto", "Create Gene/Protein Name File automatically (or uncheck to upload your own file)", TRUE, width="90%"),
