@@ -24,42 +24,46 @@ state <- reactiveValues(
 
 # 2. Initialize the lists when metadata changes
 observeEvent(MetaData_long(), {
-  # browser()
-  md <- MetaData_long()
-  # Set initial values
-  init_meta <- split(md$group, md$type) %>% lapply(unique) %>% lapply(as.character)
+  md <- data.table::as.data.table(MetaData_long())
+  n_samples_total <- data.table::uniqueN(md$sampleid)
   
-  n_samples_total <- length(unique(md$sampleid))
-  # compute hide vector ONCE
-  hide <- vapply(init_meta, function(groups) {
-    if (all(suppressWarnings(!is.na(as.numeric(groups))))) return(TRUE)
-    if (length(groups) == 1) return(TRUE)
-    if (length(groups) == n_samples_total) return(TRUE)
-    FALSE
-  }, logical(1))
-  # store it
-  state$hide_types <- hide
-  state$visible_types <- names(state$hide_types)[!state$hide_types]
+  # Hide logic: 
+  # - Only 1 group
+  # - Groups are as many as samples (unique for every sample)
+  # - All groups are numeric (e.g., age, weight)
+  meta_summary <- md[, .(
+    groups = list(as.character(unique(group))),
+    is_numeric = all(!is.na(suppressWarnings(as.numeric(unique(group)))))
+  ), by = type]
   
-  init_samples <- unique(md$sampleid)
-  init_tests <- if(!is.null(all_tests())) all_tests() else character()
-  # Update the stable state
-  state$meta <- init_meta
-  state$samples <- init_samples
-  state$tests <- init_tests
-  # also store a frozen copy for reset
+  meta_summary[, hide := (
+    is_numeric | 
+      lengths(groups) == 1 | 
+      lengths(groups) == n_samples_total
+  )]
+  
+  init_meta <- setNames(meta_summary$groups, meta_summary$type)
+  hide_vec  <- setNames(meta_summary$hide, meta_summary$type)
+  
+  state$hide_types    <- hide_vec
+  state$visible_types <- names(hide_vec)[!hide_vec]
+  
+  state$meta    <- init_meta
+  state$samples <- unique(md$sampleid)
+  state$tests   <- if (!is.null(all_tests())) all_tests() else character()
+  
   state$initial_meta    <- init_meta
-  state$initial_samples <- init_samples
-  state$initial_tests   <- init_tests
+  state$initial_samples <- state$samples
+  state$initial_tests   <- state$tests
+  
   # Also update the reactiveVals that the UI depends on
   all_group_list(init_meta)
   active_group_list(init_meta)
-  all_samples(init_samples)
-  sample_order(init_samples)
-  all_tests(init_tests)
-  test_order(init_tests)
+  all_samples(state$samples)
+  sample_order(state$samples)
+  all_tests(state$tests)
+  test_order(state$tests)
 })
-
 
 ## =========================
 ## HELPERS
@@ -89,75 +93,60 @@ detect_change_source <- function(visible, old_meta, old_samples, old_tests,
 ## RECONCILIATION FUNCTIONS
 ## =========================
 # A) META → SAMPLES → TESTS
-reconcile_from_meta <- function(old_meta, ui_meta, ui_tests, ui_samples,
-                                md, all_samples_vec, all_tests_vec) {
+reconcile_from_meta <- function(old_meta, ui_meta, ui_tests, ui_samples, md, all_samples_vec, all_tests_vec) {
   attrs <- names(ui_meta)
   
-  # 1) Detect changed attributes (including reorder-only)
-  changed_attrs <- attrs[!mapply(
-    identical,
-    lapply(ui_meta,  as.character),
-    lapply(old_meta, as.character)
-  )]
+  # 1) Detect changed attributes
+  changed_attrs <- attrs[!mapply(identical, lapply(ui_meta, as.character), lapply(old_meta, as.character))]
   
-  # If nothing changed, return as-is
   if (length(changed_attrs) == 0) {
-    return(list(meta = ui_meta,
-                samples = ui_samples,
-                tests = ui_tests))
+    return(list(meta = ui_meta, samples = ui_samples, tests = ui_tests))
   }
   
-  # 2) Recompute sample order driven by changed attributes
-  #    Stable block reorder: UI order of groups → sample blocks
-  base_order = unique(c(ui_samples, all_samples_vec))
+  # Convert md to data.table for high-speed indexing
+  data.table::setDT(md) 
+  base_order <- unique(c(ui_samples, all_samples_vec))
+  new_samples <- ui_samples # Default fallback
   
+  # 2) Recompute sample order driven by changed attributes
   for (attr in changed_attrs) {
-    # UI order for this attribute
     ui_vals <- ui_meta[[attr]]
     
-    # For each value, get samples in that group
+    # Fast binary search subsetting
     blocks <- lapply(ui_vals, function(val) {
-      md %>%
-        dplyr::filter(type == attr, group == val) %>%
-        dplyr::pull(sampleid) %>%
-        intersect(base_order)   # preserve internal order
+      relevant_samples <- md[type == attr & group == val, sampleid]
+      base_order[base_order %in% relevant_samples]
     })
-    # Concatenate blocks → new sample order
+    
     new_samples <- unlist(blocks, use.names = FALSE)
   }
   
   # 3) Recompute meta for ALL attributes using reordered md slices
   new_meta <- lapply(attrs, function(attr) {
-    # Filter md to this attribute
-    md_attr <- md %>% dplyr::filter(type == attr)
-    # Reorder md_attr by new_samples (your fix)
-    md_attr <- md_attr[match(new_samples, md_attr$sampleid), ]
-    # Extract ordered unique groups
-    md_attr$group %>%
-      unique() %>%
-      as.character()
+    md[type == attr][match(new_samples, sampleid), unique(as.character(group))]
   })
   names(new_meta) <- attrs
+
+  # 4) Recompute tests from samples
+  logical_tests <- all_tests_vec[vapply(all_tests_vec, function(t) {
+    # Get pre-calculated IDs for this specific test
+    required_samples <- test_id_lookup()[[t]]
+    
+    # If the test exists in our lookup, check if all its samples are in the current set
+    if (!is.null(required_samples)) {
+      return(all(required_samples %in% new_samples))
+    } else {
+      return(FALSE)
+    }
+  }, FUN.VALUE = logical(1))]
   
-  # 4) Recompute tests from new samples
-  logical_tests <- all_tests_vec[sapply(all_tests_vec, function(t) {
-    groups <- unlist(strsplit(as.character(t), "vs"))
-    samples_t <- md %>%
-      dplyr::filter(group %in% groups) %>%
-      dplyr::pull(sampleid) %>%
-      as.character()
-    all(samples_t %in% new_samples)
-  })]
-  
+  # preserve UI order
   kept_tests  <- ui_tests[ui_tests %in% logical_tests]
   added_tests <- setdiff(logical_tests, kept_tests)
   new_tests   <- c(kept_tests, added_tests)
   
-  list(meta = new_meta,
-       samples = new_samples,
-       tests = new_tests)
+  list(meta = new_meta, samples = new_samples, tests = new_tests)
 }
-
 
 # B) SAMPLES → META → TESTS
 reconcile_from_samples <- function(old_samples, ui_samples, ui_meta, ui_tests,
@@ -170,31 +159,33 @@ reconcile_from_samples <- function(old_samples, ui_samples, ui_meta, ui_tests,
   }
   
   # 2) Samples are driven directly by ui_samples (user action)
-  samples <- ui_samples
-  # 3) Recompute meta for ALL attributes from samples
+  md_dt <- data.table::as.data.table(md)
+  active_md <- md_dt[sampleid %in% ui_samples]
+  
+  # 3) Recompute meta from samples
   attrs <- names(ui_meta)
   new_meta <- lapply(attrs, function(attr) {
-    logical_groups <- md %>%
-      dplyr::filter(type == attr, sampleid %in% samples) %>%
-      dplyr::pull(group) %>%
-      unique() %>%
-      as.character()
-    # preserve user order
-    kept  <- ui_meta[[attr]][ui_meta[[attr]] %in% logical_groups]
-    added <- setdiff(logical_groups, kept)
-    c(kept, added)
+    logical_groups <- unique(as.character(active_md[type == attr, group]))
+    current_ui_attr <- ui_meta[[attr]]
+    kept <- current_ui_attr[current_ui_attr %in% logical_groups]
+    added <- data.table::setdiff(logical_groups, kept)
+    return(c(kept, added))
   })
-  names(new_meta) <- attrs
+  names(new_meta) <- attrs  
   
   # 4) Recompute tests from samples
-  logical_tests <- all_tests_vec[sapply(all_tests_vec, function(t) {
-    groups <- unlist(strsplit(as.character(t), "vs"))
-    samples_t <- md %>%
-      dplyr::filter(group %in% groups) %>%
-      dplyr::pull(sampleid) %>%
-      as.character()
-    all(samples_t %in% samples)
-  })]
+  logical_tests <- all_tests_vec[vapply(all_tests_vec, function(t) {
+    # Get pre-calculated IDs for this specific test
+    required_samples <- test_id_lookup()[[t]]
+    
+    # If the test exists in our lookup, check if all its samples are in the current set
+    if (!is.null(required_samples)) {
+      return(all(required_samples %in% samples))
+    } else {
+      return(FALSE)
+    }
+  }, FUN.VALUE = logical(1))]
+  
   # preserve UI order
   kept_tests  <- ui_tests[ui_tests %in% logical_tests]
   added_tests <- setdiff(logical_tests, kept_tests)
@@ -272,21 +263,22 @@ reconcile_state <- function(visible, old_meta, old_samples, old_tests,
   # 3) META is the driver
   if (source == "meta") {
     out <- reconcile_from_meta(old_meta[visible], ui_meta[visible], ui_tests, ui_samples, md, all_samples_vec, all_tests_vec)
-    attrs <- names(old_meta)
-    md_filt <- md %>%
-      dplyr::filter(sampleid %in% out$samples) %>%
-      dplyr::arrange(match(sampleid, out$samples))
     
-    calc_meta <- lapply(attrs, function(attr) {
-      md_filt %>%
-        dplyr::filter(type == attr) %>%
-        dplyr::pull(group) %>%
-        unique() %>%          # preserves first appearance
-        as.character()
-    })
-    names(calc_meta) <- attrs
-    out$meta <- c(out$meta, calc_meta[setdiff(names(calc_meta), visible)])
-    return(out)
+    # Use data.table for a single-pass extraction
+    md_dt <- data.table::as.data.table(md)
+    data.table::setkey(md_dt, sampleid)
+    md_filt <- md_dt[.(out$samples), nomatch = NULL]
+    
+    attrs <- names(old_meta)
+    hidden_attrs <- setdiff(attrs, visible)
+    
+    if (length(hidden_attrs) > 0) {
+      calc_dt <- md_filt[type %in% hidden_attrs]
+      calc_meta <- split(calc_dt$group, calc_dt$type)
+      calc_meta <- lapply(calc_meta, function(x) unique(as.character(x)))
+      out$meta <- c(out$meta, calc_meta)
+    }
+    return(out)  
   }
   
   # 4) SAMPLES is the driver
@@ -397,7 +389,6 @@ observe({
 
 observe({
   withProgress(message = "Updating the sample meta, sample list and comparison list ...", {
-    # browser()
     req(length(all_group_list()) > 0)
     
     expected_attrs <- names(all_group_list())
@@ -566,25 +557,20 @@ output$summaryDetail <- renderPrint({
 })
 
 filter_data_long <- function(data_long, active_group_list, sample_order) {
-  # 1. Filter by metadata attributes
-  filtered <- data_long
-  for (attr in names(active_group_list)) {
-    filtered <- filtered[filtered[[attr]] %in% active_group_list[[attr]], ]
+   if (!data.table::is.data.table(data_long)) {
+    data.table::setDT(data_long)
   }
-  # 2. Filter by sample order
-  filtered <- filtered[filtered$sampleid %in% sample_order, ]
-  # 3. Preserve sample order
-  filtered$sampleid <- factor(filtered$sampleid, levels = sample_order)
-  filtered <- filtered[order(filtered$sampleid), ]
-  filtered[] <- lapply(filtered[], function(col) {
-    if (is.factor(col) || is.character(col)) {
-      col <- as.character(col)    
-      factor(col, levels = unique(col)) 
-    } else {
-      col                                    
-    }
-  })
-  filtered
+  
+  data.table::setkey(data_long, sampleid)
+  filtered <- data_long[.(sample_order), nomatch = NULL]
+  setDT(filtered)
+  cols_to_fix <- names(filtered)[vapply(filtered, function(x) is.character(x) || is.factor(x), logical(1))]
+  for (col in cols_to_fix) {
+    # Extract the column values once to avoid repeated indexing
+    vals <- as.character(filtered[[col]])
+    data.table::set(filtered, j = col, value = factor(vals, levels = unique(vals)))
+  }  
+  return(as.data.frame(filtered))
 }
 
 DataQCReactive <- reactive({
@@ -614,24 +600,32 @@ DataQCReactive <- reactive({
     
     input_samples = sample_order() # input$QC_samples
     
-    tmp_data_long = filter_data_long(data_long, selected_groups, input_samples)
-    
-    MetaData <- MetaData %>%
-      dplyr::filter(sampleid %in% input_samples) %>%
-      dplyr::mutate(sampleid = factor(sampleid, levels = input_samples)) %>%
-      dplyr::arrange(sampleid)
-    
-    MetaData[] <- lapply(MetaData[], function(col) {
-      if (is.factor(col) || is.character(col)) {
-        col <- as.character(col)    
-        factor(col, levels = unique(col)) 
-      } else {
-        col                                    
-      }
+    system.time({
+      tmp_data_long = filter_data_long(data_long, selected_groups, input_samples)
     })
     
-    tmp_sampleid = MetaData$sampleid
+    # 1. Ensure MetaData is a data.table
+    md_dt <- data.table::as.data.table(MetaData)
+    
+    # 2. Filter and Arrange in one step using keyed subsetting
+    # This filters for the samples and forces the order of input_samples
+    data.table::setkey(md_dt, sampleid)
+    md_dt <- md_dt[.(input_samples), nomatch = NULL]
+    
+    # 3. Optimize the column-wise factor conversion
+    # Identify character or factor columns once
+    cols_to_fix <- names(md_dt)[vapply(md_dt, function(x) is.character(x) || is.factor(x), logical(1))]
+    
+    # Update columns in-place using the 'set' function (zero-copy)
+    for (col in cols_to_fix) {
+      # Convert to character first, then to factor with unique levels
+      data.table::set(md_dt, j = col, value = factor(as.character(md_dt[[col]]), 
+                                                        levels = unique(as.character(md_dt[[col]]))))
+    }
+    
+    tmp_sampleid = md_dt$sampleid
     tmp_data_wide = data_wide[, as.character(tmp_sampleid), drop = FALSE] %>% as.matrix()
+    
     input_tests <- test_order()
     tmp_results_long <- results_long %>%
       dplyr::filter(test %in% input_tests) %>%
@@ -644,7 +638,7 @@ DataQCReactive <- reactive({
                 'tmp_results_long' = tmp_results_long, 
                 'tmp_group' = selected_groups, 
                 'tmp_sampleid'=tmp_sampleid, 
-                "MetaData"=MetaData, 
+                "MetaData"= as.data.frame(md_dt), 
                 'ProteinGeneName' = ProteinGeneName_filtered)
     )
   }

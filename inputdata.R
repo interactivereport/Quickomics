@@ -8,6 +8,7 @@
 ##@Date : 5/31/2019
 ##@version 1.0
 ###########################################################################################################
+library(data.table)
 
 #global reactive values
 saved_plots <- reactiveValues()  
@@ -26,6 +27,8 @@ all_tests<-reactiveVal()
 test_order<-reactiveVal()
 all_metadata<-reactiveVal()
 MetaData_long <-reactiveVal()
+# Initialize the reactiveVal to store the IDs for each test
+test_id_lookup <- reactiveVal(list())
 upload_message <- reactiveVal()
 ProteinGeneNameHeader<- reactiveVal()
 exp_unit<-reactiveVal()
@@ -283,34 +286,133 @@ DataReactive <- reactive({
                    test_order(tests)
                    ProteinGeneNameHeader(colnames(ProteinGeneName))
                    sel_comp=NULL
-                   #browser() #debug
-                   if (!is.null(comp_info)){
-                     sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%dplyr::filter(Group_name!="", !is.na(Group_name)); dim(sel_comp)
-                     #sel_comp<-data.frame(Comparison=rownames(comp_info), comp_info)%>%dplyr::filter(str_detect(Subsetting_group, ":")); dim(sel_comp)
-                     if (nrow(sel_comp)>0) {
-                       sel_comp<-sel_comp%>%dplyr::mutate(N_samples=0, sample_list=NA, subset_list=NA)
-                       for (i in 1:nrow(sel_comp)) {
-                         sel_samples<-rep(TRUE, nrow(MetaData))
-                         if  (str_detect(sel_comp$Subsetting_group[i], ":")){
-                           sg1<-str_split(sel_comp$Subsetting_group[i], ";")[[1]]
-                           for (j in 1:length(sg1)){
-                             sub_values=str_split(sg1[j], ":")[[1]]
-                             sel_j=MetaData[[sub_values[1]]]==sub_values[2]
-                             sel_samples=sel_samples & sel_j
+                   # browser() #debug
+                   if (!is.null(comp_info)) {
+                     # 1. Convert to data.table locally for speed
+                     # keep.rownames = "Comparison" preserves your test names
+                     sel_comp_dt <- data.table::as.data.table(comp_info, keep.rownames = "Comparison")
+                     sel_comp_dt <- sel_comp_dt[!is.na(Group_name) & Group_name != ""]
+                     
+                     if (nrow(sel_comp_dt) > 0) {
+                       # Local data.table version of MetaData to keep the original as a data.frame
+                       md_dt <- data.table::as.data.table(MetaData)
+                       
+                       # Helper function for vectorized processing per comparison row
+                       get_test_data <- function(sg_string, group_col, g_test, g_ctrl, md) {
+                         
+                         # Determine if a subsetting filter actually exists
+                         has_subset <- !is.na(sg_string) && sg_string != "" && grepl(":", sg_string)
+                         
+                         # Logical vector for rows to keep
+                         keep <- rep(TRUE, nrow(md))
+                         
+                         # Step A: Process Subsetting_group if it exists
+                         if (has_subset) {
+                           conds <- strsplit(sg_string, ";")[[1]]
+                           for (cond in conds) {
+                             parts <- strsplit(cond, ":")[[1]]
+                             # Efficiently update the logical mask
+                             keep <- keep & (md[[parts[1]]] == parts[2])
                            }
-                           #sel_comp$N_samples[i]=sum(sel_samples)
-                           sel_comp$subset_list[i]=paste(MetaData$sampleid[sel_samples], collapse = ",")
+                           # Assign the comma-separated string of IDs that passed the subset
+                           sub_list_val <- paste(md$sampleid[keep], collapse = ",")
+                         } else {
+                           # PER YOUR REQUEST: If no subsetting string, subset_list is NA
+                           sub_list_val <- NA_character_
                          }
-                         #now further filter for Group_test and Group_ctrl
-                         sel_DEG_samples<- (MetaData[[sel_comp$Group_name[i]]] %in% c(sel_comp$Group_test[i], sel_comp$Group_ctrl[i]) )
-                         sel_samples = sel_samples & sel_DEG_samples
-                         sel_comp$N_samples[i]=sum(sel_samples)
-                         sel_comp$sample_list[i]=paste(MetaData$sampleid[sel_samples], collapse = ",")
+                         
+                         # Step B: Further filter for Group_test and Group_ctrl for the DEG analysis
+                         keep_final <- keep & (md[[group_col]] %in% c(g_test, g_ctrl))
+                         final_ids <- md$sampleid[keep_final]
+                         
+                         return(list(
+                           N = length(final_ids),
+                           s_list = paste(final_ids, collapse = ","),
+                           sub_list = sub_list_val,
+                           ids_vec = final_ids 
+                         ))
                        }
-                       # cat(i, sg1, sum(sel_samples), paste(MetaData$sampleid[sel_samples], collapse = ","), "\n\n")
+                       
+                       # 2. Execute row-wise using mapply
+                       res_list <- mapply(get_test_data, 
+                                          sel_comp_dt$Subsetting_group, 
+                                          sel_comp_dt$Group_name, 
+                                          sel_comp_dt$Group_test, 
+                                          sel_comp_dt$Group_ctrl, 
+                                          MoreArgs = list(md = md_dt), 
+                                          SIMPLIFY = FALSE)
+                       
+                       # 3. Bind results back to the table
+                       # We only bind the first 3 elements (N, s_list, sub_list) to the table
+                       res_summary <- data.table::rbindlist(lapply(res_list, function(x) x[1:3]))
+                       
+                       sel_comp_dt[, `:=`(
+                         N_samples = res_summary$N,
+                         sample_list = res_summary$s_list,
+                         subset_list = res_summary$sub_list
+                       )]
+                       
+                       # 4. Update the reactiveVal for direct ID access in other parts of the app
+                       id_mapping <- lapply(res_list, `[[`, "ids_vec")
+                       names(id_mapping) <- sel_comp_dt$Comparison
+                       test_id_lookup(id_mapping)
+                       
+                       # 5. Filter out empty tests and convert back to data.frame for the rest of the app
+                       sel_comp <- as.data.frame(sel_comp_dt[N_samples > 0])
+                       if (nrow(sel_comp) == 0) sel_comp <- NULL
                      }
-                     sel_comp<-sel_comp%>%dplyr::filter(N_samples>0)
-                     if (nrow(sel_comp)==0) {sel_comp=NULL}
+                   } else if (length(tests) > 0) {
+                     # 1. Create the base data.frame using data.table for speed
+                     # We use tstrsplit to split "GroupA vs GroupB" into two columns at once
+                     sel_comp_dt <- data.table::data.table(Comparison = tests)
+                     sel_comp_dt[, c("Group_test", "Group_ctrl") := data.table::tstrsplit(Comparison, "vs", fixed = TRUE)]
+                     
+                     # 2. Set Row Names (converting to data.frame at the end)
+                     # 3. Prepare for Sample ID lookup
+                     # Ensure we have a local data.table of MetaData for fast subsetting
+                     md_dt <- data.table::as.data.table(MetaData)
+                     
+                     # 4. Define the lookup and list-building function
+                     # This uses the 'group' column from MetaData (adjust if your column name differs)
+                     get_samples_for_test <- function(g_test, g_ctrl, md) {
+                       # Get vector of IDs for each side
+                       ids_test <- md[group == g_test, as.character(sampleid)]
+                       ids_ctrl <- md[group == g_ctrl, as.character(sampleid)]
+                       
+                       combined_vec <- c(ids_test, ids_ctrl)
+                       
+                       return(list(
+                         n = length(combined_vec),
+                         s_list = paste(combined_vec, collapse = ","),
+                         ids_vec = combined_vec
+                       ))
+                     }
+                     
+                     # 5. Execute lookup
+                     res_list <- mapply(get_samples_for_test, 
+                                        sel_comp_dt$Group_test, 
+                                        sel_comp_dt$Group_ctrl, 
+                                        MoreArgs = list(md = md_dt), 
+                                        SIMPLIFY = FALSE)
+                     
+                     # 6. Bind results back to the table
+                     res_summary <- data.table::rbindlist(lapply(res_list, function(x) x[1:2]))
+                     sel_comp_dt[, `:=`(
+                       N_samples = res_summary$n,
+                       sample_list = res_summary$s_list,
+                       Group_name = "", # Defaulting to 'group' column
+                       subset_list = NA_character_
+                     )]
+                     
+                     # 7. Update the reactiveVal with raw vectors for instant access
+                     id_mapping <- lapply(res_list, `[[`, "ids_vec")
+                     names(id_mapping) <- sel_comp_dt$Comparison
+                     
+                     test_id_lookup(id_mapping)
+                     
+                     # 8. Final conversion to data.frame with Row Names
+                     sel_comp <- as.data.frame(sel_comp_dt)
+                     rownames(sel_comp) <- sel_comp$Comparison
                    }
                  }
                  return(

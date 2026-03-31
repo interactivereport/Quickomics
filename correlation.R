@@ -408,8 +408,6 @@ correlation_server <- function(id) {
                    rownames(res_corr_sorted) <- seq(1:nrow(res_corr_sorted))
                    res_corr_sorted$rank <- rownames(res_corr_sorted)
                    
-                   browser()
-                   
                    res_corr_sorted$Action <- "View Correlation Plot"
                    res_corr_sorted <- res_corr_sorted %>% 
                      dplyr::relocate(Action, .before = intercept) %>%

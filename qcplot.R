@@ -49,7 +49,7 @@ observe({
 output$selectGroupSampleQC <- renderUI(shared_header_content())
 
 DataPCAReactive <- reactive({
-  # browser()
+  browser()
   DataIn <-  DataQCReactive()
   tmp_sampleid <- DataIn$tmp_sampleid
   validate(need(length(tmp_sampleid)>1, message = "Please select at least two samples (please note samples are filtered by group selection as well)."))
@@ -66,11 +66,7 @@ DataPCAReactive <- reactive({
   percentVar <- 	round((pca$sdev)^2/sum(pca$sdev^2), 3) * 100
   scores <- as.data.frame(pca$x)
   rownames(scores) <- tmp_sampleid
-  if ('group' %in% names(DataIn$tmp_group)) {
-    all_groups <- DataIn$tmp_group$group
-  } else {
-    all_groups <- all_group_list()$group
-  }
+  all_groups <- DataIn$tmp_group$group
   scores$group <- factor(tmp_group, levels = all_groups)
   attributes=setdiff(colnames(MetaData), c("Order", "ComparePairs", "group") )
   
@@ -149,6 +145,7 @@ observeEvent(input$plot_PCA, {
 })
 
 pcaplot_out <- eventReactive (plot_pca_control(), {
+  browser()
   ptm <- proc.time()
   req(DataPCAReactive())
   req(input$PCA_label != "")
@@ -210,9 +207,6 @@ pcaplot_out <- eventReactive (plot_pca_control(), {
 	return(p)
 })
 
-observe({
-  
-})
 output$pcaplot <- renderPlot({
   ptm <- proc.time()
   withProgress(message = 'Drawing PCA Plot...', value = 0, {
