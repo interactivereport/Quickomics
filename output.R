@@ -9,6 +9,7 @@
 ##@version 2.0
 ###########################################################################################################
 saved_plot_list<- reactiveVal()
+saved_gct_list <- reactiveVal()
 
 output$downloadPDF <- downloadHandler(
 	filename = function() {
@@ -198,7 +199,6 @@ output$downloadPDF <- downloadHandler(
 		cat("Saved to PDF", Np, "graphs.\n")
 	})
 },contentType = "application/pdf"
-
 )
 
 observeEvent(input$clear_saved_plots, {
@@ -499,12 +499,10 @@ output$downloadSVG <- downloadHandler(
     dev.off()
   })
   },contentType = "application/svg"
-  
 )
 
 
 output$downloadXLSX <- downloadHandler( 
-
 	filename = function() {
 		paste("output_",Sys.Date(),".xlsx", sep="")
 	},
@@ -520,3 +518,85 @@ output$downloadXLSX <- downloadHandler(
 },contentType = "application/vnd.ms-excel"
 )
 
+observe({
+  req(saved_gcts)
+  summary=NULL
+  
+  ## Heatmap
+  if (!is.null(saved_gcts$heatmap_gct)){
+    summary=c(summary, 'Heatmap GCT file')
+  }
+  
+  ## WGCNA Cluster Heatmap
+  if (!is.null(saved_gcts$wgcna_gct)){
+    summary=c(summary, 'WGCNA cluster GCT file')
+  }
+  
+  #Time Series Cluster Heatmap
+  if (!is.null(saved_gcts$ts_tpm_gct)){
+    summary=c(summary, 'Time Series cluster sample normalized log2TPM GCT file')
+  }
+  
+  if (!is.null(saved_gcts$ts_zscore_gct)){
+    summary=c(summary, 'Time Series cluster group z-score GCT file')
+  }
+
+  #cat("saved plots are:", summary, "\n")
+  saved_gct_list(summary)
+  if (is.null(summary)) {saved_gct_list(character(0))}
+})
+
+observe({
+  updateCheckboxGroupInput(session, "GCT_table_checked", choices=saved_gct_list(), selected=saved_gct_list() )
+})
+
+
+output$downloadGCT <- downloadHandler(
+  filename = function() {
+    paste("GCT_Export_", Sys.Date(), ".zip", sep = "")
+  },
+  content = function(file) {
+    # Create a temporary directory to hold the individual GCT files
+    cwd <- getwd()
+    tmpdir <- tempdir()
+    setwd(tempdir())
+    files_to_zip <- c()
+
+    GCT_table_checked=input$GCT_table_checked
+    
+    withProgress(message = 'Preparing GCT files...', value = 0, {
+      # Example: Check for Heatmap GCT
+      if (!is.null(saved_gcts$heatmap_gct) && ("Heatmap GCT file" %in% GCT_table_checked)) {
+        fname <- "heatmap_data.gct"
+        cmapR::write_gct(saved_gcts$heatmap_gct, fname, appenddim = FALSE)
+        files_to_zip <- c(files_to_zip, fname)
+      }
+      
+      if (!is.null(saved_gcts$wgcna_gct) && ("WGCNA cluster GCT file" %in% GCT_table_checked)) {
+        fname <- "wgcna_cluster_heatmap_data.gct"
+        cmapR::write_gct(saved_gcts$wgcna_gct, fname, appenddim = FALSE)
+        files_to_zip <- c(files_to_zip, fname)
+      }
+      
+      if (!is.null(saved_gcts$ts_tpm_gct) && ("Time Series cluster sample normalized log2TPM GCT file" %in% GCT_table_checked)) {
+        fname <- "ts_cluster_sample_normalized_log2TPM_data.gct"
+        cmapR::write_gct(saved_gcts$ts_tpm_gct, fname, appenddim = FALSE)
+        files_to_zip <- c(files_to_zip, fname)
+      }
+      if (!is.null(saved_gcts$ts_zscore_gct) && ("Time Series cluster group z-score GCT file" %in% GCT_table_checked)) {
+        fname <- "ts_cluster_group_zscore_data.gct"
+        cmapR::write_gct(saved_gcts$ts_zscore_gct, fname, appenddim = FALSE)
+        files_to_zip <- c(files_to_zip, fname)
+      }
+      # Verify if any files were actually created
+      if (length(files_to_zip) == 0) {
+        writeLines("No GCT files were selected for download.", "README.txt")
+        files_to_zip <- "README.txt"
+      }
+      # Zip the files together
+      zip::zip(zipfile = file, files = files_to_zip)
+    })
+    setwd(cwd)
+  },
+  contentType = "application/zip"
+)

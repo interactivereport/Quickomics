@@ -442,10 +442,16 @@ tabPanel("Heatmap", value = 'Heatmap',
            ),
            column(9,
                   tabsetPanel(id="heatmap_tabset",
-                              tabPanel(title="Static Heatmap Layout 1",actionButton("pheatmap2", "Save to output"),
+                              tabPanel(title="Static Heatmap Layout 1",
+                                       br(),
+                                       actionButton("pheatmap2", "Save to output"),
+                                       actionButton("heatmap_gct", "Save GCT data file to output"),
                                        actionButton("plot_heatmap", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
                                        uiOutput("plot.heatmap")),
-                              tabPanel(title="Static Heatmap Layout 2", actionButton("staticheatmap", "Save to output"), plotOutput("staticheatmap", height = 800)),
+                              tabPanel(title="Static Heatmap Layout 2", 
+                                       br(),
+                                       actionButton("staticheatmap", "Save to output"), 
+                                       plotOutput("staticheatmap", height = 800)),
                               tabPanel(title="Interactive Heatmap",textOutput("text"), p(), plotlyOutput("interactiveheatmap", height = 800)),
                               tabPanel(title="Help", htmlOutput('help_heatmap'))
                   )
@@ -750,8 +756,11 @@ tabPanel("Output",
 	downloadButton('downloadPDF', 'Download PDF'),
   downloadButton('downloadSVG', 'Download SVG (for the first selected plot)'),
   tags$br(),tags$hr(),
-	downloadButton('downloadXLSX', 'Download tables in .xlsx')
-	),
+  downloadButton('downloadXLSX', 'Download tables in .xlsx'),
+  tags$br(),tags$hr(),
+  checkboxGroupInput("GCT_table_checked", "GCT tables to Save", choices=NULL, selected=NULL),
+  downloadButton('downloadGCT', 'Download tables in .gct')
+),
 
 
 ##########################################################################################################

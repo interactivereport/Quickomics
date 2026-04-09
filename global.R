@@ -60,6 +60,7 @@ suppressPackageStartupMessages({
   library(WGCNA)
   library(DEGreport)
   library(gprofiler2)
+  library(cmapR)
 })
 
 
@@ -162,6 +163,77 @@ GetGenesFromGeneSet <- function(sel_geneset) {
     dplyr::pull(symbol)
   return(geneset_genenames)
 }
+
+#' Create a GCT object with strict ID matching
+#' @param exp_data A data frame or matrix of expression values
+#' @param row_meta A data frame containing gene/protein annotations
+#' @param col_meta A data frame containing sample annotations
+#' @return A GCT object
+create_gct_object <- function(exp_data, row_meta, col_meta) {
+  library(cmapR)
+  # 1. Prepare the Expression Matrix
+  my_matrix <- as.matrix(exp_data)
+  my_matrix[is.na(my_matrix)] <- 0
+  
+  # 2. Internal function to find, rename, AND reorder metadata
+  align_metadata <- function(meta_df, target_names, type = "row") {
+    meta_df <- as.data.frame(meta_df)
+    match_idx <- NULL
+    
+    # Find the column that contains all the IDs (regardless of order)
+    for (i in seq_len(ncol(meta_df))) {
+      column_values <- as.character(meta_df[[i]])
+      # Check if all matrix IDs exist in this metadata column
+      if (all(target_names %in% column_values)) {
+        match_idx <- i
+        break
+      }
+    }
+    if (is.null(match_idx)) {
+      stop(paste("Mapping Failed: No column in", type, 
+                 "metadata contains all IDs found in the expression matrix."))
+    }
+    id_col_name <- colnames(meta_df)[match_idx]
+    message(paste0("Match found: Using '", id_col_name, "' to align ", type, " metadata."))
+    
+    # Rename the matching column to 'id' (removing existing 'id' column if it's the wrong one)
+    if ("id" %in% colnames(meta_df) && id_col_name != "id") {
+      meta_df$id <- NULL
+      match_idx <- which(colnames(meta_df) == id_col_name)
+    }
+    colnames(meta_df)[match_idx] <- "id"
+    
+    # CRITICAL STEP: Reorder metadata rows to match the matrix order
+    reorder_idx <- match(target_names, meta_df$id)
+    meta_df <- meta_df[reorder_idx, , drop = FALSE]
+    meta_df <- meta_df[, c("id", setdiff(colnames(meta_df), "id")), drop = FALSE] 
+    
+    return(meta_df)
+  }  
+  
+  # 3. Process Row Metadata
+  # Keep only columns where the number of unique values is greater than 1
+  row_meta <- row_meta[sapply(row_meta, function(x) length(unique(x)) > 1)]
+  row_metadata <- align_metadata(row_meta, rownames(my_matrix), "row")
+  
+  # 4. Process Column Metadata
+  # First, clean the specific columns you identified in your environment
+  cols_to_remove <- intersect(c("Order", "ComparePairs"), colnames(col_meta))
+  col_meta[] <- lapply(col_meta, as.character)
+  col_metadata <- col_meta
+  if (length(cols_to_remove) > 0) {
+    col_metadata <- col_metadata[, !colnames(col_metadata) %in% cols_to_remove]
+  }
+  col_metadata <- align_metadata(col_metadata, colnames(my_matrix), "column")
+  
+  # 5. Assemble the GCT object
+  my_gct <- new("GCT", 
+                mat = my_matrix, 
+                rdesc = row_metadata, 
+                cdesc = col_metadata)
+  return(my_gct)
+}
+
 
 options(shiny.maxRequestSize = 40*1024^2)  #upload files up to 30 Mb
 

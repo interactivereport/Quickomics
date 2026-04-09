@@ -192,7 +192,7 @@ DataHeatMapReactive <- reactive({
   #match sampleid order
   new_order=match(colnames(df), annotation$sampleid)
   annotation=annotation[new_order, ]
-  return(list("df"=df, "annotation"=annotation, "gene_annot_info"=gene_annot_info))
+  return(list("df"=df, "df_UniqueID" = tmpdat, "annotation"=annotation, "gene_annot_info"=gene_annot_info))
 })
 
 
@@ -400,6 +400,21 @@ observeEvent(input$pheatmap2, {
   saved_plots$pheatmap2 <- pheatmap2_out()
 }
 )
+
+heamap_gct <- eventReactive(plot_heatmap_control(),  {
+  DataHeatMap <- DataHeatMapReactive()
+  data.in <- DataHeatMap$df_UniqueID
+  annotation <- DataHeatMap$annotation
+  tmpDataIn = DataQCReactive()  
+  ProteinGeneName = tmpDataIn$ProteinGeneName
+  
+  gct_data <- create_gct_object(data.in, ProteinGeneName, annotation)
+  gct_data
+})
+
+observeEvent(input$heatmap_gct, {
+  saved_gcts$heatmap_gct <- heamap_gct()
+})
 
 staticheatmap_out <- reactive({
   withProgress(message = 'Making static heatmap 2:', value = 0, {

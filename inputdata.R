@@ -13,6 +13,8 @@ library(data.table)
 #global reactive values
 saved_plots <- reactiveValues()  
 saved_table <- reactiveValues() 
+saved_gcts <- reactiveValues() 
+
 samples_excludeM<-reactiveVal() #manually excluded samples
 samples_excludeF<-reactiveVal() #samples excluded from filtering on sample attributes
 samples_excludeM(""); samples_excludeF("")
@@ -248,7 +250,6 @@ DataReactive <- reactive({
                  } else {
                    if (!is.data.frame(data_wide)) {data_wide=data.frame(data_wide, check.names = FALSE)}  #change data_wide to data frame from numeric matrix if needed
                    if (!"Protein.ID" %in% names(ProteinGeneName)) {ProteinGeneName$Protein.ID=NA} #Add Protein.ID column as it is required for certain tools.
-                   
                    MetaData_long <- MetaData %>%
                      dplyr::select(-any_of(c("Order", "ComparePairs", "Treatments"))) %>%
                      #dplyr::mutate_if(is.numeric, as.character) %>% #this will fail when there are columns in Time format

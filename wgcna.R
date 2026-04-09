@@ -305,6 +305,8 @@ wgcna_ui <- function(id) {
                                             tabPanel(title="Dendrogram", plotOutput(ns("Dendrogram"), height=800)),
                                             tabPanel(title="Gene Clusters",
                                                      br(),
+                                                     actionButton(ns("wgcna_gct"), "Save GCT data file to output"),
+                                                     br(),br(),
                                                      DT::dataTableOutput(ns("gene_cluster")),
                                                      tags$script(HTML(sprintf("
                                                      $(document).on('click', '[id^=runORA_]', function() {
@@ -394,7 +396,6 @@ wgcna_server <- function(id, parent_session) {
                         trait_data <- reactiveVal() 
                         moduleTraitCor <- reactiveVal()
                         df_hub_gene <- reactiveVal() 
-                        # wgcna_run_control<-reactiveVal(0)
                         module_trait_plot <- reactiveVal(NULL)
 
                         observe({
@@ -514,6 +515,7 @@ wgcna_server <- function(id, parent_session) {
                               )
                             })
                             
+                            
                             data_wide <- DataIn$data_wide
                             data_wide <- na.omit(DataIn$data_wide)
                             diff <- apply(data_wide, 1, sd, na.rm = TRUE)/(rowMeans(data_wide) + median(rowMeans(data_wide)))
@@ -549,6 +551,37 @@ wgcna_server <- function(id, parent_session) {
                                                     plotDendrograms = TRUE, 
                                                     plotHeatmaps = TRUE)
                             })
+##############                            
+                            wgcna_gct <- reactive({
+                              DataIn <- DataReactive()
+                              req(DataIn$data_wide)
+                              data_wide <- na.omit(DataIn$data_wide)
+                              ProteinGeneName <- DataIn$ProteinGeneName
+                              MetaData <- DataIn$MetaData
+                              
+                              module_map <- tibble::tibble(
+                                ME_name = MEs_name_updated(),
+                                color = sub("^ME\\d+_", "", MEs_name_updated()),
+                              )
+                              
+                              t2 <- tibble::tibble(
+                                UniqueID = names(wgcna$colors),
+                                color = labels2colors(wgcna$colors)
+                              ) %>% 
+                                dplyr::left_join(module_map, by = "color") %>%
+                                dplyr::inner_join(ProteinGeneName, by = "UniqueID") %>%
+                                dplyr::select(-color)
+                              
+                              data.in <- DataIn$data_wide[t2$UniqueID,]
+                              
+                              gct_data <- create_gct_object(data.in, t2, MetaData)
+                              gct_data
+                            })
+                            
+                            observeEvent(input$wgcna_gct, {
+                              saved_gcts$wgcna_gct <- wgcna_gct()
+                            })                               
+##############                            
                             if (exists("sft")) {
                               powers(sft$fitIndices$Power)
                               
@@ -688,7 +721,6 @@ wgcna_server <- function(id, parent_session) {
                         })
                         
                         observeEvent(input$Eigengene, {
-                          browser()
                           saved_table$Eigengene <- MEs_updated()
                         })
                         
@@ -763,6 +795,38 @@ wgcna_server <- function(id, parent_session) {
                                                   plotHeatmaps = TRUE
                                                   )
                           })
+                          
+                          ##############                            
+                          wgcna_gct <- reactive({
+                            DataIn <- DataReactive()
+                            req(DataIn$data_wide)
+                            data_wide <- na.omit(DataIn$data_wide)
+                            ProteinGeneName <- DataIn$ProteinGeneName
+                            MetaData <- DataIn$MetaData
+                            
+                            module_map <- tibble::tibble(
+                              ME_name = MEs_name_updated(),
+                              color = sub("^ME\\d+_", "", MEs_name_updated()),
+                            )
+                            
+                            t2 <- tibble::tibble(
+                              UniqueID = names(wgcna$colors),
+                              color = labels2colors(wgcna$colors)
+                            ) %>% 
+                              dplyr::left_join(module_map, by = "color") %>%
+                              dplyr::inner_join(ProteinGeneName, by = "UniqueID") %>%
+                              dplyr::select(-color)
+                            
+                            data.in <- DataIn$data_wide[t2$UniqueID,]
+                            
+                            gct_data <- create_gct_object(data.in, t2, MetaData)
+                            gct_data
+                          })
+                          
+                          observeEvent(input$wgcna_gct, {
+                            saved_gcts$wgcna_gct <- wgcna_gct()
+                          })                               
+                          ##############                            
                           
                           if ("sft" %in% names(wgcna_out)) {
                             sft <- wgcna_out$sft

@@ -216,14 +216,7 @@ run_timecourse_DEG <- function(MetaData, count_mtx,time_variable,Condition) {
 run_DEG_cluster <- function(dds, sig_gene, Condition) {
   res_lrt <- results(dds)
   sample_meta <- as.data.frame(colData(dds))
-  
-  # clustering_sig_genes <- res_lrt %>%
-  #   data.frame() %>%
-  #   rownames_to_column("gene") %>%
-  #   as_tibble() %>%
-  #   filter(padj < padj_cutoff) %>%
-  #   head(n = top_n_cutoff)
-  
+
   rld <- vst(dds, blind = TRUE)
   rld_mat <- assay(rld)
   cluster_rlog <- rld_mat[sig_gene, ]
@@ -239,6 +232,7 @@ run_DEG_cluster <- function(dds, sig_gene, Condition) {
   return(list(
     rlog = rld_mat,
     cluster_rlog = cluster_rlog,
+    sample_meta = sample_meta,
     clusters = clusters
   ))
 }
@@ -373,6 +367,9 @@ TimeSeries_ui <- function(id) {
                                                      plotOutput(ns("ts_plot"), width = '1200px', height = "1200px")),
                                             tabPanel(title="DEG Cluster Result",
                                                      br(),
+                                                     actionButton(ns("ts_tpm_gct"), "Save sample normalized log2TPM GCT data file to output"),
+                                                     actionButton(ns("ts_zscore_gct"), "Save group z-score GCT data file to output"),
+                                                     br(),br(),
                                                      DT::DTOutput(ns("ts_cluster_table")),
                                                      tags$script(HTML(sprintf("
                                                      $(document).on('click', '[id^=plotExp_]', function() {
@@ -435,7 +432,6 @@ TimeSeries_server <- function(id, parent_session) {
                    })
                  })
                  
-                 # filtered_DE <- eventReactive(list(input$ts_genelable, input$padjCutoff, input$top_n), {
                  filtered_DE <- reactive({
                    req(DEGReactive())
                    dds <- DEGReactive()
@@ -588,6 +584,13 @@ TimeSeries_server <- function(id, parent_session) {
                      req(DataClusterReactive())
                      DataCluster <-DataClusterReactive()
                      clusters <- DataCluster$clusters
+                     
+                     interaction_cov <- tail(input$sel_condition_var, 1)
+                     
+                     clusters$plot$data[[interaction_cov]] <- factor(
+                       clusters$plot$data[[interaction_cov]], 
+                       levels = unique(clusters$plot$data[[interaction_cov]])
+                     )
                      clusters$plot
                    })
                  })
@@ -621,6 +624,63 @@ TimeSeries_server <- function(id, parent_session) {
                    
                    saved_plots$ts_cluster_plot[[saved.num]] <- p
                  })
+                 
+                 ##############                            
+                 ts_TPM_gct <- reactive({
+                   DataIn = DataQCReactive()
+                   ProteinGeneName <- DataIn$ProteinGeneName
+
+                   DataCluster <-DataClusterReactive()
+                   clusters <- DataCluster$clusters
+                   sample_meta <- DataCluster$sample_meta
+                   
+                   df_counts <- clusters$counts
+                   clean_names <- gsub("\\.[0-9]+$", "", rownames(df_counts))
+                   keep_rows <- !duplicated(clean_names)
+                   df_counts_unique <- df_counts[keep_rows, ]
+                   rownames(df_counts_unique) <- clean_names[keep_rows]
+                   
+                   row_meta = ProteinGeneName[ProteinGeneName$UniqueID %in% rownames(df_counts_unique), ] %>%
+                     left_join(clusters$df, by = c('UniqueID' = 'genes'))
+                   
+                   gct_data <- create_gct_object(df_counts_unique, row_meta, sample_meta)
+                   gct_data
+                 })
+                 
+                 observeEvent(input$ts_tpm_gct, {
+                   saved_gcts$ts_tpm_gct <- ts_TPM_gct()
+                 })       
+                 
+                 ts_zscore_gct <- reactive({
+                   DataIn = DataQCReactive()
+                   ProteinGeneName <- DataIn$ProteinGeneName
+                   
+                   DataCluster <-DataClusterReactive()
+                   clusters <- DataCluster$clusters
+
+                   df_long <- clusters$normalized
+                   df_wide <- df_long %>%
+                     dplyr::select(genes, merge, value, cluster) %>%
+                     pivot_wider(names_from = merge, values_from = value) %>%
+                     tibble::column_to_rownames('genes')
+                   
+                   row_meta = ProteinGeneName[ProteinGeneName$UniqueID %in% rownames(df_wide), ] %>%
+                     left_join(df_wide %>% 
+                                 tibble::rownames_to_column('UniqueID') %>%
+                                 dplyr::select(UniqueID, cluster), by = 'UniqueID')
+                   
+                   col_meta = df_long[, c(input$sel_time_var, "nominaltimef", tail(input$sel_condition_var, 1), 'merge')] %>% distinct()
+                   
+                   df_wide$cluster <-NULL
+                   
+                   gct_data <- create_gct_object(df_wide, row_meta, col_meta)
+                   gct_data
+                 })
+                 
+                 observeEvent(input$ts_zscore_gct, {
+                   saved_gcts$ts_zscore_gct <- ts_zscore_gct()
+                 })                    
+                 ############## 
                  
                  heatmap_plot <- eventReactive(input$compute_cluster, {
                    withProgress(message = "Processing...", value = 0, {
