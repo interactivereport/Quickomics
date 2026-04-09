@@ -49,7 +49,7 @@ observe({
 output$selectGroupSampleQC <- renderUI(shared_header_content())
 
 DataPCAReactive <- reactive({
-  browser()
+  #browser()
   DataIn <-  DataQCReactive()
   tmp_sampleid <- DataIn$tmp_sampleid
   validate(need(length(tmp_sampleid)>1, message = "Please select at least two samples (please note samples are filtered by group selection as well)."))
@@ -145,7 +145,7 @@ observeEvent(input$plot_PCA, {
 })
 
 pcaplot_out <- eventReactive (plot_pca_control(), {
-  browser()
+  #browser()
   ptm <- proc.time()
   req(DataPCAReactive())
   req(input$PCA_label != "")
@@ -166,7 +166,7 @@ pcaplot_out <- eventReactive (plot_pca_control(), {
 	PC1 <- paste("PC",pcnum[1],sep="")
 	PC2 <- paste("PC",pcnum[2],sep="")
 	n <- length(unique(as.character(unlist(scores[, colnames(scores)==input$PCAcolorby]))))
-	colorpal=get_pal_ramp(input$PCAcolpalette, n)
+	colorpal=get_palette(input$PCAcolpalette, n)
 
 	#if (all(table(tmp_group))<4)
 	#  ellipsoid = FALSE 
@@ -225,7 +225,7 @@ output$pca_legend <- renderPlot({
   color_by=input$PCAcolorby
   tmp_group=as.character(unlist(scores[, colnames(scores)==color_by]))
   n <- length(unique(tmp_group))
-  colorpal = get_pal_ramp(input$PCAcolpalette, n)
+  colorpal = get_palette(input$PCAcolpalette, n)
   tmp_plot<-ggplot(scores, aes_string(x="PC1", y="PC2", color=color_by))+geom_point()+scale_color_manual(values=colorpal)+ theme_cowplot(12)
   legend_only <- get_legend(tmp_plot +theme(legend.position = "bottom",  legend.title = element_text(size = 16),
                                             legend.text = element_text(size = 14))+guides(color = guide_legend(override.aes = list(size=8))))
@@ -248,7 +248,7 @@ output$plot3d <- renderRglwidget({
 	n <- length(unique(tmp_group))
 	#colorpal = topo.colors(n, alpha = 1)
 	#colorpal = get_palette("Dark2", n)
-	colorpal = get_pal_ramp(input$PCAcolpalette, n)
+	colorpal = get_palette(input$PCAcolpalette, n)
 	scores$tmp_group=unlist(scores[, colnames(scores)==input$PCAcolorby])
 
 	
@@ -297,7 +297,7 @@ output$plotly3d <- renderPlotly({
 
 	sampleid <- str_c(scores$sampleid, "\n", scores$group)
 	n <- length(unique(as.character(unlist(scores[, colnames(scores)==input$PCAcolorby]))))
-	colorpal = get_pal_ramp(input$PCAcolpalette, n)
+	colorpal = get_palette(input$PCAcolpalette, n)
 	if (input$PCAshapeby=="none"){
 	  p <- plot_ly(scores, x = ~PC1, y = ~PC2, z = ~PC3, color = as.formula(paste0("~", input$PCAcolorby)), 
 	               colors = colorpal,text = sampleid) %>%

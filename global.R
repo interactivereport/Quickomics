@@ -71,16 +71,6 @@ suppressPackageStartupMessages({
 homologs=readRDS("db/Homologs.rds") #cross species gene symbol mapping file from Ensembl Gene 110
 source("PC_Covariates.R")
 
-get_pal_ramp<-function(pal_name, n) {
-  N_color <- brewer.pal.info[pal_name, "maxcolors"]
-  if (N_color < n) {
-    colorpal <- colorRampPalette(brewer.pal(N_color, pal_name))(n) 
-  } else {
-    colorpal <- get_palette(pal_name, n) 
-  }
-  return(colorpal)
-}
-
 homolog_mapping<-function(genelist, species1, species2, homologs) {
   if (species2=="human") {
     genelist2=toupper(genelist)

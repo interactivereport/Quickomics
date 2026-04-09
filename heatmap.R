@@ -150,14 +150,10 @@ DataHeatMapReactive <- reactive({
     ID_order<-ProteinGeneName[sel1, ]%>%mutate(N1=match(UniqueID, heatmap_list), N2=match(Protein.ID, heatmap_list), 
                                                N3=match(toupper(Gene.Name), toupper(heatmap_list)), N=pmin(N1, N2, N3, na.rm=T))%>%arrange(N)
     tmpdat  <-  tmpdat[ID_order$UniqueID,]
-    sel_rows1=rowSums(is.na(tmpdat))<ncol(tmpdat) #remove data rows with all NAs
-    sel_rows2=rownames(tmpdat) %in% rownames(DataIn$data_wide) #remove duplicate rows caused by matching (e.g."ALDH7A1_P49419"   "ALDH7A1_P49419-2")
-    tmpdat  <-  tmpdat[sel_rows1 & sel_rows2, ]
     if (input$heatmap_upload_type=='Annotated Gene File') {
       gene_annot_info=data.frame(UniqueID=ID_order$UniqueID, annot_genes[ID_order$N, ])
       gene_annot_info=gene_annot_info[sel_rows1 & sel_rows2, ]
     }
-    
     
   }
   if (input$heatmap_subset == "Geneset") {
@@ -179,11 +175,11 @@ DataHeatMapReactive <- reactive({
     
     validate(need(length(uploadlist)>2, message = "Please select at least 2 valid genes."))    
     tmpdat  <-  tmpdat[uploadlist,]
-    sel_rows1=rowSums(is.na(tmpdat))<ncol(tmpdat) #remove data rows with all NAs
-    sel_rows2=rownames(tmpdat) %in% rownames(DataIn$data_wide) #remove duplicate rows caused by matching (e.g."ALDH7A1_P49419"   "ALDH7A1_P49419-2")
-    tmpdat  <-  tmpdat[sel_rows1 & sel_rows2, ]
+
   }
-  
+  sel_rows1=rowSums(is.na(tmpdat))<ncol(tmpdat) #remove data rows with all NAs
+  sel_rows2=rownames(tmpdat) %in% rownames(DataIn$data_wide) #remove duplicate rows caused by matching (e.g."ALDH7A1_P49419"   "ALDH7A1_P49419-2")
+  tmpdat  <-  tmpdat[sel_rows1 & sel_rows2, ]
   if (nrow(tmpdat)>5000 ) {tmpdat=tmpdat[sample(1:nrow(tmpdat), 5000),]; cat("Reduce data pionts to 5K\n")} #Use at most 5000 genes so the App won't crash
   
   df <- data.matrix(tmpdat)
@@ -212,27 +208,65 @@ pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
     gene_annot_info <- DataHeatMap$gene_annot_info
     sample_annot=NULL #column annotation
     if (!is.null(input$heatmap_annot)) {
-    sel_col=match(input$heatmap_annot, names(annotation))
-    df_annot=annotation[, sel_col, drop=FALSE]
-    sample_annot=HeatmapAnnotation(df = df_annot)
-    if (input$custom_color=="Yes") {
-      req(input$annot_color_file)
-      annot_color=read_csv(input$annot_color_file$datapath)
-      annot_color<-annot_color%>%dplyr::filter(Attribute %in% names(df_annot))
-      #validate(need(nrow(annot_color)>0, message = "Please input valid annotate attributes."))
-      if (nrow(annot_color)>0) {
-      attr_list=unique(annot_color$Attribute)
-      color_list=NULL
-      #browser() #debug
-      for (attr in attr_list) {
-        subdata<-annot_color%>%filter(Attribute==attr)
-        colorV=subdata$Color; names(colorV)=subdata$Value
-        color_list[[attr]]=colorV
+      #functions to assign colors
+      hm_m_color<-function(df, var, low_col="white", high_col=color, min=0, max=0.999) { #numeric annotations
+      	data<-df[var]%>%unlist%>%unname
+      	q<-quantile(data, c(min, max) )
+      	col_fun = colorRamp2(c(q[1], q[2]), c(low_col, high_col))
+      	return(col_fun)
       }
-      sample_annot=HeatmapAnnotation(df = df_annot, col=color_list)
-      } else {cat("Annotation Color File Attributes not matching MetaData!\n")}
-    }
-    
+      hm_c_color<-function(df, var, colPal, sort=T) { #category annotation
+      	cat<-df[var]%>%unlist%>%unname%>%unique
+      	if (sort) {cat<-sort(cat) }
+      	Nc=length(cat)
+      	colorSet=get_palette(colPal, Nc)
+      	names(colorSet)=cat
+      	return(colorSet)
+      }
+
+      sel_col=match(input$heatmap_annot, names(annotation))
+      df_annot=annotation[, sel_col, drop=FALSE]
+      sample_annot=HeatmapAnnotation(df = df_annot)
+      if (input$heatmap_annot_color=="Upload Colors") { #color by manually uploaded values (rare)
+        req(input$annot_color_file)
+        annot_color=read_csv(input$annot_color_file$datapath)
+        annot_color<-annot_color%>%dplyr::filter(Attribute %in% names(df_annot))
+        #validate(need(nrow(annot_color)>0, message = "Please input valid annotate attributes."))
+        if (nrow(annot_color)>0) {
+        attr_list=unique(annot_color$Attribute)
+        color_list=NULL
+        #browser() #debug
+        for (attr in attr_list) {
+          subdata<-annot_color%>%filter(Attribute==attr)
+          colorV=subdata$Color; names(colorV)=subdata$Value
+          color_list[[attr]]=colorV
+        }
+        sample_annot=HeatmapAnnotation(df = df_annot, col=color_list)
+        } else {cat("Annotation Color File Attributes not matching MetaData!\n")}
+      } else { 
+        is_num <- sapply(df_annot, is.numeric)
+        num_cols <- names(df_annot)[is_num]
+        cat_cols <- names(df_annot)[!is_num]
+        if (input$heatmap_annot_color=="Auto-Set by Rand. Seed") { #color with palette selected using random seed (default)
+          discrete_palettes=c("Dark2", "Accent",  "Set2", "Set3", "npg", "nejm", "lancet", "jama", "d3", "uchicago") #removed Set1 for numeric
+          set.seed(input$hm_seed)
+          pal_cat_assigned <- sample(discrete_palettes, length(cat_cols), replace = (length(cat_cols) > length(discrete_palettes)))
+          num_palette <- "Set1"
+        } else if (input$heatmap_annot_color=="Select Palette") { #color with user selected palettes
+          validate(need(length(input$heatmap_cat_pal)>0,message = "Please select color palettes for category annotations")) 
+          pal_cat_assigned <- rep(input$heatmap_cat_pal,  length.out=length(cat_cols) )
+          num_palette <- input$heatmap_num_pal
+        }
+        color_num_assigned <- get_palette(num_palette , length(num_cols))
+        color_list <- imap(df_annot, function(val, col_name) {
+        idx <- match(col_name, if (is.numeric(val)) num_cols else cat_cols)
+        if (is.numeric(val))
+          hm_m_color(df_annot, col_name, high_col = color_num_assigned[idx])
+        else
+          hm_c_color(df_annot, col_name, pal_cat_assigned[idx])
+        })
+        sample_annot=HeatmapAnnotation(df = df_annot, col=color_list)
+      }
     }
     cluster_rows = FALSE;cluster_cols=FALSE
     if (input$dendrogram == "both" | input$dendrogram == "row")
@@ -285,6 +319,16 @@ pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
     if (input$heatmap_highlight=="No") {row_label_side="right"} else (row_label_side="left")
     
     #browser() #debug
+    #if NA cause clustering issue, remove all NA rows
+    if (cluster_rows | cluster_cols) {
+        tmp <- try(draw(Heatmap(data.in, col=col_fun, cluster_rows = cluster_rows, cluster_columns = cluster_cols) ) )
+      if (inherits(tmp, "try-error")) {
+        N1=nrow(data.in)
+        data.in=na.omit(data.in)
+        cat("NA caused heatmap cluster error, remove all rows containing NAs, from", N1, "to", nrow(data.in), "\n")
+      }
+    }
+
     
     p<-Heatmap(data.in, col=col_fun, cluster_rows = cluster_rows, cluster_columns = cluster_cols, 
                 clustering_distance_rows=input$distanceMethod, clustering_distance_columns=input$distanceMethod,
