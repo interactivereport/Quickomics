@@ -568,24 +568,24 @@ output$downloadGCT <- downloadHandler(
       # Example: Check for Heatmap GCT
       if (!is.null(saved_gcts$heatmap_gct) && ("Heatmap GCT file" %in% GCT_table_checked)) {
         fname <- "heatmap_data.gct"
-        cmapR::write_gct(saved_gcts$heatmap_gct, fname, appenddim = FALSE)
+        write_gct(saved_gcts$heatmap_gct, fname, appenddim = FALSE)
         files_to_zip <- c(files_to_zip, fname)
       }
       
       if (!is.null(saved_gcts$wgcna_gct) && ("WGCNA cluster GCT file" %in% GCT_table_checked)) {
         fname <- "wgcna_cluster_heatmap_data.gct"
-        cmapR::write_gct(saved_gcts$wgcna_gct, fname, appenddim = FALSE)
+        write_gct(saved_gcts$wgcna_gct, fname, appenddim = FALSE)
         files_to_zip <- c(files_to_zip, fname)
       }
       
       if (!is.null(saved_gcts$ts_tpm_gct) && ("Time Series cluster sample normalized log2TPM GCT file" %in% GCT_table_checked)) {
         fname <- "ts_cluster_sample_normalized_log2TPM_data.gct"
-        cmapR::write_gct(saved_gcts$ts_tpm_gct, fname, appenddim = FALSE)
+        write_gct(saved_gcts$ts_tpm_gct, fname, appenddim = FALSE)
         files_to_zip <- c(files_to_zip, fname)
       }
       if (!is.null(saved_gcts$ts_zscore_gct) && ("Time Series cluster group z-score GCT file" %in% GCT_table_checked)) {
         fname <- "ts_cluster_group_zscore_data.gct"
-        cmapR::write_gct(saved_gcts$ts_zscore_gct, fname, appenddim = FALSE)
+        write_gct(saved_gcts$ts_zscore_gct, fname, appenddim = FALSE)
         files_to_zip <- c(files_to_zip, fname)
       }
       # Verify if any files were actually created

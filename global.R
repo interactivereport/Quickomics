@@ -60,7 +60,7 @@ suppressPackageStartupMessages({
   library(WGCNA)
   library(DEGreport)
   library(gprofiler2)
-  library(cmapR)
+  #library(cmapR)
 })
 
 
@@ -71,7 +71,7 @@ suppressPackageStartupMessages({
 #load("db/mouse_rat_genes_map2_human.RData")
 homologs=readRDS("db/Homologs.rds") #cross species gene symbol mapping file from Ensembl Gene 110
 source("PC_Covariates.R")
-
+source("write_gct.R")
 homolog_mapping<-function(genelist, species1, species2, homologs) {
   if (species2=="human") {
     genelist2=toupper(genelist)
