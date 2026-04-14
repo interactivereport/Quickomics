@@ -282,28 +282,77 @@ wgcna_ui <- function(id) {
              conditionalPanel(ns = ns, "input.WGCNA_tabset=='WGCNA Result'",
                               actionButton(ns("plotwgcna"),"Run"),
                               br(),
-                              strong("Running the data could take 3-10 minutes",style="color:red"), span("depending on data size and complexity; once Run starts, please refrain from clicking the button repeatedly.",style="color:red", inline = TRUE),
+                              strong("Running the data could take 3-10 minutes",style="color:red"), span("depending on data size and complexity; once Run starts, please refrain from clicking the button repeatedly.",style="color:red", inline = TRUE)
              ),
              conditionalPanel(ns = ns, "input.WGCNA_tabset=='Module-Trait Relationships'",
                               conditionalPanel(ns = ns, "input.Module_Trait=='Module Trait Heatmap'",
                                                selectizeInput(ns("WGCNA_trait_var"),label="Select attributes", choices = NULL,multiple = TRUE,options = list(placeholder = "Choose one or more attributes")),
                                                uiOutput(ns("attribute_settings_ui")),
                                                actionButton(ns("plot_module_trait"),"Plot Module Trait Correlation")
-                              ),
+                                               ),
                               conditionalPanel(ns = ns, "input.Module_Trait=='Hub Gene Identification Table' || input.Module_Trait == 'Hub Gene Identification Plot'",
                                                selectInput(ns("WGCNA_trait"),label="Select a trait", choices = NULL ,multiple = FALSE),
                                                selectInput(ns("WGCNA_module"),label="Select a module (optional)", choices = NULL ,multiple = FALSE),
                                                actionButton(ns("plot_module_hub"),"Run")
+                                               )
                               )
              )
-           )
     ),
     column(9,
            tabsetPanel(id=ns("WGCNA_tabset"),
                        tabPanel(title="WGCNA Result",
                                 tabsetPanel(id=ns("WGCNA_Result"),
-                                            tabPanel(title="Dendrogram", plotOutput(ns("Dendrogram"), height=800)),
-                                            tabPanel(title="Gene Clusters",
+                                            tabPanel(title="Dendrogram Plot", 
+                                                     tags$details(
+                                                       tags$summary(
+                                                         tags$strong("Click to view Dendrogram & Network Interpretation", 
+                                                                     style = "color: #28a745; cursor: pointer;")
+                                                       ),
+                                                       tags$div(
+                                                         style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                                         tags$p("The ", tags$strong("Cluster Dendrogram"), " visualizes how genes are grouped based on their co-expression distance. Genes on lower branches are more tightly correlated."),
+                                                         tags$p(tags$strong("How to Interpret:")),
+                                                         tags$p(
+                                                           "The ", tags$strong("Dendrogram Cut Height"), 
+                                                           " (currently 0.25) determines the sensitivity of module merging. A higher cut height results in fewer, larger modules, while a lower height preserves smaller, more distinct gene sets."
+                                                         ),
+                                                         tags$p(
+                                                           tags$strong("Eigengene Network:"), 
+                                                           " The heatmap and tree show the relationships between the modules themselves. Modules that cluster together (represented by red blocks in the heatmap) show similar expression trends across your experimental conditions."
+                                                         ),
+                                                         tags$p(
+                                                           tags$strong("Grey Module Note:"), 
+                                                           " The 'Grey' module contains genes that did not fit into any distinct cluster. These are typically considered background noise and are usually excluded from biological interpretation."
+                                                         )
+                                                       )
+                                                     ),
+                                                     plotOutput(ns("Dendrogram"), height=800)),
+                                            tabPanel(title="Gene Cluster Summary Table",
+                                                     br(),
+                                                     tags$details(
+                                                       tags$summary(
+                                                         tags$strong("Click to view Module Summary Table Guide", 
+                                                                     style = "color: #28a745; cursor: pointer;")
+                                                       ),
+                                                       tags$div(
+                                                         style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                                         tags$p("This table summarizes the gene clusters (modules) identified by WGCNA. Each module represents a group of genes that share a highly similar expression profile across your samples."),
+                                                         tags$p(tags$strong("Column Definitions:")),
+                                                         tags$ul(
+                                                           tags$li(tags$strong("Cluster:"), " The module name (e.g., ME1_turquoise). 'ME' stands for ", tags$em("Module Eigengene"), ", which is the mathematical representative of all genes in that cluster."),
+                                                           tags$li(tags$strong("Number of Genes:"), " The total count of genes assigned to that module based on the Dendrogram cut."),
+                                                           tags$li(tags$strong("Action:"), " Provides tools to export the gene list or run ", tags$strong("ORA (Over-Representation Analysis)"), " to identify biological pathways.")
+                                                         ),
+                                                         tags$p(tags$strong("Example Interpretation:")),
+                                                         tags$p(
+                                                           "If you observe that ", tags$strong("ME3_blue"), " has a high correlation with a specific condition in the 'Module-Trait Relationships' tab, you can use the ", tags$strong("Run ORA"), " button here to see if those 1,018 genes are involved in processes like 'Cell Cycle' or 'Immune Response'."
+                                                         ),
+                                                         tags$p(
+                                                           tags$span(style = "color: #6c757d; font-style: italic;", 
+                                                                     "Note: The 'Grey' module contains genes that could not be assigned to any cluster; these are typically excluded from downstream analysis.")
+                                                         )
+                                                       )
+                                                     ),
                                                      br(),
                                                      actionButton(ns("wgcna_gct"), "Save GCT data file to output"),
                                                      br(),br(),
@@ -320,10 +369,63 @@ wgcna_ui <- function(id) {
                                 tabsetPanel(id=ns("Module_Eigengenes"),
                                             tabPanel(title="Eigengene table", 
                                                      br(),
+                                                     tags$details(
+                                                       tags$summary(
+                                                         tags$strong("Click to view Module Eigengene Table Guide", 
+                                                                     style = "color: #28a745; cursor: pointer;")
+                                                       ),
+                                                       tags$div(
+                                                         style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                                         tags$p("This table displays the ", tags$strong("Module Eigengene (ME)"), " values for each individual sample. These values represent the relative expression level of an entire module within a specific sample."),
+                                                         tags$p(
+                                                           "Each row corresponds to a sample (e.g., ", tags$code("2mo-WT-10F"), ") and each column represents a module identified in the co-expression network. ",
+                                                           tags$strong("Positive values"), " indicate that genes in that module are upregulated in that sample relative to the average, while ", 
+                                                           tags$strong("negative values"), " indicate downregulation."
+                                                         ),
+                                                         tags$p(tags$strong("How to use this data:")),
+                                                         tags$ul(
+                                                           tags$li(tags$strong("Pattern Recognition:"), " Look for columns where values change consistently between groups (e.g., all WT samples are negative and all Het samples are positive)."),
+                                                           tags$li(tags$strong("Statistical Input:"), " These ME values are used as 'synthetic genes' for the Module-Trait Relationship analysis to correlate expression with clinical metadata."),
+                                                           tags$li(tags$strong("Outlier Detection:"), " Samples with ME values that differ drastically from others in the same group may indicate biological outliers.")
+                                                         )
+                                                       )
+                                                     ),
+                                                     br(),
                                                      actionButton(ns("Eigengene"), "Save to output"),
                                                      br(),
                                                      DT::dataTableOutput(ns("MEs"))),
                                             tabPanel(title = "Eigengene Network",
+                                                     br(),
+                                                     tags$details(
+                                                       tags$summary(
+                                                         tags$strong("Click to view Eigengene Network Guide", 
+                                                                     style = "color: #28a745; cursor: pointer;")
+                                                       ),
+                                                       tags$div(
+                                                         style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                                         tags$p("The Eigengene Network visualizes how different gene modules relate to one another. This helps identify 'meta-modules'—groups of clusters that follow similar biological trends."),
+                                                         
+                                                         tags$p(tags$strong("1. Eigengene Dendrogram (Top):")),
+                                                         tags$ul(
+                                                           tags$li("This tree clusters modules (not individual genes) based on their expression similarity."),
+                                                           tags$li("Modules that branch together (e.g., ", tags$strong("ME5_blue"), " and ", tags$strong("ME6_brown"), ") are highly correlated and may be part of the same broad biological response.")
+                                                         ),
+                                                         
+                                                         tags$p(tags$strong("2. Adjacency Heatmap (Bottom):")),
+                                                         tags$ul(
+                                                           tags$li(tags$strong("Red Squares:"), " Indicate high positive correlation. If two modules are dark red, they increase and decrease in expression together across your samples."),
+                                                           tags$li(tags$strong("Blue Squares:"), " Indicate negative correlation. One module is 'turned on' while the other is 'turned off'."),
+                                                           tags$li(tags$strong("Diagonal Line:"), " The dark red diagonal represents a module's correlation with itself (always 1.0).")
+                                                         ),
+                                                         
+                                                         tags$p(tags$strong("Why this is useful:")),
+                                                         tags$p(
+                                                           "If multiple modules show nearly identical patterns in this network, you might consider increasing the ", 
+                                                           tags$strong("Dendrogram Cut Height"), 
+                                                           " in the sidebar to merge them into a single, more robust biological signature."
+                                                         )
+                                                       )
+                                                     ),
                                                      br(),
                                                      plotOutput(ns("Eigenene_Network"), height = "1000px"))
                                 )
@@ -332,9 +434,59 @@ wgcna_ui <- function(id) {
                                 tabsetPanel(id=ns("Module_Trait"),
                                             tabPanel(title="Module Trait Heatmap", 
                                                      br(),
+                                                     tags$details(
+                                                       tags$summary(
+                                                         tags$strong("Click to view Module-Trait Relationship Guide", 
+                                                                     style = "color: #28a745; cursor: pointer;")
+                                                       ),
+                                                       tags$div(
+                                                         style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                                         tags$p("This heatmap illustrates the correlation between ", tags$strong("Module Eigengenes"), " and your experimental design factors (Traits). It is the key step in identifying which gene clusters are driven by your biological conditions."),
+                                                         tags$p(tags$strong("How to read the Heatmap:")),
+                                                         tags$ul(
+                                                           tags$p("Mouse over a cell to show correlation results."),
+                                                           tags$li(tags$strong("Color Scale:"), " Red indicates a positive correlation (the module is upregulated in that condition), while Blue indicates a negative correlation (downregulated)."),
+                                                           tags$li(tags$strong("Cell Values:"), " The top number in each cell is the Correlation Coefficient, and the bottom number (in parentheses) is the ", tags$strong("p-value"), "."),
+                                                           tags$li(tags$strong("Significance:"), " Focus on cells where the p-value is < 0.05. These modules are statistically associated with that specific trait.")
+                                                         ),
+                                                         tags$p(tags$strong("Example Interpretation:")),
+                                                         tags$p(
+                                                           "If the column for ", tags$strong("group2mo_WT"), " shows a high positive correlation (Red) with ", tags$strong("ME4_red"), 
+                                                           ", it suggests that the genes within the blue module are highly active specifically in the wT samples."
+                                                         ),
+                                                         tags$p(
+                                                           "Click on a cell will launch the selected modlue and trait to ", tags$strong("Hub Gene Identification Table"), " Tab."
+                                                         )
+                                                       )
+                                                     ),
+                                                     br(),
                                                      plotlyOutput(ns("module_trait_hmap"), height=800)
                                             ),
                                             tabPanel(title="Hub Gene Identification Table",
+                                                     br(),
+                                                     tags$details(
+                                                       tags$summary(
+                                                         tags$strong("Click to view Hub Gene Identification Guide", 
+                                                                     style = "color: #28a745; cursor: pointer;")
+                                                       ),
+                                                       tags$div(
+                                                         style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                                         tags$p("This table identifies 'Hub Genes'—highly connected central nodes within a module that are often the most biologically significant drivers of a phenotype."),
+                                                         tags$p(tags$strong("Metric Definitions:")),
+                                                         tags$ul(
+                                                           tags$li(tags$strong("Connectivity:"), " Measures how strongly a gene is connected to all other genes in the network. Higher values indicate a more central role."),
+                                                           tags$li(tags$strong("ModuleMembership (kME):"), " The correlation between an individual gene's expression and the Module Eigengene. A value near 1.0 means the gene is a perfect representative of that module's trend."),
+                                                           tags$li(tags$strong("GeneSignificance (GS):"), " The absolute correlation between the gene and the selected Trait (e.g., Genotype). High GS indicates the gene is strongly associated with the biological condition of interest.")
+                                                         ),
+                                                         tags$p(tags$strong("What makes a 'Hub Gene'?") ),
+                                                         tags$p(
+                                                           "Look for genes with both ", tags$strong("high ModuleMembership"), " and ", tags$strong("high GeneSignificance")
+                                                         ),
+                                                         tags$p(
+                                                           "You can filter the columns to find genes with the highest connectivity to prioritize candidates for knock-down or validation experiments."
+                                                         )
+                                                       )
+                                                     ),
                                                      br(),
                                                      actionButton(ns("hub_gene"), "Save to output"),
                                                      br(),
@@ -342,6 +494,32 @@ wgcna_ui <- function(id) {
                                             ),
                                             tabPanel(
                                               title = "Hub Gene Identification Plot",
+                                              br(),
+                                              tags$details(
+                                                tags$summary(
+                                                  tags$strong("Click to view Hub Gene Plot Interpretation", 
+                                                              style = "color: #28a745; cursor: pointer;")
+                                                ),
+                                                tags$div(
+                                                  style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                                  tags$p("These plots provide a visual validation of the 'Hub' status of genes within a specific module by comparing their internal network importance against their biological significance."),
+                                                  tags$p(tags$strong("1. MM vs. GS Scatter Plot (Left):")),
+                                                  tags$ul(
+                                                    tags$li("This plot correlates ", tags$strong("Module Membership (MM)"), " with ", tags$strong("Gene Significance (GS)"), "."),
+                                                    tags$li("A high positive correlation (e.g., cor > 0.8) indicates that genes most central to the module are also the ones most strongly associated with your trait (e.g., Genotype or Age)."),
+                                                    tags$li("Genes in the top-right corner are your primary candidates for further biological study.")
+                                                  ),
+                                                  tags$p(tags$strong("2. Hub Gene Identification Plot (Right):")),
+                                                  tags$ul(
+                                                    tags$li("This plot ranks genes by their ", tags$strong("Intramodular Connectivity"), "."),
+                                                    tags$li("The ", tags$span(style = "color: red; font-weight: bold;", "Red Dots"), " highlight the top 10% most connected genes. These 'Hubs' are theoretically the most influential regulators within this specific module.")
+                                                  ),
+                                                  tags$p(tags$strong("Usage Tip:")),
+                                                  tags$p(
+                                                    "Select different modules from the sidebar to see if the correlation holds true across different clusters. Strong MM-GS correlations suggest that the module is a key driver of the biological differences observed between your groups."
+                                                  )
+                                                )
+                                              ),
                                               br(),br(),
                                               div(
                                                 style = "display: flex; gap: 20px;",
@@ -362,17 +540,91 @@ wgcna_ui <- function(id) {
                                 tabsetPanel(id=ns("WGCNA_QC"),
                                             tabPanel(title="Soft-Thresholding Power", 
                                                      br(),
-                                                     tags$style("#soft_threshold_table_note { font-size: 18px; color: steelblue; }"),
-                                                     htmlOutput(ns("soft_threshold_table_note")),
+                                                     # tags$style("#soft_threshold_table_note { font-size: 18px; color: steelblue; }"),
+                                                     # htmlOutput(ns("soft_threshold_table_note")),
+                                                     tags$details(
+                                                       tags$summary(
+                                                         tags$strong("Click to view Soft-Thresholding Power Guide", 
+                                                                     style = "color: #28a745; cursor: pointer;")
+                                                       ),
+                                                       tags$div(
+                                                         style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                                         tags$p("The soft-thresholding power (β) is a critical parameter that emphasizes strong correlations and suppresses noise to achieve a 'scale-free' network topology. The table below showed the result for all β candidates tested. ", tags$strong("The row is highlighted for the picked power β.")),
+                                                         
+                                                         tags$p(tags$strong("How to Choose the Optimal Power:")),
+                                                         tags$ul(
+                                                           tags$p("In practice, soft‑thresholding power (β) is chosen with a balanced good scale‑free fit and reasonable connectivity. WGCNA recommends choosing the lowest power where R² ≥ 0.8 (or 0.9 for stricter networks). And typical good range of mean connectivity is 20–200, depending on dataset size."),
+                                                           tags$li(tags$strong("The R² Criterion:"), " Aim for the lowest power where the ", tags$code("SFT.R.sq"), " reaches a plateau, ideally above 0.80 or 0.90."),
+                                                           tags$li(tags$strong("Mean Connectivity:"), " Ensure the connectivity is not too low. A typical range is between 20 and 200 for biological relevance."),
+                                                           tags$li(tags$strong("Highlighted Row:"), " The blue highlighted row in the table indicates the power currently used by the system (e.g., Power 6 in this dataset).")
+                                                         ),
+                                                         
+                                                         tags$p(tags$strong("Practical Decision Rules:")),
+                                                         tags$ul(
+                                                           tags$li("If R² rises and then plateaus, pick the lowest power at the start of the plateau."),
+                                                           tags$li("If R² rises very slowly, a power between 6 and 10 is generally acceptable for signed networks."),
+                                                           tags$li("Avoid very high powers (>20) as they can cause the network to become too sparse, leading to a collapse in connectivity."),
+                                                           tags$li("If estimated power is NA, use any number in the typical β range 6 to 12 for signed networks.")
+                                                         ),
+                                                         
+                                                         tags$p(tags$strong("Key Plots Interpretation:")),
+                                                         tags$ul(
+                                                           tags$li(
+                                                             tags$strong("Scale-Free Topology Fit:"),
+                                                             " Biological networks are typically 'scale-free.' This plot helps you choose the ", tags$em("Soft Threshold"), 
+                                                             " (Power). You are looking for the lowest power where the curve levels off (usually reaching a R^2 fit of 0.8 or 0.9)."
+                                                           ),
+                                                           tags$li(
+                                                             tags$strong("Mean Connectivity:"), 
+                                                             " As the power increases, the average connectivity decreases. This plot ensures the network remains connected enough to be biologically meaningful without being overly noisy."
+                                                           )
+                                                         ),
+                                                         
+                                                         tags$p(tags$strong("Important Note:")),
+                                                         tags$p(
+                                                           "If the Scale-Free Topology plot does not reach a plateau above 0.8, it may indicate that the data has a strong batch effect or that the samples do not follow a typical co-expression structure."
+                                                         )
+                                                       )
+                                                     ),
                                                      br(),
                                                      DT::dataTableOutput(ns("soft_threshold_table")),
                                                      br(),
-                                                     tags$style("#soft_threshold_diagnose_plot_note { font-size: 18px; color: steelblue; }"),
-                                                     htmlOutput(ns("soft_threshold_diagnose_plot_note")),
-                                                     br(),
+                                                     # tags$style("#soft_threshold_diagnose_plot_note { font-size: 18px; color: steelblue; }"),
+                                                     # htmlOutput(ns("soft_threshold_diagnose_plot_note")),
+                                                     # br(),
                                                      plotOutput(ns("soft_threshold_diagnose_plot"), height=800)
                                             ),
                                             tabPanel(title="WGCNA Network",
+                                                     br(),
+                                                     tags$details(
+                                                       tags$summary(
+                                                         tags$strong("Click to view Data Variance & Sample Clustering Guide", 
+                                                                     style = "color: #28a745; cursor: pointer;")
+                                                       ),
+                                                       tags$div(
+                                                         style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                                         tags$p("Before building a network, it is essential to assess the global structure of the dataset. These plots help confirm that the most variable genes are being captured and that the samples group logically."),
+                                                         
+                                                         tags$p(tags$strong("1. Distribution of Gene Variance:")),
+                                                         tags$ul(
+                                                           tags$li("This histogram shows the variability of gene expression across all samples."),
+                                                           tags$li("WGCNA typically focuses on the top most variable genes (e.g., top 5,000 or 10,000) to reduce noise and computational load. The ", tags$strong("Select Top N Genes"), " input in the sidebar allows you to adjust this threshold.")
+                                                         ),
+                                                         
+                                                         tags$p(tags$strong("2. Sample Clustering to Detect Outliers:")),
+                                                         tags$ul(
+                                                           tags$li("This dendrogram groups samples based on their global expression profiles."),
+                                                           tags$li(tags$strong("Biological Sanity Check:"), " Ideally, biological replicates (e.g., all WT samples) should cluster together."),
+                                                           tags$li(tags$strong("Outlier Identification:"), " If a single sample is separated by a very long vertical branch from the rest of the data, it may be an outlier that should be excluded to improve module detection.")
+                                                         ),
+                                                         
+                                                         tags$p(tags$strong("Pro Tip:")),
+                                                         tags$p(
+                                                           "If you see a sample that is clearly an outlier, you may need to filter it out in the ", tags$strong("Dataset"), " tab and re-run the WGCNA analysis to achieve a cleaner network structure."
+                                                         )
+                                                       )
+                                                     ),
+                                                     br(),
                                                      plotOutput(ns("gene_variance_distribution_plot"), height=400),
                                                      plotOutput(ns("sample_cluster_plot"), height=800)
                                             )

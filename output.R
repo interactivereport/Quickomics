@@ -573,7 +573,7 @@ output$downloadGCT <- downloadHandler(
       }
       
       if (!is.null(saved_gcts$wgcna_gct) && ("WGCNA cluster GCT file" %in% GCT_table_checked)) {
-        fname <- "wgcna_cluster_heatmap_data.gct"
+        fname <- "wgcna_cluster_data.gct"
         write_gct(saved_gcts$wgcna_gct, fname, appenddim = FALSE)
         files_to_zip <- c(files_to_zip, fname)
       }

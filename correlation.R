@@ -118,6 +118,36 @@ correlation_ui <- function(id) {
     column(9,
            tabsetPanel(id = ns("correlation_tabset"),
                        tabPanel(title = "Result Table", 
+                                br(),
+                                tags$details(
+                                  tags$summary(
+                                    tags$strong("Click to view Correlation Analysis Instructions", 
+                                                style = "color: #28a745; cursor: pointer;")
+                                  ),
+                                  tags$div(
+                                    style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                    tags$p("This tool calculates the statistical relationship between different biological variables (Gene_Gene, Sample_Sample, Group-Group). Use it to identify genes that function together or respond similarly across samples, or to identify samples or groups that function together or respond similarly across genes."),
+                                    tags$p(tags$strong("Setup Steps:")),
+                                    tags$ul(
+                                      tags$li(tags$strong("Correlation Type:"), " Choose  one from 'Gene-Gene', 'Sample-Sample' and 'Group-Group'"),
+                                      tags$li(tags$strong("Gene Selection:"), " Type or select at least 2 genes no matter what method is used to input the gene list"),
+                                      tags$li(tags$strong("Sample or Group Selection:"), " Select at least 2 samples or groups."),
+                                      tags$li(tags$strong("Method:"), " Use 'Pearson' for linear relationships or 'Spearman' if you expect non-linear but monotonic trends.")
+                                    ),
+                                    tags$p(tags$strong("Interpreting Results:"), " After clicking 'Compute/Refresh', the ranked ", tags$strong("Correlation Result Table"), " will display. It displays pairwise statistical relationships between the selected genes, samples or groups. Each row represents a unique comparison."),
+                                    tags$p(tags$strong("Column Definitions:")),
+                                    tags$ul(
+                                      tags$li(tags$strong("Correlation:"), " The coefficient (r) ranging from -1 to 1. Values near 1 indicate a strong positive relationship, while values near -1 indicate an inverse relationship."),
+                                      tags$li(tags$strong("R-squared:"), " Represents the proportion of variance shared between the two variables. Higher values suggest a more predictable relationship."),
+                                      tags$li(tags$strong("P-value:"), " Indicates statistical significance. A value below 0.05 typically suggests the correlation is not due to random chance.")
+                                    ),
+                                    tags$p(
+                                      tags$strong("Action Column:"), 
+                                      " Click ", tags$em("View Correlation Plot"), " in any row to generate a scatter plot and regression line for that specific pair."
+                                    )
+                                  )
+                                ),
+                                br(),
                                 actionButton(ns("compute_corr"), "Compute/Refresh",style = "color: #0961E3; background-color: #F6E98C; border-color: #2e6da4"),
                                 tags$br(), 
                                 tags$hr(),

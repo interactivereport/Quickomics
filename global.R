@@ -234,6 +234,22 @@ create_gct_object <- function(exp_data, row_meta, col_meta) {
   return(my_gct)
 }
 
+#functions to assign heatmap colors
+hm_m_color<-function(df, var, low_col="white", high_col=color, min=0, max=0.999) { #numeric annotations
+  data<-df[var]%>%unlist%>%unname
+  q<-quantile(data, c(min, max) )
+  col_fun = colorRamp2(c(q[1], q[2]), c(low_col, high_col))
+  return(col_fun)
+}
+hm_c_color<-function(df, var, colPal, sort=T) { #category annotation
+  cat<-df[var]%>%unlist%>%unname%>%unique
+  if (sort) {cat<-sort(cat) }
+  Nc=length(cat)
+  colorSet=get_palette(colPal, Nc)
+  names(colorSet)=cat
+  return(colorSet)
+}
+
 
 options(shiny.maxRequestSize = 40*1024^2)  #upload files up to 30 Mb
 

@@ -136,9 +136,9 @@ run_timecourse_DEG <- function(MetaData, count_mtx,time_variable,Condition) {
   # 
   # Create ordered time factor
   if (!is.numeric(sample_meta[[time_variable]])) {
-    sample_meta$nominaltimef <- parse_time(sample_meta[[time_variable]])
+    sample_meta$Unified_Time <- parse_time(sample_meta[[time_variable]])
   } else {
-    sample_meta$nominaltimef <- factor(sample_meta[[time_variable]], levels = sort(unique(sample_meta[[time_variable]])))
+    sample_meta$Unified_Time <- factor(sample_meta[[time_variable]], levels = sort(unique(sample_meta[[time_variable]])))
     
   }
   # -----------------------------
@@ -162,13 +162,13 @@ run_timecourse_DEG <- function(MetaData, count_mtx,time_variable,Condition) {
   
   # Full model: all covariates + time + lastCov:time
   full_formula <- as.formula(
-    paste("~", main_effects, "+ nominaltimef +", 
-          paste0(interaction_cov, ":nominaltimef"))
+    paste("~", main_effects, "+ Unified_Time +", 
+          paste0(interaction_cov, ":Unified_Time"))
   )
   
   # Reduced model: drop interaction
   reduced_formula <- as.formula(
-    paste("~", main_effects, "+ nominaltimef")
+    paste("~", main_effects, "+ Unified_Time")
   )
   
   # -----------------------------
@@ -187,20 +187,24 @@ run_timecourse_DEG <- function(MetaData, count_mtx,time_variable,Condition) {
     stop(e$message)
   })
   
-  # Use validate to show the message in the UI
-  validate(
-    need(!is.character(dds) || dds != "RANK_ERROR", 
-      paste(
-      "Design Matrix Error: The variables in your formula are confounded.",
-      "Possible causes:",
-      "- One variable (e.g., 'Batch') perfectly overlaps with another (e.g., 'Condition').",
-      "- A column in your metadata contains only one unique value.",
-      "- Some combinations of your variables have zero samples.",
-      "Please simplify your design formula or check your sample metadata for redundant columns.",
-      sep = "\n"
-    ))
-  )
-  
+  # # Use validate to show the message in the UI
+  # validate(
+  #   need(!is.character(dds) || dds != "RANK_ERROR", 
+  #     paste(
+  #     "Design Matrix Error: The variables in your formula are confounded.",
+  #     "Possible causes:",
+  #     "- Some combinations of your variables have zero samples.",
+  #     "- One variable (e.g., 'Batch') perfectly overlaps with another (e.g., 'Condition').",
+  #     "- A column in your metadata contains only one unique value.",
+  #     "Please simplify your design formula or check your sample metadata for redundant columns.",
+  #     sep = "\n"
+  #   ))
+  # )
+
+  if (is.character(dds) && dds == "RANK_ERROR") {
+    return(list(status = "error", message = "Design Matrix Error: Variables are confounded."))
+  }
+    
   # Filter low-count genes
   dds <- dds[rowSums(counts(dds)) > 1, ]
   # LRT test
@@ -210,10 +214,11 @@ run_timecourse_DEG <- function(MetaData, count_mtx,time_variable,Condition) {
   # # 4. Extract LRT results
   # # -----------------------------
   # res_lrt <- results(dds)
-  return(dds)
+  # return(dds)
+  return(list(status = "success", dds = dds))
 }
 
-run_DEG_cluster <- function(dds, sig_gene, Condition) {
+run_DEG_cluster <- function(dds, sig_gene, condition_var) {
   res_lrt <- results(dds)
   sample_meta <- as.data.frame(colData(dds))
 
@@ -224,8 +229,8 @@ run_DEG_cluster <- function(dds, sig_gene, Condition) {
   clusters <- degPatterns(
     cluster_rlog,
     metadata = sample_meta,
-    time     = "nominaltimef",
-    col      = tail(Condition, 1),
+    time     = "Unified_Time",
+    col      = condition_var,
     plot     = FALSE
   )
   
@@ -243,7 +248,7 @@ TimeSeries_ui <- function(id) {
   fluidRow(
     column(3,
            wellPanel(
-             column(width=12,uiOutput(ns("selectGroupSampleTimeSeries"))), 
+             column(width=12,uiOutput(ns("selectGroupSampleTimeSeries"))),
              radioButtons(ns("ts_genelable"),label="Select Gene Label",inline = TRUE, choices=c("Gene.Name","UniqueID"), selected="Gene.Name"),
              conditionalPanel(ns = ns, "input.TimeSeries_tabset =='Time-Series DE Analysis'",
                               selectInput(ns("sel_time_var"), label="Select Time Variable", choices=NULL),
@@ -258,7 +263,7 @@ TimeSeries_ui <- function(id) {
              ),
              conditionalPanel(ns = ns, "input.TimeSeries_tabset =='DEG Clustering Analysis'",
                               actionButton(ns("compute_cluster"), "Run Clustering", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
-                              conditionalPanel(ns = ns, "input.ts_cluster_tabset =='Time Series Plot'",
+                              conditionalPanel(ns = ns, "input.ts_cluster_tabset =='Time Series Cluster Plot'",
                                                tags$hr(),
                                                tags$p(
                                                  "Customize Plot:",
@@ -271,7 +276,42 @@ TimeSeries_ui <- function(id) {
                                                column(width=6,sliderInput(ns("axis_text"), "Axis Text Size", min = 12, max = 25, value = 18)),
                                                column(width=6,sliderInput(ns("legend_title"), "Legend Title Size", min = 12, max = 25, value = 20)),
                                                column(width=6,sliderInput(ns("legend_text"), "Legend Text Size", min = 12, max = 25, value = 18))
-                              )
+                                               ),
+                              conditionalPanel(ns = ns, "input.ts_cluster_tabset =='Time‑series Sample Heatmap'",
+                                               selectizeInput(ns("ts_hm_annot_sample"), label="Annotate Samples", choices=NULL, multiple = TRUE)
+                                               ),
+                              conditionalPanel(ns = ns, "input.ts_cluster_tabset =='Time‑series Group Heatmap'",
+                                               selectizeInput(ns("ts_hm_annot_group"), label="Annotate Groups", choices=NULL, multiple = TRUE)
+                                               ),
+                              conditionalPanel(ns = ns, "input.ts_cluster_tabset =='Time‑series Sample Heatmap' || input.ts_cluster_tabset =='Time‑series Group Heatmap'",
+                                               radioButtons(ns("ts_hm_gene_cluster"), label="Cluster genes", inline = TRUE, choices = c("Yes","No"), selected = "No"),
+                                               column(width=5,sliderInput(ns("ts_hm_x_fontsize"), "Column Font Size:", min = 0, max = 20, step = 1, value = 15)),
+                                               column(width=5,sliderInput(ns("ts_hm_y_fontsize"), "Row Font Size:", min = 0, max = 20, step = 1, value = 10)),
+                                               sliderInput(ns("ts_hm_N_genes"), "Max Number of Genes to Label:", min = 0, max = 500, step = 10, value = 100),
+                                               h5("After changing parameters, please click Plot/Refresh button in the plot panel to generate heatmap."),
+                                               radioButtons(ns("ts_hm_more_options"), label="Show More Options", inline = TRUE, choices = c("Yes","No"), selected = "No"),
+                                               conditionalPanel(ns = ns, "input.ts_hm_more_options=='Yes'",
+                                                                radioButtons(ns("ts_hm_annot_color"),label="Color Setting for Annotations", choices=c("Auto-Set by Rand. Seed","Select Palette"), selected="Auto-Set by Rand. Seed"),
+                                                                conditionalPanel(ns=ns, "input.ts_hm_annot_color=='Auto-Set by Rand. Seed'",
+                                                                                 numericInput(ns("ts_hm_seed"),label="Random Seed for Color Palettes for Categories", min=1, max= 5000, value=123, step=1)),
+                                                                conditionalPanel(ns=ns, "input.ts_hm_annot_color=='Select Palette'",
+                                                                                 selectizeInput(ns("ts_hm_cat_pal"), label="Color Palettes (One per Category Annotation)",
+                                                                                                choices=c("Dark2", "Accent",  "Set1", "Set2", "Set3", "npg", "nejm", "lancet", "jama", "d3", "uchicago"), multiple = TRUE),
+                                                                                 selectizeInput(ns("ts_hm_num_pal"), label="Set Max Colors for Numerical Annotations",
+                                                                                                choices=c("Dark2", "Accent",  "Set1", "Set2", "Set3", "npg", "nejm", "lancet", "jama", "d3", "uchicago"), selected="Set1", multiple = FALSE
+                                                                                 )
+                                                                ),
+                                                                tags$hr(),
+                                                                sliderInput(ns("ts_hm_height"), "Heatmap Height:", min = 200, max = 3000, step = 50, value = 800),
+                                                                column(width=3,colourInput(ns("ts_hm_lowColor"), "Low", "blue")),
+                                                                column(width=3,colourInput(ns("ts_hm_midColor"), "Mid", "white")),
+                                                                column(width=3,colourInput(ns("ts_hm_highColor"), "High", "red")),
+                                                                textInput(ns("ts_hm_row_title"), "Row Title", width = "100%"),
+                                                                sliderInput(ns("ts_hm_row_title_font_size"), "Row Title Font Size:", min = 0, max = 30, step = 1, value = 16),
+                                                                textInput(ns("ts_hm_column_title"), "Column Title", width = "100%"),
+                                                                sliderInput(ns("ts_hm_column_title_font_size"), "Column Title Font Size:", min = 0, max = 30, step = 1, value = 16)
+                                               )
+                                               )
              )
            )
     ),
@@ -316,7 +356,7 @@ TimeSeries_ui <- function(id) {
                                 DT::DTOutput(ns("ts_deg"))),
                        tabPanel(title="DEG Clustering Analysis",
                                 tabsetPanel(id=ns("ts_cluster_tabset"),
-                                            tabPanel(title = "Time Series Plot",
+                                            tabPanel(title = "Time Series Cluster Plot",
                                                      br(),
                                                      tags$details(
                                                        # This is the clickable header that is always visible
@@ -367,9 +407,6 @@ TimeSeries_ui <- function(id) {
                                                      plotOutput(ns("ts_plot"), width = '1200px', height = "1200px")),
                                             tabPanel(title="DEG Cluster Result",
                                                      br(),
-                                                     actionButton(ns("ts_tpm_gct"), "Save sample normalized log2TPM GCT data file to output"),
-                                                     actionButton(ns("ts_zscore_gct"), "Save group z-score GCT data file to output"),
-                                                     br(),br(),
                                                      DT::DTOutput(ns("ts_cluster_table")),
                                                      tags$script(HTML(sprintf("
                                                      $(document).on('click', '[id^=plotExp_]', function() {
@@ -377,9 +414,20 @@ TimeSeries_ui <- function(id) {
                                                      Shiny.setInputValue('%s', genes, {priority: 'event'});
                                                      });", ns("plotExp_trigger"))))
                                             ),
-                                            tabPanel(title="Time‑series Heatmap",
+                                            tabPanel(title="Time‑series Sample Heatmap",
                                                      br(),
-                                                     plotOutput(ns("ts_heatmap"), height = 800))
+                                                     actionButton(ns("ts_tpm_gct"), "Save sample normalized log2TPM GCT data file to output"),
+                                                     br(),
+                                                     actionButton(ns("ts_plot_sample_heatmap"), "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
+                                                     plotOutput(ns("ts_sample_heatmap"))
+                                                     ),
+                                            tabPanel(title="Time‑series Group Heatmap",
+                                                     br(),
+                                                     actionButton(ns("ts_zscore_gct"), "Save group z-score GCT data file to output"),
+                                                     br(),
+                                                     actionButton(ns("ts_plot_group_heatmap"), "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
+                                                     plotOutput(ns("ts_group_heatmap"))
+                                                     )
                                 )
                        )
            )         
@@ -392,6 +440,13 @@ TimeSeries_server <- function(id, parent_session) {
                function(input, output, session) {
                  linear_small_value <- reactiveVal()
                  linear_base <- reactiveVal()
+                 time_col <- reactiveVal()
+                 cond_col <- reactiveVal()
+                 df_normalized_log2TPM <- reactiveVal()
+                 df_cluster_normalized_wide <- reactiveVal()
+                 cluster_genes_ordered <- reactiveVal()
+                 df_cluster_sample_meta <- reactiveVal()
+                 df_cluster_group_meta <- reactiveVal()
                  
                  output$selectGroupSampleTimeSeries <- renderUI(shared_header_content())
 
@@ -428,42 +483,51 @@ TimeSeries_server <- function(id, parent_session) {
                                         count_mtx,
                                         time_variable = input$sel_time_var,
                                         Condition = input$sel_condition_var
-                     )
+                                        )
                    })
                  })
                  
                  filtered_DE <- reactive({
                    req(DEGReactive())
-                   dds <- DEGReactive()
+                   res <- DEGReactive()
                    
-                   df<- results(dds) %>%
-                     data.frame() %>%
-                     rownames_to_column("gene") %>%
-                     as_tibble() %>%
-                     filter(padj < input$padjCutoff) %>%
-                     arrange(padj) %>%
-                     head(n = input$top_n)
-                   
-                   if (input$ts_genelable == 'Gene.Name') {
-                     req(DataQCReactive())
-                     ProteinGeneName <- DataQCReactive()$ProteinGeneName
-                     df <- df %>% 
-                       dplyr::left_join(ProteinGeneName %>% dplyr::select(UniqueID, Gene.Name), by = c("gene" = "UniqueID")) %>%
-                       dplyr:: rename(UniqueID = gene) %>%
-                       dplyr:: filter(!is.na(Gene.Name), Gene.Name != "") %>%
-                       dplyr:: group_by(Gene.Name) %>%
-                       dplyr:: slice_max(baseMean, n = 1, with_ties = FALSE) %>%
-                       dplyr:: ungroup() %>%
-                       dplyr:: rename(gene = Gene.Name) %>%
-                       dplyr:: relocate(gene, .before = 1)
+                   if (res$status == "success") {
+                     dds <- res$dds
+                     
+                     df<- results(dds) %>%
+                       data.frame() %>%
+                       rownames_to_column("gene") %>%
+                       as_tibble() %>%
+                       filter(padj < input$padjCutoff) %>%
+                       arrange(padj) %>%
+                       head(n = input$top_n)
+                     
+                     if (input$ts_genelable == 'Gene.Name') {
+                       req(DataQCReactive())
+                       ProteinGeneName <- DataQCReactive()$ProteinGeneName
+                       df <- df %>% 
+                         dplyr::left_join(ProteinGeneName %>% dplyr::select(UniqueID, Gene.Name), by = c("gene" = "UniqueID")) %>%
+                         dplyr:: rename(UniqueID = gene) %>%
+                         dplyr:: filter(!is.na(Gene.Name), Gene.Name != "") %>%
+                         dplyr:: group_by(Gene.Name) %>%
+                         dplyr:: slice_max(baseMean, n = 1, with_ties = FALSE) %>%
+                         dplyr:: ungroup() %>%
+                         dplyr:: rename(gene = Gene.Name) %>%
+                         dplyr:: relocate(gene, .before = 1)
+                     }
+                     
+                     nrow = nrow(df)
+                     max_padj = max(df$padj)
+                     list(
+                       df = df,
+                       msg = sprintf("Top %s DEGs are selected with maximum padj %.3f.", nrow, max_padj)
+                     )
+                   } else {
+                     list(
+                       df = NULL,
+                       msg = res$msg
+                     )
                    }
-                   
-                   nrow = nrow(df)
-                   max_padj = max(df$padj)
-                   list(
-                     df = df,
-                     msg = sprintf("Top %s DEGs are selected with maximum padj %.3f.", nrow, max_padj)
-                   )
                  })
                      
                  output$filtered_DEG <- renderText({filtered_DE()$msg})
@@ -482,6 +546,20 @@ TimeSeries_server <- function(id, parent_session) {
                  output$ts_deg<- DT::renderDT({
                    req(filtered_DE())
                    df <- filtered_DE()$df
+                   
+                   validate(
+                     need(!is.null(df),
+                       paste(
+                       "Design Matrix Error: The variables in your formula are confounded.",
+                       "Possible causes:",
+                       "- Some combinations of your variables have zero samples.",
+                       "- One variable (e.g., 'Batch') perfectly overlaps with another (e.g., 'Condition').",
+                       "- A column in your metadata contains only one unique value.",
+                       "Please simplify your design formula or check your sample metadata for redundant columns.",
+                       sep = "\n"
+                     ))
+                   )
+                   
                    if (input$ts_genelable == 'Gene.Name') {
                      df <- df %>%
                        dplyr::select(-UniqueID)
@@ -498,13 +576,46 @@ TimeSeries_server <- function(id, parent_session) {
                      req(filtered_DE())
                      req(input$sel_condition_var)
                      
-                     dds <- DEGReactive()
+                     res <- DEGReactive()
+                     dds <- res$dds
                      filtered_dds <- filtered_DE()$df
                      sig_gene <- filtered_dds$gene
                      if (input$ts_genelable == 'Gene.Name') {
                        sig_gene <- filtered_dds$UniqueID
                      }
-                     run_DEG_cluster(dds, sig_gene, input$sel_condition_var)
+                     time_col(input$sel_time_var)
+                     cond_col(tail(input$sel_condition_var, 1))
+                     res_cluster <- run_DEG_cluster(dds, sig_gene, cond_col())
+                     
+                     df_cluster_normalized <- res_cluster$clusters$normalized
+                     df_counts <- res_cluster$clusters$counts
+                     df_counts_unique <- df_counts[unique(df_cluster_normalized$genes), ]
+
+                     df_wide <- df_cluster_normalized %>%
+                       dplyr::select(genes, merge, value, cluster) %>%
+                       pivot_wider(names_from = merge, values_from = value) %>%
+                       tibble::column_to_rownames('genes')
+                     
+                     df_cluster <- res_cluster$clusters$df
+                     genes_ordered <- df_cluster[order(df_cluster$cluster), "genes"]
+                     
+                     group_meta <- df_cluster_normalized %>% 
+                       dplyr::select(all_of(c('merge', time_col(), "Unified_Time", cond_col()))) %>% 
+                       distinct() %>% 
+                       dplyr::mutate(!!cond_col() := factor(!!sym(cond_col()), levels = DataQCReactive()$tmp_group[[cond_col()]])) %>%
+                       dplyr::arrange(!!sym(cond_col()), Unified_Time) %>%
+                       dplyr::mutate(!!cond_col() := as.character(!!sym(cond_col())))
+                     
+                     df_wide <- df_wide[genes_ordered, c('cluster', group_meta$merge)]
+                     df_cluster_normalized_wide(df_wide)
+                     
+                     df_counts_unique <- df_counts_unique[genes_ordered, sample_order()]
+                     df_normalized_log2TPM(df_counts_unique)
+                     
+                     cluster_genes_ordered(genes_ordered)
+                     df_cluster_sample_meta(res_cluster$sample_meta)
+                     df_cluster_group_meta(group_meta)
+                     res_cluster
                    })
                  })
                  
@@ -632,18 +743,19 @@ TimeSeries_server <- function(id, parent_session) {
 
                    DataCluster <-DataClusterReactive()
                    clusters <- DataCluster$clusters
-                   sample_meta <- DataCluster$sample_meta
+                   sample_meta <- df_cluster_sample_meta() # DataCluster$sample_meta
+                   df_counts <- df_normalized_log2TPM()
                    
-                   df_counts <- clusters$counts
-                   clean_names <- gsub("\\.[0-9]+$", "", rownames(df_counts))
-                   keep_rows <- !duplicated(clean_names)
-                   df_counts_unique <- df_counts[keep_rows, ]
-                   rownames(df_counts_unique) <- clean_names[keep_rows]
+                   df_cluster <- clusters$df
+                   genes_ordered <- df_cluster[order(df_cluster$cluster), "genes"]
                    
-                   row_meta = ProteinGeneName[ProteinGeneName$UniqueID %in% rownames(df_counts_unique), ] %>%
-                     left_join(clusters$df, by = c('UniqueID' = 'genes'))
+                   row_meta <- as.data.frame(df_counts) %>%
+                     tibble::rownames_to_column('UniqueID') %>%
+                     dplyr::select(UniqueID) %>%
+                     left_join(df_cluster, , by = c("UniqueID" = "genes")) %>%
+                     left_join(ProteinGeneName, by = 'UniqueID')
                    
-                   gct_data <- create_gct_object(df_counts_unique, row_meta, sample_meta)
+                   gct_data <- create_gct_object(df_counts, row_meta, sample_meta)
                    gct_data
                  })
                  
@@ -658,22 +770,21 @@ TimeSeries_server <- function(id, parent_session) {
                    DataCluster <-DataClusterReactive()
                    clusters <- DataCluster$clusters
 
-                   df_long <- clusters$normalized
-                   df_wide <- df_long %>%
-                     dplyr::select(genes, merge, value, cluster) %>%
-                     pivot_wider(names_from = merge, values_from = value) %>%
-                     tibble::column_to_rownames('genes')
+                   df_cluster_wide <- df_cluster_normalized_wide()
                    
-                   row_meta = ProteinGeneName[ProteinGeneName$UniqueID %in% rownames(df_wide), ] %>%
-                     left_join(df_wide %>% 
-                                 tibble::rownames_to_column('UniqueID') %>%
-                                 dplyr::select(UniqueID, cluster), by = 'UniqueID')
+                   cluster_genes <- cluster_genes_ordered()
                    
-                   col_meta = df_long[, c(input$sel_time_var, "nominaltimef", tail(input$sel_condition_var, 1), 'merge')] %>% distinct()
+                   row_meta <- df_cluster_wide %>%
+                     tibble::rownames_to_column('UniqueID') %>%
+                     dplyr::select(UniqueID, cluster) %>%
+                     left_join(ProteinGeneName, by = 'UniqueID')
                    
-                   df_wide$cluster <-NULL
+                   df_cluster_wide$cluster <-NULL
                    
-                   gct_data <- create_gct_object(df_wide, row_meta, col_meta)
+                   group_meta <- df_cluster_group_meta()
+                   col_meta = group_meta[, c(time_col(), "Unified_Time", cond_col(), 'merge')] 
+                   
+                   gct_data <- create_gct_object(df_cluster_wide, row_meta, col_meta)
                    gct_data
                  })
                  
@@ -681,31 +792,306 @@ TimeSeries_server <- function(id, parent_session) {
                    saved_gcts$ts_zscore_gct <- ts_zscore_gct()
                  })                    
                  ############## 
+                 observeEvent(DataClusterReactive(), {
+                   req(DataClusterReactive())
+                   time_col <- input$sel_time_var
+                   cond_col <- tail(input$sel_condition_var, 1)
+                   updateSelectizeInput(session,'ts_hm_annot_group',choices=c(time_col, "Unified_Time", cond_col), selected=cond_col)
+                   
+                   req(DataQCReactive())
+                   MetaData <- df_cluster_sample_meta() # DataQCReactive()$MetaData
+                   attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs", "replaceable","sizeFactor") ))
+                   updateSelectizeInput(session,'ts_hm_annot_sample',choices=attributes, selected = c(time_col, "Unified_Time", cond_col))
+                 })
                  
-                 heatmap_plot <- eventReactive(input$compute_cluster, {
+#################################################
+                 heatmap_sample_plot <- eventReactive(input$ts_plot_sample_heatmap, {
                    withProgress(message = "Processing...", value = 0, {
                      req(DataClusterReactive())
+                     req(input$ts_hm_annot_sample)
                      DataCluster <-DataClusterReactive()
                      clusters <- DataCluster$clusters
-                     df <- clusters$df %>% dplyr::select(genes, cluster) %>% arrange(cluster)
-                     gene_order <- df  %>% pull(genes)
-                     mat_ordered <- DataCluster$cluster_rlog[gene_order, ]
-                     pheatmap(
-                       mat_ordered,
-                       scale = "row",
-                       cluster_rows = FALSE,
-                       cluster_cols = FALSE,
-                       annotation_row = df["cluster"],
-                       show_rownames = FALSE,
-                       main = "Time‑series Heatmap Ordered by Cluster"
+                     
+                     gene_clusters <- clusters$df %>% 
+                       arrange(cluster)
+                     
+                     plot_matrix_wide <- df_normalized_log2TPM() %>%
+                       as.matrix()
+                     
+                     plot_matrix_scaled <- t(scale(t(plot_matrix_wide)))
+
+                     if (input$ts_genelable == 'Gene.Name') {
+                       ProteinGeneName <- DataQCReactive()$ProteinGeneName 
+                       rownames(ProteinGeneName) = ProteinGeneName$UniqueID
+                       rownames(plot_matrix_scaled) <- ProteinGeneName[rownames(plot_matrix_scaled),'Gene.Name']
+                     }
+                     
+                     sample_meta <- df_cluster_sample_meta()
+                     
+                     col_anno=NULL #column annotation
+                     if (!is.null(input$ts_hm_annot_sample)) {
+                       sel_col=match(input$ts_hm_annot_sample, names(sample_meta))
+                       df_annot=sample_meta[, sel_col, drop=FALSE]
+                       # After defining df_annot
+                       # Convert character columns to factors based on appearance order
+                       df_annot[] <- lapply(df_annot, function(x) {
+                         if (is.character(x) || is.factor(x)) {
+                           return(factor(as.character(x), levels = unique(x)))
+                         } else {
+                           return(x)
+                         }
+                       })
+                       col_anno=HeatmapAnnotation(df = df_annot)
+                       
+                       is_num <- sapply(df_annot, is.numeric)
+                       num_cols <- names(df_annot)[is_num]
+                       cat_cols <- names(df_annot)[!is_num]
+                       if (input$ts_hm_annot_color=="Auto-Set by Rand. Seed") { #color with palette selected using random seed (default)
+                         discrete_palettes=c("Dark2", "Accent",  "Set2", "Set3", "npg", "nejm", "lancet", "jama", "d3", "uchicago") #removed Set1 for numeric
+                         set.seed(input$ts_hm_seed)
+                         pal_cat_assigned <- sample(discrete_palettes, length(cat_cols), replace = (length(cat_cols) > length(discrete_palettes)))
+                         num_palette <- "Set1"
+                       } else if (input$ts_hm_annot_color=="Select Palette") { #color with user selected palettes
+                         validate(need(length(input$ts_hm_cat_pal)>0,message = "Please select color palettes for category annotations")) 
+                         pal_cat_assigned <- rep(input$ts_hm_cat_pal,  length.out=length(cat_cols) )
+                         num_palette <- input$ts_hm_num_pal
+                       }
+                       color_num_assigned <- get_palette(num_palette , length(num_cols))
+                       color_list <- imap(df_annot, function(val, col_name) {
+                         idx <- match(col_name, if (is.numeric(val)) num_cols else cat_cols)
+                         if (is.numeric(val))
+                           hm_m_color(df_annot, col_name, high_col = color_num_assigned[idx])
+                         else
+                           hm_c_color(df_annot, col_name, pal_cat_assigned[idx])
+                       })
+                       col_anno=HeatmapAnnotation(df = df_annot, col=color_list, show_annotation_name = TRUE)
+                     }
+                     
+                     # 2. Prepare Row Annotations (Multiple)
+                     anno_row <- data.frame(Cluster = as.factor(gene_clusters$cluster))
+                     rownames(anno_row) <- gene_clusters$genes
+                     
+                     cluster_names <- unique(anno_row$Cluster)
+                     n_clusters <- length(cluster_names)
+                     colors <- get_palette("Set3", n_clusters)
+                     names(colors) <- sort(cluster_names)
+                     
+                     # 4. Create the final color_list
+                     color_list <- list(Cluster = colors)    
+                     
+                     row_anno <- rowAnnotation(Cluster = anno_row$Cluster, col = color_list)
+                     
+                     # 5. Define the Main Color Palette
+                     data_range=quantile(unlist(plot_matrix_scaled), probs=c(0.01, 0.5, 0.99), na.rm=T)
+                     col_fun=colorRamp2(data_range, c(input$ts_hm_lowColor,input$ts_hm_midColor, input$ts_hm_highColor) )
+                     
+                     # 6. Set lay out options
+                     cexCol = as.numeric(as.character(input$ts_hm_x_fontsize))
+                     cexRow = as.numeric(as.character(input$ts_hm_y_fontsize))
+                     
+                     labCol = TRUE
+                     labRow = TRUE
+                     # cat("pheatmap ", dim(data.in), date(), "\n") #debug
+                     if (cexRow  == 0 | nrow(plot_matrix_scaled) > input$ts_hm_N_genes) {
+                       labRow = FALSE
+                       cexRow = 5
+                     }
+                     if (cexCol == 0) {
+                       labCol = FALSE
+                       cexCol  = 5
+                     }
+                     
+                     time_col <- time_col()
+                     condition_var <- cond_col()
+                     
+                     # 4. Create the Complex Heatmap
+                     Heatmap(
+                       plot_matrix_scaled, 
+                       name = "normalized expression",
+                       row_title=input$ts_hm_row_title,
+                       row_title_gp = gpar(fontsize = input$ts_hm_row_title_font_size), 
+                       column_title=input$ts_hm_column_title,
+                       column_title_gp = gpar(fontsize = input$ts_hm_column_title_font_size),
+                       row_names_gp = gpar(fontsize = cexRow),
+                       column_names_gp = gpar(fontsize = cexCol),
+                       
+                       # --- NESTED CLUSTERING ---
+                       cluster_rows = (input$ts_hm_gene_cluster == "Yes"),
+                       show_row_dend = (input$ts_hm_gene_cluster == "Yes"),           # Shows the dendrogram for each sub-cluster
+                       cluster_columns = FALSE, 
+                       show_column_dend = FALSE,
+                       column_labels = sample_meta$sampleid,
+                       
+                       # Annotations
+                       top_annotation = col_anno,
+                       left_annotation = row_anno,
+                       
+                       # Visuals
+                       col = col_fun,
+                       show_row_names = labRow,
+                       show_column_names = labCol,
+                       row_names_side="right",
+                       
+                       # Split by Cluster (Optional but recommended for clarity)
+                       row_split = anno_row$Cluster,      # Existing row split
+                       column_split = df_annot[[condition_var]],  # NEW: Splits columns by WT, Het, KO
+                       column_gap = unit(4, "mm"),        # Gap between genotype groups
+                       row_gap = unit(4, "mm"),           # Gap between clusters
+                       border = TRUE
                      )
                    })
                  })
                  
-                 output$ts_heatmap<- renderPlot({
-                   heatmap_plot()
+                 output$ts_sample_heatmap <- renderPlot({
+                   heatmap_sample_plot()
+                 }, height = function() {
+                   input$ts_hm_height 
+                 })                 
+
+#################################################
+                 
+                 heatmap_group_plot <- eventReactive(input$ts_plot_group_heatmap, {
+                   withProgress(message = "Processing...", value = 0, {
+                     req(DataClusterReactive())
+                     req(input$ts_hm_annot_group)
+                     DataCluster <-DataClusterReactive()
+                     clusters <- DataCluster$clusters
+                     
+                     
+                     gene_clusters <- clusters$df %>% 
+                       arrange(cluster)
+                     
+                     plot_matrix_wide <- df_cluster_normalized_wide() %>%
+                       dplyr::select(-cluster) %>%
+                       as.matrix()
+                     
+                     if (input$ts_genelable == 'Gene.Name') {
+                       ProteinGeneName <- DataQCReactive()$ProteinGeneName 
+                       rownames(ProteinGeneName) = ProteinGeneName$UniqueID
+                       rownames(plot_matrix_wide) <- ProteinGeneName[rownames(plot_matrix_wide),'Gene.Name']
+                     }
+                     
+                     group_meta <- df_cluster_group_meta()
+                     
+                    col_anno=NULL #column annotation
+                     if (!is.null(input$ts_hm_annot_group)) {
+                       sel_col=match(input$ts_hm_annot_group, names(group_meta))
+                       df_annot=group_meta[, sel_col, drop=FALSE]
+                       # After defining df_annot
+                       # Convert character columns to factors based on appearance order
+                       df_annot[] <- lapply(df_annot, function(x) {
+                         if (is.character(x)) {
+                           return(factor(x, levels = unique(x)))
+                         } else {
+                           return(x)
+                         }
+                       })
+                       col_anno=HeatmapAnnotation(df = df_annot)
+                       
+                       is_num <- sapply(df_annot, is.numeric)
+                       num_cols <- names(df_annot)[is_num]
+                       cat_cols <- names(df_annot)[!is_num]
+                       if (input$ts_hm_annot_color=="Auto-Set by Rand. Seed") { #color with palette selected using random seed (default)
+                         discrete_palettes=c("Dark2", "Accent",  "Set2", "Set3", "npg", "nejm", "lancet", "jama", "d3", "uchicago") #removed Set1 for numeric
+                         set.seed(input$ts_hm_seed)
+                         pal_cat_assigned <- sample(discrete_palettes, length(cat_cols), replace = (length(cat_cols) > length(discrete_palettes)))
+                         num_palette <- "Set1"
+                       } else if (input$ts_hm_annot_color=="Select Palette") { #color with user selected palettes
+                         validate(need(length(input$ts_hm_cat_pal)>0,message = "Please select color palettes for category annotations")) 
+                         pal_cat_assigned <- rep(input$ts_hm_cat_pal,  length.out=length(cat_cols) )
+                         num_palette <- input$ts_hm_num_pal
+                       }
+                       color_num_assigned <- get_palette(num_palette , length(num_cols))
+                       color_list <- imap(df_annot, function(val, col_name) {
+                         idx <- match(col_name, if (is.numeric(val)) num_cols else cat_cols)
+                         if (is.numeric(val))
+                           hm_m_color(df_annot, col_name, high_col = color_num_assigned[idx])
+                         else
+                           hm_c_color(df_annot, col_name, pal_cat_assigned[idx])
+                       })
+                       col_anno=HeatmapAnnotation(df = df_annot, col=color_list, show_annotation_name = TRUE)
+                     }
+                     
+                     # 2. Prepare Row Annotations (Multiple)
+                     anno_row <- data.frame(Cluster = as.factor(gene_clusters$cluster))
+                     rownames(anno_row) <- gene_clusters$genes
+                     
+                     cluster_names <- unique(anno_row$Cluster)
+                     n_clusters <- length(cluster_names)
+                     colors <- get_palette("Set3", n_clusters)
+                     names(colors) <- sort(cluster_names)
+                     
+                     # 4. Create the final color_list
+                     color_list <- list(Cluster = colors)    
+                     
+                     row_anno <- rowAnnotation(Cluster = anno_row$Cluster, col = color_list)
+                     
+                     # 5. Define the Main Color Palette
+                     data_range=quantile(unlist(plot_matrix_wide), probs=c(0.01, 0.5, 0.99), na.rm=T)
+                     col_fun=colorRamp2(data_range, c(input$ts_hm_lowColor,input$ts_hm_midColor, input$ts_hm_highColor) )
+                     
+                     # 6. Set lay out options
+                     cexCol = as.numeric(as.character(input$ts_hm_x_fontsize))
+                     cexRow = as.numeric(as.character(input$ts_hm_y_fontsize))
+                     
+                     labCol = TRUE
+                     labRow = TRUE
+                     # cat("pheatmap ", dim(data.in), date(), "\n") #debug
+                     if (cexRow  == 0 | nrow(plot_matrix_wide) > input$ts_hm_N_genes) {
+                       labRow = FALSE
+                       cexRow = 5
+                     }
+                     if (cexCol == 0) {
+                       labCol = FALSE
+                       cexCol  = 5
+                     }
+                     
+                     time_col <- time_col()
+                     condition_var <- cond_col()
+                     
+                     # 4. Create the Complex Heatmap
+                     Heatmap(
+                       plot_matrix_wide, 
+                       name = "Z-score",
+                       row_title=input$ts_hm_row_title,
+                       row_title_gp = gpar(fontsize = input$ts_hm_row_title_font_size), 
+                       column_title=input$ts_hm_column_title,
+                       column_title_gp = gpar(fontsize = input$ts_hm_column_title_font_size),
+                       row_names_gp = gpar(fontsize = cexRow),
+                       column_names_gp = gpar(fontsize = cexCol),
+                       
+                       # --- NESTED CLUSTERING ---
+                       cluster_rows = (input$ts_hm_gene_cluster == "Yes"),
+                       show_row_dend = (input$ts_hm_gene_cluster == "Yes"),           # Shows the dendrogram for each sub-cluster
+                       cluster_columns = FALSE, 
+                       show_column_dend = FALSE,
+                       column_labels = group_meta[[time_col]],
+                       
+                       # Annotations
+                       top_annotation = col_anno,
+                       left_annotation = row_anno,
+                       
+                       # Visuals
+                       col = col_fun,
+                       show_row_names = labRow,
+                       show_column_names = labCol,
+                       row_names_side="right",
+                       
+                       # Split by Cluster (Optional but recommended for clarity)
+                       row_split = anno_row$Cluster,      # Existing row split
+                       column_split = df_annot[[condition_var]],  # NEW: Splits columns by WT, Het, KO
+                       column_gap = unit(4, "mm"),        # Gap between genotype groups
+                       row_gap = unit(4, "mm"),           # Gap between clusters
+                       border = TRUE
+                     )
+                   })
                  })
                  
+                 output$ts_group_heatmap <- renderPlot({
+                   heatmap_group_plot()
+                 }, height = function() {
+                   input$ts_hm_height 
+                 })                 
                })
 }
 
