@@ -170,7 +170,7 @@ GetGenesFromGeneSet <- function(sel_geneset) {
 #' @param col_meta A data frame containing sample annotations
 #' @return A GCT object
 create_gct_object <- function(exp_data, row_meta, col_meta) {
-  library(cmapR)
+ # library(cmapR)
   # 1. Prepare the Expression Matrix
   my_matrix <- as.matrix(exp_data)
   my_matrix[is.na(my_matrix)] <- 0
