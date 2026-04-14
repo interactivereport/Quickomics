@@ -427,17 +427,23 @@ tabPanel("Heatmap", value = 'Heatmap',
                                           sliderInput("heatmap_height", "Heatmap Height:", min = 200, max = 3000, step = 50, value = 800),
                                           radioButtons("heatmap_row_dend", label="Show row dendrogram", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE), selected = TRUE),
                                           radioButtons("heatmap_col_dend", label="Show column dendrogram", inline = TRUE, choices = c("No" = FALSE,"Yes" = TRUE), selected = TRUE),
-                                          column(width=3,colourInput("lowColor", "Low", "blue")),
-                                          column(width=3,colourInput("midColor", "Mid", "white")),
-                                          column(width=3,colourInput("highColor", "High", "red")),
-                                          column(width=5,selectInput("distanceMethod", "Distance Metric:", c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski"))),
-                                          column(width=5,selectInput("agglomerationMethod", "Linkage Algorithm:", c("complete", "single", "average", "centroid", "median", "mcquitty", "ward.D", "ward.D2"))),
-                                          column(width=5,sliderInput("cutreerows", "cutree_rows:", min = 0, max = 8, step = 1, value = 0)),
-                                          column(width=5,sliderInput("cutreecols", "cutree_cols:", min = 0, max = 8, step = 1, value = 0)),
-                                          textInput("heatmap_row_title", "Row Title", width = "100%"),
-                                          sliderInput("heatmap_row_title_font_size", "Row Title Font Size:", min = 0, max = 30, step = 1, value = 16),
-                                          textInput("heatmap_column_title", "Column Title", width = "100%"),
-                                          sliderInput("heatmap_column_title_font_size", "Column Title Font Size:", min = 0, max = 30, step = 1, value = 16)
+                                          fluidRow(
+                                            column(width=3,colourInput("lowColor", "Low", "blue")),
+                                            column(width=3,colourInput("midColor", "Mid", "white")),
+                                            column(width=3,colourInput("highColor", "High", "red"))
+                                          ),
+                                          fluidRow(
+                                            column(width=5,selectInput("distanceMethod", "Distance Metric:", c("euclidean", "maximum", "manhattan", "canberra", "binary", "minkowski"))),
+                                            column(width=5,selectInput("agglomerationMethod", "Linkage Algorithm:", c("complete", "single", "average", "centroid", "median", "mcquitty", "ward.D", "ward.D2"))),
+                                            column(width=5,sliderInput("cutreerows", "cutree_rows:", min = 0, max = 8, step = 1, value = 0)),
+                                            column(width=5,sliderInput("cutreecols", "cutree_cols:", min = 0, max = 8, step = 1, value = 0))
+                                          ),
+                                          fluidRow(
+                                            textInput("heatmap_row_title", "Row Title", width = "100%"),
+                                            sliderInput("heatmap_row_title_font_size", "Row Title Font Size:", min = 0, max = 30, step = 1, value = 16),
+                                            textInput("heatmap_column_title", "Column Title", width = "100%"),
+                                            sliderInput("heatmap_column_title_font_size", "Column Title Font Size:", min = 0, max = 30, step = 1, value = 16)                                           
+                                          )
                                       )
                     )
                   )

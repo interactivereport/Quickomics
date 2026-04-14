@@ -303,13 +303,17 @@ TimeSeries_ui <- function(id) {
                                                                 ),
                                                                 tags$hr(),
                                                                 sliderInput(ns("ts_hm_height"), "Heatmap Height:", min = 200, max = 3000, step = 50, value = 800),
-                                                                column(width=3,colourInput(ns("ts_hm_lowColor"), "Low", "blue")),
-                                                                column(width=3,colourInput(ns("ts_hm_midColor"), "Mid", "white")),
-                                                                column(width=3,colourInput(ns("ts_hm_highColor"), "High", "red")),
-                                                                textInput(ns("ts_hm_row_title"), "Row Title", width = "100%"),
-                                                                sliderInput(ns("ts_hm_row_title_font_size"), "Row Title Font Size:", min = 0, max = 30, step = 1, value = 16),
-                                                                textInput(ns("ts_hm_column_title"), "Column Title", width = "100%"),
-                                                                sliderInput(ns("ts_hm_column_title_font_size"), "Column Title Font Size:", min = 0, max = 30, step = 1, value = 16)
+                                                                fluidRow(
+                                                                  column(width=4,colourInput(ns("ts_hm_lowColor"), "Low", "blue")),
+                                                                  column(width=4,colourInput(ns("ts_hm_midColor"), "Mid", "white")),
+                                                                  column(width=4,colourInput(ns("ts_hm_highColor"), "High", "red"))
+                                                                ),
+                                                                fluidRow(
+                                                                  textInput(ns("ts_hm_row_title"), "Row Title", width = "100%"),
+                                                                  sliderInput(ns("ts_hm_row_title_font_size"), "Row Title Font Size:", min = 0, max = 30, step = 1, value = 16),
+                                                                  textInput(ns("ts_hm_column_title"), "Column Title", width = "100%"),
+                                                                  sliderInput(ns("ts_hm_column_title_font_size"), "Column Title Font Size:", min = 0, max = 30, step = 1, value = 16)
+                                                                ),
                                                )
                                                )
              )
@@ -322,10 +326,10 @@ TimeSeries_ui <- function(id) {
                                 tags$details(
                                   tags$summary(
                                     tags$strong("Click to view DESeq2 LRT Methodology & Example", 
-                                                style = "color: #007bff; cursor: pointer;")
+                                                style = "color: #28a745; cursor: pointer;")
                                   ),
                                   tags$div(
-                                    style = "padding: 15px; background-color: #f0f7fb; border-left: 5px solid #007bff; margin-top: 10px;",
+                                    style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
                                     tags$p("DESeq2 offers the Likelihood ratio test (LRT) test which is used to identify genes whose expression changes over time differently between your selected condition groups."),
                                     tags$p(
                                       "The LRT is comparing the full model to the reduced model to identify significant genes. ", 
@@ -362,11 +366,11 @@ TimeSeries_ui <- function(id) {
                                                        # This is the clickable header that is always visible
                                                        tags$summary(
                                                          tags$strong("Click to view Clustering Methodology (degPatterns & DIANA)", 
-                                                                     style = "color: #007bff; cursor: pointer;")
+                                                                     style = "color: #28a745; cursor: pointer;")
                                                        ),
                                                        # Everything inside this div is hidden until expanded
                                                        tags$div(
-                                                         style = "padding: 15px; background-color: #f8f9fa; border-radius: 5px; margin-top: 10px;",
+                                                         style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
                                                          tags$p(tags$strong("The degPatterns() R function in DEGreport library is used to do the DEG clustering.")),
                                                          tags$p(
                                                            "It can work with one or more groups with 2 or more several time points. Before calculating the genes similarity among samples, all samples inside the same time point (time parameter) and group (col parameter) are collapsed together, and the mean value is the representation of the group for the gene abundance. Then, all pair-wise gene expression is calculated using cor.test R function using kendall as the statistical method. A distance matrix is created from those values. After that, cluster::diana() is used for the clustering of gene-gene distance matrix and cut the tree using the divisive coefficient of the clustering, giving as well by diana."
