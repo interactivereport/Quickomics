@@ -250,6 +250,15 @@ DataReactive <- reactive({
                  } else {
                    if (!is.data.frame(data_wide)) {data_wide=data.frame(data_wide, check.names = FALSE)}  #change data_wide to data frame from numeric matrix if needed
                    if (!"Protein.ID" %in% names(ProteinGeneName)) {ProteinGeneName$Protein.ID=NA} #Add Protein.ID column as it is required for certain tools.
+                   if (!is.character(MetaData$sampleid)) {
+                      MetaData$sampleid <- as.character(MetaData$sampleid)
+                   } 
+                   if (!is.character(data_long$sampleid)) {
+                      data_long$sampleid <- as.character(data_long$sampleid)
+                   }
+                   if (!is.character(data_results$id)) {
+                      data_results$id <- as.character(data_results$id)
+                   }
                    MetaData_long <- MetaData %>%
                      dplyr::select(-any_of(c("Order", "ComparePairs", "Treatments"))) %>%
                      #dplyr::mutate_if(is.numeric, as.character) %>% #this will fail when there are columns in Time format

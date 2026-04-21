@@ -17,13 +17,13 @@ observe({
 alignQC_RA_p <- reactive({
   DataIn = DataQCReactive()
   MetaData=DataIn$MetaData
-  rownames(MetaData) = MetaData$sampleid
+  #rownames(MetaData) = MetaData$sampleid
   selN <- c("Exonic_Rate","Intronic_Rate","Intergenic_Rate")
   validate(need(sum(selN%in%colnames(MetaData))==length(selN), message = "Sample MetaData must have Exonic_Rate, Intronic_Rate and Intergenic_Rate columns in order to make Read Allocation graph." ))
   p=NULL
   if(sum(selN%in%colnames(MetaData))==length(selN)){
-    D = reshape2::melt(as.matrix(MetaData[,colnames(MetaData)%in%selN]))
-    p<-ggplot(D,aes(x=Var1,y=value,fill=Var2))+
+    D1<-MetaData %>% dplyr::select(all_of(c("sampleid", selN))) %>% pivot_longer(cols=all_of(selN), names_to="type", values_to="value") 
+    p<-ggplot(D1,aes(x=sampleid,y=value,fill=type))+
       geom_bar(position="stack",stat="identity")+
       ylab("Fraction of Reads")+xlab("")+
 #      ggtitle("Mapped reads allocation")+
@@ -32,7 +32,6 @@ alignQC_RA_p <- reactive({
       theme(axis.text.x=element_text(angle=90,vjust=0.5,hjust=1),
             legend.position = "top")+
       guides(fill=guide_legend(title=""))
-    # MetaData <- MetaData[,!colnames(MetaData)%in%selN,drop=F]
   }
   p
 })
