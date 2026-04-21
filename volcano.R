@@ -44,6 +44,7 @@ observe({
   }
  })
 
+output$selectGroupSampleDEG <- renderUI(shared_header_content())
 
 DatavolcanoReactive <- reactive({
   DataIn = DataQCReactive()

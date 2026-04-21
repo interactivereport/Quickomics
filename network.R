@@ -120,6 +120,7 @@ NetworkReactive <- reactive({
     })
   }
 })
+output$selectGroupSampleNetwork <- renderUI(shared_header_content())
 
 DataNetworkReactive <- eventReactive(list(input$sel_net_gene, input$network_rcut, input$network_pcut, sort(as.character(current_samples()))), {
   req(input$sel_net_gene)

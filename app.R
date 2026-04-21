@@ -475,6 +475,7 @@ tabPanel("DEGs",
 	fluidRow(
 		column(3,
 			wellPanel(
+			  column(width=12,uiOutput("selectGroupSampleDEG")),
 			  conditionalPanel( "input.volcano_tabset!='DEGs in Two Comparisons' && input.volcano_tabset!='DEG Counts'",
 				selectInput("volcano_test", label="Select Comparison Groups for Volcano Plot", choices=NULL)),
 				conditionalPanel( "input.volcano_tabset=='DEGs in Two Comparisons'",
@@ -547,7 +548,7 @@ tabPanel("Pattern Clustering", value = 'Pattern_Clustering',
 	fluidRow(
 		column(3,
 			wellPanel(
-
+			  column(width=12,uiOutput("selectGroupSamplePattern")),
 			  radioButtons("pattern_subset",label="Use subset genes or upload your own subset?", choices=c("subset","upload genes"),inline = TRUE, selected="subset"),
 				conditionalPanel("input.pattern_subset=='subset'",
 				                 selectInput("pattern_test", label="Select Genes from Test:", choices=NULL),
@@ -599,6 +600,7 @@ tabPanel("Correlation Network", value = 'Correlation_Network',
 	fluidRow(
 		column(3,
 			wellPanel(
+			  column(width=12,uiOutput("selectGroupSampleNetwork")),
 			  radioButtons("network_label",label="Select Gene Label",inline = TRUE, choices=c("UniqueID", "Gene.Name"), selected="Gene.Name"),
 				selectizeInput("sel_net_gene",	label="Gene Name (Select 1 or more)",	choices = NULL,	multiple=TRUE, options = list(placeholder =	'Type to search')),
 				sliderInput("network_rcut", label= "Choose r Cutoff",  min = 0, max = 1, value = 0.9, step=0.02),

@@ -485,15 +485,12 @@ observeEvent(input$reset_all_types, {
 
 shared_header_content <- reactive({
   req(state$meta, state$samples, state$tests)
-  total_groups  <- sum(lengths(state$initial_meta))
-  kept_groups   <- sum(lengths(state$meta))
   total_samples <- length(state$initial_samples)
   kept_samples  <- length(state$samples)
   total_tests   <- length(state$initial_tests)
   kept_tests    <- length(state$tests)
   summary_text <- paste0(
-    "Selected ", kept_groups,  " / ", total_groups,  " Groups; ",
-    kept_samples, " / ", total_samples, " Samples; ",
+    "Selected ", kept_samples, " / ", total_samples, " Samples; ",
     kept_tests,   " / ", total_tests,   " Comparisons. ",
     "(Update Selection at: Top Menu → Groups and Samples.)"
   )
@@ -504,15 +501,12 @@ shared_header_content <- reactive({
 })
 
 output$selectGroupSample <- renderText({
-  total_groups  <- sum(lengths(state$initial_meta))
-  kept_groups   <- sum(lengths(state$meta))
   total_samples <- length(state$initial_samples)
   kept_samples  <- length(state$samples)
   total_tests   <- length(state$initial_tests)
   kept_tests    <- length(state$tests)
   paste0(
-    "Selected ", kept_groups,  " / ", total_groups,  " Groups; ",
-    kept_samples, " / ", total_samples, " Samples; ",
+    "Selected ", kept_samples, " / ", total_samples, " Samples; ",
     kept_tests,   " / ", total_tests,   " Comparisons."
   )
 })

@@ -236,12 +236,12 @@ correlation_server <- function(id) {
                    }
                  })
                  
-                 observeEvent(input$sel_gene, {
-                   req(input$gene_subset == "Select")
-                   req(input$sel_gene!="")
+                 observeEvent(input$gene_subset == "Select", {
+                   # req(input$gene_subset == "Select")
+                   gene_list = input$sel_gene
+                   validate(need(length(gene_list) > 1, message = "Please input at least 2 matched genes."))
                    DataIn = DataQCReactive()
                    ProteinGeneName = DataIn$ProteinGeneName
-                   gene_list = input$sel_gene
                    res_gene_count <- get_gene_counts(ProteinGeneName, gene_list)
                    ProteinGeneName_sel(res_gene_count$ProteinGeneName_sel)
                    genelabel(input$gene_label)
@@ -250,9 +250,11 @@ correlation_server <- function(id) {
                    output$filteredUniqueID_Select <- renderText({res_gene_count$msg_filter})
                  })
                  
-                 observe({
+                 # observe({
+                   
+                 observeEvent(input$gene_subset == "Browsing", {
                    req(DataQCReactive())
-                   req(input$sel_test)
+                   req(input$sel_test != "")
                    p_sel   <- input$psel
                    test_sel <- input$sel_test
                    FCcut <- log2(as.numeric(input$fccut))
@@ -276,9 +278,10 @@ correlation_server <- function(id) {
                  
                  observeEvent(input$gene_list, {
                    req(input$gene_subset == "Upload Genes")
-                   req(input$gene_list)
+                   # req(input$gene_list != "")
                    gene_list <- input$gene_list
                    gene_list <- ProcessUploadGeneList(gene_list)
+                   validate(need(length(gene_list) > 1, message = "Please input at least 2 matched genes."))
 
                    DataIn = DataQCReactive()
                    ProteinGeneName = DataIn$ProteinGeneName
@@ -419,9 +422,9 @@ correlation_server <- function(id) {
                    }
                    t_exp_tmp <- t(exp_tmp)   # genes as columns
                    toCheck_list <- colnames(t_exp_tmp)
+                   toCheck_list <- toCheck_list[toCheck_list != ""]
                    
                    corr_method = tolower(CorrMethod())
-                   #browser()
 
                    res_corr <- do.call(rbind, combn(toCheck_list, 2, FUN = function(pair) {
                      stats <- get_regression_stats(t_exp_tmp[, pair[1]], t_exp_tmp[, pair[2]], corr_method)

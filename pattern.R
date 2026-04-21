@@ -162,6 +162,7 @@ filteredgeneReactive <- reactive({
   character(0)
 })
 
+output$selectGroupSamplePattern <- renderUI(shared_header_content())
 
 DatapatternReactive <- eventReactive(input$pattern_plot, {
   req(input$pattern_attr)
