@@ -17,11 +17,12 @@ observe({
 alignQC_RA_p <- reactive({
   DataIn = DataQCReactive()
   MetaData=DataIn$MetaData
+  rownames(MetaData) = MetaData$sampleid
   selN <- c("Exonic_Rate","Intronic_Rate","Intergenic_Rate")
   validate(need(sum(selN%in%colnames(MetaData))==length(selN), message = "Sample MetaData must have Exonic_Rate, Intronic_Rate and Intergenic_Rate columns in order to make Read Allocation graph." ))
   p=NULL
   if(sum(selN%in%colnames(MetaData))==length(selN)){
-    D = melt(as.matrix(MetaData[,colnames(MetaData)%in%selN]))
+    D = reshape2::melt(as.matrix(MetaData[,colnames(MetaData)%in%selN]))
     p<-ggplot(D,aes(x=Var1,y=value,fill=Var2))+
       geom_bar(position="stack",stat="identity")+
       ylab("Fraction of Reads")+xlab("")+
@@ -72,7 +73,7 @@ alignQC_TGR_p <- reactive({
     return(sapply(topN,function(i)return(sum(x[1:i])/sum(x)*100)))
     }))
   D <- cbind(sID=rownames(D),data.frame(D))
-  D2=melt(D, id.vars="sID")
+  D2=reshape2::melt(D, id.vars="sID")
   D2$sID=factor(D2$sID, levels=colnames(data_wide))
   p<-ggplot(D2, aes(x=sID, y=value, color=variable, group=variable))+geom_line(size=2)
   p<-p+ labs(x="", y=input$alignQC_TGR_Y, color="Top Genes")+
@@ -127,7 +128,7 @@ alignQC_TG_p <- reactive({
   D=alignQC_TG_data()$D
   topUnion=alignQC_TG_data()$topUnion
   ProteinGeneName = DataReactive()$ProteinGeneName
-  D2 <- melt(D[,order(apply(D,2,median))])
+  D2 <- reshape2::melt(D[,order(apply(D,2,median))])
   D2<-D2%>%mutate(Var2=as.character(Var2))%>%left_join(ProteinGeneName%>%transmute(Var2=UniqueID, Gene.Name))%>%mutate(ID=str_c(Var2, " ", Gene.Name))
  # browser() #debug
   D2$ID=factor(D2$ID, levels=unique(D2$ID))
