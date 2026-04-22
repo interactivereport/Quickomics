@@ -33,7 +33,7 @@ observeEvent(MetaData_long(), {
   # - All groups are numeric (e.g., age, weight)
   meta_summary <- md[, .(
     groups = list(as.character(unique(group))),
-    is_numeric = all(!is.na(suppressWarnings(as.numeric(unique(group)))))
+    is_numeric = type %in% numerical_attributes() # is_numeric = all(!is.na(suppressWarnings(as.numeric(unique(group)))))
   ), by = type]
   
   meta_summary[, hide := (
@@ -312,7 +312,7 @@ observe({
     test_order(state$tests)
     
     incProgress(0.2)
-    
+
     # META UI
     output$ui_all_types <- renderUI({
       all_meta <- state$meta
@@ -390,25 +390,26 @@ observe({
 observe({
   withProgress(message = "Updating the sample meta, sample list and comparison list ...", {
     req(length(all_group_list()) > 0)
-    
+
     expected_attrs <- names(all_group_list())
     req(length(expected_attrs) > 0)
-    
+
     md            <- MetaData_long()
     all_samples_vec <- all_samples()
     all_tests_vec <- all_tests()
-    
+
     # 1) read UI
     ui_meta    <- read_ui_meta(expected_attrs)
     ui_samples <- input$source_s
     ui_tests   <- input$source_test
-    
+
     if (any(sapply(ui_meta, is.null))) return()
-    if (is.null(ui_samples) || is.null(ui_tests)) return()
-    
+    # if (is.null(ui_samples) || is.null(ui_tests)) return()
+    if (is.null(ui_samples)) return()
+
     # 2) check if UI has caught up with model
     visible_types <- names(state$hide_types)[!state$hide_types]
-    
+
     ui_matches_model <- (
       identical(
         lapply(ui_meta[visible_types], as.character),
@@ -418,25 +419,25 @@ observe({
         identical(as.character(ui_tests),   as.character(state$tests))
     )
     incProgress(0.3)
-    
+
     # 3) If we are updating the model, WAIT until UI matches
     if (updating_from_model() && !ui_matches_model) {
       return()   # freeze reconciliation until UI catches up
     }
-    
+
     # 4) If UI now matches model, release the lock
     if (updating_from_model() && ui_matches_model) {
       updating_from_model(FALSE)
       return()
     }
-    
+
     if (reset_all() && !ui_matches_model) {
       return()
     }
     reset_all(FALSE)
-    
+
     incProgress(0.8)
-    
+
     # 5) If not updating_from_model, proceed with reconciliation
     new_state <- reconcile_state(
       visible       = state$visible_types,
@@ -450,7 +451,7 @@ observe({
       all_samples_vec = all_samples_vec,
       all_tests_vec = all_tests_vec
     )
-    
+
     # 6) identity gate vs current model
     same_meta <- identical(
       lapply(new_state$meta, as.character),
@@ -464,12 +465,12 @@ observe({
       as.character(new_state$tests),
       as.character(state$tests)
     )
-    
+
     if (same_meta && same_samples && same_tests) return()
-    
+
     # 7) commit model update
     updating_from_model(TRUE)
-    
+
     state$meta    <- new_state$meta
     state$samples <- new_state$samples
     state$tests   <- new_state$tests

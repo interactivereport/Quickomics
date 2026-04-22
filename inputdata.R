@@ -18,8 +18,9 @@ saved_gcts <- reactiveValues()
 samples_excludeM<-reactiveVal() #manually excluded samples
 samples_excludeF<-reactiveVal() #samples excluded from filtering on sample attributes
 samples_excludeM(""); samples_excludeF("")
-attribute_filters<-reactiveVal()
+attribute_filters<- reactiveVal()
 attribute_filters(NULL)
+numerical_attributes <- reactiveVal()
 resetComp2Sample<-reactiveVal(); resetComp2Sample(FALSE) #control when to reset the tool to Get Samples from Comparison.,
 all_groups <-reactiveVal()
 group_order <- reactiveVal()
@@ -261,9 +262,11 @@ DataReactive <- reactive({
                    }
                    MetaData_long <- MetaData %>%
                      dplyr::select(-any_of(c("Order", "ComparePairs", "Treatments"))) %>%
-                     #dplyr::mutate_if(is.numeric, as.character) %>% #this will fail when there are columns in Time format
                      dplyr::mutate_all(as.character) %>%
                      tidyr::pivot_longer(cols = -sampleid,  names_to = "type",values_to = "group")
+                   
+                   # Returns names of columns where is.numeric is TRUE
+                   num_cols <- names(MetaData)[sapply(MetaData, is.numeric)]
                    
                    results_long <-
                      results_long %>% mutate_if(is.factor, as.character)  %>% dplyr::select(UniqueID, test, logFC, P.Value, Adj.P.Value) %>% 
@@ -292,6 +295,7 @@ DataReactive <- reactive({
                    all_groups(group_names)
                    all_metadata(MetaData)
                    MetaData_long(MetaData_long)
+                   numerical_attributes(num_cols)
                    all_tests(tests)
                    test_order(tests)
                    ProteinGeneNameHeader(colnames(ProteinGeneName))

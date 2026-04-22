@@ -260,8 +260,13 @@ pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
         color_num_assigned <- get_palette(num_palette , length(num_cols))
         color_list <- imap(df_annot, function(val, col_name) {
         idx <- match(col_name, if (is.numeric(val)) num_cols else cat_cols)
-        if (is.numeric(val))
+        if (is.numeric(val)) {
+          validate(
+            need(!any(is.na(val)), 
+                 paste0("Column '", col_name, "' contains NA values. Please remove NA values from the numeric attribute."))
+          )
           hm_m_color(df_annot, col_name, high_col = color_num_assigned[idx])
+        }
         else
           hm_c_color(df_annot, col_name, pal_cat_assigned[idx])
         })
