@@ -168,7 +168,7 @@ reconcile_from_samples <- function(old_samples, ui_samples, ui_meta, ui_tests,
     logical_groups <- unique(as.character(active_md[type == attr, group]))
     current_ui_attr <- ui_meta[[attr]]
     kept <- current_ui_attr[current_ui_attr %in% logical_groups]
-    added <- data.table::setdiff(logical_groups, kept)
+    added <- setdiff(logical_groups, kept)
     return(c(kept, added))
   })
   names(new_meta) <- attrs  
@@ -180,7 +180,7 @@ reconcile_from_samples <- function(old_samples, ui_samples, ui_meta, ui_tests,
     
     # If the test exists in our lookup, check if all its samples are in the current set
     if (!is.null(required_samples)) {
-      return(all(required_samples %in% samples))
+      return(all(required_samples %in% ui_samples))
     } else {
       return(FALSE)
     }
@@ -190,7 +190,7 @@ reconcile_from_samples <- function(old_samples, ui_samples, ui_meta, ui_tests,
   kept_tests  <- ui_tests[ui_tests %in% logical_tests]
   added_tests <- setdiff(logical_tests, kept_tests)
   new_tests   <- c(kept_tests, added_tests)
-  list(meta = new_meta, samples = samples, tests = new_tests)
+  list(meta = new_meta, samples = ui_samples, tests = new_tests)
 }
 
 
