@@ -900,9 +900,12 @@ wgcna_server <- function(id, parent_session) {
                             # what if the user-imported data doesn't have $data_wide, $ProjectID..etc?
                             req(ProjectInfo, DataReactive()$data_wide, ProjectInfo$ProjectID)
                             # showTab(session = session, inputId = "WGCNA_tabset", target = "Module-Trait Relationships")
-                            
-                            DataIn = DataReactive()
-                            data_wide <- na.omit(DataIn$data_wide)
+                            browser()
+                            # DataIn = DataReactive()
+                            # data_wide <- na.omit(DataIn$data_wide)
+                            DataIn = DataQCReactive()
+                            data_wide <- na.omit(DataIn$tmp_data_wide)
+                            sample_list = as.character(DataIn$tmp_sampleid)
                             ProjectID <- ProjectInfo$ProjectID
                             wgcnafile <- ProjectInfo$file3
                             
@@ -918,22 +921,32 @@ wgcna_server <- function(id, parent_session) {
                             
                             default_n_gene <- nrow(data_wide)
                             
+                            scenario <- 3L
                             load_wgcna_file <- file.path(dirname(wgcnafile), sub("^wgcna", "load", basename(wgcnafile)))
                             
-                            if (file.exists(load_wgcna_file) & default_n_gene==input$WGCNAtopNum){
+                            if (file.exists(load_wgcna_file)) {
+                              load(load_wgcna_file)
+                              if (setequal(sample_list, rownames(dataExpr))) {
+                                if (default_n_gene == input$WGCNAtopNum) {
+                                  scenario <- 1L
+                                } else if ((default_n_gene - input$WGCNAtopNum) / default_n_gene < 0.1) {
+                                  scenario <- 2L
+                                }
+                              }
+                            }
+                            
+                            if (scenario == 1L) {
                               # Scenario 1: If file exist and the number of genes selected rename the same, load 
                               # pre-computed result and TOM file (blockwiseModules(loadTom = T)) to 
                               # reduce running time
                               # The load_*.RData contains two objects, dataExpr and picked_power, so that
                               # the app doesn't need to recalculate either from scratch
-                              load(load_wgcna_file)
                               netwk <- get_wgcna_netwk(dataExpr, picked_power, 1, input$mergeCutHeight, input$WGCNAtopNum, ProjectID)
-                            } else if (file.exists(load_wgcna_file) & (default_n_gene - input$WGCNAtopNum)/default_n_gene < 0.1) {
+                            } else if (scenario == 2L) {
                               # Scenario 2: If file exist and the number of genes selected is within 10% of 
                               # the default number of genes, load pre-computed result
                               # but do not load TOM file (blockwiseModules(loadTom = F))
-                              load(load_wgcna_file)
-                              dataExpr= dataExpr[,1L:input$WGCNAtopNum]
+                              dataExpr <- dataExpr[, 1L:input$WGCNAtopNum]
                               netwk <- get_wgcna_netwk(dataExpr, picked_power, 2, input$mergeCutHeight, input$WGCNAtopNum, ProjectID)
                             } else {
                               # Scenario 3: Not scenario 1 or 2, and recalculate everything
@@ -941,7 +954,7 @@ wgcna_server <- function(id, parent_session) {
                               ProteinGeneName  <- DataIn$ProteinGeneName
                               topNum <- as.numeric(input$WGCNAtopNum)
                               gene_label <- input$WGCNAgenelable
-
+                              
                               data_wide <- clean_expression_data(data_wide)
                               dataExpr = as.data.frame(t(data_wide))
                               dataExpr= dataExpr[,1L:topNum]
@@ -1180,7 +1193,8 @@ wgcna_server <- function(id, parent_session) {
                         observeEvent(list(MEs_updated(),input$plot_module_trait), {
                           req(DataReactive(), MEs_updated())
                           DataIn <- DataReactive()
-                          MetaData <- DataIn$MetaData[rownames(MEs_updated()),]
+                          MetaData <- DataIn$MetaData %>% 
+                            dplyr::filter(sampleid %in% rownames(MEs_updated()))
                           attrs <- input$WGCNA_trait_var
                           # Only categorical attributes have base_* inputs
                           categorical_attrs <- attrs[
