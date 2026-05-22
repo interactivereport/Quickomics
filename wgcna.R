@@ -769,6 +769,7 @@ wgcna_server <- function(id, parent_session) {
                             
                             
                             data_wide <- DataIn$data_wide
+                            data_wide = data_wide[, rownames(dataExpr)]
                             data_wide <- na.omit(DataIn$data_wide)
                             diff <- apply(data_wide, 1, sd, na.rm = TRUE)/(rowMeans(data_wide) + median(rowMeans(data_wide)))
                             
@@ -1179,7 +1180,7 @@ wgcna_server <- function(id, parent_session) {
                         observeEvent(list(MEs_updated(),input$plot_module_trait), {
                           req(DataReactive(), MEs_updated())
                           DataIn <- DataReactive()
-                          MetaData <- DataIn$MetaData
+                          MetaData <- DataIn$MetaData[rownames(MEs_updated()),]
                           attrs <- input$WGCNA_trait_var
                           # Only categorical attributes have base_* inputs
                           categorical_attrs <- attrs[
