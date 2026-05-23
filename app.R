@@ -104,7 +104,9 @@ tabPanel("Groups and Samples",
           column(10,
                  wellPanel(
                    actionButton("reset_all_types", "Reset All"),
-                   
+                   tagList(tags$div(
+                      tags$p("Tip: Use Ctrl (or Cmd on Mac) + click to pick multiple values.")
+                   )),  
                    # dynamic UI region
                    div(
                      uiOutput('ui_all_types'),

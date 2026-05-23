@@ -3,7 +3,7 @@
   style.textContent = `
     .ui-sortable-handle.multidrag-selected {
       background-color: #d4edda !important;
-      border: 2px solid #28a745 !important;
+      border: 4px solid #f55742 !important;
     }
     .ui-sortable-placeholder {
       display: none !important;
