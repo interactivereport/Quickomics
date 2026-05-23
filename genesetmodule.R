@@ -1255,6 +1255,7 @@ geneset_server <- function(id) {
                               FC_df <- FC_df %>% dplyr::left_join(res_comp, by = "UniqueID")
                             }
                             
+                            browser() #debug
                             # gene mapping
                             if (input$map_genes != "No Change (as it is)" &&
                                 !(ProjectInfo$Species == input$MSigDB_species && input$map_genes == "Homologous Genes")) {
@@ -1393,7 +1394,7 @@ geneset_server <- function(id) {
                             results_long=dataIn$results_long
                             ProteinGeneName = dataIn$ProteinGeneName
                             if (input$map_genes!="No Change (as it is)" && !(ProjectInfo$Species==input$MSigDB_species && input$map_genes=="Homologous Genes") ) {
-                              if ( input$map_genes=="Change to UPPER case (human)" )  mapped_symbols<-(ProteinGeneName$Gene.Name)
+                              if ( input$map_genes=="Change to UPPER case (human)" )  mapped_symbols<-toupper(ProteinGeneName$Gene.Name)
                               if ( input$map_genes=="Change to Title Case (mouse/rat)" )  mapped_symbols<-str_to_title(ProteinGeneName$Gene.Name)
                               if (ProjectInfo$Species!=input$MSigDB_species && input$map_genes=="Homologous Genes" ) {
                                 mapped_symbols<-homolog_mapping(ProteinGeneName$Gene.Name, ProjectInfo$Species, input$MSigDB_species, homologs) }	  
@@ -1410,12 +1411,12 @@ geneset_server <- function(id) {
                             results_long<-results_long%>%left_join(ProteinGeneName1%>%dplyr::select(UniqueID, EntrezID))
                             #get logFC data from data_results
                             tests=input$geneset_test
-                            if (input$kegg_more_tests=="Yes") {
-                              if (input$geneset_test2!="None") {tests=c(tests, input$geneset_test2)}
-                              if (input$geneset_test3!="None") {tests=c(tests, input$geneset_test3)}
-                              if (input$geneset_test4!="None") {tests=c(tests, input$geneset_test4)}
-                              if (input$geneset_test5!="None") {tests=c(tests, input$geneset_test5)}
-                            }
+                            # if (input$kegg_more_tests=="Yes") {
+                            #   if (input$geneset_test2!="None") {tests=c(tests, input$geneset_test2)}
+                            #   if (input$geneset_test3!="None") {tests=c(tests, input$geneset_test3)}
+                            #   if (input$geneset_test4!="None") {tests=c(tests, input$geneset_test4)}
+                            #   if (input$geneset_test5!="None") {tests=c(tests, input$geneset_test5)}
+                            # }
                             data_plot<-list()
                             for (t in tests){
                               data1<-results_long%>%filter(test==t, !is.na(EntrezID))%>%dplyr::select(EntrezID, logFC, Adj.P.Value, UniqueID)
