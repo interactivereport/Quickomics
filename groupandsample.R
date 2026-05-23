@@ -485,7 +485,7 @@ observeEvent(input$reset_all_types, {
 })
 
 shared_header_content <- reactive({
-  req(state$meta, state$samples, state$tests)
+  req(state$meta, state$samples)
   total_samples <- length(state$initial_samples)
   kept_samples  <- length(state$samples)
   total_tests   <- length(state$initial_tests)
