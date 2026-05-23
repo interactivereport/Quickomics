@@ -205,26 +205,28 @@ is_categorical <- function(x) {
 }
 
 build_traits_matrix <- function(MetaData, attrs, base_levels) {
-  # Identify categorical traits (factor or character)
-  categorical_cols <- names(base_levels)
-  # Numeric traits = selected attrs minus categorical 
-  numeric_cols <- setdiff(attrs, categorical_cols)
-  # Extract numeric traits 
+  # base_levels names define which attrs are categorical/factor
+  all_cat_cols  <- attrs[attrs %in% names(base_levels)]
+  numeric_cols  <- attrs[!attrs %in% names(base_levels)]
+  
   numeric_traits <- MetaData[, numeric_cols, drop = FALSE]
-  # Convert selected categorical columns to factors with correct base level
-  factor_traits <- lapply(categorical_cols, function(col) {
-    vals <- MetaData[[col]]
+  
+  factor_traits <- lapply(all_cat_cols, function(col) {
+    vals <- as.character(MetaData[[col]])  # safe for both character and factor input
     base <- base_levels[[col]]
     factor(vals, levels = c(base, setdiff(unique(vals), base)))
   })
   factor_traits <- as.data.frame(factor_traits)
-  names(factor_traits) <- categorical_cols
+  names(factor_traits) <- all_cat_cols
+  
   if (ncol(factor_traits) > 0) {
-    dummy_traits <- model.matrix(~ . - 1, data = factor_traits)
-    dummy_traits <- as.data.frame(dummy_traits)
+    dummy_list <- lapply(names(factor_traits), function(col) {
+      tmp <- factor_traits[, col, drop = FALSE]
+      model.matrix(~ . - 1, data = tmp)
+    })
+    dummy_traits <- as.data.frame(do.call(cbind, dummy_list))
     return(cbind(numeric_traits, dummy_traits))
   } else {
-    dummy_traits <- NULL
     return(numeric_traits)
   }
 }
@@ -273,7 +275,7 @@ wgcna_ui <- function(id) {
     rclipboard::rclipboardSetup(),
     column(3,
            wellPanel(
-             uiOutput(ns('loadedprojects')),
+             column(width=12,uiOutput(ns("selectGroupSampleWGCNA"))),
              radioButtons(ns("WGCNAgenelable"),label="Select Gene Label",inline = TRUE, choices=c("Gene.Name","UniqueID"), selected="Gene.Name"),
              conditionalPanel(ns = ns, "input.WGCNA_tabset=='WGCNA Result' || input.WGCNA_tabset=='Module Eigengenes' || input.WGCNA_tabset=='WGCNA QC'",
                               numericInput(ns("WGCNAtopNum"), label= "Select Top N Genes, where N is :",  value=250L, min=250L, step=25L, max = 10000L),
@@ -719,6 +721,8 @@ wgcna_server <- function(id, parent_session) {
                           wgcna_out <- tryCatch(WGCNAReactive(), error = function(e) NULL)
                           if (! is.null(wgcna_out)) {
                             wgcna <- wgcna_out$netwk
+                            dataExpr <- wgcna_out$dataExpr
+                            picked_power <- wgcna_out$picked_power
                             if ("sft" %in% names(wgcna_out)) {
                               sft <- wgcna_out$sft
                             }
@@ -767,10 +771,21 @@ wgcna_server <- function(id, parent_session) {
                               )
                             })
                             
+                            output$selectGroupSampleWGCNA <- renderUI({
+                              total_samples <- ncol(DataIn$data_wide)
+                              kept_samples  <- nrow(dataExpr)
+                              summary_text  <- paste0(
+                                "Selected ", kept_samples, " / ", total_samples, " Samples. ",
+                                "(Update Selection at: Top Menu → Groups and Samples.)"
+                              )
+                              tagList(
+                                tags$p(summary_text),
+                                tags$hr()
+                              )
+                            })
                             
-                            data_wide <- DataIn$data_wide
-                            data_wide = data_wide[, rownames(dataExpr)]
-                            data_wide <- na.omit(DataIn$data_wide)
+                            data_wide = DataIn$data_wide[, rownames(dataExpr)]
+                            data_wide <- na.omit(data_wide)
                             diff <- apply(data_wide, 1, sd, na.rm = TRUE)/(rowMeans(data_wide) + median(rowMeans(data_wide)))
                             
                             output$gene_variance_distribution_plot <- renderPlot({
@@ -796,7 +811,7 @@ wgcna_server <- function(id, parent_session) {
                             
                             output$Eigenene_Network <- renderPlot({
                               MEs <- MEs_updated()
-                              validate(need(ncol(MEs) > 2,"Eigengene Network requires at least 2 module eigengenes."))
+                              validate(need(ncol(MEs) > 2,"Eigengene Network requires at least 3 module eigengenes."))
                               
                               plotEigengeneNetworks(MEs, "Eigengene Network", 
                                                     marDendro = c(2,3,2,1),
@@ -808,9 +823,13 @@ wgcna_server <- function(id, parent_session) {
                             wgcna_gct <- reactive({
                               DataIn <- DataReactive()
                               req(DataIn$data_wide)
-                              data_wide <- na.omit(DataIn$data_wide)
+                              data_wide <- DataIn$data_wide
+                              data_wide = data_wide[, rownames(MEs_updated())]
+                              data_wide <- na.omit(data_wide)
                               ProteinGeneName <- DataIn$ProteinGeneName
                               MetaData <- DataIn$MetaData
+                              MetaData = MetaData[, setdiff(colnames(MetaData), c("Order", "ComparePairs"))] %>%
+                                dplyr::filter(sampleid %in% rownames(MEs_updated()))
                               
                               module_map <- tibble::tibble(
                                 ME_name = MEs_name_updated(),
@@ -825,7 +844,7 @@ wgcna_server <- function(id, parent_session) {
                                 dplyr::inner_join(ProteinGeneName, by = "UniqueID") %>%
                                 dplyr::select(-color)
                               
-                              data.in <- DataIn$data_wide[t2$UniqueID,]
+                              data.in <- data_wide[t2$UniqueID,]
                               
                               gct_data <- create_gct_object(data.in, t2, MetaData)
                               gct_data
@@ -899,10 +918,7 @@ wgcna_server <- function(id, parent_session) {
                           withProgress(message = "Running WGCNA", detail = 'This may take a while...', value = 0.2, {
                             # what if the user-imported data doesn't have $data_wide, $ProjectID..etc?
                             req(ProjectInfo, DataReactive()$data_wide, ProjectInfo$ProjectID)
-                            # showTab(session = session, inputId = "WGCNA_tabset", target = "Module-Trait Relationships")
-                            browser()
-                            # DataIn = DataReactive()
-                            # data_wide <- na.omit(DataIn$data_wide)
+                            output$selectGroupSampleWGCNA <- renderUI(shared_header_content())
                             DataIn = DataQCReactive()
                             data_wide <- na.omit(DataIn$tmp_data_wide)
                             sample_list = as.character(DataIn$tmp_sampleid)
@@ -997,6 +1013,7 @@ wgcna_server <- function(id, parent_session) {
                           req(DataReactive(),WGCNAReactive())
                           wgcna_out <- WGCNAReactive()
                           wgcna <- wgcna_out$netwk
+                          dataExpr <- wgcna_out$dataExpr
                           picked_power <- wgcna_out$picked_power
                           DataIn = DataReactive()
                           mergedColors = labels2colors(wgcna$colors)
@@ -1066,9 +1083,13 @@ wgcna_server <- function(id, parent_session) {
                           wgcna_gct <- reactive({
                             DataIn <- DataReactive()
                             req(DataIn$data_wide)
-                            data_wide <- na.omit(DataIn$data_wide)
+                            data_wide <- DataIn$data_wide
+                            data_wide = data_wide[, rownames(MEs_updated())]
+                            data_wide <- na.omit(data_wide)
                             ProteinGeneName <- DataIn$ProteinGeneName
                             MetaData <- DataIn$MetaData
+                            MetaData = MetaData[, setdiff(colnames(MetaData), c("Order", "ComparePairs"))] %>%
+                              dplyr::filter(sampleid %in% rownames(MEs_updated()))
                             
                             module_map <- tibble::tibble(
                               ME_name = MEs_name_updated(),
@@ -1083,7 +1104,7 @@ wgcna_server <- function(id, parent_session) {
                               dplyr::inner_join(ProteinGeneName, by = "UniqueID") %>%
                               dplyr::select(-color)
                             
-                            data.in <- DataIn$data_wide[t2$UniqueID,]
+                            data.in <- data_wide[t2$UniqueID,]
                             
                             gct_data <- create_gct_object(data.in, t2, MetaData)
                             gct_data
@@ -1144,6 +1165,19 @@ wgcna_server <- function(id, parent_session) {
                             # output$soft_threshold_table <- NULL
                             # output$soft_threshold_diagnose_plot <- NULL
                           }
+                          
+                          data_wide = DataIn$data_wide[, rownames(dataExpr)]
+                          data_wide <- na.omit(data_wide)
+                          diff <- apply(data_wide, 1, sd, na.rm = TRUE)/(rowMeans(data_wide) + median(rowMeans(data_wide)))
+                          
+                          output$gene_variance_distribution_plot <- renderPlot({
+                            plot_gene_variance_distribution(diff)
+                          })
+                          
+                          output$sample_cluster_plot <- renderPlot({
+                            plot_sample_clustering(data_wide)
+                          })
+                          
                         })
                         
                         observeEvent(input$runORA_trigger, {
@@ -1158,21 +1192,28 @@ wgcna_server <- function(id, parent_session) {
                         
                         # Update Module-Trait Relationships menu
                         observe({
+                          req(DataReactive())
                           DataIn = DataReactive()
                           MetaData = DataIn$MetaData
                           req(MetaData)
-                          attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") ))
+                          attributes <- sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs")))
+                          n <- nrow(MetaData)
+                          attributes <- attributes[sapply(attributes, function(a) {
+                            nd <- dplyr::n_distinct(MetaData[[a]], na.rm = TRUE)
+                            nd >= 2 && nd < n
+                          })]
                           updateSelectizeInput(session, "WGCNA_trait_var", choices=attributes, selected="group")
                         })
                         
                         output$attribute_settings_ui <- renderUI({
-                          req(input$WGCNA_trait_var, DataReactive())
-                          
+                          req(input$WGCNA_trait_var, MEs_updated(), DataReactive())
                           DataIn = DataReactive()
                           MetaData = DataIn$MetaData
+                          MetaData = MetaData[, setdiff(colnames(MetaData), c("Order", "ComparePairs"))] %>%
+                            dplyr::filter(sampleid %in% rownames(MEs_updated()))
                           # Only keep categorical attributes
                           categorical_attrs <- input$WGCNA_trait_var[
-                            sapply(input$WGCNA_trait_var, function(a) is_categorical(MetaData[[a]]))
+                            sapply(input$WGCNA_trait_var, function(a) is_categorical(MetaData[[a]]) || is.factor(MetaData[[a]]))
                           ]
                           
                           # Build UI for each categorical attribute
@@ -1191,16 +1232,17 @@ wgcna_server <- function(id, parent_session) {
                         
                         # Create trait_data() and calculate moduleTraitCor() whenever wgcna result (MEs_updated()) changes or trait information (input$plot_module_trait) changes
                         observeEvent(list(MEs_updated(),input$plot_module_trait), {
-                          req(DataReactive(), MEs_updated())
+                          req(DataReactive(), MEs_updated(),input$WGCNA_trait_var)
                           DataIn <- DataReactive()
-                          MetaData <- DataIn$MetaData %>% 
-                            dplyr::filter(sampleid %in% rownames(MEs_updated()))
+                          MetaData <- DataIn$MetaData
+                          MetaData <- MetaData[, setdiff(colnames(MetaData), c("Order", "ComparePairs"))] %>% 
+                            dplyr::filter(sampleid %in% rownames(MEs_updated())) 
                           attrs <- input$WGCNA_trait_var
                           # Only categorical attributes have base_* inputs
-                          categorical_attrs <- attrs[
-                            sapply(attrs, function(a) is_categorical(MetaData[[a]]))
+                          non_numerical_attrs <- attrs[
+                            sapply(attrs, function(a) is_categorical(MetaData[[a]]) || is.factor(MetaData[[a]]))
                           ]
-                          base_levels <- sapply(categorical_attrs, function(a) input[[paste0("base_", a)]])
+                          base_levels <- sapply(non_numerical_attrs, function(a) input[[paste0("base_", a)]])
                           trait_data(build_traits_matrix(MetaData, attrs, base_levels))
 
                           nSamples <- nrow(trait_data())
@@ -1208,12 +1250,12 @@ wgcna_server <- function(id, parent_session) {
                         })
                         
                         # Create Module-Trait correlation heatmap object and reset hub gene results
-                        observeEvent(input$plot_module_trait, {
-                          req(MEs_updated(),trait_data())
+                        observeEvent(trait_data(), {
+                          req(MEs_updated(), trait_data(), input$plot_module_trait)
                           p <- compute_module_trait_heatmap(
-                            MEs = MEs_updated(),
+                            MEs       = MEs_updated(),
                             trait_mat = trait_data()
-                          ) 
+                          )                          
                           module_trait_plot(p)
                           # reset the dependent data
                           output$hub_gene_table <- DT::renderDT({NULL})
