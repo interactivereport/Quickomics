@@ -41,7 +41,7 @@ get_gene_counts <- function(ProteinGeneName, gene_list, UniqueIDonly = F) {
   if (UniqueIDonly) {
     ProteinGeneName_sel <- dplyr::filter(ProteinGeneName, UniqueID %in% gene_list)
   }
-
+  
   if (nrow(ProteinGeneName_sel) < 2) {
     msg_filter1 <- "Please input at least 2 matched gene."
     msg_filter <- ""
@@ -236,8 +236,8 @@ correlation_server <- function(id) {
                    }
                  })
                  
-                 observeEvent(input$gene_subset == "Select", {
-                   # req(input$gene_subset == "Select")
+                 observe({
+                   req(input$gene_subset == "Select")
                    gene_list = input$sel_gene
                    validate(need(length(gene_list) > 1, message = "Please input at least 2 matched genes."))
                    DataIn = DataQCReactive()
@@ -250,9 +250,8 @@ correlation_server <- function(id) {
                    output$filteredUniqueID_Select <- renderText({res_gene_count$msg_filter})
                  })
                  
-                 # observe({
-                   
-                 observeEvent(input$gene_subset == "Browsing", {
+                 observe({
+                   req(input$gene_subset == "Browsing")
                    req(DataQCReactive())
                    req(input$sel_test != "")
                    p_sel   <- input$psel
@@ -264,7 +263,7 @@ correlation_server <- function(id) {
                    DataIn = DataQCReactive()
                    results_long = DataIn$tmp_results_long
                    ProteinGeneName = DataIn$ProteinGeneName
-
+                   
                    tmpdat <- GeneFilter(results_long, test_sel, p_sel, Updown, pvalcut, FCcut,'UniqueID')
                    tmpids <- tmpdat %>% as.data.frame() %>% dplyr::pull(UniqueID)
                    
@@ -282,10 +281,10 @@ correlation_server <- function(id) {
                    gene_list <- input$gene_list
                    gene_list <- ProcessUploadGeneList(gene_list)
                    validate(need(length(gene_list) > 1, message = "Please input at least 2 matched genes."))
-
+                   
                    DataIn = DataQCReactive()
                    ProteinGeneName = DataIn$ProteinGeneName
-
+                   
                    res_gene_count <- get_gene_counts(ProteinGeneName, gene_list)
                    ProteinGeneName_sel(res_gene_count$ProteinGeneName_sel)
                    genelabel(input$gene_label)
@@ -309,7 +308,7 @@ correlation_server <- function(id) {
                    
                    DataIn = DataQCReactive()
                    ProteinGeneName = DataIn$ProteinGeneName
-
+                   
                    res_gene_count <- get_gene_counts(ProteinGeneName, gene_list)
                    genelabel(input$gene_label)
                    if (res_gene_count$gene_label_reset) genelabel("UniqueID")
@@ -342,7 +341,7 @@ correlation_server <- function(id) {
                    updateSelectizeInput(session,'sel_group',choices=groups)
                    output$Selected_groups <- renderText({""})
                  })
-                   
+                 
                  observeEvent(input$sel_group, {
                    group_list = input$sel_group
                    if (!is.null(group_list) && length(group_list) > 1) {
@@ -354,7 +353,7 @@ correlation_server <- function(id) {
                    msg_group <- paste("Selected Groups:",length(group_list),sep="")
                    output$Selected_groups <- renderText({msg_group})
                  })
-
+                 
                  CorrResult <- eventReactive(input$compute_corr, { 
                    DataIn <- DataQCReactive()
                    data_long <- DataIn$tmp_data_long
@@ -425,7 +424,7 @@ correlation_server <- function(id) {
                    toCheck_list <- toCheck_list[toCheck_list != ""]
                    
                    corr_method = tolower(CorrMethod())
-
+                   
                    res_corr <- do.call(rbind, combn(toCheck_list, 2, FUN = function(pair) {
                      stats <- get_regression_stats(t_exp_tmp[, pair[1]], t_exp_tmp[, pair[2]], corr_method)
                      cbind(gene1 = pair[1], gene2 = pair[2], stats)
@@ -461,8 +460,8 @@ correlation_server <- function(id) {
                                                        exportOptions = list(modifier = list(page = "current"))),
                                                   list(extend = "csv", text = "Download All", filename = "All_Results",
                                                        exportOptions = list(modifier = list(page = "all")))
-                                                  )
-                     )) %>% 
+                                                )
+                                 )) %>% 
                      formatSignif(columns=c('intercept', 'slope', 'r_squared', 'correlation', 'p.value'), digits=3) %>% 
                      formatStyle(4, cursor = 'pointer',color='blue')
                  })
@@ -535,7 +534,7 @@ correlation_server <- function(id) {
                    }
                  })
                  output$selectGroupSampleCorr<- renderUI(shared_header_content())
-
+                 
                  output$data_table <- DT::renderDataTable({
                    req(public_dataset)
                    res <- CorrResult()
