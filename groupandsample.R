@@ -22,9 +22,27 @@ state <- reactiveValues(
   initial_tests = character()
 )
 
+## =========================
+## CACHED KEYED DATA.TABLE VIEWS (Performance optimization)
+## =========================
+# Two indexed views for fast lookups on different access patterns
+md_dt_by_sample <- reactive({
+  req(MetaData_long())
+  dt <- data.table::as.data.table(MetaData_long())
+  data.table::setkey(dt, sampleid)
+  dt
+})
+
+md_dt_by_meta <- reactive({
+  req(MetaData_long())
+  dt <- data.table::as.data.table(MetaData_long())
+  data.table::setkeyv(dt, c("type", "group"))
+  dt
+})
+
 # 2. Initialize the lists when metadata changes
 observeEvent(MetaData_long(), {
-  md <- data.table::as.data.table(MetaData_long())
+  md <- md_dt_by_meta()  # Use cached keyed view
   n_samples_total <- data.table::uniqueN(md$sampleid)
   
   # Hide logic: 
@@ -93,7 +111,8 @@ detect_change_source <- function(visible, old_meta, old_samples, old_tests,
 ## RECONCILIATION FUNCTIONS
 ## =========================
 # A) META → SAMPLES → TESTS
-reconcile_from_meta <- function(old_meta, ui_meta, ui_tests, ui_samples, md, all_samples_vec, all_tests_vec) {
+reconcile_from_meta <- function(old_meta, ui_meta, ui_tests, ui_samples, 
+                                md_by_meta, md_by_sample, all_samples_vec, all_tests_vec) {
   attrs <- names(ui_meta)
   
   # 1) Detect changed attributes
@@ -103,18 +122,17 @@ reconcile_from_meta <- function(old_meta, ui_meta, ui_tests, ui_samples, md, all
     return(list(meta = ui_meta, samples = ui_samples, tests = ui_tests))
   }
   
-  # Convert md to data.table for high-speed indexing
-  data.table::setDT(md) 
   base_order <- unique(c(ui_samples, all_samples_vec))
   new_samples <- ui_samples # Default fallback
   
-  # 2) Recompute sample order driven by changed attributes
+  # 2) Recompute sample order driven by changed attributes using keyed lookup
   for (attr in changed_attrs) {
     ui_vals <- ui_meta[[attr]]
     
-    # Fast binary search subsetting
+    # Use keyed data.table for fast type/group lookup
     blocks <- lapply(ui_vals, function(val) {
-      relevant_samples <- md[type == attr & group == val, sampleid]
+      # Binary search on (type, group) key
+      relevant_samples <- md_by_meta[.(attr, val), sampleid, nomatch = 0L]
       base_order[base_order %in% relevant_samples]
     })
     
@@ -122,21 +140,24 @@ reconcile_from_meta <- function(old_meta, ui_meta, ui_tests, ui_samples, md, all
   }
   
   # 3) Recompute meta for ALL attributes using reordered md slices
+  # Filter md_by_meta to only keep rows matching new_samples
+  md_filtered <- md_by_sample[.(new_samples), nomatch = 0L]
+  
   new_meta <- lapply(attrs, function(attr) {
-    md[type == attr][match(new_samples, sampleid), unique(as.character(group))]
+    md_filtered[type == attr, unique(as.character(group))]
   })
   names(new_meta) <- attrs
-
-  # 4) Recompute tests from samples
+  
+  # 4) Recompute tests from samples (using hash-based lookup for performance)
+  samples_set <- new.env(hash = TRUE, parent = emptyenv())
+  for (s in new_samples) samples_set[[s]] <- TRUE
+  
   logical_tests <- all_tests_vec[vapply(all_tests_vec, function(t) {
-    # Get pre-calculated IDs for this specific test
     required_samples <- test_id_lookup()[[t]]
-    
-    # If the test exists in our lookup, check if all its samples are in the current set
     if (!is.null(required_samples)) {
-      return(all(required_samples %in% new_samples))
+      all(required_samples %in% names(samples_set))
     } else {
-      return(FALSE)
+      FALSE
     }
   }, FUN.VALUE = logical(1))]
   
@@ -150,7 +171,7 @@ reconcile_from_meta <- function(old_meta, ui_meta, ui_tests, ui_samples, md, all
 
 # B) SAMPLES → META → TESTS
 reconcile_from_samples <- function(old_samples, ui_samples, ui_meta, ui_tests,
-                                   md, all_samples_vec, all_tests_vec) {
+                                   md_by_sample, all_tests_vec) {
   # 1) Detect if samples actually changed
   samples_changed <- !identical(as.character(old_samples),
                                 as.character(ui_samples))
@@ -158,9 +179,8 @@ reconcile_from_samples <- function(old_samples, ui_samples, ui_meta, ui_tests,
     return(list(meta = ui_meta, samples = ui_samples, tests = ui_tests))
   }
   
-  # 2) Samples are driven directly by ui_samples (user action)
-  md_dt <- data.table::as.data.table(md)
-  active_md <- md_dt[sampleid %in% ui_samples]
+  # 2) Use keyed lookup to get metadata for selected samples
+  active_md <- md_by_sample[.(ui_samples), nomatch = 0L]
   
   # 3) Recompute meta from samples
   attrs <- names(ui_meta)
@@ -173,16 +193,16 @@ reconcile_from_samples <- function(old_samples, ui_samples, ui_meta, ui_tests,
   })
   names(new_meta) <- attrs  
   
-  # 4) Recompute tests from samples
+  # 4) Recompute tests from samples (using hash-based lookup)
+  samples_set <- new.env(hash = TRUE, parent = emptyenv())
+  for (s in ui_samples) samples_set[[s]] <- TRUE
+  
   logical_tests <- all_tests_vec[vapply(all_tests_vec, function(t) {
-    # Get pre-calculated IDs for this specific test
     required_samples <- test_id_lookup()[[t]]
-    
-    # If the test exists in our lookup, check if all its samples are in the current set
     if (!is.null(required_samples)) {
-      return(all(required_samples %in% ui_samples))
+      all(required_samples %in% names(samples_set))
     } else {
-      return(FALSE)
+      FALSE
     }
   }, FUN.VALUE = logical(1))]
   
@@ -196,27 +216,28 @@ reconcile_from_samples <- function(old_samples, ui_samples, ui_meta, ui_tests,
 
 # C) TESTS → SAMPLES → META
 reconcile_from_tests <- function(old_tests, ui_tests, ui_meta, ui_samples,
-                                 md, all_tests_vec, all_samples_vec) {
+                                 md_by_meta, md_by_sample, all_tests_vec, all_samples_vec) {
   # 1) Detect if tests actually changed
   tests_changed <- !identical(as.character(old_tests),
                               as.character(ui_tests))
   if (!tests_changed) {
     return(list(meta = ui_meta, samples = ui_samples, tests = ui_tests))
   }
+  
   kept_tests    <- ui_tests
   removed_tests <- setdiff(all_tests_vec, kept_tests)
   
-  samples_from_test <- function(test_name) {
-    groups <- unlist(strsplit(as.character(test_name), "vs"))
-    md %>%
-      dplyr::filter(group %in% groups) %>%
-      dplyr::pull(sampleid) %>%
-      as.character()
+  # Vectorized lookup using keyed data.table
+  get_samples_from_test <- function(test_name) {
+    groups <- trimws(strsplit(as.character(test_name), "vs")[[1]])
+    # Binary search on (type, group) won't work here since we need across types
+    # Instead, filter by group values across all types
+    md_by_meta[group %in% groups, unique(sampleid)]
   }
   
   # 2) Samples in kept and removed tests
-  samples_in_kept    <- unique(unlist(lapply(kept_tests, samples_from_test)))
-  samples_in_removed <- unique(unlist(lapply(removed_tests, samples_from_test)))
+  samples_in_kept    <- unique(unlist(lapply(kept_tests, get_samples_from_test)))
+  samples_in_removed <- unique(unlist(lapply(removed_tests, get_samples_from_test)))
   
   # 3) Samples only in removed tests
   samples_only_removed <- setdiff(samples_in_removed, samples_in_kept)
@@ -228,15 +249,12 @@ reconcile_from_tests <- function(old_tests, ui_tests, ui_meta, ui_samples,
   final_samples <- unique(c(ui_samples, all_samples_vec))
   final_samples <- final_samples[final_samples %in% (all_samples_vec[!(all_samples_vec %in% samples_only_removed)])]
   
-  # 5) Recompute meta from final samples
+  # 5) Recompute meta from final samples using keyed lookup
   attrs <- names(ui_meta)
+  md_filtered <- md_by_sample[.(final_samples), nomatch = 0L]
   
   new_meta <- lapply(attrs, function(attr) {
-    logical_groups <- md %>%
-      dplyr::filter(type == attr, sampleid %in% final_samples) %>%
-      dplyr::pull(group) %>%
-      unique() %>%
-      as.character()
+    logical_groups <- md_filtered[type == attr, unique(as.character(group))]
     
     kept  <- ui_meta[[attr]][ui_meta[[attr]] %in% logical_groups]
     added <- setdiff(logical_groups, kept)
@@ -251,23 +269,22 @@ reconcile_from_tests <- function(old_tests, ui_tests, ui_meta, ui_samples,
 # MASTER RECONCILER
 reconcile_state <- function(visible, old_meta, old_samples, old_tests,
                             ui_meta, ui_samples, ui_tests,
-                            md, all_samples_vec, all_tests_vec) {
+                            md_by_meta, md_by_sample, all_samples_vec, all_tests_vec) {
   # 1) Detect which source changed
-  source <- detect_change_source(visible, old_meta, old_samples, old_tests,ui_meta, ui_samples, ui_tests)
+  source <- detect_change_source(visible, old_meta, old_samples, old_tests, ui_meta, ui_samples, ui_tests)
   
   # 2) No change → return old state
   if (source == "none") {
-    return(list(meta = old_meta,samples = old_samples,tests   = old_tests))
+    return(list(meta = old_meta, samples = old_samples, tests = old_tests))
   }
   
   # 3) META is the driver
   if (source == "meta") {
-    out <- reconcile_from_meta(old_meta[visible], ui_meta[visible], ui_tests, ui_samples, md, all_samples_vec, all_tests_vec)
+    out <- reconcile_from_meta(old_meta[visible], ui_meta[visible], ui_tests, ui_samples, 
+                               md_by_meta, md_by_sample, all_samples_vec, all_tests_vec)
     
-    # Use data.table for a single-pass extraction
-    md_dt <- data.table::as.data.table(md)
-    data.table::setkey(md_dt, sampleid)
-    md_filt <- md_dt[.(out$samples), nomatch = NULL]
+    # Use keyed lookup to get metadata for output samples
+    md_filt <- md_by_sample[.(out$samples), nomatch = 0L]
     
     attrs <- names(old_meta)
     hidden_attrs <- setdiff(attrs, visible)
@@ -276,6 +293,7 @@ reconcile_state <- function(visible, old_meta, old_samples, old_tests,
       calc_dt <- md_filt[type %in% hidden_attrs]
       calc_meta <- split(calc_dt$group, calc_dt$type)
       calc_meta <- lapply(calc_meta, function(x) unique(as.character(x)))
+      calc_meta <- calc_meta[lapply(calc_meta, length) > 0]
       out$meta <- c(out$meta, calc_meta)
     }
     return(out)  
@@ -283,12 +301,14 @@ reconcile_state <- function(visible, old_meta, old_samples, old_tests,
   
   # 4) SAMPLES is the driver
   if (source == "samples") {
-    return(reconcile_from_samples(old_samples, ui_samples, ui_meta, ui_tests, md, all_samples_vec, all_tests_vec))
+    return(reconcile_from_samples(old_samples, ui_samples, ui_meta, ui_tests, 
+                                  md_by_sample, all_tests_vec))
   }
   
   # 5) TESTS is the driver
   if (source == "tests") {
-    return(reconcile_from_tests(old_tests, ui_tests, ui_meta, ui_samples, md, all_tests_vec, all_samples_vec))
+    return(reconcile_from_tests(old_tests, ui_tests, ui_meta, ui_samples, 
+                                md_by_meta, md_by_sample, all_tests_vec, all_samples_vec))
   }
   
   # 6) Fallback (should never hit)
@@ -300,86 +320,94 @@ reconcile_state <- function(visible, old_meta, old_samples, old_tests,
 ## MODEL → UI RENDERING
 ## =========================
 
+# Step 1: Propagate state changes to reactiveVals only.
+# Kept separate from renderUI blocks to prevent double-rendering.
 observe({
-  withProgress(message = "Updating UI...", value = 0, {
-    incProgress(0.1)
-    
-    req(length(state$meta) > 0)
-    
-    # drive these reactives from state
-    active_group_list(state$meta)
-    sample_order(state$samples)
-    test_order(state$tests)
-    
-    incProgress(0.2)
+  req(length(state$meta) > 0)
+  active_group_list(state$meta)
+  sample_order(state$samples)
+  test_order(state$tests)
+})
 
-    # META UI
-    output$ui_all_types <- renderUI({
-      all_meta <- state$meta
-      hide <- state$hide_types
-      
-      tagList(
-        lapply(names(all_meta), function(attr) {
-          kept_items    <- state$meta[[attr]]
-          removed_items <- setdiff(all_group_list()[[attr]], kept_items)
-          # hide row if needed
-          row_style <- if (hide[[attr]]) "display:none;" else ""
-          tags$div(style = row_style,
-                   fluidRow(
-                     column(1, tags$b(attr)),
-                     column(7, shinyjqui::orderInput(
-                       inputId = paste0("keep_", attr),
-                       label = "Keep (Drag to Order):",
-                       items = kept_items,
-                       width = "100%",
-                       item_class = "primary",
-                       connect = paste0("remove_", attr)
-                     )),
-                     column(2, shinyjqui::orderInput(
-                       inputId = paste0("remove_", attr),
-                       label = "Remove:",
-                       items = removed_items,
-                       width = "100%",
-                       placeholder = "Drag here to remove",
-                       item_class = "info",
-                       connect = paste0("keep_", attr)
-                     ))
-                   )
-          )
-        })
+# Step 2: Each renderUI lives at the top level so it fires exactly once
+# per state change, with no dependency on other reactiveVals updated above.
+
+# META UI: depends only on state$meta, state$hide_types, all_group_list
+output$ui_all_types <- renderUI({
+  req(length(state$meta) > 0)
+  all_meta <- isolate(state$meta)   # already captured by active_group_list above
+  hide     <- isolate(state$hide_types)
+  all_grps <- all_group_list()      # drives invalidation when groups change
+  
+  tagList(
+    lapply(names(all_meta), function(attr) {
+      kept_items    <- all_meta[[attr]]
+      removed_items <- setdiff(all_grps[[attr]], kept_items)
+      row_style     <- if (isTRUE(hide[[attr]])) "display:none;" else ""
+      tags$div(style = row_style,
+               fluidRow(
+                 column(1, tags$b(attr)),
+                 column(7, shinyjqui::orderInput(
+                   inputId    = paste0("keep_", attr),
+                   label      = "Keep (Drag to Order):",
+                   items      = kept_items,
+                   width      = "100%",
+                   item_class = "primary",
+                   connect    = paste0("remove_", attr)
+                 )),
+                 column(2, shinyjqui::orderInput(
+                   inputId     = paste0("remove_", attr),
+                   label       = "Remove:",
+                   items       = removed_items,
+                   width       = "100%",
+                   placeholder = "Drag here to remove",
+                   item_class  = "info",
+                   connect     = paste0("keep_", attr)
+                 ))
+               )
       )
     })
-    
-    incProgress(0.5)
-    
-    # SAMPLES UI
-    samples_all     <- all_samples()
-    ordered_samples <- state$samples
-    samples_remove  <- samples_all[!(samples_all %in% ordered_samples)]
-    
-    output$ui_source_s <- renderUI({
-      shinyjqui::orderInput('source_s', 'Available Samples:',items = ordered_samples,width = '100%', item_class = 'success', connect = 'dest_s')
-    })
-    
-    output$ui_dest_s <- renderUI({
-      shinyjqui::orderInput('dest_s', 'Drag to Remove Samples:',items = samples_remove,width = '100%', placeholder = 'Drag items here...',item_class = 'success', connect = 'source_s')
-    })
-    
-    # TESTS UI
-    comps_all     <- all_tests()
-    ordered_comps <- state$tests
-    comps_remove  <- comps_all[!(comps_all %in% ordered_comps)]
-    
-    output$ui_source_test <- renderUI({
-      shinyjqui::orderInput('source_test', 'Available Comparisons',items = ordered_comps,width = '100%', item_class = 'success', connect = 'dest_test')
-    })
-    
-    output$ui_dest_test <- renderUI({
-      shinyjqui::orderInput('dest_test', 'Drag to Remove Comparisons:',items = comps_remove,width = '100%', placeholder = 'Drag items here...',item_class = 'success', connect = 'source_test')
-    })
-    
-    incProgress(1)
-  })
+  )
+})
+
+# SAMPLES UI
+output$ui_source_s <- renderUI({
+  req(length(state$samples) > 0)
+  shinyjqui::orderInput(
+    'source_s', 'Available Samples:',
+    items = state$samples, width = '100%',
+    item_class = 'success', connect = 'dest_s'
+  )
+})
+
+output$ui_dest_s <- renderUI({
+  req(length(all_samples()) > 0)
+  samples_remove <- setdiff(all_samples(), state$samples)
+  shinyjqui::orderInput(
+    'dest_s', 'Drag to Remove Samples:',
+    items = samples_remove, width = '100%',
+    placeholder = 'Drag items here...',
+    item_class = 'success', connect = 'source_s'
+  )
+})
+
+# TESTS UI
+output$ui_source_test <- renderUI({
+  shinyjqui::orderInput(
+    'source_test', 'Available Comparisons',
+    items = state$tests, width = '100%',
+    item_class = 'success', connect = 'dest_test'
+  )
+})
+
+output$ui_dest_test <- renderUI({
+  comps_remove <- setdiff(all_tests(), state$tests)
+  shinyjqui::orderInput(
+    'dest_test', 'Drag to Remove Comparisons:',
+    items = comps_remove, width = '100%',
+    placeholder = 'Drag items here...',
+    item_class = 'success', connect = 'source_test'
+  )
 })
 
 
@@ -390,26 +418,28 @@ observe({
 observe({
   withProgress(message = "Updating the sample meta, sample list and comparison list ...", {
     req(length(all_group_list()) > 0)
-
+    
     expected_attrs <- names(all_group_list())
     req(length(expected_attrs) > 0)
-
-    md            <- MetaData_long()
+    
+    # Use cached keyed views for performance
+    md_by_meta_val <- md_dt_by_meta()
+    md_by_sample_val <- md_dt_by_sample()
     all_samples_vec <- all_samples()
     all_tests_vec <- all_tests()
-
+    
     # 1) read UI
     ui_meta    <- read_ui_meta(expected_attrs)
     ui_samples <- input$source_s
     ui_tests   <- input$source_test
-
+    
     if (any(sapply(ui_meta, is.null))) return()
     # if (is.null(ui_samples) || is.null(ui_tests)) return()
     if (is.null(ui_samples)) return()
-
+    
     # 2) check if UI has caught up with model
     visible_types <- names(state$hide_types)[!state$hide_types]
-
+    
     ui_matches_model <- (
       identical(
         lapply(ui_meta[visible_types], as.character),
@@ -419,25 +449,25 @@ observe({
         identical(as.character(ui_tests),   as.character(state$tests))
     )
     incProgress(0.3)
-
+    
     # 3) If we are updating the model, WAIT until UI matches
     if (updating_from_model() && !ui_matches_model) {
       return()   # freeze reconciliation until UI catches up
     }
-
+    
     # 4) If UI now matches model, release the lock
     if (updating_from_model() && ui_matches_model) {
       updating_from_model(FALSE)
       return()
     }
-
+    
     if (reset_all() && !ui_matches_model) {
       return()
     }
     reset_all(FALSE)
-
+    
     incProgress(0.8)
-
+    
     # 5) If not updating_from_model, proceed with reconciliation
     new_state <- reconcile_state(
       visible       = state$visible_types,
@@ -447,11 +477,12 @@ observe({
       ui_meta       = ui_meta,
       ui_samples    = ui_samples,
       ui_tests      = ui_tests,
-      md            = md,
+      md_by_meta    = md_by_meta_val,
+      md_by_sample  = md_by_sample_val,
       all_samples_vec = all_samples_vec,
       all_tests_vec = all_tests_vec
     )
-
+    
     # 6) identity gate vs current model
     same_meta <- identical(
       lapply(new_state$meta, as.character),
@@ -465,12 +496,12 @@ observe({
       as.character(new_state$tests),
       as.character(state$tests)
     )
-
+    
     if (same_meta && same_samples && same_tests) return()
-
+    
     # 7) commit model update
     updating_from_model(TRUE)
-
+    
     state$meta    <- new_state$meta
     state$samples <- new_state$samples
     state$tests   <- new_state$tests
@@ -513,46 +544,46 @@ output$selectGroupSample <- renderText({
 })
 
 
-output$summaryDetail <- renderPrint({
-  #### Meta detail ####
-  meta_detail <- vapply(names(state$meta), function(attr) {
-    initial <- state$initial_meta[[attr]]
-    current <- state$meta[[attr]]
-    removed <- setdiff(initial, current)
-    added   <- setdiff(current, initial)
-    
-    paste0(
-      attr, ": ",
-      length(current), "/", length(initial),
-      if (length(removed) > 0)
-        paste0(" | removed: ", paste(removed, collapse=", ")),
-      if (length(added) > 0)
-        paste0(" | added: ", paste(added, collapse=", "))
-    )
-  }, character(1))
-  
-  #### Comparison detail ####
-  removed_tests <- setdiff(state$initial_tests, state$tests)
-  added_tests   <- setdiff(state$tests, state$initial_tests)
-  
-  test_detail <- paste0(
-    "Comparisons: ",
-    length(state$tests), "/", length(state$initial_tests),
-    if (length(removed_tests) > 0)
-      paste0(" | removed: ", paste(removed_tests, collapse=", ")),
-    if (length(added_tests) > 0)
-      paste0(" | added: ", paste(added_tests, collapse=", "))
-  )
-  
-  # Use cat to print cleanly to the verbatim box
-  cat("--- Meta Detail ---\n")
-  cat(meta_detail, sep = "\n")
-  cat("\n--- Comparison Detail ---\n")
-  cat(test_detail)
-})
+# output$summaryDetail <- renderPrint({
+#   #### Meta detail ####
+#   meta_detail <- vapply(names(state$meta), function(attr) {
+#     initial <- state$initial_meta[[attr]]
+#     current <- state$meta[[attr]]
+#     removed <- setdiff(initial, current)
+#     added   <- setdiff(current, initial)
+#     
+#     paste0(
+#       attr, ": ",
+#       length(current), "/", length(initial),
+#       if (length(removed) > 0)
+#         paste0(" | removed: ", paste(removed, collapse=", ")),
+#       if (length(added) > 0)
+#         paste0(" | added: ", paste(added, collapse=", "))
+#     )
+#   }, character(1))
+#   
+#   #### Comparison detail ####
+#   removed_tests <- setdiff(state$initial_tests, state$tests)
+#   added_tests   <- setdiff(state$tests, state$initial_tests)
+#   
+#   test_detail <- paste0(
+#     "Comparisons: ",
+#     length(state$tests), "/", length(state$initial_tests),
+#     if (length(removed_tests) > 0)
+#       paste0(" | removed: ", paste(removed_tests, collapse=", ")),
+#     if (length(added_tests) > 0)
+#       paste0(" | added: ", paste(added_tests, collapse=", "))
+#   )
+#   
+#   # Use cat to print cleanly to the verbatim box
+#   cat("--- Meta Detail ---\n")
+#   cat(meta_detail, sep = "\n")
+#   cat("\n--- Comparison Detail ---\n")
+#   cat(test_detail)
+# })
 
 filter_data_long <- function(data_long, active_group_list, sample_order) {
-   if (!data.table::is.data.table(data_long)) {
+  if (!data.table::is.data.table(data_long)) {
     data.table::setDT(data_long)
   }
   
@@ -571,7 +602,6 @@ filter_data_long <- function(data_long, active_group_list, sample_order) {
 DataQCReactive <- reactive({
   DataIn = DataReactive()
   if (is.null(DataIn$groups)) {
-    DataIn = DataReactive()
     results_long = DataIn$results_long
     ProteinGeneName = DataIn$ProteinGeneName
     return(list('tmp_data_wide'=NULL,
@@ -584,7 +614,6 @@ DataQCReactive <- reactive({
     )
   } else {
     req(length(active_group_list()) > 0 )
-    DataIn = DataReactive()
     results_long = DataIn$results_long
     ProteinGeneName = DataIn$ProteinGeneName
     MetaData = DataIn$MetaData
@@ -607,25 +636,26 @@ DataQCReactive <- reactive({
     data.table::setkey(md_dt, sampleid)
     md_dt <- md_dt[.(input_samples), nomatch = NULL]
     
-    # 3. Optimize the column-wise factor conversion
-    # Identify character or factor columns once
+    # 3. Optimize the column-wise factor conversion    # Identify character or factor columns once
     cols_to_fix <- names(md_dt)[vapply(md_dt, function(x) is.character(x) || is.factor(x), logical(1))]
     
     # Update columns in-place using the 'set' function (zero-copy)
     for (col in cols_to_fix) {
       # Convert to character first, then to factor with unique levels
       data.table::set(md_dt, j = col, value = factor(as.character(md_dt[[col]]), 
-                                                        levels = unique(as.character(md_dt[[col]]))))
+                                                     levels = unique(as.character(md_dt[[col]]))))
     }
     
     tmp_sampleid = md_dt$sampleid
     tmp_data_wide = data_wide[, as.character(tmp_sampleid), drop = FALSE] %>% as.matrix()
     
     input_tests <- test_order()
-    tmp_results_long <- results_long %>%
-      dplyr::filter(test %in% input_tests) %>%
-      dplyr::mutate(test = factor(test, levels = input_tests)) %>%
-      dplyr::arrange(test)
+    # Vectorized data.table alternative to dplyr pipe
+    tmp_results_dt <- data.table::as.data.table(results_long)
+    tmp_results_dt <- tmp_results_dt[test %in% input_tests]
+    tmp_results_dt[, test := factor(test, levels = input_tests)]
+    data.table::setorder(tmp_results_dt, test)
+    tmp_results_long <- as.data.frame(tmp_results_dt)
     ProteinGeneName_filtered <- ProteinGeneName[ProteinGeneName$UniqueID %in% rownames(data_wide),]
     
     return(list('tmp_data_wide'=tmp_data_wide,

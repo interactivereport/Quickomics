@@ -44,87 +44,86 @@ plot_exp_control<-reactiveVal(0)
 gsea_control<-reactiveVal(0)
 ora_control<-reactiveVal(0)
 
-
 observeEvent(input$exp_unit, {
   Eu=input$exp_unit; exp_unit(Eu)
-  })
-
-observe({
-query <- parseQueryString(session$clientData$url_search)
-if (!is.null(query[['project']])) {
-  ProjectID = query[['project']]
-  validate(need(ProjectID %in% saved_projects$ProjectID , message = "Please pass a valid ProjectID from URL."))
-  ProjectInfo$ProjectID=ProjectID
-  ProjectInfo$Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
-  ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
-  ProjectInfo$ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
-  ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
-  ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
-  ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
-}
-if (!is.null(query[['unlisted']])) {
-  ProjectID = query[['unlisted']]
-  validate(need(file.exists(str_c("unlisted/",  ProjectID, ".csv")), 
-                message = "Please pass a valid ProjectID from URL. Files must be located in unlisted folder" ))
-  unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
-  ProjectInfo$ProjectID=ProjectID
-  ProjectInfo$Name=unlisted_project$Name
-  ProjectInfo$Species=unlisted_project$Species
-  ProjectInfo$ShortName=unlisted_project$ShortName
-  ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
-  ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
-  ProjectInfo$file3= paste("unlisted/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
-  if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
-  if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
-}
-if (!is.null(query[['serverfile']])) {
-  ProjectID = query[['serverfile']]
-  if (!is.null(server_dir)) {
-    validate(need(file.exists(str_c(server_dir, "/",  ProjectID, ".csv")), 
-                  message = "Please pass a valid ProjectID from URL. Files must be located in server file folder" ))
-    unlisted_project=read.csv(str_c(server_dir, "/",  ProjectID, ".csv"))
-    ProjectInfo$ProjectID=ProjectID
-    ProjectInfo$Name=unlisted_project$Name
-    ProjectInfo$Species=unlisted_project$Species
-    ProjectInfo$ShortName=unlisted_project$ShortName
-    ProjectInfo$file1= paste(server_dir, "/",   ProjectID, ".RData", sep = "")  #data file
-    ProjectInfo$file2= paste(server_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
-    ProjectInfo$file3= paste(server_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
-    if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
-    if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
-  }
-}
-if (!is.null(query[['testfile']])) {
-  ProjectID = query[['testfile']]
-  if (!is.null(test_dir)) {
-    validate(need(file.exists(str_c(test_dir, "/",  ProjectID, ".csv")), 
-                  message = "Please pass a valid ProjectID from URL. Files must be located in test file folder" ))
-    unlisted_project=read.csv(str_c(test_dir, "/",  ProjectID, ".csv"))
-    ProjectInfo$ProjectID=ProjectID
-    ProjectInfo$Name=unlisted_project$Name
-    ProjectInfo$Species=unlisted_project$Species
-    ProjectInfo$ShortName=unlisted_project$ShortName
-    ProjectInfo$file1= paste(test_dir, "/",   ProjectID, ".RData", sep = "")  #data file
-    ProjectInfo$file2= paste(test_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
-    ProjectInfo$file3= paste(test_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
-    if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
-    if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
-  }
-}
 })
 
 observe({
-if (input$sel_project!="") {
-  ProjectID=input$sel_project
-  ProjectInfo$ProjectID=ProjectID
-  ProjectInfo$Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
-  ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
-  ProjectInfo$ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
-  ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
-  ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
-  ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
-  # updateTabsetPanel(session, "Tables", selected = "Sample Table")
-}
+  query <- parseQueryString(session$clientData$url_search)
+  if (!is.null(query[['project']])) {
+    ProjectID = query[['project']]
+    validate(need(ProjectID %in% saved_projects$ProjectID , message = "Please pass a valid ProjectID from URL."))
+    ProjectInfo$ProjectID=ProjectID
+    ProjectInfo$Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
+    ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
+    ProjectInfo$ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
+    ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
+    ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
+    ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+  }
+  if (!is.null(query[['unlisted']])) {
+    ProjectID = query[['unlisted']]
+    validate(need(file.exists(str_c("unlisted/",  ProjectID, ".csv")), 
+                  message = "Please pass a valid ProjectID from URL. Files must be located in unlisted folder" ))
+    unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
+    ProjectInfo$ProjectID=ProjectID
+    ProjectInfo$Name=unlisted_project$Name
+    ProjectInfo$Species=unlisted_project$Species
+    ProjectInfo$ShortName=unlisted_project$ShortName
+    ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
+    ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
+    ProjectInfo$file3= paste("unlisted/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+    if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
+    if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
+  }
+  if (!is.null(query[['serverfile']])) {
+    ProjectID = query[['serverfile']]
+    if (!is.null(server_dir)) {
+      validate(need(file.exists(str_c(server_dir, "/",  ProjectID, ".csv")), 
+                    message = "Please pass a valid ProjectID from URL. Files must be located in server file folder" ))
+      unlisted_project=read.csv(str_c(server_dir, "/",  ProjectID, ".csv"))
+      ProjectInfo$ProjectID=ProjectID
+      ProjectInfo$Name=unlisted_project$Name
+      ProjectInfo$Species=unlisted_project$Species
+      ProjectInfo$ShortName=unlisted_project$ShortName
+      ProjectInfo$file1= paste(server_dir, "/",   ProjectID, ".RData", sep = "")  #data file
+      ProjectInfo$file2= paste(server_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
+      ProjectInfo$file3= paste(server_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+      if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
+      if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
+    }
+  }
+  if (!is.null(query[['testfile']])) {
+    ProjectID = query[['testfile']]
+    if (!is.null(test_dir)) {
+      validate(need(file.exists(str_c(test_dir, "/",  ProjectID, ".csv")), 
+                    message = "Please pass a valid ProjectID from URL. Files must be located in test file folder" ))
+      unlisted_project=read.csv(str_c(test_dir, "/",  ProjectID, ".csv"))
+      ProjectInfo$ProjectID=ProjectID
+      ProjectInfo$Name=unlisted_project$Name
+      ProjectInfo$Species=unlisted_project$Species
+      ProjectInfo$ShortName=unlisted_project$ShortName
+      ProjectInfo$file1= paste(test_dir, "/",   ProjectID, ".RData", sep = "")  #data file
+      ProjectInfo$file2= paste(test_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
+      ProjectInfo$file3= paste(test_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+      if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
+      if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
+    }
+  }
+})
+
+observe({
+  if (input$sel_project!="") {
+    ProjectID=input$sel_project
+    ProjectInfo$ProjectID=ProjectID
+    ProjectInfo$Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
+    ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
+    ProjectInfo$ShortName=saved_projects$ShortNames[saved_projects$ProjectID==ProjectID]
+    ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
+    ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
+    ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+    # updateTabsetPanel(session, "Tables", selected = "Sample Table")
+  }
 })
 
 observeEvent(ProjectInfo$ProjectID, {
@@ -152,7 +151,7 @@ html_geneset<-reactive({
   req(ProjectInfo)
   Species=ProjectInfo$Species
   string=str_replace(html_geneset0, "human", Species)
- #cat(string, "\n") #debug
+  #cat(string, "\n") #debug
   return(string)
 })
 output$html_geneset=renderUI({
@@ -184,9 +183,9 @@ output$html_geneset_exp=renderUI({
 output$ui.action <- renderUI({
   if (is.null(input$file1) ) return()
   tagList(
-  textInput("project_name", label="Rename Project", value=input$file1$name),
-  radioButtons("species",label="Select species", choices=c("human","mouse", "rat"), inline = F, selected="human"),
-  actionButton("customData", "Submit Data")
+    textInput("project_name", label="Rename Project", value=input$file1$name),
+    radioButtons("species",label="Select species", choices=c("human","mouse", "rat"), inline = F, selected="human"),
+    actionButton("customData", "Submit Data")
   )
 })
 
@@ -236,11 +235,20 @@ DataReactive <- reactive({
                    MetaData <- NULL
                    data_long <- NULL
                    # ProteinGeneName <- GetProteinGeneNames(ProjectInfo$species)
-                   results_long <- results_long %>% 
-                     mutate_if(is.factor, as.character) %>% 
-                     dplyr::select(UniqueID, test, logFC, P.Value, Adj.P.Value) %>%
-                     # mutate(UniqueID = stringr::str_replace(UniqueID, "\\.\\d+$", "")) %>%
-                     left_join(ProteinGeneName, by = "UniqueID")
+                   # Vectorized data.table alternative
+                   results_long <- data.table::as.data.table(results_long)
+                   # Convert factors to character
+                   for (col in names(results_long)) {
+                     if (is.factor(results_long[[col]])) {
+                       results_long[[col]] <- as.character(results_long[[col]])
+                     }
+                   }
+                   # Select specific columns
+                   results_long <- results_long[, .(UniqueID, test, logFC, P.Value, Adj.P.Value)]
+                   # Left join with ProteinGeneName using data.table
+                   pgn_dt <- data.table::as.data.table(ProteinGeneName)
+                   data.table::setkey(pgn_dt, UniqueID)
+                   results_long <- pgn_dt[results_long]
                    data_wide <- NULL
                    data_results <- NULL
                    comp_info <- NULL
@@ -252,29 +260,78 @@ DataReactive <- reactive({
                    if (!is.data.frame(data_wide)) {data_wide=data.frame(data_wide, check.names = FALSE)}  #change data_wide to data frame from numeric matrix if needed
                    if (!"Protein.ID" %in% names(ProteinGeneName)) {ProteinGeneName$Protein.ID=NA} #Add Protein.ID column as it is required for certain tools.
                    if (!is.character(MetaData$sampleid)) {
-                      MetaData$sampleid <- as.character(MetaData$sampleid)
+                     MetaData$sampleid <- as.character(MetaData$sampleid)
                    } 
                    if (!is.character(data_long$sampleid)) {
-                      data_long$sampleid <- as.character(data_long$sampleid)
+                     data_long$sampleid <- as.character(data_long$sampleid)
                    }
                    if (!is.character(data_results$id)) {
-                      data_results$id <- as.character(data_results$id)
+                     data_results$id <- as.character(data_results$id)
                    }
-                   MetaData_long <- MetaData %>%
-                     dplyr::select(-any_of(c("Order", "ComparePairs", "Treatments"))) %>%
-                     dplyr::mutate_all(as.character) %>%
-                     tidyr::pivot_longer(cols = -sampleid,  names_to = "type",values_to = "group")
+                   # Vectorized data.table alternative to dplyr
+                   DT_MetaData_long <- data.table::as.data.table(MetaData)
+                   cols_to_drop <- c("Order", "ComparePairs", "Treatments")
+                   cols_to_drop <- cols_to_drop[cols_to_drop %in% names(DT_MetaData_long)]
+                   if (length(cols_to_drop) > 0) {
+                     DT_MetaData_long[, (cols_to_drop) := NULL]
+                   }
+                   # Convert all columns to character
+                   DT_MetaData_long <- DT_MetaData_long[, lapply(.SD, as.character)]
+                   # Pivot longer (long format)
+                   DT_MetaData_long <- data.table::melt(DT_MetaData_long, 
+                                                     id.vars = "sampleid",
+                                                     variable.name = "type",
+                                                     value.name = "group")
                    
                    # Returns names of columns where is.numeric is TRUE
                    num_cols <- names(MetaData)[sapply(MetaData, is.numeric)]
                    
-                   results_long <-
-                     results_long %>% mutate_if(is.factor, as.character)  %>% dplyr::select(UniqueID, test, logFC, P.Value, Adj.P.Value) %>% 
-                     # mutate(UniqueID = stringr::str_replace(UniqueID, "\\.\\d+$", "")) %>%
-                     left_join(ProteinGeneName, by = "UniqueID")
-                   data_long <-
-                     data_long %>% mutate_if(is.factor, as.character)  %>% left_join(ProteinGeneName, by = "UniqueID") %>%
-                     left_join(MetaData %>% dplyr::select(-any_of(c('group', "Order", "ComparePairs", "Treatments"))), by = "sampleid")
+                   # Vectorized data.table alternative
+                   results_long <- data.table::as.data.table(results_long)
+                   # Convert factors to character
+                   for (col in names(results_long)) {
+                     if (is.factor(results_long[[col]])) {
+                       results_long[[col]] <- as.character(results_long[[col]])
+                     }
+                   }
+                   # Select specific columns
+                   results_long <- results_long[, .(UniqueID, test, logFC, P.Value, Adj.P.Value)]
+                   # Left join with ProteinGeneName using data.table
+                   pgn_dt <- data.table::as.data.table(ProteinGeneName)
+                   data.table::setkey(pgn_dt, UniqueID)
+                   results_long <- pgn_dt[results_long]
+                   # Vectorized data.table alternative
+                   data_long <- data.table::as.data.table(data_long)
+                   # Convert factors to character
+                   for (col in names(data_long)) {
+                     if (is.factor(data_long[[col]])) {
+                       data_long[[col]] <- as.character(data_long[[col]])
+                     }
+                   }
+                   # Ensure sampleid is character for join compatibility
+                   if (is.numeric(data_long$sampleid)) {
+                     data_long[, sampleid := as.character(sampleid)]
+                   }
+                   
+                   # Left join with ProteinGeneName
+                   # pgn_dt <- data.table::as.data.table(ProteinGeneName)
+                   # data.table::setkey(pgn_dt, UniqueID)
+                   data_long <- pgn_dt[data_long]
+                   
+                   # Left join with MetaData (drop unwanted columns first)
+                   md_dt <- data.table::as.data.table(MetaData)
+                   # Ensure sampleid is character for join compatibility
+                   if (is.numeric(md_dt$sampleid)) {
+                     md_dt[, sampleid := as.character(sampleid)]
+                   }
+                   # Drop unwanted columns (only if they exist)
+                   cols_to_drop_md <- c("group", "Order", "ComparePairs", "Treatments")
+                   cols_to_drop_md <- cols_to_drop_md[cols_to_drop_md %in% names(md_dt)]
+                   if (length(cols_to_drop_md) > 0) {
+                     md_dt[, (cols_to_drop_md) := NULL]
+                   }
+                   data.table::setkey(md_dt, sampleid)
+                   data_long <- md_dt[data_long, on = .(sampleid)]
                    
                    group_names <- as.character(unique((MetaData$Order[MetaData$Order != "" & !is.na(MetaData$Order)])))
                    if (length(group_names) == 0) {
@@ -294,7 +351,7 @@ DataReactive <- reactive({
                    all_samples(samples)
                    all_groups(group_names)
                    all_metadata(MetaData)
-                   MetaData_long(MetaData_long)
+                   MetaData_long(DT_MetaData_long)
                    numerical_attributes(num_cols)
                    all_tests(tests)
                    test_order(tests)
@@ -517,135 +574,123 @@ project_summary<-reactive({
     
   }
 })
-    
-    output$summary=renderText(project_summary())
-    
-    group_info<-reactive({
-      req(DataReactive()$MetaData)
-      DataIn <- DataReactive()
-      group_info<-DataIn$MetaData%>%group_by(group)%>%dplyr::count()
-      #browser() #bebug
-      return(t(group_info))
-    })
-    
-    output$group_table <- renderTable({
-      req(group_info())   # stops if NULL
-      group_info()
-    }, colnames = FALSE)
-    
-    
-    output$results <- DT::renderDataTable({
-      DataIn <- DataReactive()
-      req(DataIn$data_results) 
-      results <- DataIn$data_results %>%
-        dplyr::select(-one_of(c("Fasta.headers","UniqueID","id")))
-      results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
-      DT::datatable(results,  extensions = 'Buttons',
-                    options = list(
-                      dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
-                      pageLength = 15
-                    ),rownames= T)
-    })
-    
-    output$sample <-  DT::renderDT(server=FALSE,{
-      req(public_dataset)
-      req(DataReactive()$MetaData)
-      meta<-DataReactive()$MetaData%>%dplyr::select(-Order, -ComparePairs)
-      DT::datatable(meta,  extensions = 'Buttons',  options = list(
-        dom = 'lBfrtip', pageLength = 15,
-        buttons = list(
-          list(extend = "csv", text = "Download Page", filename = "Page_Samples",
-               exportOptions = list(modifier = list(page = "current"))),
-          list(extend = "csv", text = "Download All", filename = "All_Samples",
-               exportOptions = list(modifier = list(page = "all")))
-        )
-      ), rownames= F)
-    })
-    
-    observe({
-      if (public_dataset) {
-        showTab(inputId = "Tables", target = "sample_table")
-      } else {
-        hideTab(inputId = "Tables", target = "sample_table")
-      }
-    })
-    
-    output$comp_info <- renderUI ({
-      if (is.null(DataReactive()$comp_info)) return()
-      output$comparison <-  DT::renderDT(server=FALSE,{
-        DT::datatable(DataReactive()$comp_info,  extensions = 'Buttons',  options = list(
-          dom = 'lBfrtip', pageLength = 15,
-          buttons = list(
-            list(extend = "csv", text = "Download Page", filename = "Page_results",
-                 exportOptions = list(modifier = list(page = "current"))),
-            list(extend = "csv", text = "Download All", filename = "All_Results",
-                 exportOptions = list(modifier = list(page = "all")))
-          )
-        )
-        )
-      })
-      tagList(
-        h4("Comparison Table (shown only when RData file contains comp_info)"),
-        dataTableOutput('comparison')
+
+output$summary=renderText(project_summary())
+
+group_info<-reactive({
+  req(DataReactive()$MetaData)
+  DataIn <- DataReactive()
+  group_info<-DataIn$MetaData%>%group_by(group)%>%dplyr::count()
+  #browser() #bebug
+  return(t(group_info))
+})
+
+output$group_table <- renderTable({
+  req(group_info())   # stops if NULL
+  group_info()
+}, colnames = FALSE)
+
+
+output$results <- DT::renderDataTable({
+  DataIn <- DataReactive()
+  req(DataIn$data_results) 
+  results <- DataIn$data_results %>%
+    dplyr::select(-one_of(c("Fasta.headers","UniqueID","id")))
+  results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
+  DT::datatable(results,  extensions = 'Buttons',
+                options = list(
+                  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
+                  pageLength = 15
+                ),rownames= T)
+})
+
+output$sample <-  DT::renderDT(server=FALSE,{
+  req(public_dataset)
+  req(DataReactive()$MetaData)
+  meta<-DataReactive()$MetaData%>%dplyr::select(-Order, -ComparePairs)
+  DT::datatable(meta,  extensions = 'Buttons',  options = list(
+    dom = 'lBfrtip', pageLength = 15,
+    buttons = list(
+      list(extend = "csv", text = "Download Page", filename = "Page_Samples",
+           exportOptions = list(modifier = list(page = "current"))),
+      list(extend = "csv", text = "Download All", filename = "All_Samples",
+           exportOptions = list(modifier = list(page = "all")))
+    )
+  ), rownames= F)
+})
+
+observe({
+  if (public_dataset) {
+    showTab(inputId = "Tables", target = "sample_table")
+  } else {
+    hideTab(inputId = "Tables", target = "sample_table")
+  }
+})
+
+output$comp_info <- renderUI ({
+  if (is.null(DataReactive()$comp_info)) return()
+  output$comparison <-  DT::renderDT(server=FALSE,{
+    DT::datatable(DataReactive()$comp_info,  extensions = 'Buttons',  options = list(
+      dom = 'lBfrtip', pageLength = 15,
+      buttons = list(
+        list(extend = "csv", text = "Download Page", filename = "Page_results",
+             exportOptions = list(modifier = list(page = "current"))),
+        list(extend = "csv", text = "Download All", filename = "All_Results",
+             exportOptions = list(modifier = list(page = "all")))
       )
-    })
-    
-    output$data_wide <- DT::renderDataTable({
-      req(public_dataset)
-      data_w<-DataReactive()$data_wide
-      req(data_w)
-      data_w=round(data_w*1000)/1000
-      DT::datatable(data_w, extensions = c('FixedColumns', 'Buttons'),
-                    options = list(
-                      pageLength = 15,
-                      dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
-                      scrollX = TRUE,
-                      fixedColumns = list(leftColumns = 1)
-                    ))
-    })
-    
-    observe({
-      if (public_dataset) {
-        showTab(inputId = "Tables", target = "data_table")
-      } else {
-        hideTab(inputId = "Tables", target = "data_table")
-      }
-    })
-    
-    output$ProteinGeneName <- DT::renderDataTable({
-      if (is.null(DataReactive()$ProteinGeneName)) return()
-      DT::datatable(DataReactive()$ProteinGeneName, extensions = 'Buttons', options = list(
-        dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
-        pageLength = 15),rownames= FALSE)
-    })
-    
-    observeEvent(input$results, {
-      DataIn <- DataReactive()
-      results = DataIn$data_results 
-      results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
-      saved_table$results <- results
-    })
-    
-    observeEvent(input$sample, {
-      saved_table$sample <- DataReactive()$MetaData
-    })
-    
-    observeEvent(input$data_wide, {
-      saved_table$data <- DataReactive()$data_wide
-    })
-    
-    observeEvent(input$ProteinGeneName, {
-      saved_table$ProteinGeneName <- DataReactive()$ProteinGeneName
-    })
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    )
+    )
+  })
+  tagList(
+    h4("Comparison Table (shown only when RData file contains comp_info)"),
+    dataTableOutput('comparison')
+  )
+})
+
+output$data_wide <- DT::renderDataTable({
+  req(public_dataset)
+  data_w<-DataReactive()$data_wide
+  req(data_w)
+  data_w=round(data_w*1000)/1000
+  DT::datatable(data_w, extensions = c('FixedColumns', 'Buttons'),
+                options = list(
+                  pageLength = 15,
+                  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
+                  scrollX = TRUE,
+                  fixedColumns = list(leftColumns = 1)
+                ))
+})
+
+observe({
+  if (public_dataset) {
+    showTab(inputId = "Tables", target = "data_table")
+  } else {
+    hideTab(inputId = "Tables", target = "data_table")
+  }
+})
+
+output$ProteinGeneName <- DT::renderDataTable({
+  if (is.null(DataReactive()$ProteinGeneName)) return()
+  DT::datatable(DataReactive()$ProteinGeneName, extensions = 'Buttons', options = list(
+    dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
+    pageLength = 15),rownames= FALSE)
+})
+
+observeEvent(input$results, {
+  DataIn <- DataReactive()
+  results = DataIn$data_results 
+  results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
+  saved_table$results <- results
+})
+
+observeEvent(input$sample, {
+  saved_table$sample <- DataReactive()$MetaData
+})
+
+observeEvent(input$data_wide, {
+  saved_table$data <- DataReactive()$data_wide
+})
+
+observeEvent(input$ProteinGeneName, {
+  saved_table$ProteinGeneName <- DataReactive()$ProteinGeneName
+})
