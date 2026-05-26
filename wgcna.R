@@ -113,8 +113,8 @@ get_wgcna_table <-function(wgcna, ME_name_updated, ProteinGeneName, gene_label) 
           gene_group[.x]
         )
       ))
-  )  %>%
-  dplyr::select(color = ME_name, n_gene, copy, gene_group)
+    )  %>%
+    dplyr::select(color = ME_name, n_gene, copy, gene_group)
   return(t2)
 }
 
@@ -291,14 +291,14 @@ wgcna_ui <- function(id) {
                                                selectizeInput(ns("WGCNA_trait_var"),label="Select attributes", choices = NULL,multiple = TRUE,options = list(placeholder = "Choose one or more attributes")),
                                                uiOutput(ns("attribute_settings_ui")),
                                                actionButton(ns("plot_module_trait"),"Plot Module Trait Correlation")
-                                               ),
+                              ),
                               conditionalPanel(ns = ns, "input.Module_Trait=='Hub Gene Identification Table' || input.Module_Trait == 'Hub Gene Identification Plot'",
                                                selectInput(ns("WGCNA_trait"),label="Select a trait", choices = NULL ,multiple = FALSE),
                                                selectInput(ns("WGCNA_module"),label="Select a module (optional)", choices = NULL ,multiple = FALSE),
                                                actionButton(ns("plot_module_hub"),"Run")
-                                               )
                               )
              )
+           )
     ),
     column(9,
            tabsetPanel(id=ns("WGCNA_tabset"),
@@ -651,12 +651,13 @@ wgcna_server <- function(id, parent_session) {
                         moduleTraitCor <- reactiveVal()
                         df_hub_gene <- reactiveVal() 
                         module_trait_plot <- reactiveVal(NULL)
-
+                        wgcna_data <- reactiveVal(NULL)  # list(wgcna, dataExpr, picked_power, sft)
+                        
                         observe({
                           req(ProjectInfo)
                           working_project(ProjectInfo$ProjectID)
                         })
-
+                        
                         observe({
                           DataIn <- DataReactive()
                           req(DataIn$data_wide)
@@ -706,207 +707,32 @@ wgcna_server <- function(id, parent_session) {
                           output$plot_MMvsConnectivity <- renderPlotly({NULL})
                         })
                         
-                        # Display precomputed results if exists.
-                        observeEvent(list(working_project(),input$WGCNAgenelable,parent_session$input$menu == "wgcna"), {
+                        # Load precomputed results if they exist; store into wgcna_data()
+                        observeEvent(list(working_project(), parent_session$input$menu == "wgcna"), {
                           req(ProjectInfo, DataReactive(), parent_session$input$menu == "wgcna")
-                          ProjectID <- ProjectInfo$ProjectID
                           wgcnafile <- ProjectInfo$file3
                           load_wgcna_file <- file.path(dirname(wgcnafile), sub("^wgcna", "load", basename(wgcnafile)))
                           
-                          gene_label <- input$WGCNAgenelable
-                          DataIn = DataReactive()
-                          req(DataIn$ProteinGeneName)
-                          ProteinGeneName  <- DataIn$ProteinGeneName
-                          
                           wgcna_out <- tryCatch(WGCNAReactive(), error = function(e) NULL)
-                          if (! is.null(wgcna_out)) {
-                            wgcna <- wgcna_out$netwk
-                            dataExpr <- wgcna_out$dataExpr
-                            picked_power <- wgcna_out$picked_power
-                            if ("sft" %in% names(wgcna_out)) {
-                              sft <- wgcna_out$sft
-                            }
-                          } else if(file.exists(wgcnafile) & file.exists(load_wgcna_file)) {
+                          if (!is.null(wgcna_out)) {
+                            wgcna_data(list(
+                              wgcna = wgcna_out$netwk,
+                              dataExpr = wgcna_out$dataExpr,
+                              picked_power = wgcna_out$picked_power,
+                              sft = if ("sft" %in% names(wgcna_out)) wgcna_out$sft else NULL
+                            ))
+                          } else if (file.exists(wgcnafile) & file.exists(load_wgcna_file)) {
                             load(wgcnafile)
                             load(load_wgcna_file)
-                            wgcna <- netwk
-                          }
-                          
-                          if(exists('wgcna')){
-                            mergedColors = labels2colors(wgcna$colors)
-                            
-                            MEs <- wgcna$MEs
-                            moduleColors <- wgcna$colors
-                            MEs_updated(rename_MEs_blockwise(MEs, moduleColors))
-                            MEs_name_updated(colnames(MEs_updated()))
-                            
-                            # showTab(session = session, inputId = "WGCNA_tabset", target = "Module-Trait Relationships")
-                            output$Dendrogram <- renderPlot({
-                              withProgress(message = "Creating plot using pre-calculated data", value = 0, {
-                                plotDendroAndColors(
-                                  wgcna$dendrograms[[1]],
-                                  mergedColors[wgcna$blockGenes[[1]]],
-                                  "Module colors",
-                                  dendroLabels = FALSE,
-                                  hang = 0.03,
-                                  addGuide = TRUE,
-                                  guideHang = 0.05 )
-                              })
-                            })
-
-                            # t0: merge WGCNA output with ProteinGeneName so that genes can be shown as UniqueID or Gene.Name
-                            t2 <- get_wgcna_table(wgcna, MEs_name_updated(), ProteinGeneName, gene_label)
-                            df_gene_clusters(t2)
-                            
-                            output$gene_cluster <- DT::renderDT({
-                              DT::datatable(t2,
-                                            rownames = FALSE,
-                                            escape = FALSE,
-                                            selection = "none",
-                                            colnames=c("Cluster", "Number of genes", "Action","Genes in cluster"),
-                                            extensions = 'Buttons', 
-                                            options = list(dom = "Blfrtip", 
-                                                           buttons = c("csv", "excel", "print")
-                                            )
-                              )
-                            })
-                            
-                            output$selectGroupSampleWGCNA <- renderUI({
-                              total_samples <- ncol(DataIn$data_wide)
-                              kept_samples  <- nrow(dataExpr)
-                              summary_text  <- paste0(
-                                "Selected ", kept_samples, " / ", total_samples, " Samples. ",
-                                "(Update Selection at: Top Menu → Groups and Samples.)"
-                              )
-                              tagList(
-                                tags$p(summary_text),
-                                tags$hr()
-                              )
-                            })
-                            
-                            data_wide = DataIn$data_wide[, rownames(dataExpr)]
-                            data_wide <- na.omit(data_wide)
-                            diff <- apply(data_wide, 1, sd, na.rm = TRUE)/(rowMeans(data_wide) + median(rowMeans(data_wide)))
-                            
-                            output$gene_variance_distribution_plot <- renderPlot({
-                              plot_gene_variance_distribution(diff)
-                            })
-                            
-                            output$sample_cluster_plot <- renderPlot({
-                              plot_sample_clustering(data_wide)
-                            })
-                            output$MEs <- DT::renderDT({
-                              DT::datatable(
-                                MEs_updated(),  extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
-                                options = list(    dom = 'lBfrtip', pageLength = 15,
-                                                   buttons = list(
-                                                     list(extend = "csv", text = "Download Page", filename = "Page_results",
-                                                          exportOptions = list(modifier = list(page = "current"))),
-                                                     list(extend = "csv", text = "Download All", filename = "All_Results",
-                                                          exportOptions = list(modifier = list(page = "all")))
-                                                   )
-                                )) %>% 
-                                formatSignif(columns=names(MEs_updated()), digits=3)
-                            })
-                            
-                            output$Eigenene_Network <- renderPlot({
-                              MEs <- MEs_updated()
-                              validate(need(ncol(MEs) > 2,"Eigengene Network requires at least 3 module eigengenes."))
-                              
-                              plotEigengeneNetworks(MEs, "Eigengene Network", 
-                                                    marDendro = c(2,3,2,1),
-                                                    marHeatmap =c(6,8,2,1),
-                                                    plotDendrograms = TRUE, 
-                                                    plotHeatmaps = TRUE)
-                            })
-##############                            
-                            wgcna_gct <- reactive({
-                              DataIn <- DataReactive()
-                              req(DataIn$data_wide)
-                              data_wide <- DataIn$data_wide
-                              data_wide = data_wide[, rownames(MEs_updated())]
-                              data_wide <- na.omit(data_wide)
-                              ProteinGeneName <- DataIn$ProteinGeneName
-                              MetaData <- DataIn$MetaData
-                              MetaData = MetaData[, setdiff(colnames(MetaData), c("Order", "ComparePairs"))] %>%
-                                dplyr::filter(sampleid %in% rownames(MEs_updated()))
-                              
-                              module_map <- tibble::tibble(
-                                ME_name = MEs_name_updated(),
-                                color = sub("^ME\\d+_", "", MEs_name_updated()),
-                              )
-                              
-                              t2 <- tibble::tibble(
-                                UniqueID = names(wgcna$colors),
-                                color = labels2colors(wgcna$colors)
-                              ) %>% 
-                                dplyr::left_join(module_map, by = "color") %>%
-                                dplyr::inner_join(ProteinGeneName, by = "UniqueID") %>%
-                                dplyr::select(-color)
-                              
-                              data.in <- data_wide[t2$UniqueID,]
-                              
-                              gct_data <- create_gct_object(data.in, t2, MetaData)
-                              gct_data
-                            })
-                            
-                            observeEvent(input$wgcna_gct, {
-                              saved_gcts$wgcna_gct <- wgcna_gct()
-                            })                               
-##############                            
-                            if (exists("sft")) {
-                              powers(sft$fitIndices$Power)
-                              
-                              output$soft_threshold_table_note <- renderText({
-                                HTML("In WGCNA, soft‑thresholding power (β) controls how strongly you emphasize large correlations and suppress small ones when building the adjacency matrix. The table below showed the result for all β candidates tested. <b>The row is highlighted for the picked power β.<b>")
-                              })
-                              
-                              output$soft_threshold_table <- DT::renderDT({
-                                datatable(
-                                  sft$fitIndices,
-                                  rownames = FALSE, extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
-                                  options = list(dom = 'lBfrtip', pageLength = 15,
-                                                 buttons = list(
-                                                   list(extend = "csv", text = "Download Page", filename = "Page_results", 
-                                                        exportOptions = list(modifier = list(page = "current"))),
-                                                   list(extend = "csv", text = "Download All", filename = "All_Results",
-                                                        exportOptions = list(modifier = list(page = "all")))
-                                                   )
-                                                 )
-                                  ) %>% 
-                                  formatSignif(
-                                    columns = setdiff(names(Filter(is.numeric, sft$fitIndices)), "Power"),
-                                    digits = 3
-                                  ) %>% formatStyle(columns="Power", target="row", backgroundColor = styleEqual(picked_power, "skyblue", default='white'))
-                              })
-                              
-                              output$soft_threshold_diagnose_plot_note <- renderUI({
-                                HTML("
-                                In practice, soft‑thresholding power (β) is chosen with a balanced good scale‑free fit and reasonable connectivity.
-                                WGCNA recommends choosing the lowest power where R² ≥ 0.8 (or 0.9 for stricter networks). 
-                                And typical good range of mean connectivity is 20–200, depending on dataset size.
-                                <br><br>
-                                
-                                <b>Practical decision rules:</b><br>
-                                -- If R² rises and then plateaus, pick the lowest β at the plateau.<br>
-                                -- If R² rises slowly but connectivity is still good, pick β = 6–10 (signed).<br>
-                                -- If R² is flat and connectivity collapses at high β, pick a moderate β (6–8) to avoid oversparsifying.<br>
-                                -- If R² keeps rising up to the max tested power, increase the tested range (e.g., 1–30), but still avoid β > 20 unless absolutely necessary.<br>
-                                -- Ensure mean connectivity is not too low. It should > ~ 20 (for typical datasets).<br>
-                                -- If estimated power is NA, use any number in the typical β range (6–12) for signed networks.
-                                     ")
-                              })
-                              
-                              output$soft_threshold_diagnose_plot <- renderPlot({
-                                plot_soft_threshold_diagnose(sft, powers())
-                              })
-                            } else if (input$WGCNA_tabset == 'WGCNA_QC' && input$WGCNA_QC == "Soft-Thresholding Power") {
-                              showNotification("Pre-calculated wgcna file does not contain the soft_thresholding power testing result. No results loaded.", duration = 5, type = "warning")
-                            }
+                            wgcna_data(list(
+                              wgcna = netwk,
+                              dataExpr = dataExpr,
+                              picked_power = picked_power,
+                              sft = if (exists("sft")) sft else NULL
+                            ))
                           } else if (parent_session$input$menu == "wgcna") {
-                            # hideTab(session = session, inputId = "WGCNA_tabset", target = "Module-Trait Relationships")
-                            print("no pre-computed wgcna file available and cannot load wgcna results")
-                            showNotification("Cannot find pre-calculated wgcna file, no WGCNA results loaded.", duration = 5, type = "warning")
+                            showNotification("Cannot find pre-calculated wgcna file, no WGCNA results loaded.",
+                                             duration = 5, type = "warning")
                           }
                         })
                         
@@ -918,7 +744,6 @@ wgcna_server <- function(id, parent_session) {
                           withProgress(message = "Running WGCNA", detail = 'This may take a while...', value = 0.2, {
                             # what if the user-imported data doesn't have $data_wide, $ProjectID..etc?
                             req(ProjectInfo, DataReactive()$data_wide, ProjectInfo$ProjectID)
-                            output$selectGroupSampleWGCNA <- renderUI(shared_header_content())
                             DataIn = DataQCReactive()
                             data_wide <- na.omit(DataIn$tmp_data_wide)
                             sample_list = as.character(DataIn$tmp_sampleid)
@@ -932,7 +757,7 @@ wgcna_server <- function(id, parent_session) {
                               data_wide=data_wide[1:10000, ] 
                               cat("reduce gene size to 10K for project ", ProjectID, "\n")
                             } 
-
+                            
                             print(paste0("**** dim of dataExpr after-preprocssing is ****", dim(data_wide)))
                             
                             default_n_gene <- nrow(data_wide)
@@ -1006,23 +831,51 @@ wgcna_server <- function(id, parent_session) {
                           saved_table$Eigengene <- MEs_updated()
                         })
                         
-                        # Show WGCNA QC and result tables and plots #####
-                        # use input$WGCNAReactive() as event handler to ensure observeEvent() depends on it only
-                        # and does not directly depends on input$, which ensure WGCNAReactive() will be calculated first.
-                        observeEvent(input$plotwgcna,{
-                          req(DataReactive(),WGCNAReactive())
+                        # After calculation completes, store results into wgcna_data()
+                        observeEvent(input$plotwgcna, {
+                          req(DataReactive(), WGCNAReactive())
                           wgcna_out <- WGCNAReactive()
-                          wgcna <- wgcna_out$netwk
-                          dataExpr <- wgcna_out$dataExpr
-                          picked_power <- wgcna_out$picked_power
-                          DataIn = DataReactive()
-                          mergedColors = labels2colors(wgcna$colors)
+                          wgcna_data(list(
+                            wgcna = wgcna_out$netwk,
+                            dataExpr = wgcna_out$dataExpr,
+                            picked_power = wgcna_out$picked_power,
+                            sft = wgcna_out$sft
+                          ))
+                        })
+                        
+                        # ============================================================
+                        # Unified display: renders all outputs from wgcna_data()
+                        # Replaces the duplicate display code in both precomputed
+                        # and calculated blocks
+                        # ============================================================
+                        observeEvent(list(wgcna_data(), input$WGCNAgenelable), {
+                          req(wgcna_data(), DataReactive())
+                          wd <- wgcna_data()
+                          wgcna        <- wd$wgcna
+                          dataExpr     <- wd$dataExpr
+                          picked_power <- wd$picked_power
+                          sft          <- wd$sft
+                          DataIn       <- DataReactive()
+                          gene_label   <- input$WGCNAgenelable
+                          ProteinGeneName <- DataIn$ProteinGeneName
+                          req(ProteinGeneName)
                           
-                          MEs <- wgcna$MEs
-                          moduleColors <- wgcna$colors # here are numbers
-                          MEs_updated(rename_MEs_blockwise(MEs, moduleColors))
+                          mergedColors <- labels2colors(wgcna$colors)
+                          MEs_updated(rename_MEs_blockwise(wgcna$MEs, wgcna$colors))
                           MEs_name_updated(colnames(MEs_updated()))
-
+                          
+                          # Sample summary header
+                          output$selectGroupSampleWGCNA <- renderUI({
+                            total_samples <- ncol(DataIn$data_wide)
+                            kept_samples  <- nrow(dataExpr)
+                            summary_text  <- paste0(
+                              "Selected ", kept_samples, " / ", total_samples, " Samples. ",
+                              "(Update Selection at: Top Menu → Groups and Samples.)"
+                            )
+                            tagList(tags$p(summary_text), tags$hr())
+                          })
+                          
+                          # Dendrogram
                           output$Dendrogram <- renderPlot({
                             plotDendroAndColors(
                               wgcna$dendrograms[[1]],
@@ -1031,144 +884,62 @@ wgcna_server <- function(id, parent_session) {
                               dendroLabels = FALSE,
                               hang = 0.03,
                               addGuide = TRUE,
-                              guideHang = 0.05 )
+                              guideHang = 0.05)
                           })
                           
-                          # generate table showing clustered genes #
-                          ProteinGeneName  <- DataIn$ProteinGeneName
-                          gene_label <- input$WGCNAgenelable
-                          
+                          # Gene cluster summary table
                           t2 <- get_wgcna_table(wgcna, MEs_name_updated(), ProteinGeneName, gene_label)
                           df_gene_clusters(t2)
-
+                          
                           output$gene_cluster <- DT::renderDT({
                             DT::datatable(t2,
                                           rownames = FALSE,
                                           escape = FALSE,
                                           selection = "none",
-                                          colnames=c("Cluster", "Number of genes", "Action","Genes in cluster"),
-                                          extensions = 'Buttons', 
-                                          options = list(dom = "Blfrtip", 
-                                                         buttons = c("csv", "excel", "print")
-                                          )
-                            )
+                                          colnames = c("Cluster", "Number of genes", "Action", "Genes in cluster"),
+                                          extensions = 'Buttons',
+                                          options = list(dom = "Blfrtip",
+                                                         buttons = c("csv", "excel", "print")))
                           })
                           
+                          # Module eigengene table
                           output$MEs <- DT::renderDT({
-                            DT::datatable(MEs_updated(),  
-                                          extensions = 'Buttons', 
-                                          escape = FALSE, 
-                                          selection = 'none', 
-                                          class = 'cell-border strip hover',
-                                          options = list(dom = "Blfrtip", 
-                                                         buttons = c("csv", "excel", "print")
-                                                         )
-                                          ) %>% 
-                              formatSignif(columns=names(MEs_updated()), digits=3)
+                            DT::datatable(
+                              MEs_updated(),
+                              extensions = 'Buttons',
+                              escape = FALSE,
+                              selection = 'none',
+                              class = 'cell-border strip hover',
+                              options = list(
+                                dom = 'lBfrtip',
+                                pageLength = 15,
+                                buttons = list(
+                                  list(extend = "csv", text = "Download Page", filename = "Page_results",
+                                       exportOptions = list(modifier = list(page = "current"))),
+                                  list(extend = "csv", text = "Download All", filename = "All_Results",
+                                       exportOptions = list(modifier = list(page = "all")))
+                                )
+                              )
+                            ) %>%
+                              formatSignif(columns = names(MEs_updated()), digits = 3)
                           })
                           
+                          # Eigengene network
                           output$Eigenene_Network <- renderPlot({
                             MEs <- MEs_updated()
-                            validate(need(ncol(MEs) > 2,"Eigengene Network requires at least 2 module eigengenes."))
-                            plotEigengeneNetworks(MEs,
-                                                  "Eigengene Network",
-                                                  marDendro = c(2,3,2,1),
-                                                  marHeatmap = c(6,8,2,1),
+                            validate(need(ncol(MEs) > 2, "Eigengene Network requires at least 3 module eigengenes."))
+                            plotEigengeneNetworks(MEs, "Eigengene Network",
+                                                  marDendro = c(2, 3, 2, 1),
+                                                  marHeatmap = c(6, 8, 2, 1),
                                                   plotDendrograms = TRUE,
-                                                  plotHeatmaps = TRUE
-                                                  )
+                                                  plotHeatmaps = TRUE)
                           })
                           
-                          ##############                            
-                          wgcna_gct <- reactive({
-                            DataIn <- DataReactive()
-                            req(DataIn$data_wide)
-                            data_wide <- DataIn$data_wide
-                            data_wide = data_wide[, rownames(MEs_updated())]
-                            data_wide <- na.omit(data_wide)
-                            ProteinGeneName <- DataIn$ProteinGeneName
-                            MetaData <- DataIn$MetaData
-                            MetaData = MetaData[, setdiff(colnames(MetaData), c("Order", "ComparePairs"))] %>%
-                              dplyr::filter(sampleid %in% rownames(MEs_updated()))
-                            
-                            module_map <- tibble::tibble(
-                              ME_name = MEs_name_updated(),
-                              color = sub("^ME\\d+_", "", MEs_name_updated()),
-                            )
-                            
-                            t2 <- tibble::tibble(
-                              UniqueID = names(wgcna$colors),
-                              color = labels2colors(wgcna$colors)
-                            ) %>% 
-                              dplyr::left_join(module_map, by = "color") %>%
-                              dplyr::inner_join(ProteinGeneName, by = "UniqueID") %>%
-                              dplyr::select(-color)
-                            
-                            data.in <- data_wide[t2$UniqueID,]
-                            
-                            gct_data <- create_gct_object(data.in, t2, MetaData)
-                            gct_data
-                          })
-                          
-                          observeEvent(input$wgcna_gct, {
-                            saved_gcts$wgcna_gct <- wgcna_gct()
-                          })                               
-                          ##############                            
-                          
-                          if ("sft" %in% names(wgcna_out)) {
-                            sft <- wgcna_out$sft
-                            output$soft_threshold_table_note <- renderText({
-                              HTML("In WGCNA, soft‑thresholding power (β) controls how strongly you emphasize large correlations and suppress small ones when building the adjacency matrix. The table below showed the result for all β candidates tested. <b>The row is highlighted for the picked power β.<b>")
-                            })
-                            
-                            output$soft_threshold_table <- DT::renderDT({
-                              datatable(
-                                sft$fitIndices,
-                                rownames = FALSE, extensions = 'Buttons', escape = FALSE, selection = 'none', class = 'cell-border strip hover',
-                                options = list(dom = 'lBfrtip', pageLength = 15,
-                                               buttons = list(
-                                                 list(extend = "csv", text = "Download Page", filename = "Page_results", 
-                                                      exportOptions = list(modifier = list(page = "current"))),
-                                                 list(extend = "csv", text = "Download All", filename = "All_Results",
-                                                      exportOptions = list(modifier = list(page = "all")))
-                                               )
-                                )
-                              ) %>% 
-                                formatSignif(
-                                  columns = setdiff(names(Filter(is.numeric, sft$fitIndices)), "Power"),
-                                  digits = 3
-                                ) %>% formatStyle(columns="Power", target="row", backgroundColor = styleEqual(picked_power, "skyblue", default='white'))
-                            })
-                            
-                            output$soft_threshold_diagnose_plot_note <- renderUI({
-                              HTML("
-                                In practice, soft‑thresholding power (β) is chosen with a balanced good scale‑free fit and reasonable connectivity.
-                                WGCNA recommends choosing the lowest power where R² ≥ 0.8 (or 0.9 for stricter networks). 
-                                And typical good range of mean connectivity is 20–200, depending on dataset size.
-                                <br><br>
-                                
-                                <b>Practical decision rules:</b><br>
-                                -- If R² rises and then plateaus, pick the lowest β at the plateau.<br>
-                                -- If R² rises slowly but connectivity is still good, pick β = 6–10 (signed).<br>
-                                -- If R² is flat and connectivity collapses at high β, pick a moderate β (6–8) to avoid oversparsifying.<br>
-                                -- If R² keeps rising up to the max tested power, increase the tested range (e.g., 1–30), but still avoid β > 20 unless absolutely necessary.<br>
-                                -- Ensure mean connectivity is not too low. It should > ~ 20 (for typical datasets).<br>
-                                -- If estimated power is NA, use any number in the typical β range (6–12) for signed networks.
-                                     ")
-                            })
-                            
-                            output$soft_threshold_diagnose_plot <- renderPlot({
-                              plot_soft_threshold_diagnose(sft, powers())
-                            })
-                          } else if (input$WGCNA_QC == "Soft-Thresholding Power") {
-                            showNotification("Pre-calculated wgcna file does not contain the soft_thresholding power testing result. No results loaded.", duration = 5, type = "warning")
-                            # output$soft_threshold_table <- NULL
-                            # output$soft_threshold_diagnose_plot <- NULL
-                          }
-                          
-                          data_wide = DataIn$data_wide[, rownames(dataExpr)]
+                          # QC: gene variance distribution and sample clustering
+                          data_wide <- DataIn$data_wide[, rownames(dataExpr)]
                           data_wide <- na.omit(data_wide)
-                          diff <- apply(data_wide, 1, sd, na.rm = TRUE)/(rowMeans(data_wide) + median(rowMeans(data_wide)))
+                          diff <- apply(data_wide, 1, sd, na.rm = TRUE) /
+                            (rowMeans(data_wide) + median(rowMeans(data_wide)))
                           
                           output$gene_variance_distribution_plot <- renderPlot({
                             plot_gene_variance_distribution(diff)
@@ -1178,6 +949,76 @@ wgcna_server <- function(id, parent_session) {
                             plot_sample_clustering(data_wide)
                           })
                           
+                          # Soft threshold outputs (only if sft data is available)
+                          if (!is.null(sft)) {
+                            powers(sft$fitIndices$Power)
+                            
+                            output$soft_threshold_table <- DT::renderDT({
+                              datatable(
+                                sft$fitIndices,
+                                rownames = FALSE,
+                                extensions = 'Buttons',
+                                escape = FALSE,
+                                selection = 'none',
+                                class = 'cell-border strip hover',
+                                options = list(
+                                  dom = 'lBfrtip',
+                                  pageLength = 15,
+                                  buttons = list(
+                                    list(extend = "csv", text = "Download Page", filename = "Page_results",
+                                         exportOptions = list(modifier = list(page = "current"))),
+                                    list(extend = "csv", text = "Download All", filename = "All_Results",
+                                         exportOptions = list(modifier = list(page = "all")))
+                                  )
+                                )
+                              ) %>%
+                                formatSignif(
+                                  columns = setdiff(names(Filter(is.numeric, sft$fitIndices)), "Power"),
+                                  digits = 3
+                                ) %>%
+                                formatStyle(columns = "Power", target = "row",
+                                            backgroundColor = styleEqual(picked_power, "skyblue", default = 'white'))
+                            })
+                            
+                            output$soft_threshold_diagnose_plot <- renderPlot({
+                              plot_soft_threshold_diagnose(sft, powers())
+                            })
+                          }
+                        })
+                        
+                        # Top-level wgcna_gct reactive (no longer nested inside observeEvent)
+                        wgcna_gct <- reactive({
+                          req(wgcna_data(), DataReactive(), MEs_updated(), MEs_name_updated())
+                          wd <- wgcna_data()
+                          DataIn <- DataReactive()
+                          req(DataIn$data_wide)
+                          data_wide <- DataIn$data_wide
+                          data_wide <- data_wide[, rownames(MEs_updated())]
+                          data_wide <- na.omit(data_wide)
+                          ProteinGeneName <- DataIn$ProteinGeneName
+                          MetaData <- DataIn$MetaData
+                          MetaData <- MetaData[, setdiff(colnames(MetaData), c("Order", "ComparePairs"))] %>%
+                            dplyr::filter(sampleid %in% rownames(MEs_updated()))
+                          
+                          module_map <- tibble::tibble(
+                            ME_name = MEs_name_updated(),
+                            color = sub("^ME\\d+_", "", MEs_name_updated())
+                          )
+                          
+                          t2 <- tibble::tibble(
+                            UniqueID = names(wd$wgcna$colors),
+                            color = labels2colors(wd$wgcna$colors)
+                          ) %>%
+                            dplyr::left_join(module_map, by = "color") %>%
+                            dplyr::inner_join(ProteinGeneName, by = "UniqueID") %>%
+                            dplyr::select(-color)
+                          
+                          data.in <- data_wide[t2$UniqueID, ]
+                          create_gct_object(data.in, t2, MetaData)
+                        })
+                        
+                        observeEvent(input$wgcna_gct, {
+                          saved_gcts$wgcna_gct <- wgcna_gct()
                         })
                         
                         observeEvent(input$runORA_trigger, {
@@ -1244,7 +1085,7 @@ wgcna_server <- function(id, parent_session) {
                           ]
                           base_levels <- sapply(non_numerical_attrs, function(a) input[[paste0("base_", a)]])
                           trait_data(build_traits_matrix(MetaData, attrs, base_levels))
-
+                          
                           nSamples <- nrow(trait_data())
                           moduleTraitCor(cor(MEs_updated(), trait_data(), use = "p"))
                         })
@@ -1274,8 +1115,8 @@ wgcna_server <- function(id, parent_session) {
                           updateSelectInput(session, "WGCNA_trait",  selected = click$x)
                           updateSelectInput(session, "WGCNA_module", selected = click$y)
                           updateTabsetPanel(session, "Module_Trait", selected = "Hub Gene Identification Table")
-                          }, ignoreNULL = TRUE)
-
+                        }, ignoreNULL = TRUE)
+                        
                         # Update trait and module menu whenever the trait_data() changes.
                         observeEvent(list(trait_data(),input$plot_module_trait), {
                           updateSelectInput(session, "WGCNA_trait", choices=names(trait_data()), selected=character(0))
@@ -1396,98 +1237,98 @@ wgcna_server <- function(id, parent_session) {
                           })
                           
                           output$hub_gene_table <- DT::renderDT({
-                              DT::datatable(df_hub_gene(),
-                                            rownames = FALSE, 
-                                            extensions = 'Buttons', 
-                                            escape = FALSE, 
-                                            selection = 'none', 
-                                            class = 'cell-border strip hover',
-                                            options = list(dom = "Blfrtip", 
-                                                           buttons = c("csv", "excel", "print")
-                                            )
-                              ) %>% 
-                                formatSignif(columns=names(Filter(is.numeric, df_hub_gene())), digits=3)
-                            })
-                            
+                            DT::datatable(df_hub_gene(),
+                                          rownames = FALSE, 
+                                          extensions = 'Buttons', 
+                                          escape = FALSE, 
+                                          selection = 'none', 
+                                          class = 'cell-border strip hover',
+                                          options = list(dom = "Blfrtip", 
+                                                         buttons = c("csv", "excel", "print")
+                                          )
+                            ) %>% 
+                              formatSignif(columns=names(Filter(is.numeric, df_hub_gene())), digits=3)
+                          })
+                          
                           observeEvent(input$hub_gene, {
                             saved_table$hub_gene <- df_hub_gene()
                           })
                           
                           output$plot_MMvsGS <- renderPlotly({
-                              module_gene_info <- df_hub_gene()
-                              
-                              # Sort
-                              module_gene_info <- module_gene_info[order(-abs(module_gene_info$ModuleMembership)), ]
-                              
-                              # x and y
-                              x <- abs(module_gene_info$ModuleMembership)
-                              y <- abs(module_gene_info$GeneSignificance)
-                              
-                              # Regression
-                              fit <- lm(y ~ x)
-                              x_seq <- seq(min(x), max(x), length.out = 100)
-                              y_pred <- predict(fit, newdata = data.frame(x = x_seq))
-                              
-                              # Correlation
-                              mm_gs_cor <- cor(x, y, use = "pairwise.complete.obs")
-                              
-                              char_df <- module_gene_info
-                              
-                              # Format numeric columns to 3 decimals (or whatever you want)
-                              num_cols <- sapply(char_df, is.numeric)
-                              char_df[num_cols] <- lapply(char_df[num_cols], function(x) sprintf("%.3f", x))
-                              
-                              # Convert everything to character
-                              char_df <- data.frame(lapply(char_df, as.character), stringsAsFactors = FALSE)
-                              
-                              cols <- colnames(char_df)
-                              
-                              hover_text <- apply(char_df, 1, function(row) {
-                                paste0("<b>", cols, ":</b> ", row, collapse = "<br>")
-                              })
-                              
-                              # Build hover template dynamically
-                              cols <- colnames(module_gene_info)
-                              hover_lines <- paste0(
-                                "<b>", cols, ":</b> %{customdata[", seq_along(cols) - 1, "]}", 
-                                collapse = "<br>"
-                              )
-                              hover_template <- paste0(hover_lines, "<extra></extra>")
-                              
-                              plot_ly() %>%
-                                add_markers(
-                                  x = x,
-                                  y = y,
-                                  type = "scatter",
-                                  mode = "markers", # Added this to ensure clean rendering
-                                  marker = list(color = module_name, size = 8),
-                                  text = hover_text,                       # <--- Pass your pre-built R strings here
-                                  hovertemplate = "%{text}<extra></extra>", # <--- Just tell Plotly to show the text
-                                  name = 'Gene'
-                                ) %>%
-                                add_lines(
-                                  x = x_seq,
-                                  y = y_pred,
-                                  line = list(color = "red", width = 2),
-                                  name = "Regression"
-                                ) %>%
-                                layout(
-                                  title = paste("MM vs GS in", selected_trait_module, "module"),
-                                  xaxis = list(title = paste("Module Membership in", selected_trait_module, "module")),
-                                  yaxis = list(title = paste("Gene Significance for", selected_trait)),
-                                  annotations = list(
-                                    list(
-                                      x = min(x),
-                                      y = max(y),
-                                      text = paste("cor =", round(mm_gs_cor, 3)),
-                                      xanchor = "left",
-                                      yanchor = "top",
-                                      showarrow = FALSE,
-                                      font = list(size = 14)
-                                    )
+                            module_gene_info <- df_hub_gene()
+                            
+                            # Sort
+                            module_gene_info <- module_gene_info[order(-abs(module_gene_info$ModuleMembership)), ]
+                            
+                            # x and y
+                            x <- abs(module_gene_info$ModuleMembership)
+                            y <- abs(module_gene_info$GeneSignificance)
+                            
+                            # Regression
+                            fit <- lm(y ~ x)
+                            x_seq <- seq(min(x), max(x), length.out = 100)
+                            y_pred <- predict(fit, newdata = data.frame(x = x_seq))
+                            
+                            # Correlation
+                            mm_gs_cor <- cor(x, y, use = "pairwise.complete.obs")
+                            
+                            char_df <- module_gene_info
+                            
+                            # Format numeric columns to 3 decimals (or whatever you want)
+                            num_cols <- sapply(char_df, is.numeric)
+                            char_df[num_cols] <- lapply(char_df[num_cols], function(x) sprintf("%.3f", x))
+                            
+                            # Convert everything to character
+                            char_df <- data.frame(lapply(char_df, as.character), stringsAsFactors = FALSE)
+                            
+                            cols <- colnames(char_df)
+                            
+                            hover_text <- apply(char_df, 1, function(row) {
+                              paste0("<b>", cols, ":</b> ", row, collapse = "<br>")
+                            })
+                            
+                            # Build hover template dynamically
+                            cols <- colnames(module_gene_info)
+                            hover_lines <- paste0(
+                              "<b>", cols, ":</b> %{customdata[", seq_along(cols) - 1, "]}", 
+                              collapse = "<br>"
+                            )
+                            hover_template <- paste0(hover_lines, "<extra></extra>")
+                            
+                            plot_ly() %>%
+                              add_markers(
+                                x = x,
+                                y = y,
+                                type = "scatter",
+                                mode = "markers", # Added this to ensure clean rendering
+                                marker = list(color = module_name, size = 8),
+                                text = hover_text,                       # <--- Pass your pre-built R strings here
+                                hovertemplate = "%{text}<extra></extra>", # <--- Just tell Plotly to show the text
+                                name = 'Gene'
+                              ) %>%
+                              add_lines(
+                                x = x_seq,
+                                y = y_pred,
+                                line = list(color = "red", width = 2),
+                                name = "Regression"
+                              ) %>%
+                              layout(
+                                title = paste("MM vs GS in", selected_trait_module, "module"),
+                                xaxis = list(title = paste("Module Membership in", selected_trait_module, "module")),
+                                yaxis = list(title = paste("Gene Significance for", selected_trait)),
+                                annotations = list(
+                                  list(
+                                    x = min(x),
+                                    y = max(y),
+                                    text = paste("cor =", round(mm_gs_cor, 3)),
+                                    xanchor = "left",
+                                    yanchor = "top",
+                                    showarrow = FALSE,
+                                    font = list(size = 14)
                                   )
                                 )
-                            })
+                              )
+                          })
                           
                           output$plot_MMvsConnectivity <- renderPlotly({
                             hub_gene_info <- df_hub_gene()
