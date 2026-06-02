@@ -791,125 +791,123 @@ geneset_server <- function(id) {
                         ############################################## ORA ####
                         # Get ORA input data from selected comparisons
                         DataGenesetReactive_ORA <- reactive({
+                          req(input$ORA_input_type != "Gene List")
                           req(DataReactive(), input$ORA_input_type, input$map_genes)
+
+                          req(all(input$geneset_test %in% DataReactive()$tests))
+                          DataIn <- DataReactive()
+                          results_long <- DataIn$results_long
                           
-                          if (input$ORA_input_type != "Gene List") {
-                            req(all(input$geneset_test %in% DataReactive()$tests))
-                            DataIn <- DataReactive()
-                            results_long <- DataIn$results_long
+                          comp_sel <- input$geneset_test   # can be a vector now
+                          ORA_selected_comp(comp_sel)
+                          
+                          absFCcut <- log2(as.numeric(input$geneset_FCcut))
+                          pvalcut  <- as.numeric(input$geneset_pvalcut)
+                          # iterate over each comparison
+                          out_list <- lapply(comp_sel, function(comp) {
                             
-                            comp_sel <- input$geneset_test   # can be a vector now
-                            ORA_selected_comp(comp_sel)
+                            all_genes <- results_long %>%
+                              dplyr::filter(test == comp, !is.na(Gene.Name), Gene.Name != "") %>%
+                              dplyr::pull(Gene.Name) %>%
+                              unique()
                             
-                            absFCcut <- log2(as.numeric(input$geneset_FCcut))
-                            pvalcut  <- as.numeric(input$geneset_pvalcut)
-                            # iterate over each comparison
-                            out_list <- lapply(comp_sel, function(comp) {
+                            terminals.df <- results_long %>%
+                              dplyr::filter(test == comp, !is.na(Gene.Name), Gene.Name != "") %>%
+                              dplyr::select(Gene.Name, logFC, P.Value, Adj.P.Value, UniqueID, test) %>%
+                              dplyr::arrange(P.Value) %>%
+                              dplyr::distinct(Gene.Name, .keep_all = TRUE)
+                            
+                            # gene mapping logic
+                            if (input$map_genes != "No Change (as it is)" &&
+                                !(ProjectInfo$Species == input$MSigDB_species && input$map_genes == "Homologous Genes")) {
                               
-                              all_genes <- results_long %>%
-                                dplyr::filter(test == comp, !is.na(Gene.Name), Gene.Name != "") %>%
-                                dplyr::pull(Gene.Name) %>%
-                                unique()
-                              
-                              terminals.df <- results_long %>%
-                                dplyr::filter(test == comp, !is.na(Gene.Name), Gene.Name != "") %>%
-                                dplyr::select(Gene.Name, logFC, P.Value, Adj.P.Value, UniqueID, test) %>%
-                                dplyr::arrange(P.Value) %>%
-                                dplyr::distinct(Gene.Name, .keep_all = TRUE)
-                              
-                              # gene mapping logic
-                              if (input$map_genes != "No Change (as it is)" &&
-                                  !(ProjectInfo$Species == input$MSigDB_species && input$map_genes == "Homologous Genes")) {
-                                
-                                if (input$map_genes == "Change to UPPER case (human)") {
-                                  mapped_symbols <- toupper(terminals.df$Gene.Name)
-                                  all_genes <- toupper(all_genes)
-                                } else if (input$map_genes == "Change to Title Case (mouse/rat)") {
-                                  mapped_symbols <- stringr::str_to_title(terminals.df$Gene.Name)
-                                  all_genes <- stringr::str_to_title(all_genes)
-                                } else if (ProjectInfo$Species != input$MSigDB_species &&
-                                           input$map_genes == "Homologous Genes") {
-                                  mapped_symbols <- homolog_mapping(terminals.df$Gene.Name,
-                                                                    ProjectInfo$Species,
-                                                                    input$MSigDB_species,
-                                                                    homologs)
-                                  all_genes <- homolog_mapping(all_genes,
-                                                               ProjectInfo$Species,
-                                                               input$MSigDB_species,
-                                                               homologs)
-                                }
-                                
-                                terminals.df <- terminals.df %>%
-                                  dplyr::mutate(Gene.Name.Ori = Gene.Name,
-                                                Gene.Name = mapped_symbols) %>%
-                                  dplyr::distinct(Gene.Name, .keep_all = TRUE) %>%
-                                  dplyr::filter(!is.na(Gene.Name), Gene.Name != "")
+                              if (input$map_genes == "Change to UPPER case (human)") {
+                                mapped_symbols <- toupper(terminals.df$Gene.Name)
+                                all_genes <- toupper(all_genes)
+                              } else if (input$map_genes == "Change to Title Case (mouse/rat)") {
+                                mapped_symbols <- stringr::str_to_title(terminals.df$Gene.Name)
+                                all_genes <- stringr::str_to_title(all_genes)
+                              } else if (ProjectInfo$Species != input$MSigDB_species &&
+                                         input$map_genes == "Homologous Genes") {
+                                mapped_symbols <- homolog_mapping(terminals.df$Gene.Name,
+                                                                  ProjectInfo$Species,
+                                                                  input$MSigDB_species,
+                                                                  homologs)
+                                all_genes <- homolog_mapping(all_genes,
+                                                             ProjectInfo$Species,
+                                                             input$MSigDB_species,
+                                                             homologs)
                               }
                               
-                              filteredgene <- terminals.df %>%
-                                dplyr::mutate(psel = input$geneset_psel,
-                                              P.stat = ifelse(psel == "Padj", Adj.P.Value, P.Value)) %>%
-                                dplyr::filter(abs(logFC) > absFCcut, P.stat < pvalcut) %>%
-                                dplyr::select(Gene.Name, logFC, P.Value, Adj.P.Value, UniqueID, test)
-                              
-                              sig_genes <- filteredgene$logFC
-                              names(sig_genes) <- filteredgene$Gene.Name
-                              
-                              sig_genes_Dir <- sig_genes
-                              if (input$geneset_direction == "Up") {
-                                sig_genes_Dir <- sig_genes[sig_genes > 0]
-                              } else if (input$geneset_direction == "Down") {
-                                sig_genes_Dir <- sig_genes[sig_genes < 0]
-                              }
-                              
-                              list(
-                                sig_genes     = sig_genes,
-                                all_genes     = all_genes,
-                                terminals.df  = terminals.df,
-                                sig_genes_Dir = sig_genes_Dir
-                              )
-                            })
+                              terminals.df <- terminals.df %>%
+                                dplyr::mutate(Gene.Name.Ori = Gene.Name,
+                                              Gene.Name = mapped_symbols) %>%
+                                dplyr::distinct(Gene.Name, .keep_all = TRUE) %>%
+                                dplyr::filter(!is.na(Gene.Name), Gene.Name != "")
+                            }
                             
-                            names(out_list) <- comp_sel
-                            return(out_list)
-                          }
+                            filteredgene <- terminals.df %>%
+                              dplyr::mutate(psel = input$geneset_psel,
+                                            P.stat = ifelse(psel == "Padj", Adj.P.Value, P.Value)) %>%
+                              dplyr::filter(abs(logFC) > absFCcut, P.stat < pvalcut) %>%
+                              dplyr::select(Gene.Name, logFC, P.Value, Adj.P.Value, UniqueID, test)
+                            
+                            sig_genes <- filteredgene$logFC
+                            names(sig_genes) <- filteredgene$Gene.Name
+                            
+                            sig_genes_Dir <- sig_genes
+                            if (input$geneset_direction == "Up") {
+                              sig_genes_Dir <- sig_genes[sig_genes > 0]
+                            } else if (input$geneset_direction == "Down") {
+                              sig_genes_Dir <- sig_genes[sig_genes < 0]
+                            }
+                            
+                            list(
+                              sig_genes     = sig_genes,
+                              all_genes     = all_genes,
+                              terminals.df  = terminals.df,
+                              sig_genes_Dir = sig_genes_Dir
+                            )
+                          })
+                          
+                          names(out_list) <- comp_sel
+                          return(out_list)
                         })
                         
                         # Get ORA input data from uploaded gene list
-                        DataGenesetReactive_ORA_list <- reactive({        
-                          if (input$ORA_input_type=='Gene List') {
-                            ORA_list <- input$ORA_list
-                            ORA_list=str_replace_all(ORA_list, " ", "")
-                            if(grepl("\n",ORA_list)) {
-                              ORA_list <-  stringr::str_split(ORA_list, "\n")[[1]]
-                            } else if(grepl(",",ORA_list)) {
-                              ORA_list <-  stringr::str_split(ORA_list, ",")[[1]]
-                            }
-                            ORA_list<-ORA_list [ORA_list !=""]
-                            validate(need(length(ORA_list)>1, message = "Please input at least 2 valid genes."))
-                            DataIn = DataReactive()
-                            ProteinGeneName = DataIn$ProteinGeneName
-                            all_genes <- dplyr::filter(ProteinGeneName, !is.na(Gene.Name), Gene.Name!="") %>%
-                              dplyr::select(one_of(c("Gene.Name"))) %>% collect %>% .[["Gene.Name"]] %>% unique()
-                            if (input$map_genes!="No Change (as it is)" && !(ProjectInfo$Species==input$MSigDB_species && input$map_genes=="Homologous Genes") ) {
-                              if (input$map_genes=="Change to UPPER case (human)")  {
-                                ORA_list<-toupper(ORA_list); all_genes=toupper(all_genes)
-                              } else if ( input$map_genes=="Change to Title Case (mouse/rat)" ) {
-                                ORA_list<-str_to_title(ORA_list); all_genes=str_to_title(all_genes)
-                              } else if (ProjectInfo$Species!=input$MSigDB_species && input$map_genes=="Homologous Genes" ) {
-                                ORA_list<-homolog_mapping(ORA_list, ProjectInfo$Species, input$MSigDB_species, homologs)
-                                all_genes <-homolog_mapping(all_genes , ProjectInfo$Species, input$MSigDB_species, homologs)
-                              } 
-                            }
-                            if (input$ORA_universe!="Genes in current project") {
-                              gsets_GSEA<-gsets_Reactive()
-                              all_genes<-unlist(gsets_GSEA)%>%unique()
-                            }
-                            sig_genes=rep(1, length(ORA_list))
-                            names(sig_genes)=ORA_list
-                            return(list("sig_genes" = sig_genes, "all_genes" = all_genes, "terminals.df"=NULL, "sig_genes_Dir" = NULL))
-                          } 
-                        })
+                        DataGenesetReactive_ORA_list <- reactive({
+                          req(input$ORA_input_type == "Gene List")
+                          
+                          ORA_list <- input$ORA_list
+                          ORA_list=str_replace_all(ORA_list, " ", "")
+                          if(grepl("\n",ORA_list)) {
+                            ORA_list <-  stringr::str_split(ORA_list, "\n")[[1]]
+                          } else if(grepl(",",ORA_list)) {
+                            ORA_list <-  stringr::str_split(ORA_list, ",")[[1]]
+                          }
+                          ORA_list<-ORA_list [ORA_list !=""]
+                          validate(need(length(ORA_list)>1, message = "Please input at least 2 valid genes."))
+                          DataIn = DataReactive()
+                          ProteinGeneName = DataIn$ProteinGeneName
+                          all_genes <- dplyr::filter(ProteinGeneName, !is.na(Gene.Name), Gene.Name!="") %>%
+                            dplyr::select(one_of(c("Gene.Name"))) %>% collect %>% .[["Gene.Name"]] %>% unique()
+                          if (input$map_genes!="No Change (as it is)" && !(ProjectInfo$Species==input$MSigDB_species && input$map_genes=="Homologous Genes") ) {
+                            if (input$map_genes=="Change to UPPER case (human)")  {
+                              ORA_list<-toupper(ORA_list); all_genes=toupper(all_genes)
+                            } else if ( input$map_genes=="Change to Title Case (mouse/rat)" ) {
+                              ORA_list<-str_to_title(ORA_list); all_genes=str_to_title(all_genes)
+                            } else if (ProjectInfo$Species!=input$MSigDB_species && input$map_genes=="Homologous Genes" ) {
+                              ORA_list<-homolog_mapping(ORA_list, ProjectInfo$Species, input$MSigDB_species, homologs)
+                              all_genes <-homolog_mapping(all_genes , ProjectInfo$Species, input$MSigDB_species, homologs)
+                            } 
+                          }
+                          if (input$ORA_universe!="Genes in current project") {
+                            gsets_GSEA<-gsets_Reactive()
+                            all_genes<-unlist(gsets_GSEA)%>%unique()
+                          }
+                          sig_genes=rep(1, length(ORA_list))
+                          names(sig_genes)=ORA_list
+                          return(list("sig_genes" = sig_genes, "all_genes" = all_genes, "terminals.df"=NULL, "sig_genes_Dir" = NULL))                       })
                         
                         observe({
                           req(working_project())
@@ -928,8 +926,13 @@ geneset_server <- function(id) {
                           ora_control(ora_control()+1)
                         })
                         
+                        ora_trigger <- reactive({
+                          req(input$ORA_input_type != "Gene List")
+                          input$compute_ora
+                        })
+                        
                         # Create ORA complete raw result list, one item per comparison
-                        ora_raw <- eventReactive(input$compute_ora, {
+                        ora_raw <- eventReactive(ora_trigger(), {
                           getresults <- DataGenesetReactive_ORA()
                           gsets_ORA <- gsets_Reactive()
                           validate(need(length(gsets_ORA) > 0, "Please select at least one gene set."))
@@ -956,6 +959,8 @@ geneset_server <- function(id) {
                         # Get pre-filtered ORA result list as in the output table format, one item per comparison. 
                         # Save the pre-filtered combined result table into combined_ora_res() or combined_ora_res_filtered() if using collapsed list.
                         ora_results <- reactive({ 
+                          req(working_project())
+                          req(input$ORA_input_type != "Gene List")
                           withProgress(message = 'Running ORA...', value = 0, {
                             res_list <- res_list_raw <- ora_raw()
                             res <- res_list_raw %>%
@@ -1052,7 +1057,12 @@ geneset_server <- function(id) {
                           })
                         })
                         
-                        ora_results_list<- eventReactive (ora_control(), { 
+                        ora_list_trigger <- reactive({
+                          req(input$ORA_input_type == "Gene List")
+                          input$compute_ora
+                        })
+                        
+                        ora_results_list<- eventReactive (ora_list_trigger(), { 
                           withProgress(message = 'Running ORA...', value = 0, {
                             gsets_ORA<-gsets_Reactive()
                             validate(need(length(gsets_ORA)>0,"Please select at least one gene set."))
@@ -1076,7 +1086,7 @@ geneset_server <- function(id) {
                         
                         output$MSigDB_ORA_list <-DT::renderDT(server=FALSE,{ withProgress(message = 'Processing...', value = 0, {
                           res<-ora_results_list()
-                          validate(need(nrow(res)>0,"No results. Try to increase p.adj cutoff, or use a different list."))
+                          validate(need(nrow(res)>0,"No results. Try to increase ORA p.adj cutoff, or use a different list."))
                           res$Action<-vapply(1:nrow(res), function(i){
                             as.character(
                               rclipButton(
@@ -1255,7 +1265,7 @@ geneset_server <- function(id) {
                               FC_df <- FC_df %>% dplyr::left_join(res_comp, by = "UniqueID")
                             }
                             
-                            browser() #debug
+                            # browser() #debug
                             # gene mapping
                             if (input$map_genes != "No Change (as it is)" &&
                                 !(ProjectInfo$Species == input$MSigDB_species && input$map_genes == "Homologous Genes")) {
