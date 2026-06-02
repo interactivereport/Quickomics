@@ -124,13 +124,13 @@ filteredgeneReactive <- reactive({
       return(
         results_long %>%
           dplyr::filter(abs(logFC) > pattern_fccut & Adj.P.Value < pattern_pvalcut) %>%
-          dplyr::pull(UniqueID) %>% as.character()
+          dplyr::pull(UniqueID) %>% as.character() %>% unique()
       )
     } else {
       return(
         results_long %>%
           dplyr::filter(abs(logFC) > pattern_fccut & P.Value < pattern_pvalcut) %>%
-          dplyr::pull(UniqueID) %>% as.character()
+          dplyr::pull(UniqueID) %>% as.character() %>% unique()
       )
     }
   }
@@ -177,14 +177,14 @@ DatapatternReactive <- eventReactive(input$pattern_plot, {
 	results_long <- DataIn$tmp_results_long
 	data_long <- DataIn$tmp_data_long
 	filteredgene <- filteredgeneReactive()
-
+	
 	subdatlong <- dplyr::filter(data_long, (.data[[sel_attr]] %in% sel_group) & (UniqueID %in% filteredgene)) %>%
-	group_by(., .data[[sel_attr]], UniqueID) %>%
-	dplyr::summarise(mean=mean(expr, na.rm = TRUE))
+	  group_by(., .data[[sel_attr]], UniqueID)  %>%
+	  dplyr::summarise(mean=mean(expr, na.rm = TRUE)) 
 
 	subdatwide <- subdatlong %>%
 	  tidyr::pivot_wider(
-	    names_from  = sel_attr,
+	    names_from  = all_of(sel_attr),
 	    values_from = mean,
 	    values_fill = 0
 	  ) %>%
@@ -285,88 +285,57 @@ observeEvent(input$pattern, {
 output$dat_pattern<- DT::renderDataTable({withProgress(message = 'Processing...', value = 0, {
   req(input$pattern_plot)
   set.seed(123)
-  Datapattern <-DatapatternReactive ()
+  Datapattern <-DatapatternReactive()
   subdatwide <- Datapattern$subdatwide
-  #subdatwide[,sapply(subdatwide,is.numeric)] <- signif(subdatwide[,sapply(subdatwide,is.numeric)],3)
-  
   subdatlong <- Datapattern$subdatlong
-  #subdatlong[,sapply(subdatlong,is.numeric)] <- signif(subdatlong[,sapply(subdatlong,is.numeric)],3)
+  DataIn = DataQCReactive()
+  ProteinGeneName = DataIn$ProteinGeneName
 
   k=input$k
-  
+
   if (input$ClusterMethod == "kmeans") {
     cl <- kmeans(subdatwide, k)
-    cluster<-cl$cluster
-    cluster.df <- data.frame(UniqueID=names(cluster), cluster=cluster, row.names=NULL)
-    
-    if (input$DataFormat == "long") {
-      subdatlong <- subdatlong  %>%
-        left_join(., cluster.df, by="UniqueID")
-      DT::datatable(subdatlong)
-    } else if (input$DataFormat == "wide") {
-    	subdatwide[,sapply(subdatwide,is.numeric)] <- signif(subdatwide[,sapply(subdatwide,is.numeric)],3)
-      subdatwide  <- subdatwide %>%
-        rownames_to_column(.,var="UniqueID") %>%
-        left_join(., cluster.df, by="UniqueID")%>%
-        separate(UniqueID, c("Gene", "ID"), sep = "_")
-      
-      DT::datatable(subdatwide, 
-                    extensions = 'Buttons', 
-                    options = list(dom = "Blfrtip", 
-                                   buttons = list("copy", list(extend = "collection", 
-                                                               buttons = c("csv", "excel", "pdf"), 
-                                                               text = "Download")), 
-                                   lengthMenu = list( c(10, 20, -1), c(10, 20, "All")), pageLength = 10),
-                    filter = 'top')
-    }
-    
-    #} else if (input$ClusterMethod == "pam") {
-    #	clpam <- pam(subdatwide, k)
-    #	cluster <- clpam$clustering
-    #	cluster.df <- data.frame(UniqueID=names(cluster), cluster=cluster, row.names=NULL)
-    #
-    #	if (input$DataFormat == "long") {
-    #		subdatlong <- subdatlong  %>%
-    #		left_join(., cluster.df, by="UniqueID")
-    #		DT::datatable(subdatlong)
-    #
-    #	} else if (input$DataFormat == "wide") {
-    #		subdatwide  <- subdatwide %>%
-    #		rownames_to_column(.,var="UniqueID") %>%
-    #		left_join(., cluster.df, by="UniqueID")
-    #		DT::datatable(subdatwide, filter = 'top')
-    #	}
-    #
+    cluster <- cl$cluster
   } else if (input$ClusterMethod == "mfuzz") {
-    tmp_expr <- new('ExpressionSet', exprs = as.matrix(subdatwide))
+    tmp_expr <- new("ExpressionSet", exprs = as.matrix(subdatwide))
     m1 <- mestimate(tmp_expr)
     cl <- mfuzz(tmp_expr, c = k, m = m1, iter.max = 200)
     cluster <- cl$cluster
-    cluster.df <- data.frame(UniqueID=names(cluster), cluster=cluster, row.names=NULL)
-    if (input$DataFormat == "long") {
-      #subdatlong[,sapply(subdatlong,is.numeric)] <- signif(subdatlong[,sapply(subdatlong,is.numeric)],3)
-      subdatlong <- subdatlong  %>%
-        left_join(., cluster.df, by="UniqueID")
-      DT::datatable(subdatlong)
-      
-    } else if (input$DataFormat == "wide") {
-      subdatwide[,sapply(subdatwide,is.numeric)] <- signif(subdatwide[,sapply(subdatwide,is.numeric)],3)
-      subdatwide  <- subdatwide %>%
-        rownames_to_column(.,var="UniqueID") %>%
-        left_join(., cluster.df, by="UniqueID") %>%
-        separate(UniqueID, c("Gene", "ID"), sep = "_")
-      
-      DT::datatable(subdatwide, 
-                    extensions = 'Buttons', 
-                    options = list(dom = "Blfrtip", 
-                                   buttons = list("copy", list(extend = "collection", 
-                                                               buttons = c("csv", "excel", "pdf"), 
-                                                               text = "Download")), 
-                                   lengthMenu = list( c(10, 20, -1), c(10, 20, "All")), pageLength = 10),
-      filter = 'top')
-    }
   }
-})
+  
+  cluster.df <- data.frame(UniqueID = names(cluster), cluster = cluster, row.names = NULL)
+  
+  if (input$DataFormat == "long") {
+    subdatlong <- subdatlong %>% 
+      left_join(ProteinGeneName[, c("UniqueID", "Gene.Name")], by = "UniqueID") %>% 
+      dplyr::relocate(Gene.Name, .after = UniqueID) %>% 
+      left_join(cluster.df, by = "UniqueID") %>% 
+      dplyr::mutate(mean = signif(mean, 3))
+    
+    DT::datatable(subdatlong)
+    
+  } else if (input$DataFormat == "wide") {
+    subdatwide[, sapply(subdatwide, is.numeric)] <- signif(subdatwide[, sapply(subdatwide, is.numeric)], 3)
+    
+    subdatwide <- subdatwide %>% 
+      rownames_to_column(., var = "UniqueID") %>% 
+      left_join(cluster.df, by = "UniqueID") %>% 
+      left_join(ProteinGeneName[, c("UniqueID", "Gene.Name")], by = "UniqueID") %>% 
+      relocate(Gene.Name, .after = UniqueID) %>% 
+      tidyr::separate_wider_delim(
+        cols = UniqueID, delim = "_", names = c("Gene", "ID"), 
+        too_few = "align_start", cols_remove = TRUE
+      ) %>% 
+      dplyr::select(where(~!all(is.na(.))))
+    
+    DT::datatable(subdatwide, extensions = "Buttons", options = list(
+      dom = "Blfrtip", 
+      buttons = list("copy", list(extend = "collection", buttons = c("csv", "excel", "pdf"), text = "Download")), 
+      lengthMenu = list(c(10, 20, -1), c(10, 20, "All")), 
+      pageLength = 10
+    ), filter = "top")
+  }
+  })
 })
 
 
