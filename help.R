@@ -165,10 +165,26 @@ output$help_vennp <- renderText({
 
 output$help_WGCNA <- renderText({
   htmlstr <- "
-	<br>
-	<ul>
-	<li><b>Top N Genes</b>: The first N number of genes in the data, where N is selected by users. We also set this number to be the max block size to avoid multiple dendrograms whose interpretation is more challenging than a single dendrogram.</li>
-	<li><b>Dendrogram cut height for merging</b>: Dendrogram cut height for module merging.</li>
-	</ul>"
+  <h2>Weighted Gene Co-Expression Network Analysis (WGCNA) Workflow Guide</h2>
+  <p>Follow this systematic order to explore, validate, and interpret your WGCNA results:</p>
+  
+  <hr>
+  
+  <h3>1. Quality Control & Parameter Validation (Start Here)</h3>
+  <ul>
+    <li><strong>WGCNA QC Result:</strong> Begin by reviewing the network topology and sample clustering. Evaluate whether the chosen soft-thresholding power ($\beta$) successfully achieves a <em>scale-free topology</em> without severely sacrificing mean connectivity. Check for extreme sample outliers; if any samples distort the clustering metrics, consider excluding them and rerunning the analysis.</li>
+    <li><strong>WGCNA Result:</strong> Assess the total number of co-expression modules generated and the overall clustering patterns. If the modules are too granular, too large, or if the network properties look suboptimal, adjust your parameters (e.g., <code>power</code>, <code>minModuleSize</code>, or <code>mergeCutHeight</code>) and rerun the WGCNA pipeline with optimized settings.</li>
+  </ul>
+  
+  <h3>2. Module Eigengene Dynamics</h3>
+  <ul>
+    <li><strong>Module Eigengenes Tab:</strong> Once the network is validated, examine the macro-level behavior of your modules. This tab visualizes the relationships between your experimental samples and the calculated Module Eigengenes (MEs, which represent the first principal component of a module's gene expression profiles). It also highlights the hierarchical correlations <em>among</em> different MEs, allowing you to see which modules share similar overarching expression trajectories.</li>
+  </ul>
+  
+  <h3>3. Phenotypic & Clinical Trait Integration</h3>
+  <ul>
+    <li><strong>Module-Trait Relationship Tab:</strong> Connect your unsupervised co-expression networks to biological reality. This section allows you to evaluate the statistical correlations between your modules (MEs) and clinical or experimental traits of interest. </li>
+    <li><strong>Hub Gene Identification:</strong> Within highly correlated modules, drill down further using Gene Significance (GS) and Module Membership (MM) metrics to identify <em>hub genes</em>—the highly connected central nodes that drive the module's structure and most significantly contribute to the trait correlation.</li>
+  </ul>"
   htmlstr
 })
