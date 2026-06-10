@@ -147,6 +147,13 @@ correlation_ui <- function(id) {
                                     )
                                   )
                                 ),
+                                tags$div(
+                                  style = "padding: 15px; margin-top: 20px; margin-bottom: 20px; border-left: 5px solid #28a745; background-color: #f4faf6; border-radius: 4px;",
+                                  tags$strong("Note: "),
+                                  "If you want to check the global sample-sample correlation for all the samples, please go to the ",
+                                  actionLink(ns("go_to_qc"), "sample correlation Heatmap"),
+                                  " in QC Plots module."
+                                ),
                                 br(),
                                 actionButton(ns("compute_corr"), "Compute/Refresh",style = "color: #0961E3; background-color: #F6E98C; border-color: #2e6da4"),
                                 tags$br(), 
@@ -164,7 +171,7 @@ correlation_ui <- function(id) {
   )}
 
 # ---- Server Module ----
-correlation_server <- function(id) {
+correlation_server <- function(id, parent_session) {
   moduleServer(id, 
                function(input, output, session) {
                  ProteinGeneName_sel <- reactiveVal()
@@ -172,6 +179,14 @@ correlation_server <- function(id) {
                  CorrPlot_ID <- reactiveVal()
                  genelabel <- reactiveVal()
                  CorrMethod <- reactiveVal()
+                 
+                 observeEvent(input$go_to_qc, {
+                   updateNavbarPage(parent_session, inputId = "menu", selected = "QC_Plots")
+                   updateTabsetPanel(parent_session, inputId = "groupplot_tabset", selected = "Sample-sample Distance")
+                   updateTabsetPanel(parent_session, inputId = "sd_tabset", selected = "Correlation Heatmap")
+                 })
+                 
+                 
                  observe({
                    req(DataQCReactive())
                    req(input$gene_label)
