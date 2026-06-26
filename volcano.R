@@ -42,7 +42,7 @@ observe({
     }
     updateTextAreaInput(session, "volcano_gene_list", value=paste(DEGs, collapse="\n"))
   }
- })
+})
 
 output$selectGroupSampleDEG <- renderUI(shared_header_content())
 
@@ -285,7 +285,9 @@ volcanoplotstatic_out <- reactive({
     ggtitle(test_sel) +
     theme(legend.position = input$vlegendpos, legend.text=element_text(size=input$yfontsize))
   if (input$volcano_label!="None") {
-    p=p+geom_text_repel(data = data.label,  aes(label=labelgeneid),	size = input$lfontsize,	box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines") )
+    p = p + geom_point(data = data.label, color = input$volcano_subset_color, size = 1.5)
+    p = p + geom_text_repel(data = data.label, aes(label=labelgeneid), color = input$volcano_subset_color,
+                            size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"))
   }
   p <- p + guides(color = guide_legend(override.aes = list(alpha = 1, size = 4)))
   return(p)
@@ -456,16 +458,16 @@ deg_counts_data <-reactive ({
 })
 output$deg_counts <- DT::renderDT(server=FALSE,{
   DT::datatable(deg_counts_data(),extensions = 'Buttons',  selection = 'none', class = 'cell-border strip hover',
-    options = list(
-      dom = 'lBfrtip', pageLength = 20,
-      buttons = list(
-        list(extend = "csv", text = "Download Page", filename = "Page_results",
-             exportOptions = list(modifier = list(page = "current"))),
-        list(extend = "csv", text = "Download All", filename = "All_Results",
-             exportOptions = list(modifier = list(page = "all")))
-      )
-    ), 
-    rownames= FALSE) %>% formatStyle(1, cursor = 'pointer',color='blue')
+                options = list(
+                  dom = 'lBfrtip', pageLength = 20,
+                  buttons = list(
+                    list(extend = "csv", text = "Download Page", filename = "Page_results",
+                         exportOptions = list(modifier = list(page = "current"))),
+                    list(extend = "csv", text = "Download All", filename = "All_Results",
+                         exportOptions = list(modifier = list(page = "all")))
+                  )
+                ), 
+                rownames= FALSE) %>% formatStyle(1, cursor = 'pointer',color='blue')
 })
 
 observeEvent(input$deg_counts_cell_clicked, {

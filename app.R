@@ -185,7 +185,7 @@ ui <- fluidPage(
                                          conditionalPanel("input.groupplot_tabset=='Sample-sample Distance' && input.sd_tabset=='Distance Heatmap'",
                                                           radioButtons("sd_dist_cluster", label="Apply Clustering", inline=TRUE,
                                                                        choices=c("Yes"="TRUE","No"="FALSE"), selected="TRUE"),
-                                                           radioButtons("sd_dist_more", label="Show More Options", inline=TRUE,
+                                                          radioButtons("sd_dist_more", label="Show More Options", inline=TRUE,
                                                                        choices=c("Yes","No"), selected="No"),
                                                           conditionalPanel("input.sd_dist_more=='Yes'",
                                                                            tags$hr(),
@@ -590,12 +590,14 @@ ui <- fluidPage(
                                                            radioButtons("volcano_genelabel",label="Select Gene Label",inline = TRUE, choices=""),
                                                            radioButtons("volcano_label", label="Label Genes:", inline = TRUE, choices = c("DEGs","None", "Upload", "Geneset"), selected = "DEGs"),
                                                            conditionalPanel("input.volcano_label!='None'",
-                                                                            sliderInput("Ngenes", "# of Genes to Label", min = 10, max = 200, step = 5, value = 50)),
+                                                                            sliderInput("Ngenes", "# of Genes to Label", min = 10, max = 200, step = 5, value = 50),
+                                                                            colourInput("volcano_subset_color", "Gene Label Color:", "blue")),
                                                            conditionalPanel("input.volcano_label=='Upload'",
                                                                             textAreaInput("volcano_gene_list", "List of genes to label\n(UniqueID, Gene.Name or Protein.ID)", "", cols = 5, rows=6)
                                                            ),
                                                            conditionalPanel("input.volcano_label=='Geneset'",
-                                                                            uiOutput("html_geneset") )
+                                                                            uiOutput("html_geneset") 
+                                                           )
                                          ),
                                          conditionalPanel("input.volcano_tabset!='DEG Counts'",
                                                           radioButtons("more_options", label="Show More Options", inline = TRUE, choices = c("Yes","No"), selected = "No"),
@@ -902,7 +904,7 @@ server <- function(input, output, session) {
   source("correlation.R",local = TRUE)
   insertTab(session=session,  inputId = "menu", target = "wgcna",  position = "after",
             tabPanel("Correlation Analysis", value = "Correlation", correlation_ui(id = "Corr")) )
-  correlation_server(id = "Corr", parent_session = session)
+  correlation_server(id = "Corr")
   source("pattern.R",local = TRUE) 
   source("TimeSeries.R",local = TRUE)
   insertTab(session=session,  inputId = "menu", target = "Pattern_Clustering",  position = "after",
