@@ -22,7 +22,7 @@ observe({
     DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
   } else
   {DataIngenes <- ProteinGeneName %>% dplyr::select(Gene.Name) %>% collect %>% .[["Gene.Name"]] %>%	as.character()}
-  updateSelectizeInput(session,'sel_gene', choices= DataIngenes, server=TRUE)
+  updateSelectizeInput(session,'sel_gene', choices= DataIngenes, selected= isolate(input$sel_gene), server=TRUE)
   attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") ))
   updateSelectInput(session, "colorby", choices=c("None", attributes), selected="group")
   updateSelectInput(session, "plotx", choices=attributes, selected="group")
