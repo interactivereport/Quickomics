@@ -85,8 +85,8 @@ DataHeatMapReactive <- reactive({
   validate(need(sample_order(), FALSE))
   require(DataQCReactive())
   DataIn = DataReactive()
-  ProteinGeneName = DataIn$ProteinGeneName
   tmpDataIn = DataQCReactive()
+  ProteinGeneName = tmpDataIn$ProteinGeneName
   tmpdat = tmpDataIn$tmp_data_wide
   MetaData = tmpDataIn$MetaData
   gene_annot_info=NULL
@@ -97,7 +97,7 @@ DataHeatMapReactive <- reactive({
   annotation<-annotation%>%left_join(MetaData)
   sel_group <- tmpDataIn$tmp_group$group
   annotation$group = factor(tmp_group, levels=sel_group)
-  
+
   if (input$heatmap_subset == "Subset") {
     if(length(filteredGene())>0) {
       gene_list=intersect(rownames(tmpdat), filteredGene()) #user only genes that are in expression.
