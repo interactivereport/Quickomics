@@ -1656,8 +1656,8 @@ geneset_server <- function(id) {
                           
                           terminalsdf.set <- dplyr::filter(terminals.df, Gene.Name %in% GenesetSig)
                           if (nrow(terminalsdf.set) > 0) {
-                            terminalsdf.set[, sapply(terminalsdf.set, is.numeric)] <- 
-                              signif(terminalsdf.set[, sapply(terminalsdf.set, is.numeric)], 3)
+                            numeric_cols <- names(terminalsdf.set)[sapply(terminalsdf.set, is.numeric)]
+                            terminalsdf.set[, (numeric_cols) := lapply(.SD, signif, 3), .SDcols = numeric_cols]
                           }
                           
                           return(list("terminalsdf.set" = terminalsdf.set, "genes" = genes))
