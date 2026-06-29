@@ -904,7 +904,7 @@ server <- function(input, output, session) {
   source("correlation.R",local = TRUE)
   insertTab(session=session,  inputId = "menu", target = "wgcna",  position = "after",
             tabPanel("Correlation Analysis", value = "Correlation", correlation_ui(id = "Corr")) )
-  correlation_server(id = "Corr")
+  correlation_server(id = "Corr", parent_session = session)
   source("pattern.R",local = TRUE) 
   source("TimeSeries.R",local = TRUE)
   insertTab(session=session,  inputId = "menu", target = "Pattern_Clustering",  position = "after",
