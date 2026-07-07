@@ -304,19 +304,14 @@ volcanoplotstatic_out <- reactive({
                                   (UniqueID %in% subset_list) | (Protein.ID %in% subset_list) | (Gene.Name %in% subset_list)) %>%
         dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>% as.character()
       
-      # single combined dataset, tagged by group, instead of two separate data frames
-      data.label$label_grp <- ifelse(data.label$UniqueID %in% subset_ids, "highlight", "main")
+      # per-row hex color, computed once, passed as a plain parameter (not aes())
+      data.label$label_color <- ifelse(data.label$UniqueID %in% subset_ids,
+                                       input$volcano_subset_highlight_color,
+                                       input$volcano_subset_color)
       
-      # open a fresh color scale so these label colors don't clash with
-      # the Not Significant/Up/Down scale already used for the scatter points
-      p <- p + ggnewscale::new_scale_color()
-      
-      p = p + geom_point(data = data.label, aes(color = label_grp), size = 1.5, show.legend = FALSE)
-      p = p + geom_text_repel(data = data.label, aes(label = labelgeneid, color = label_grp),
-                              size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
-                              show.legend = FALSE)
-      p = p + scale_color_manual(values = c("main" = input$volcano_subset_color,
-                                            "highlight" = input$volcano_subset_highlight_color))
+      p = p + geom_point(data = data.label, color = data.label$label_color, size = 1.5)
+      p = p + geom_text_repel(data = data.label, aes(label = labelgeneid), color = data.label$label_color,
+                              size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"))
     } else {
       p = p + geom_point(data = data.label, color = input$volcano_subset_color, size = 1.5)
       p = p + geom_text_repel(data = data.label, aes(label=labelgeneid), color = input$volcano_subset_color,
