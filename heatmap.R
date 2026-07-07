@@ -497,23 +497,19 @@ interactiveHeatmap <- eventReactive(input$action_heatmaps, {
   Rowv <- input$dendrogram %in% c("both", "row")
   Colv <- input$dendrogram %in% c("both", "column")
   
-  # reuse the same sample annotation columns picked for the static heatmap
   col_annot_df <- NULL
   if (!is.null(input$heatmap_annot) && length(input$heatmap_annot) > 0) {
     sel_col <- na.omit(match(input$heatmap_annot, names(annotation)))
     if (length(sel_col) > 0) {
       col_annot_df <- annotation[, sel_col, drop = FALSE]
       if (ncol(col_annot_df) == 1) {
-        # morpheus.R's create.payload() drops a single-column data frame to a
-        # plain vector during its internal row-reordering step, which breaks
-        # its own ncol() check downstream. Work around it by duplicating the
-        # one column so it always has >= 2 columns and survives as a data.frame.
-        dup_name <- paste0(names(col_annot_df)[1], " ")  # trailing space avoids name collision
+        dup_name <- paste0(names(col_annot_df)[1], " ")
         col_annot_df[[dup_name]] <- col_annot_df[[1]]
       }
     }
   }
-  morpheus::morpheus(
+  
+  w <- morpheus::morpheus(
     data.in,
     Rowv = Rowv,
     Colv = Colv,
@@ -523,11 +519,21 @@ interactiveHeatmap <- eventReactive(input$action_heatmaps, {
     columnAnnotations = col_annot_df,
     colorScheme = list(scalingMode = "relative",
                        colors = colorpanel(32, low = input$lowColor, mid = input$midColor, high = input$highColor))
-    # rowSize    = max(1, round(as.numeric(as.character(input$hyfontsizei)) * 13)),
-    # columnSize = max(1, round(as.numeric(as.character(input$hxfontsizei)) * 13))
+    # rowSize    = 13,
+    # columnSize = 13
   )
+  
+  # morpheus() sets a persistent global option (htmlwidgets.TOJSON_ARGS) needed
+  # only for its own serialization, but never restores it -- left in place, it
+  # corrupts every other htmlwidget (e.g. DT tables) rendered afterward in the
+  # same session. Reset it on the next event loop tick, once morpheus's own
+  # serialization for this render has already gone out.
+  later::later(function() {
+    options(htmlwidgets.TOJSON_ARGS = NULL)
+  }, delay = 0)
+  
+  w
 })
-
 # output$interactiveheatmap_ui <- renderUI({
 #   w <- if (!is.null(input$morpheus_width))  paste0(input$morpheus_width, "px")  else "100%"
 #   h <- if (!is.null(input$morpheus_height)) paste0(input$morpheus_height, "px") else "800px"
