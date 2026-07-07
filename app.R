@@ -451,7 +451,9 @@ ui <- fluidPage(
                               fluidRow(
                                 column(3,
                                        wellPanel(
+                                         # in the Heatmap tab sidebar, uncomment/restore:
                                          #actionButton("action_heatmaps","Generate Interactive Heatmap"),
+                                         # actionButton("action_heatmaps", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
                                          #selectizeInput("heatmap_groups", label="Select Groups", choices=NULL, multiple=TRUE),
                                          #checkboxInput("HM_comp2sample", "Use Samples in Subset/Comparison?",  FALSE, width="90%"),
                                          #conditionalPanel("input.HM_comp2sample==1",
@@ -491,14 +493,10 @@ ui <- fluidPage(
                                                            column(width=5,sliderInput("right", "Set Margin Width", min = 0, max = 20, value = 5)),
                                                            column(width=5,sliderInput("bottom", "Set Margin Height", min = 0, max = 20, value = 5))
                                          ),
-                                         conditionalPanel( "input.heatmap_tabset=='Interactive Heatmap'",
-                                                           column(width=5,selectInput("key", "Color Key:", c("TRUE", "FALSE"))),
-                                                           column(width=5,selectInput("srtCol", "angle of label", c("45", "60","90"))),
-                                                           column(width=5,sliderInput("hxfontsizei", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
-                                                           column(width=5,sliderInput("hyfontsizei", "Row Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
-                                                           column(width=5,sliderInput("l", "Set Margin Width", min = 0, max = 200, value = 120)),
-                                                           column(width=5,	sliderInput("b", "Set Margin Height", min = 0, max = 200, value = 120))
-                                         ),
+                                         # conditionalPanel( "input.heatmap_tabset=='Interactive Heatmap'",
+                                         #                   column(width=5,sliderInput("hxfontsizei", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
+                                         #                   column(width=5,sliderInput("hyfontsizei", "Row Font Size:", min = 0, max = 3, step = 0.5, value = 1))
+                                         # ),
                                          conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
                                                            column(width=5,sliderInput("hxfontsizep", "Column Font Size:", min = 0, max = 20, step = 1, value = 10)),
                                                            column(width=5,sliderInput("hyfontsizep", "Row Font Size:", min = 0, max = 20, step = 1, value = 7)),
@@ -561,7 +559,30 @@ ui <- fluidPage(
                                                             br(),
                                                             actionButton("staticheatmap", "Save to output"), 
                                                             plotOutput("staticheatmap", height = 800)),
-                                                   tabPanel(title="Interactive Heatmap",textOutput("text"), p(), plotlyOutput("interactiveheatmap", height = 800)),
+                                                   # tabPanel(title="Interactive Heatmap",textOutput("text"), p(), plotlyOutput("interactiveheatmap", height = 800)),
+                                                   tabPanel(title="Interactive Heatmap",
+                                                            # actionButton("action_heatmaps", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
+                                                            actionButton("action_heatmaps", "Plot/Refresh",
+                                                                         style="color: #0961E3 !important; background-color: #F6E98C !important; border-color: #2e6da4 !important;"),  
+                                                            p(),
+                                                            tags$details(
+                                                              tags$summary(
+                                                                tags$strong("Click to view Interactive Heatmap Guide",
+                                                                            style = "color: #28a745; cursor: pointer;")
+                                                              ),
+                                                              tags$div(
+                                                                style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                                                tags$p("This interactive heatmap is powered by ", tags$strong("Morpheus"), ", a fast, canvas-based heatmap viewer built for exploring large expression matrices — zoom, pan, reorder, and inspect values directly in the browser."),
+                                                                tags$p(
+                                                                  "For a full walkthrough of Morpheus's features (row/column reordering, search, filtering, annotation tracks, and more), see the official tutorial: ",
+                                                                  tags$a(href = "https://software.broadinstitute.org/morpheus/tutorial.html", target = "_blank",
+                                                                         "Tutorial to explore Morpheus functions")
+                                                                )
+                                                              )
+                                                            ),
+                                                            p(),
+                                                            # uiOutput("interactiveheatmap_ui")),
+                                                            morpheus::morpheusOutput("interactiveheatmap", width="1500px", height="1200px")),
                                                    tabPanel(title="Help", htmlOutput('help_heatmap'))
                                        )
                                 )

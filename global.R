@@ -62,6 +62,7 @@ suppressPackageStartupMessages({
   library(WGCNA)
   library(DEGreport)
   library(gprofiler2)
+  library(morpheus)
   #library(cmapR)
 })
 

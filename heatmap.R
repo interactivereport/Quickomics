@@ -488,63 +488,56 @@ observeEvent(input$staticheatmap, {
 }
 )
 
+
 interactiveHeatmap <- eventReactive(input$action_heatmaps, {
   DataHeatMap <- DataHeatMapReactive()
   data.in <- DataHeatMap$df
   annotation <- DataHeatMap$annotation
-  cutree_rows = input$cutreerows
-  cutree_cols = input$cutreecols
-  if (cutree_rows == 0)
-    cutree_rows = NULL
-  if (cutree_cols == 0)
-    cutree_cols = NULL
   
+  Rowv <- input$dendrogram %in% c("both", "row")
+  Colv <- input$dendrogram %in% c("both", "column")
   
-  if (input$dendrogram == "both" | input$dendrogram == "row")
-    dend_r <- data.in %>% dist(method = input$distanceMethod) %>% hclust(method = input$agglomerationMethod) %>% as.dendrogram %>% ladderize %>%   color_branches(k=cutree_rows)
-  if (input$dendrogram == "both" | input$dendrogram == "column")
-    dend_c <- t(data.in) %>% dist(method = input$distanceMethod) %>% hclust(method = input$agglomerationMethod) %>% as.dendrogram %>% ladderize %>% color_branches(k=cutree_cols)
-  
-  cexRow = as.numeric(as.character(input$hyfontsizei))
-  cexCol = as.numeric(as.character(input$hxfontsizei))
-  
-  labCol = colnames(data.in)
-  labRow = rownames(data.in)
-  
-  
-  if (cexRow  == 0 | nrow(data.in) > 50) {
-    labRow = NA
-    cexRow = 0.2
+  # reuse the same sample annotation columns picked for the static heatmap
+  col_annot_df <- NULL
+  if (!is.null(input$heatmap_annot) && length(input$heatmap_annot) > 0) {
+    sel_col <- na.omit(match(input$heatmap_annot, names(annotation)))
+    if (length(sel_col) > 0) {
+      col_annot_df <- annotation[, sel_col, drop = FALSE]
+      if (ncol(col_annot_df) == 1) {
+        # morpheus.R's create.payload() drops a single-column data frame to a
+        # plain vector during its internal row-reordering step, which breaks
+        # its own ncol() check downstream. Work around it by duplicating the
+        # one column so it always has >= 2 columns and survives as a data.frame.
+        dup_name <- paste0(names(col_annot_df)[1], " ")  # trailing space avoids name collision
+        col_annot_df[[dup_name]] <- col_annot_df[[1]]
+      }
+    }
   }
-  
-  if (cexCol == 0) {
-    labCol = NA
-    cexCol  = 0.2
-  }
-  
-  hide_colorbar=FALSE
-  if (input$key == "FALSE")
-    hide_colorbar=TRUE
-  
-  heatmaply(data.in,
-            dendrogram = input$dendrogram,
-            colors=colorpanel (32, low = input$lowColor,mid = input$midColor, high = input$highColor),
-            Rowv = if (input$dendrogram == "both" | input$dendrogram == "row") dend_r else FALSE,
-            Colv = if (input$dendrogram == "both" | input$dendrogram == "column") dend_c else FALSE,
-            labRow = labRow,
-            labCol = labCol,
-            cexRow = cexRow,
-            cexCol = cexCol,
-            srtCol = as.numeric(as.character(input$srtCol)),
-            hide_colorbar = hide_colorbar
-  ) %>% layout(margin = list(l = input$l, b = input$b))
-}
-)
+  morpheus::morpheus(
+    data.in,
+    Rowv = Rowv,
+    Colv = Colv,
+    distfun    = function(x) dist(x, method = input$distanceMethod),
+    hclustfun  = function(d) hclust(d, method = input$agglomerationMethod),
+    dendrogram = input$dendrogram,
+    columnAnnotations = col_annot_df,
+    colorScheme = list(scalingMode = "relative",
+                       colors = colorpanel(32, low = input$lowColor, mid = input$midColor, high = input$highColor))
+    # rowSize    = max(1, round(as.numeric(as.character(input$hyfontsizei)) * 13)),
+    # columnSize = max(1, round(as.numeric(as.character(input$hxfontsizei)) * 13))
+  )
+})
 
-output$interactiveheatmap <- renderPlotly({
+# output$interactiveheatmap_ui <- renderUI({
+#   w <- if (!is.null(input$morpheus_width))  paste0(input$morpheus_width, "px")  else "100%"
+#   h <- if (!is.null(input$morpheus_height)) paste0(input$morpheus_height, "px") else "800px"
+#   morpheus::morpheusOutput("interactiveheatmap", width="1000px", height="800px") #width = w, height = h)
+# })
+
+output$interactiveheatmap <- morpheus::renderMorpheus({
+  input$morpheus_width
+  input$morpheus_height
   withProgress(message = 'Making interactive heatmap:', value = 0, {
     interactiveHeatmap()
   })
 })
-
-output$text <- renderText({ "Click Generate Interactive Heatmap to view. (Disabled. This function is slow)"})
