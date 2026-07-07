@@ -9,6 +9,47 @@
 ##@version 1.0
 ###########################################################################################################
 
+# ---- Data Table (wide): keep only id/UniqueID/Gene.Name/Protein.ID, spread expr by sampleid ----
+data_long_to_wide <- function(df) {
+  id_cols <- intersect(c("id", "UniqueID", "Gene.Name", "Protein.ID"), colnames(df))
+  df %>%
+    dplyr::select(dplyr::all_of(c(id_cols, "sampleid", "expr"))) %>%
+    tidyr::pivot_wider(id_cols = dplyr::all_of(id_cols),
+                       names_from = sampleid,
+                       values_from = expr)
+}
+
+# ---- Result Table (wide): spread logFC/P.Value/Adj.P.Value by test, ----
+# ---- name columns test.logFC / test.P.Value / test.Adj.P.Value,     ----
+# ---- and order columns in blocks per test (logFC, P.Value, Adj.P.Value) ----
+result_long_to_wide <- function(df) {
+  value_cols <- intersect(c("logFC", "P.Value", "Adj.P.Value"), colnames(df))
+  candidate_cols <- setdiff(colnames(df), c("test", value_cols))
+  
+  id_cols <- c()
+  for (col in candidate_cols) {
+    if (col == "UniqueID") { id_cols <- c(id_cols, col); next }
+    n_unique <- df %>%
+      dplyr::group_by(UniqueID) %>%
+      dplyr::summarise(n = dplyr::n_distinct(.data[[col]]), .groups = "drop") %>%
+      dplyr::pull(n)
+    if (all(n_unique == 1)) id_cols <- c(id_cols, col)
+  }
+  
+  df_wide <- df %>%
+    dplyr::select(dplyr::all_of(c(id_cols, "test", value_cols))) %>%
+    tidyr::pivot_wider(id_cols = dplyr::all_of(id_cols),
+                       names_from = test,
+                       values_from = dplyr::all_of(value_cols),
+                       names_glue = "{test}_{.value}")   # <- was "{test}.{.value}"
+  
+  tests <- unique(df$test)
+  ordered_cols <- as.vector(t(outer(tests, value_cols, paste, sep = "_")))  # <- was sep = "."
+  ordered_cols <- intersect(ordered_cols, colnames(df_wide))
+  
+  df_wide %>% dplyr::select(dplyr::all_of(id_cols), dplyr::all_of(ordered_cols))
+}
+
 output$selectGroupSampleExpression <- renderUI(shared_header_content())
 
 observe({
@@ -201,9 +242,16 @@ DataExpReactive <- reactive({
 
 output$dat_dotplot <- DT::renderDT(server=FALSE, {
   data_long_tmp <- DataExpReactive()$data_long_tmp
-  data_long_tmp <- data_long_tmp %>%dplyr::select(-labelgeneid, -Gene.Name_UniqueID)
+  data_long_tmp <- data_long_tmp %>% dplyr::select(-labelgeneid, -Gene.Name_UniqueID)
   data_long_tmp[,sapply(data_long_tmp,is.numeric)] <- signif(data_long_tmp[,sapply(data_long_tmp,is.numeric)],3)
-  DT::datatable(data_long_tmp,  extensions = 'Buttons',  options = list(
+  
+  data_out <- if (input$exp_table_format == "wide") {
+    data_long_to_wide(data_long_tmp)
+  } else {
+    data_long_tmp
+  }
+  
+  DT::datatable(data_out, extensions = 'Buttons', options = list(
     dom = 'lBfrtip', pageLength = 15,
     buttons = list(
       list(extend = "csv", text = "Download Page", filename = "Page_results",
@@ -213,6 +261,7 @@ output$dat_dotplot <- DT::renderDT(server=FALSE, {
     )
   ))
 })
+
 
 observe({
   if (public_dataset) {
@@ -226,7 +275,14 @@ observe({
 output$res_dotplot <- DT::renderDT(server=FALSE,{
   result_long_tmp <- DataExpReactive()$result_long_tmp
   result_long_tmp[,sapply(result_long_tmp,is.numeric)] <- signif(result_long_tmp[,sapply(result_long_tmp,is.numeric)],3)
-  DT::datatable(result_long_tmp,  extensions = 'Buttons',  options = list(
+  
+  data_out <- if (input$exp_table_format == "wide") {
+    result_long_to_wide(result_long_tmp)
+  } else {
+    result_long_tmp
+  }
+  
+  DT::datatable(data_out, extensions = 'Buttons', options = list(
     dom = 'lBfrtip', pageLength = 15,
     buttons = list(
       list(extend = "csv", text = "Download Page", filename = "Page_results",
@@ -236,6 +292,7 @@ output$res_dotplot <- DT::renderDT(server=FALSE,{
     )
   ))
 })
+
 
 boxplot_out <- eventReactive(input$plot_exp,  {
   barcol = input$barcol

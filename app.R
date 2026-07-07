@@ -418,8 +418,12 @@ ui <- fluidPage(
                                                           textInput("scurveXlab", "X label", value="Rank", width = "100%"),
                                                           sliderInput("scurveXangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45),
                                                           radioButtons("scurveright", label="Density or histogram on Right:", inline = TRUE, choices = c("densigram" = "densigram", "density" = "density","histogram" = "histogram","boxplot" = "boxplot", "violin"= "violin"))),
-                                         conditionalPanel("input.expression_tabset=='Data Table' || input.expression_tabset=='Result Table' ",
-                                                          h5("Enter some genes in Search Expression Data tab, then come here for data table."))
+                                         conditionalPanel("input.expression_tabset=='expression_plot_data' || input.expression_tabset=='Result Table' ",
+                                                          h5("Enter some genes in Search Expression Data tab, then come here for data table."),
+                                                          radioButtons("exp_table_format", label="Table Format", inline = TRUE,
+                                                                       choices = c("Wide Format" = "wide", "Long Format" = "long"),
+                                                                       selected = "wide")
+                                         )                                       
                                        )
                                 ),
                                 column(9,
