@@ -625,8 +625,8 @@ ui <- fluidPage(
                                                                             uiOutput("html_geneset")
                                                            ),
                                                            conditionalPanel("input.volcano_label!='None'",
-                                                                            radioButtons("volcano_subset_highlight", label="Highlight a Subset of Labeled Genes in a Different Color?",
-                                                                                         inline = TRUE, choices = c("No","Yes"), selected = "No"),
+                                                                            radioButtons("volcano_subset_highlight", label="Highlight Another Set of Genes in a Different Color?",
+                                                                                         inline = TRUE, choices = c("Yes","No"), selected = "No"),
                                                                             conditionalPanel("input.volcano_subset_highlight=='Yes'",
                                                                                              textAreaInput("volcano_subset_gene_list",
                                                                                                            "Enter Subset Gene List to Highlight\n(UniqueID, Gene.Name or Protein.ID)",

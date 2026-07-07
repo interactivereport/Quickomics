@@ -284,6 +284,7 @@ volcanoplotstatic_out <- reactive({
     ylab(ylab) + xlab("log2 Fold Change") +
     ggtitle(test_sel) +
     theme(legend.position = input$vlegendpos, legend.text=element_text(size=input$yfontsize))
+  
   if (input$volcano_label!="None") {
     use_highlight <- !is.null(input$volcano_subset_highlight) &&
       input$volcano_subset_highlight=="Yes" &&
@@ -301,23 +302,29 @@ volcanoplotstatic_out <- reactive({
       subset_list <- unique(subset_list[subset_list != ""])
       
       subset_ids <- dplyr::filter(ProteinGeneName,
-                                  (UniqueID %in% subset_list) | (Protein.ID %in% subset_list) | (Gene.Name %in% subset_list)) %>%
+                                  (UniqueID %in% subset_list) | (Protein.ID %in% subset_list) | (toupper(Gene.Name) %in% toupper(subset_list))) %>%
         dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>% as.character()
       
-      # per-row hex color, computed once, passed as a plain parameter (not aes())
-      data.label$label_color <- ifelse(data.label$UniqueID %in% subset_ids,
-                                       input$volcano_subset_highlight_color,
-                                       input$volcano_subset_color)
+      highlight_genes <- res %>% dplyr::filter(UniqueID %in% subset_ids)
+      combined_ids <- union(data.label$UniqueID, highlight_genes$UniqueID)
+      data.label.combined <- res %>% dplyr::filter(UniqueID %in% combined_ids)
       
-      p = p + geom_point(data = data.label, color = data.label$label_color, size = 1.5)
-      p = p + geom_text_repel(data = data.label, aes(label = labelgeneid), color = data.label$label_color,
-                              size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"))
+      data.label.combined$label_color <- ifelse(data.label.combined$UniqueID %in% subset_ids,
+                                                input$volcano_subset_highlight_color,
+                                                input$volcano_subset_color)
+      
+      p = p + geom_point(data = data.label.combined, color = data.label.combined$label_color, size = 1.5)
+      p = p + geom_text_repel(data = data.label.combined, aes(label = labelgeneid), color = data.label.combined$label_color,
+                              size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
+                              max.overlaps = Inf, seed = 42)
     } else {
       p = p + geom_point(data = data.label, color = input$volcano_subset_color, size = 1.5)
       p = p + geom_text_repel(data = data.label, aes(label=labelgeneid), color = input$volcano_subset_color,
-                              size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"))
+                              size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
+                              max.overlaps = Inf, seed = 42)
     }
   }
+  
   p <- p + guides(color = guide_legend(override.aes = list(alpha = 1, size = 4)))
   return(p)
 })
@@ -485,6 +492,7 @@ deg_counts_data <-reactive ({
   deg_stat=deg_stat[new_order, ]
   return(deg_stat)
 })
+
 output$deg_counts <- DT::renderDT(server=FALSE,{
   DT::datatable(deg_counts_data(),extensions = 'Buttons',  selection = 'none', class = 'cell-border strip hover',
                 options = list(
