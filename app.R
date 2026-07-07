@@ -17,8 +17,8 @@ ui <- fluidPage(
           useShinyjs(),
           tags$head(
             tags$link(rel = "stylesheet", type = "text/css",
-                      href = "https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"),
-            tags$script(src = "https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"),
+                      href = "datatables/jquery.dataTables.min.css"),
+            tags$script(src = "datatables/jquery.dataTables.min.js"),
             tags$script(src = "multidrag.js")
           ),
           titlePanel(
@@ -595,12 +595,23 @@ ui <- fluidPage(
                                                            radioButtons("volcano_label", label="Label Genes:", inline = TRUE, choices = c("DEGs","None", "Upload", "Geneset"), selected = "DEGs"),
                                                            conditionalPanel("input.volcano_label!='None'",
                                                                             sliderInput("Ngenes", "# of Genes to Label", min = 10, max = 200, step = 5, value = 50),
-                                                                            colourInput("volcano_subset_color", "Gene Label Color:", "blue")),
+                                                                            colourInput("volcano_subset_color", "Gene Label Color:", "blue")
+                                                           ),
                                                            conditionalPanel("input.volcano_label=='Upload'",
                                                                             textAreaInput("volcano_gene_list", "List of genes to label\n(UniqueID, Gene.Name or Protein.ID)", "", cols = 5, rows=6)
                                                            ),
                                                            conditionalPanel("input.volcano_label=='Geneset'",
-                                                                            uiOutput("html_geneset") 
+                                                                            uiOutput("html_geneset")
+                                                           ),
+                                                           conditionalPanel("input.volcano_label!='None'",
+                                                                            radioButtons("volcano_subset_highlight", label="Highlight a Subset of Labeled Genes in a Different Color?",
+                                                                                         inline = TRUE, choices = c("No","Yes"), selected = "No"),
+                                                                            conditionalPanel("input.volcano_subset_highlight=='Yes'",
+                                                                                             textAreaInput("volcano_subset_gene_list",
+                                                                                                           "Enter Subset Gene List to Highlight\n(UniqueID, Gene.Name or Protein.ID)",
+                                                                                                           "", cols = 5, rows=6),
+                                                                                             colourInput("volcano_subset_highlight_color", "Subset Gene Label Color:", "red")
+                                                                            )
                                                            )
                                          ),
                                          conditionalPanel("input.volcano_tabset!='DEG Counts'",

@@ -285,9 +285,43 @@ volcanoplotstatic_out <- reactive({
     ggtitle(test_sel) +
     theme(legend.position = input$vlegendpos, legend.text=element_text(size=input$yfontsize))
   if (input$volcano_label!="None") {
-    p = p + geom_point(data = data.label, color = input$volcano_subset_color, size = 1.5)
-    p = p + geom_text_repel(data = data.label, aes(label=labelgeneid), color = input$volcano_subset_color,
-                            size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"))
+    use_highlight <- !is.null(input$volcano_subset_highlight) &&
+      input$volcano_subset_highlight=="Yes" &&
+      !is.null(input$volcano_subset_gene_list) &&
+      nchar(trimws(input$volcano_subset_gene_list)) > 0
+    
+    if (use_highlight) {
+      subset_list <- input$volcano_subset_gene_list
+      if (grepl("\n", subset_list)) {
+        subset_list <- stringr::str_split(subset_list, "\n")[[1]]
+      } else if (grepl(",", subset_list)) {
+        subset_list <- stringr::str_split(subset_list, ",")[[1]]
+      }
+      subset_list <- gsub(" ", "", subset_list, fixed = TRUE)
+      subset_list <- unique(subset_list[subset_list != ""])
+      
+      subset_ids <- dplyr::filter(ProteinGeneName,
+                                  (UniqueID %in% subset_list) | (Protein.ID %in% subset_list) | (Gene.Name %in% subset_list)) %>%
+        dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>% as.character()
+      
+      # single combined dataset, tagged by group, instead of two separate data frames
+      data.label$label_grp <- ifelse(data.label$UniqueID %in% subset_ids, "highlight", "main")
+      
+      # open a fresh color scale so these label colors don't clash with
+      # the Not Significant/Up/Down scale already used for the scatter points
+      p <- p + ggnewscale::new_scale_color()
+      
+      p = p + geom_point(data = data.label, aes(color = label_grp), size = 1.5, show.legend = FALSE)
+      p = p + geom_text_repel(data = data.label, aes(label = labelgeneid, color = label_grp),
+                              size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
+                              show.legend = FALSE)
+      p = p + scale_color_manual(values = c("main" = input$volcano_subset_color,
+                                            "highlight" = input$volcano_subset_highlight_color))
+    } else {
+      p = p + geom_point(data = data.label, color = input$volcano_subset_color, size = 1.5)
+      p = p + geom_text_repel(data = data.label, aes(label=labelgeneid), color = input$volcano_subset_color,
+                              size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"))
+    }
   }
   p <- p + guides(color = guide_legend(override.aes = list(alpha = 1, size = 4)))
   return(p)

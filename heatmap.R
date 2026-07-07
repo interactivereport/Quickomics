@@ -83,7 +83,7 @@ output$heatmapfilteredgene <- renderText({ paste("Selected Genes:",length(filter
 
 DataHeatMapReactive <- reactive({
   validate(need(sample_order(), FALSE))
-  require(DataQCReactive())
+  req(DataQCReactive())
   DataIn = DataReactive()
   tmpDataIn = DataQCReactive()
   ProteinGeneName = tmpDataIn$ProteinGeneName
