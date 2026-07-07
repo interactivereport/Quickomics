@@ -524,14 +524,42 @@ pheatmap_cor_out <- reactive({
   return(ht)
 })
 
+# output$sd_heatmap_plot_ui <- renderUI({
+#   h <- if (!is.null(input$sd_dist_height)) input$sd_dist_height else 800
+#   plotOutput("pheatmap", height=h)
+# })
+# 
+# output$sd_cor_plot_ui <- renderUI({
+#   h <- if (!is.null(input$sd_cor_height)) input$sd_cor_height else 800
+#   plotOutput("pheatmap_cor", height=h)
+# })
+
 output$sd_heatmap_plot_ui <- renderUI({
   h <- if (!is.null(input$sd_dist_height)) input$sd_dist_height else 800
-  plotOutput("pheatmap", height=h)
+  tagList(
+    tags$p(
+      style = "color:#555; font-size:13px; margin-bottom:8px;",
+      sprintf("This heatmap shows the Euclidean distance between samples, computed from %s ...", exp_unit()),
+      "Smaller distances (per the color scale) mean two samples have more similar overall expression profiles, reflecting both the pattern and the magnitude of expression differences. ",
+      "Rows/columns are hierarchically clustered so that similar samples group together. ",
+      "Note: distance is sensitive to how many genes are included and how variable they are — genes with large expression differences across samples will contribute more to the distance than stably expressed genes."
+    ),
+    plotOutput("pheatmap", height=h)
+  )
 })
 
 output$sd_cor_plot_ui <- renderUI({
   h <- if (!is.null(input$sd_cor_height)) input$sd_cor_height else 800
-  plotOutput("pheatmap_cor", height=h)
+  tagList(
+    tags$p(
+      style = "color:#555; font-size:13px; margin-bottom:8px;",
+      sprintf("This heatmap shows the Euclidean distance between samples, computed from %s...", exp_unit()),
+      "Values range from -1 to 1, with higher correlation indicating samples whose expression rises and falls together across genes, regardless of overall expression magnitude. ",
+      "Unlike the Distance plot, correlation is scale-invariant, so it highlights shared expression patterns rather than absolute differences. ",
+      "Log-transforming the data before computing both metrics reduces the influence of a small number of very highly expressed genes, which would otherwise dominate raw-TPM-based distance and correlation values."
+    ),
+    plotOutput("pheatmap_cor", height=h)
+  )
 })
 
 output$pheatmap <- renderPlot({
