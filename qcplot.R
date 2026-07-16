@@ -76,7 +76,7 @@ DataPCAReactive <- reactive({
   colsel=match(attributes, colnames(MetaData) )
   scores=cbind(scores, MetaData[, colsel, drop=F])
   for (attr in attributes) {
-    if (attr %in% names(DataIn$tmp_group)) {
+    if (attr %in% setdiff(names(DataIn$tmp_group), numerical_attributes())) {
       scores[[attr]] <- factor(
         scores[[attr]],
         levels = DataIn$tmp_group[[attr]]
