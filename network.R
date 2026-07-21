@@ -97,19 +97,34 @@ NetworkReactive <- reactive({
       if (is.null(CorResFile)) {
         CorResFile <- paste0("networkdata/", Pinfo$ProjectID, "_network.RData")
       }
-      
-      # Load cached network if full dataset and available
-      if (n_sample_current == n_sample_all && file.exists(CorResFile)) {
-        load(CorResFile)
-        stopifnot(exists("network"))
-      } else {
+
+      # API-sourced projects (ProjectInfo$source set to "published"/
+      # "unpublished") have no local network storage to write a cache file
+      # back to, so the write-back below is intentionally skipped for
+      # them. A 404 from the API (no precomputed network for this project)
+      # is treated the same as a missing local file -- network stays NULL
+      # and falls through to the compute-fresh branch below, no error.
+      is_api_sourced <- !is.null(Pinfo$source)
+      network <- NULL
+      browser()
+
+      if (n_sample_current == n_sample_all) {
+        if (is_api_sourced) {
+          network <- api_load_network(Pinfo$ProjectID, Pinfo$source)
+        } else if (file.exists(CorResFile)) {
+          load(CorResFile)
+          stopifnot(exists("network"))
+        }
+      }
+
+      if (is.null(network)) {
         data_wide = DataQCReactive()$tmp_data_wide
         withProgress(message = "Compute correlation network data.",
                      detail = "This may take a few minutes...",
                      value = 0, {
                        network <- compute_network(data_wide)
                      })
-        if (n_sample_current == n_sample_all) {
+        if (n_sample_current == n_sample_all && !is_api_sourced) {
           save(network, file = CorResFile)
           ProjectInfo$file2 <- CorResFile
         }

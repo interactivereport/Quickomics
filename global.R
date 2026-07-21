@@ -75,6 +75,7 @@ suppressPackageStartupMessages({
 homologs=readRDS("db/Homologs.rds") #cross species gene symbol mapping file from Ensembl Gene 110
 source("PC_Covariates.R")
 source("write_gct.R")
+source("api_client.R")
 homolog_mapping<-function(genelist, species1, species2, homologs) {
   if (species2=="human") {
     genelist2=toupper(genelist)

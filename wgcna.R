@@ -721,6 +721,30 @@ wgcna_server <- function(id, parent_session) {
                               picked_power = wgcna_out$picked_power,
                               sft = if ("sft" %in% names(wgcna_out)) wgcna_out$sft else NULL
                             ))
+                          } else if (!is.null(ProjectInfo$source)) {
+                            # API-sourced project: fetch netwk/dataExpr/picked_power/sft
+                            # in one call rather than the two local load() calls below.
+                            # api_load_wgcna() itself is a no-op for objects the API
+                            # doesn't have (e.g. no load_{id}.RData equivalent) -- a
+                            # 404 for netwk entirely (no WGCNA results at all for this
+                            # project) surfaces as a stop() here, caught by the
+                            # tryCatch below and treated the same as the local
+                            # file-missing case (falls through to the warning below).
+                            wgcna_ok <- tryCatch({
+                              api_load_wgcna(ProjectInfo$ProjectID, ProjectInfo$source)
+                              TRUE
+                            }, error = function(e) FALSE)
+                            if (wgcna_ok && exists("netwk")) {
+                              wgcna_data(list(
+                                wgcna = netwk,
+                                dataExpr = if (exists("dataExpr")) dataExpr else NULL,
+                                picked_power = if (exists("picked_power")) picked_power else NULL,
+                                sft = if (exists("sft")) sft else NULL
+                              ))
+                            } else if (parent_session$input$menu == "wgcna") {
+                              showNotification("Cannot find pre-calculated wgcna file, no WGCNA results loaded.",
+                                               duration = 5, type = "warning")
+                            }
                           } else if (file.exists(wgcnafile) & file.exists(load_wgcna_file)) {
                             load(wgcnafile)
                             load(load_wgcna_file)
@@ -763,15 +787,36 @@ wgcna_server <- function(id, parent_session) {
                             default_n_gene <- nrow(data_wide)
                             
                             scenario <- 3L
-                            load_wgcna_file <- file.path(dirname(wgcnafile), sub("^wgcna", "load", basename(wgcnafile)))
                             
-                            if (file.exists(load_wgcna_file)) {
-                              load(load_wgcna_file)
-                              if (setequal(sample_list, rownames(dataExpr))) {
+                            if (!is.null(ProjectInfo$source)) {
+                              # API-sourced project: fetch dataExpr/picked_power (and
+                              # netwk/sft, unused here but part of the same call) in one
+                              # request rather than a local load(load_wgcna_file). A
+                              # failure here (e.g. no precomputed WGCNA at all for this
+                              # project) just leaves scenario at its default of 3
+                              # (compute everything from scratch), same as the local
+                              # file-missing case below.
+                              wgcna_ok <- tryCatch({
+                                api_load_wgcna(ProjectID, ProjectInfo$source)
+                                TRUE
+                              }, error = function(e) FALSE)
+                              if (wgcna_ok && exists("dataExpr") && setequal(sample_list, rownames(dataExpr))) {
                                 if (default_n_gene == input$WGCNAtopNum) {
                                   scenario <- 1L
                                 } else if ((default_n_gene - input$WGCNAtopNum) / default_n_gene < 0.1) {
                                   scenario <- 2L
+                                }
+                              }
+                            } else {
+                              load_wgcna_file <- file.path(dirname(wgcnafile), sub("^wgcna", "load", basename(wgcnafile)))
+                              if (file.exists(load_wgcna_file)) {
+                                load(load_wgcna_file)
+                                if (setequal(sample_list, rownames(dataExpr))) {
+                                  if (default_n_gene == input$WGCNAtopNum) {
+                                    scenario <- 1L
+                                  } else if ((default_n_gene - input$WGCNAtopNum) / default_n_gene < 0.1) {
+                                    scenario <- 2L
+                                  }
                                 }
                               }
                             }
@@ -1140,10 +1185,15 @@ wgcna_server <- function(id, parent_session) {
                               req(ProjectInfo,DataReactive())
                               ProjectID <- ProjectInfo$ProjectID
                               wgcnafile <- ProjectInfo$file3
-                              load(wgcnafile)
-                              wgcna <- netwk
-                              load_wgcna_file <- file.path(dirname(wgcnafile), sub("^wgcna", "load", basename(wgcnafile)))
-                              load(load_wgcna_file)
+                              if (!is.null(ProjectInfo$source)) {
+                                api_load_wgcna(ProjectID, ProjectInfo$source)
+                                wgcna <- netwk
+                              } else {
+                                load(wgcnafile)
+                                wgcna <- netwk
+                                load_wgcna_file <- file.path(dirname(wgcnafile), sub("^wgcna", "load", basename(wgcnafile)))
+                                load(load_wgcna_file)
+                              }
                             } else {
                               picked_power <- wgcna_out$picked_power
                               dataExpr <- wgcna_out$dataExpr

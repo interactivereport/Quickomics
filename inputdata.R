@@ -36,7 +36,7 @@ upload_message <- reactiveVal()
 ProteinGeneNameHeader<- reactiveVal()
 exp_unit<-reactiveVal()
 #saved_palette <- reactiveVal()
-ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL, file3=NULL, Path=NULL)
+ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL, file3=NULL, Path=NULL, source=NULL)
 showAlert<-reactiveVal()
 plot_pca_control<-reactiveVal(0)
 plot_heatmap_control<-reactiveVal(0)
@@ -60,6 +60,7 @@ observe({
     ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
     ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+    ProjectInfo$source=NULL  #local data/ folder project, not API-backed
   }
   if (!is.null(query[['unlisted']])) {
     ProjectID = query[['unlisted']]
@@ -73,6 +74,7 @@ observe({
     ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
     ProjectInfo$file3= paste("unlisted/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+    ProjectInfo$source=NULL  #unlisted/ folder project, not API-backed
     if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
   }
@@ -89,6 +91,7 @@ observe({
       ProjectInfo$file1= paste(server_dir, "/",   ProjectID, ".RData", sep = "")  #data file
       ProjectInfo$file2= paste(server_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
       ProjectInfo$file3= paste(server_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+      ProjectInfo$source="published"  #routes file1 loading through the Quickomics API
       if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
       if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
     }
@@ -106,6 +109,7 @@ observe({
       ProjectInfo$file1= paste(test_dir, "/",   ProjectID, ".RData", sep = "")  #data file
       ProjectInfo$file2= paste(test_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
       ProjectInfo$file3= paste(test_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+      ProjectInfo$source="unpublished"  #routes file1 loading through the Quickomics API
       if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
       if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
     }
@@ -122,6 +126,7 @@ observe({
     ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
     ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+    ProjectInfo$source=NULL  #local data/ folder project, not API-backed
     # updateTabsetPanel(session, "Tables", selected = "Sample Table")
   }
 })
@@ -196,6 +201,7 @@ observeEvent(input$customData, {
   ProjectInfo$Species=input$species
   ProjectInfo$ShortName=input$project_name
   ProjectInfo$file1=input$file1$datapath; ProjectInfo$file2=input$file2$datapath
+  ProjectInfo$source=NULL  #user-uploaded file, not API-backed
   #browser() #debug
 })
 
@@ -203,7 +209,14 @@ observeEvent(input$customData, {
 observe({
   RDataFile <- ProjectInfo$file1
   req(RDataFile)
-  objs <- load(RDataFile)
+  # ProjectInfo$source is set ("published"/"unpublished") only for projects
+  # loaded via ?serverfile=/?testfile=; everything else (local data/ folder,
+  # unlisted/ folder, file upload) still uses base::load() unchanged.
+  if (!is.null(ProjectInfo$source)) {
+    objs <- api_load(ProjectInfo$ProjectID, ProjectInfo$source)
+  } else {
+    objs <- load(RDataFile)
+  }
   
   comp_only <- identical(objs, c("results_long", "ProteinGeneName"))
   
@@ -228,7 +241,15 @@ DataReactive <- reactive({
                {
                  RDataFile <- ProjectInfo$file1
                  comp_info <- NULL 
-                 objs <- load(RDataFile)
+                 # ProjectInfo$source is set ("published"/"unpublished") only
+                 # for projects loaded via ?serverfile=/?testfile=; every
+                 # other source (local data/ folder, unlisted/ folder, file
+                 # upload) still uses base::load() completely unchanged.
+                 if (!is.null(ProjectInfo$source)) {
+                   objs <- api_load(ProjectInfo$ProjectID, ProjectInfo$source)
+                 } else {
+                   objs <- load(RDataFile)
+                 }
                  if (identical(objs, c("results_long", "ProteinGeneName"))) {
                    tests <- unique(as.character(results_long$test))                     
                    group_names <- NULL

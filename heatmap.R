@@ -493,10 +493,10 @@ interactiveHeatmap <- eventReactive(input$action_heatmaps, {
   DataHeatMap <- DataHeatMapReactive()
   data.in <- DataHeatMap$df
   annotation <- DataHeatMap$annotation
-  
+
   Rowv <- input$dendrogram %in% c("both", "row")
   Colv <- input$dendrogram %in% c("both", "column")
-  
+
   col_annot_df <- NULL
   if (!is.null(input$heatmap_annot) && length(input$heatmap_annot) > 0) {
     sel_col <- na.omit(match(input$heatmap_annot, names(annotation)))
@@ -508,7 +508,7 @@ interactiveHeatmap <- eventReactive(input$action_heatmaps, {
       }
     }
   }
-  
+
   w <- morpheus::morpheus(
     data.in,
     Rowv = Rowv,
@@ -522,7 +522,7 @@ interactiveHeatmap <- eventReactive(input$action_heatmaps, {
     # rowSize    = 13,
     # columnSize = 13
   )
-  
+
   # morpheus() sets a persistent global option (htmlwidgets.TOJSON_ARGS) needed
   # only for its own serialization, but never restores it -- left in place, it
   # corrupts every other htmlwidget (e.g. DT tables) rendered afterward in the
@@ -531,9 +531,24 @@ interactiveHeatmap <- eventReactive(input$action_heatmaps, {
   later::later(function() {
     options(htmlwidgets.TOJSON_ARGS = NULL)
   }, delay = 0)
-  
+
   w
 })
+
+
+
+# interactiveHeatmap <- eventReactive(input$action_heatmaps, {
+#   # TEMPORARY TEST: swap in clean synthetic data, bypass everything else
+#   set.seed(1)
+#   test_mat <- matrix(rnorm(400), 20)
+#   rownames(test_mat) <- paste0("Gene", 1:20)
+#   colnames(test_mat) <- paste0("Sample", 1:20)
+#   
+#   morpheus::morpheus(test_mat, Rowv = TRUE, Colv = TRUE, dendrogram = "both")
+# })
+
+
+
 # output$interactiveheatmap_ui <- renderUI({
 #   w <- if (!is.null(input$morpheus_width))  paste0(input$morpheus_width, "px")  else "100%"
 #   h <- if (!is.null(input$morpheus_height)) paste0(input$morpheus_height, "px") else "800px"
