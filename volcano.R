@@ -292,39 +292,63 @@ volcanoplotstatic_out <- reactive({
       nchar(trimws(input$volcano_subset_gene_list)) > 0
     
     if (use_highlight) {
-      subset_list <- input$volcano_subset_gene_list
-      if (grepl("\n", subset_list)) {
-        subset_list <- stringr::str_split(subset_list, "\n")[[1]]
-      } else if (grepl(",", subset_list)) {
-        subset_list <- stringr::str_split(subset_list, ",")[[1]]
+      parse_gene_list <- function(txt) {
+        x <- txt
+        if (grepl("\n", x)) {
+          x <- stringr::str_split(x, "\n")[[1]]
+        } else if (grepl(",", x)) {
+          x <- stringr::str_split(x, ",")[[1]]
+        }
+        x <- gsub(" ", "", x, fixed = TRUE)
+        unique(x[x != ""])
       }
-      subset_list <- gsub(" ", "", subset_list, fixed = TRUE)
-      subset_list <- unique(subset_list[subset_list != ""])
       
-      subset_ids <- dplyr::filter(ProteinGeneName,
-                                  (UniqueID %in% subset_list) | (Protein.ID %in% subset_list) | (toupper(Gene.Name) %in% toupper(subset_list))) %>%
-        dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>% as.character()
+      lookup_ids <- function(gene_vec) {
+        if (length(gene_vec) == 0) return(character(0))
+        dplyr::filter(ProteinGeneName,
+                      (UniqueID %in% gene_vec) | (Protein.ID %in% gene_vec) | (toupper(Gene.Name) %in% toupper(gene_vec))) %>%
+          dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>% as.character()
+      }
       
-      highlight_genes <- res %>% dplyr::filter(UniqueID %in% subset_ids)
-      combined_ids <- union(data.label$UniqueID, highlight_genes$UniqueID)
-      data.label.combined <- res %>% dplyr::filter(UniqueID %in% combined_ids)
+      # genes whose DOT gets the highlight color
+      highlight_ids <- lookup_ids(parse_gene_list(input$volcano_subset_gene_list))
       
-      data.label.combined$label_color <- ifelse(data.label.combined$UniqueID %in% subset_ids,
+      # genes the user wants FORCED to have a text label -- but only honored if
+      # they're also in the highlight list; anything else is silently ignored
+      label_list_raw <- if (!is.null(input$volcano_subset_label_list)) parse_gene_list(input$volcano_subset_label_list) else character(0)
+      label_ids_raw <- lookup_ids(label_list_raw)
+      valid_label_ids <- intersect(label_ids_raw, highlight_ids)
+      
+      # points: originally labeled genes + every highlighted gene (labeled or not)
+      point_ids <- union(data.label$UniqueID, highlight_ids)
+      data.point.combined <- res %>% dplyr::filter(UniqueID %in% point_ids)
+      data.point.combined$label_color <- ifelse(data.point.combined$UniqueID %in% highlight_ids,
                                                 input$volcano_subset_highlight_color,
                                                 input$volcano_subset_color)
       
-      p = p + geom_point(data = data.label.combined, color = data.label.combined$label_color, size = 1.5)
+      # text labels: originally labeled genes + only the validated forced-label subset
+      label_ids_final <- union(data.label$UniqueID, valid_label_ids)
+      data.label.combined <- res %>% dplyr::filter(UniqueID %in% label_ids_final)
+      data.label.combined$label_color <- ifelse(data.label.combined$UniqueID %in% highlight_ids,
+                                                input$volcano_subset_highlight_color,
+                                                input$volcano_subset_color)
+      
+      p = p + geom_point(data = data.point.combined, color = data.point.combined$label_color, size = 1.5)
+      # p = p + geom_text_repel(data = data.label.combined, aes(label = labelgeneid), color = data.label.combined$label_color,
+      #                         size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
+      #                         max.overlaps = Inf, seed = 42)
       p = p + geom_text_repel(data = data.label.combined, aes(label = labelgeneid), color = data.label.combined$label_color,
                               size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
-                              max.overlaps = Inf, seed = 42)
-    } else {
+                              max.overlaps = Inf, seed = 42,
+                              max.time = 5, max.iter = 50000, force = 3, force_pull = 1,
+                              min.segment.length = 0)
+      } else {
       p = p + geom_point(data = data.label, color = input$volcano_subset_color, size = 1.5)
       p = p + geom_text_repel(data = data.label, aes(label=labelgeneid), color = input$volcano_subset_color,
                               size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
                               max.overlaps = Inf, seed = 42)
     }
-  }
-  
+  }  
   p <- p + guides(color = guide_legend(override.aes = list(alpha = 1, size = 4)))
   return(p)
 })
