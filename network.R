@@ -106,7 +106,6 @@ NetworkReactive <- reactive({
       # and falls through to the compute-fresh branch below, no error.
       is_api_sourced <- !is.null(Pinfo$source)
       network <- NULL
-      browser()
 
       if (n_sample_current == n_sample_all) {
         if (is_api_sourced) {

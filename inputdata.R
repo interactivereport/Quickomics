@@ -80,39 +80,52 @@ observe({
   }
   if (!is.null(query[['serverfile']])) {
     ProjectID = query[['serverfile']]
-    if (!is.null(server_dir)) {
-      validate(need(file.exists(str_c(server_dir, "/",  ProjectID, ".csv")), 
-                    message = "Please pass a valid ProjectID from URL. Files must be located in server file folder" ))
-      unlisted_project=read.csv(str_c(server_dir, "/",  ProjectID, ".csv"))
-      ProjectInfo$ProjectID=ProjectID
-      ProjectInfo$Name=unlisted_project$Name
-      ProjectInfo$Species=unlisted_project$Species
-      ProjectInfo$ShortName=unlisted_project$ShortName
-      ProjectInfo$file1= paste(server_dir, "/",   ProjectID, ".RData", sep = "")  #data file
-      ProjectInfo$file2= paste(server_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
-      ProjectInfo$file3= paste(server_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
-      ProjectInfo$source="published"  #routes file1 loading through the Quickomics API
-      if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
-      if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
-    }
+    meta <- tryCatch(
+      api_get_project_meta(ProjectID, "published"),
+      error = function(e) {
+        validate(need(FALSE, message = paste(
+          "Could not reach the Quickomics API to load this project:", conditionMessage(e)
+        )))
+      }
+    )
+    validate(need(!is.null(meta), message = "Please pass a valid ProjectID from URL. Project not found via the Quickomics API (published)."))
+    ProjectInfo$ProjectID=ProjectID
+    ProjectInfo$Name=meta$Name
+    ProjectInfo$Species=meta$Species
+    ProjectInfo$ShortName=meta$ShortName
+    # file1/file2/file3 are placeholders, not real paths, for API-sourced
+    # projects -- actual data loading goes through api_load()/
+    # api_load_network()/api_load_wgcna() (see below, network.R, wgcna.R),
+    # none of which dereference these strings as real file paths. They're
+    # kept non-NULL only because other code gates on `req(ProjectInfo$file1)`.
+    ProjectInfo$file1= paste0("api://published/", ProjectID, ".RData")
+    ProjectInfo$file2= paste0("api://published/", ProjectID, "_network.RData")
+    ProjectInfo$file3= paste0("api://published/wgcna_", ProjectID, ".RData")
+    ProjectInfo$source="published"  #routes file1/network/wgcna loading through the Quickomics API
+    if (!is.null(meta$Path)) {ProjectInfo$Path=meta$Path}
+    if (!is.null(meta$ExpressionUnit)) {updateTextInput(session, "exp_unit", value=meta$ExpressionUnit)}
   }
   if (!is.null(query[['testfile']])) {
     ProjectID = query[['testfile']]
-    if (!is.null(test_dir)) {
-      validate(need(file.exists(str_c(test_dir, "/",  ProjectID, ".csv")), 
-                    message = "Please pass a valid ProjectID from URL. Files must be located in test file folder" ))
-      unlisted_project=read.csv(str_c(test_dir, "/",  ProjectID, ".csv"))
-      ProjectInfo$ProjectID=ProjectID
-      ProjectInfo$Name=unlisted_project$Name
-      ProjectInfo$Species=unlisted_project$Species
-      ProjectInfo$ShortName=unlisted_project$ShortName
-      ProjectInfo$file1= paste(test_dir, "/",   ProjectID, ".RData", sep = "")  #data file
-      ProjectInfo$file2= paste(test_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
-      ProjectInfo$file3= paste(test_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
-      ProjectInfo$source="unpublished"  #routes file1 loading through the Quickomics API
-      if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
-      if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
-    }
+    meta <- tryCatch(
+      api_get_project_meta(ProjectID, "unpublished"),
+      error = function(e) {
+        validate(need(FALSE, message = paste(
+          "Could not reach the Quickomics API to load this project:", conditionMessage(e)
+        )))
+      }
+    )
+    validate(need(!is.null(meta), message = "Please pass a valid ProjectID from URL. Project not found via the Quickomics API (unpublished)."))
+    ProjectInfo$ProjectID=ProjectID
+    ProjectInfo$Name=meta$Name
+    ProjectInfo$Species=meta$Species
+    ProjectInfo$ShortName=meta$ShortName
+    ProjectInfo$file1= paste0("api://unpublished/", ProjectID, ".RData")
+    ProjectInfo$file2= paste0("api://unpublished/", ProjectID, "_network.RData")
+    ProjectInfo$file3= paste0("api://unpublished/wgcna_", ProjectID, ".RData")
+    ProjectInfo$source="unpublished"  #routes file1/network/wgcna loading through the Quickomics API
+    if (!is.null(meta$Path)) {ProjectInfo$Path=meta$Path}
+    if (!is.null(meta$ExpressionUnit)) {updateTextInput(session, "exp_unit", value=meta$ExpressionUnit)}
   }
 })
 

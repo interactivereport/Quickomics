@@ -14,9 +14,10 @@ api_password <- Sys.getenv("QUICKOMICS_API_PASSWORD", "")
 
 # Directory containing the API's docker-compose.yml -- only used by
 # ensure_api_running() below. Auto-start is opt-in: set
-# QUICKOMICS_API_AUTOSTART=true to enable it. Off by default, since having
-# application code spawn `docker` commands is a meaningful trade-off (see
-# comment on ensure_api_running() below) that shouldn't happen silently.
+# QUICKOMICS_API_AUTOSTART=true to enable it. Off by default -- and should
+# stay off entirely whenever QuickOmics and the API run on different
+# servers, since `docker compose up -d` only ever controls the LOCAL
+# machine's Docker daemon; it has no way to reach a daemon on another host.
 api_compose_dir  <- Sys.getenv("QUICKOMICS_API_COMPOSE_DIR", "")
 api_autostart_on <- tolower(Sys.getenv("QUICKOMICS_API_AUTOSTART", "false")) %in% c("true", "1", "yes")
 
@@ -28,8 +29,8 @@ api_autostart_on <- tolower(Sys.getenv("QUICKOMICS_API_AUTOSTART", "false")) %in
 .api_token_cache$token <- NULL
 
 # Also track whether we've already tried to auto-start the API this R
-# session, so a genuinely broken API doesn't get a `docker compose up`
-# attempt on every single request.
+# session, so a genuinely broken/unreachable API doesn't get a
+# `docker compose up` attempt on every single request.
 .api_autostart_cache <- new.env(parent = emptyenv())
 .api_autostart_cache$attempted <- FALSE
 
@@ -44,19 +45,9 @@ api_health_check <- function(timeout_sec = 2) {
 
 #' If the API isn't reachable, try to start it via `docker compose up -d`
 #' and poll /health until it responds (or we give up after max_wait_sec).
-#'
-#' This is a deliberate trade-off, not a default-on convenience: it means
-#' the QuickOmics R process needs permission to run `docker` commands (the
-#' OS user it runs as must be in the `docker` group, or have passwordless
-#' sudo configured for it) -- effectively giving application code control
-#' over infrastructure lifecycle, which is normally kept separate. The more
-#' conventional alternative is simply leaving the API container always-on
-#' (docker-compose.yml already has `restart: unless-stopped`), managed
-#' independently of QuickOmics -- e.g. via systemd, or just... leaving it
-#' running. This function exists for dev/testing convenience (e.g. running
-#' QuickOmics from RStudio without remembering to start the API container
-#' first), and is OFF by default -- set QUICKOMICS_API_AUTOSTART=true and
-#' QUICKOMICS_API_COMPOSE_DIR=/path/to/QuickomicsAPI to enable it.
+#' Only actually attempts anything if QUICKOMICS_API_AUTOSTART=true --
+#' see the comment on api_compose_dir above for why this must stay off
+#' when QuickOmics and the API are on different servers.
 ensure_api_running <- function(max_wait_sec = 30, poll_interval_sec = 2) {
   if (api_health_check()) return(invisible(TRUE))
 
@@ -64,8 +55,10 @@ ensure_api_running <- function(max_wait_sec = 30, poll_interval_sec = 2) {
     stop(
       "Quickomics API is not reachable at ", api_base_url, " and auto-start ",
       "is disabled. Start it manually (`docker compose up -d` in the API ",
-      "project directory), or set QUICKOMICS_API_AUTOSTART=true and ",
-      "QUICKOMICS_API_COMPOSE_DIR to enable automatic startup."
+      "project directory, on whichever server actually runs it), or set ",
+      "QUICKOMICS_API_AUTOSTART=true and QUICKOMICS_API_COMPOSE_DIR to ",
+      "enable automatic startup (only meaningful when this R process runs ",
+      "on the SAME server as the API's docker-compose.yml)."
     )
   }
 
@@ -150,10 +143,72 @@ api_get_token <- function() {
   if (is.null(.api_token_cache$token)) api_fetch_token() else .api_token_cache$token
 }
 
+#' Fetch a project's registry metadata (Name, Species, ShortName,
+#' ExpressionUnit, Path) from the API via GET /datasets/{source}/{id} --
+#' this is the API's read_project_meta(), which reads the project's .csv
+#' manifest SERVER-SIDE, where server_dir/test_dir are always valid paths,
+#' regardless of what machine QuickOmics itself is running on.
+#'
+#' This replaces reading server_dir/test_dir's .csv manifest directly via
+#' read.csv() in inputdata.R's serverfile/testfile branches -- that local
+#' read only works if QuickOmics happens to share a filesystem with the
+#' API's network storage, which isn't guaranteed (and defeats the point of
+#' going through the API at all for everything else).
+#'
+#' @param project_id Project ID
+#' @param source "published" or "unpublished"
+#' @return A list with names matching what ProjectInfo expects directly:
+#'   Name, Species, ShortName, ExpressionUnit, Path (any of the latter two
+#'   may be NA if the .csv manifest doesn't have that column). Returns NULL
+#'   (not an error) if the API responds 404 -- i.e. no such project -- so
+#'   callers can use the same `validate(need(...))` pattern as the local
+#'   file.exists() check it replaces.
+api_get_project_meta <- function(project_id, source) {
+  ensure_api_running()
+
+  fetch_once <- function(token) {
+    httr::GET(
+      paste0(api_base_url, "/datasets/", source, "/", project_id),
+      httr::add_headers(Authorization = paste("Bearer", token))
+    )
+  }
+
+  token <- api_get_token()
+  resp <- fetch_once(token)
+
+  if (httr::status_code(resp) == 401) {
+    token <- api_fetch_token()
+    resp <- fetch_once(token)
+  }
+
+  if (httr::status_code(resp) == 404) {
+    return(NULL)
+  }
+
+  if (httr::status_code(resp) != 200) {
+    stop(
+      "Quickomics API: failed to fetch project metadata for '", project_id,
+      "' (source='", source, "'), HTTP ", httr::status_code(resp),
+      ". Response: ", httr::content(resp, "text", encoding = "UTF-8")
+    )
+  }
+
+  parsed <- jsonlite::fromJSON(httr::content(resp, "text", encoding = "UTF-8"))
+  unwrap <- function(x) if (is.list(x) || length(x) > 1) x[[1]] else x
+
+  list(
+    Name            = unwrap(parsed$name),
+    Species         = unwrap(parsed$species),
+    ShortName       = unwrap(parsed$short_name),
+    ExpressionUnit  = { v <- unwrap(parsed$expression_unit); if (is.null(v) || is.na(v)) NULL else v },
+    Path            = { v <- unwrap(parsed$path);            if (is.null(v) || is.na(v)) NULL else v }
+  )
+}
+
 #' Load a project's full data bundle from the Quickomics API, assigning the
-#' same object names base::load(RDataFile) would have created directly into
-#' `envir` -- so existing code written against `objs <- load(RDataFile)` and
-#' bare object names (MetaData, ProteinGeneName, data_wide, ...) keeps
+#' same object names base::load(RDataFile) would have created directly
+#' into `envir` -- so existing code written against `objs <- load(RDataFile)`
+#' and bare object names (MetaData, ProteinGeneName, data_wide, ...) keeps
 #' working completely unchanged after switching the call site to
 #' `objs <- api_load(project_id, source)`.
 #'
@@ -199,14 +254,9 @@ api_load <- function(project_id, source, envir = parent.frame()) {
     if (!is.null(value)) {
       # data.table objects carry an internal self-reference pointer
       # (.internal.selfref) that isn't guaranteed to survive a
-      # serialize()/unserialize() round trip cleanly -- this is a known
-      # data.table quirk, not specific to our API, but this is the exact
-      # path that round trip happens on. setDT() is data.table's own
-      # official remedy; it's a no-op for anything that isn't actually a
-      # data.table. This matters most for data_results specifically:
-      # unlike results_long/data_long, DataReactive() never explicitly
-      # rebuilds it downstream, so it's the one object with no other
-      # safety net if this goes uncorrected.
+      # serialize()/unserialize() round trip cleanly -- setDT() is
+      # data.table's own official remedy; no-op for anything that isn't
+      # actually a data.table.
       if (data.table::is.data.table(value)) {
         data.table::setDT(value)
       }
@@ -243,13 +293,14 @@ api_load <- function(project_id, source, envir = parent.frame()) {
 #' Fetch the complete, unfiltered co-expression network for a project from
 #' the API. Unlike api_load(), this returns the network data.frame directly
 #' rather than assigning into an environment -- network.R's own code
-#' assigns the result to a local `network` variable itself, so there's no
-#' load()-style multi-object semantics to replicate here.
+#' assigns the result to a local `network` variable itself.
 #'
 #' @param project_id Project ID
 #' @param source "published" or "unpublished"
-#' @return The network data.frame (columns like from/to/cor/p, depending on
-#'   how the source .RData file was structured).
+#' @return The network data.frame, or NULL if the API responds 404 (no
+#'   precomputed network for this project) -- same meaning as a missing
+#'   local file, not an error; callers should fall through to computing
+#'   fresh, not treat this as a failure.
 api_load_network <- function(project_id, source) {
   ensure_api_running()
 
@@ -268,11 +319,6 @@ api_load_network <- function(project_id, source) {
     resp <- fetch_once(token)
   }
 
-  # 404 means "no precomputed network for this project" -- the same
-  # meaning as a missing local file in the non-API path, i.e. not an
-  # error, just a signal to compute fresh instead. Any other non-200
-  # (auth failure, 5xx, unreachable API) is a genuine problem and should
-  # surface loudly rather than be silently treated the same way.
   if (httr::status_code(resp) == 404) {
     return(NULL)
   }
@@ -286,10 +332,6 @@ api_load_network <- function(project_id, source) {
   }
 
   network <- unserialize(httr::content(resp, "raw"))
-  # Same data.table serialization-safety fix as api_load() -- network.R
-  # never explicitly rebuilds this object downstream (unlike results_long/
-  # data_long in DataReactive()), so it has the same exposure to a stale
-  # .internal.selfref if the source file's network object is a data.table.
   if (data.table::is.data.table(network)) {
     data.table::setDT(network)
   }
@@ -299,13 +341,7 @@ api_load_network <- function(project_id, source) {
 #' Load a project's WGCNA bundle (netwk, dataExpr, picked_power, sft) from
 #' the API, assigning the same object names that
 #' `load(wgcnafile); load(load_wgcna_file)` would have created directly
-#' into `envir` -- mirrors all three call sites in wgcna.R that use that
-#' exact two-load pattern today.
-#'
-#' Unlike api_load(), there's no comp_only-style ordering concern here --
-#' wgcna.R never checks `identical()` on an object-name vector for this
-#' data, it just checks individual objects' existence (`exists("sft")`
-#' etc.), so plain presence/absence is all that matters.
+#' into `envir`.
 #'
 #' @param project_id Project ID
 #' @param source "published" or "unpublished"
