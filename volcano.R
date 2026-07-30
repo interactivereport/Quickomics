@@ -9,6 +9,25 @@
 ##@version 1.0
 ###########################################################################################################
 
+highlight_snapshot <- eventReactive(input$apply_highlight, {
+  list(
+    gene_list  = input$volcano_subset_gene_list,
+    label_list = input$volcano_subset_label_list,
+    color      = input$volcano_subset_highlight_color
+  )
+}, ignoreNULL = FALSE)
+
+highlight_settings <- reactive({
+  snap <- highlight_snapshot()
+  list(
+    active = !is.null(input$volcano_subset_highlight) && input$volcano_subset_highlight == "Yes" &&
+      !is.null(snap$gene_list) && nchar(trimws(snap$gene_list)) > 0,
+    gene_list  = snap$gene_list,
+    label_list = snap$label_list,
+    color      = snap$color
+  )
+})
+
 observe({
   #DataIn = DataReactive()
   tests = test_order()
@@ -207,6 +226,7 @@ output$volcanoplot <- renderPlotly({
   
 })
 
+
 volcanoplotstatic_out <- reactive({
   res = DatavolcanoReactive()
   DataIn = DataQCReactive()
@@ -216,66 +236,24 @@ volcanoplotstatic_out <- reactive({
   FCcut_rd=round(FCcut*1000)/1000
   pvalcut = as.numeric(input$volcano_pvalcut)
   
+  # ---- base plot built first and unconditionally, so it always renders ----
   if (input$volcano_psel == "Padj") {
     p <- ggplot(res, aes(x = logFC, y = -log10(Adj.P.Value)))
     ylab <- "-log10(Padj.Value)"
-    
     filterSig <- paste0("Padj", "<", pvalcut, " & abs(log2FC)>", FCcut_rd)
-    data.label <- filter(res, color == filterSig)
-    if (nrow(data.label) > input$Ngenes) {
-      data.label <- top_n(data.label, input$Ngenes, abs(logFC_ori))
-    }
-    
   } else {
     filterSig <- paste0("pval", "<", pvalcut, " & abs(log2FC)>",FCcut_rd)
-    data.label <- filter(res, color == filterSig)
-    if (nrow(data.label) > input$Ngenes) {
-      data.label <- top_n(data.label, input$Ngenes, abs(logFC_ori))
-    }
     p <- ggplot(res, aes(x = logFC, y = -log10(P.Value)))
     ylab <- "-log10(P.Value)"
   }
   
-  if (input$volcano_label=="Upload") {
-    req(input$volcano_gene_list)
-    volcano_gene_list <- input$volcano_gene_list
-    if(grepl("\n",volcano_gene_list)) {
-      volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
-    } else if(grepl(",",volcano_gene_list)) {
-      volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
-    }
-    volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
-    volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
-    uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | (Gene.Name %in% volcano_gene_list))  %>%
-      dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
-    validate(need(length(uploadlist)>0, message = "input gene list"))
-    if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
-    data.label<-res%>%filter(UniqueID %in% uploadlist)
-    
+  data.label <- filter(res, color == filterSig)
+  if (nrow(data.label) > input$Ngenes) {
+    data.label <- top_n(data.label, input$Ngenes, abs(logFC_ori))
   }
   
-  if (input$volcano_label=="Geneset") {
-    req(input$geneset_list)
-    volcano_gene_list <- input$geneset_list
-    if(grepl("\n",volcano_gene_list)) {
-      volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
-    } else if(grepl(",",volcano_gene_list)) {
-      volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
-    }
-    volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
-    volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
-    
-    uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | (toupper(Gene.Name) %in% toupper(volcano_gene_list)) )  %>%
-      dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
-    validate(need(length(uploadlist)>0, message = "Please select at least one valid gene."))
-    if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
-    data.label<-res%>%filter(UniqueID %in% uploadlist)
-  }
-  
-  
-  p <- p	+
-    scale_color_manual(values = c("grey", "green2","red2"))
-  if (input$rasterize=="Yes") { p<-p+geom_point_rast(aes(color = color), size=0.7, alpha=0.6, na.rm=TRUE, dev="ragg") 
+  p <- p + scale_color_manual(values = c("grey", "green2","red2"))
+  if (input$rasterize=="Yes") { p<-p+geom_point_rast(aes(color = color), size=0.7, alpha=0.6, na.rm=TRUE, dev="ragg")
   } else {p<-p+geom_point(aes(color = color), size=0.7) }
   p <- p+
     theme_bw(base_size = 20) +
@@ -285,70 +263,100 @@ volcanoplotstatic_out <- reactive({
     ggtitle(test_sel) +
     theme(legend.position = input$vlegendpos, legend.text=element_text(size=input$yfontsize))
   
-  if (input$volcano_label!="None") {
-    use_highlight <- !is.null(input$volcano_subset_highlight) &&
-      input$volcano_subset_highlight=="Yes" &&
-      !is.null(input$volcano_subset_gene_list) &&
-      nchar(trimws(input$volcano_subset_gene_list)) > 0
-    
-    if (use_highlight) {
-      parse_gene_list <- function(txt) {
-        x <- txt
-        if (grepl("\n", x)) {
-          x <- stringr::str_split(x, "\n")[[1]]
-        } else if (grepl(",", x)) {
-          x <- stringr::str_split(x, ",")[[1]]
-        }
-        x <- gsub(" ", "", x, fixed = TRUE)
-        unique(x[x != ""])
+  # ---- gene labeling overlay: graceful fallback instead of req()/validate() blocking ----
+  if (input$volcano_label=="Upload") {
+    volcano_gene_list <- input$volcano_gene_list
+    if (!is.null(volcano_gene_list) && nchar(trimws(volcano_gene_list)) > 0) {
+      if(grepl("\n",volcano_gene_list)) {
+        volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
+      } else if(grepl(",",volcano_gene_list)) {
+        volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
       }
-      
-      lookup_ids <- function(gene_vec) {
-        if (length(gene_vec) == 0) return(character(0))
-        dplyr::filter(ProteinGeneName,
-                      (UniqueID %in% gene_vec) | (Protein.ID %in% gene_vec) | (toupper(Gene.Name) %in% toupper(gene_vec))) %>%
-          dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>% as.character()
-      }
-      
-      # genes whose DOT gets the highlight color
-      highlight_ids <- lookup_ids(parse_gene_list(input$volcano_subset_gene_list))
-      
-      # genes the user wants FORCED to have a text label -- but only honored if
-      # they're also in the highlight list; anything else is silently ignored
-      label_list_raw <- if (!is.null(input$volcano_subset_label_list)) parse_gene_list(input$volcano_subset_label_list) else character(0)
-      label_ids_raw <- lookup_ids(label_list_raw)
-      valid_label_ids <- intersect(label_ids_raw, highlight_ids)
-      
-      # points: originally labeled genes + every highlighted gene (labeled or not)
-      point_ids <- union(data.label$UniqueID, highlight_ids)
-      data.point.combined <- res %>% dplyr::filter(UniqueID %in% point_ids)
-      data.point.combined$label_color <- ifelse(data.point.combined$UniqueID %in% highlight_ids,
-                                                input$volcano_subset_highlight_color,
-                                                input$volcano_subset_color)
-      
-      # text labels: originally labeled genes + only the validated forced-label subset
-      label_ids_final <- union(data.label$UniqueID, valid_label_ids)
-      data.label.combined <- res %>% dplyr::filter(UniqueID %in% label_ids_final)
-      data.label.combined$label_color <- ifelse(data.label.combined$UniqueID %in% highlight_ids,
-                                                input$volcano_subset_highlight_color,
-                                                input$volcano_subset_color)
-      
-      p = p + geom_point(data = data.point.combined, color = data.point.combined$label_color, size = 1.5)
-      # p = p + geom_text_repel(data = data.label.combined, aes(label = labelgeneid), color = data.label.combined$label_color,
-      #                         size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
-      #                         max.overlaps = Inf, seed = 42)
-      p = p + geom_text_repel(data = data.label.combined, aes(label = labelgeneid), color = data.label.combined$label_color,
-                              size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
-                              max.overlaps = Inf, seed = 42,
-                              max.time = 5, max.iter = 50000, force = 3, force_pull = 1,
-                              min.segment.length = 0)
-      } else {
-      p = p + geom_point(data = data.label, color = input$volcano_subset_color, size = 1.5)
-      p = p + geom_text_repel(data = data.label, aes(label=labelgeneid), color = input$volcano_subset_color,
-                              size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
-                              max.overlaps = Inf, seed = 42)
+      volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
+      volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
+      uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | (Gene.Name %in% volcano_gene_list))  %>%
+        dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>% as.character()
+      if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
+      data.label<-res%>%filter(UniqueID %in% uploadlist)
+    } else {
+      data.label <- res[0, ]   # nothing entered yet -- base plot still renders, no labels
     }
-  }  
+  }
+  
+  if (input$volcano_label=="Geneset") {
+    volcano_gene_list <- input$geneset_list
+    if (!is.null(volcano_gene_list) && nchar(trimws(volcano_gene_list)) > 0) {
+      if(grepl("\n",volcano_gene_list)) {
+        volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
+      } else if(grepl(",",volcano_gene_list)) {
+        volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
+      }
+      volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
+      volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
+      uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | (toupper(Gene.Name) %in% toupper(volcano_gene_list)) )  %>%
+        dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>% as.character()
+      if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
+      data.label<-res%>%filter(UniqueID %in% uploadlist)
+    } else {
+      data.label <- res[0, ]
+    }
+  }
+  
+  if (input$volcano_label=="None") {
+    data.label <- res[0, ]
+  }
+  
+  # ---- independent highlight overlay: works regardless of Label Genes mode, ----
+  # ---- only recomputes when "Apply Highlight" is clicked (isolate()'d text/color inputs) ----
+  hs <- highlight_settings()
+  
+  if (hs$active) {
+    parse_gene_list <- function(txt) {
+      x <- txt
+      if (grepl("\n", x)) { x <- stringr::str_split(x, "\n")[[1]] }
+      else if (grepl(",", x)) { x <- stringr::str_split(x, ",")[[1]] }
+      x <- gsub(" ", "", x, fixed = TRUE)
+      unique(x[x != ""])
+    }
+    lookup_ids <- function(gene_vec) {
+      if (length(gene_vec) == 0) return(character(0))
+      dplyr::filter(ProteinGeneName,
+                    (UniqueID %in% gene_vec) | (Protein.ID %in% gene_vec) | (toupper(Gene.Name) %in% toupper(gene_vec))) %>%
+        dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>% as.character()
+    }
+    
+    highlight_ids <- lookup_ids(parse_gene_list(hs$gene_list))
+    label_list_raw <- if (!is.null(hs$label_list)) parse_gene_list(hs$label_list) else character(0)
+    label_ids_raw <- lookup_ids(label_list_raw)
+    valid_label_ids <- intersect(label_ids_raw, highlight_ids)
+    
+    point_ids <- union(data.label$UniqueID, highlight_ids)
+    data.point.combined <- res %>% dplyr::filter(UniqueID %in% point_ids)
+    data.point.combined$label_color <- ifelse(data.point.combined$UniqueID %in% highlight_ids, hs$color, input$volcano_subset_color)
+    
+    label_ids_final <- union(data.label$UniqueID, valid_label_ids)
+    data.label.combined <- res %>% dplyr::filter(UniqueID %in% label_ids_final)
+    data.label.combined$label_color <- ifelse(data.label.combined$UniqueID %in% highlight_ids, hs$color, input$volcano_subset_color)
+    
+    if (nrow(data.point.combined) > 0) {
+      p <- p + geom_point(data = data.point.combined, color = data.point.combined$label_color, size = 1.5)
+    }
+    if (nrow(data.label.combined) > 0) {
+      p <- p + geom_text_repel(data = data.label.combined, aes(label = labelgeneid), color = data.label.combined$label_color,
+                               size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
+                               max.overlaps = Inf, seed = 42,
+                               max.time = 5, max.iter = 50000, force = 3, force_pull = 1,
+                               min.segment.length = 0)
+    }
+  } else {
+    if (nrow(data.label) > 0) {
+      p <- p + geom_point(data = data.label, color = input$volcano_subset_color, size = 1.5)
+      p <- p + geom_text_repel(data = data.label, aes(label=labelgeneid), color = input$volcano_subset_color,
+                               size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
+                               max.overlaps = Inf, seed = 42)
+    }
+  }
+  
   p <- p + guides(color = guide_legend(override.aes = list(alpha = 1, size = 4)))
   return(p)
 })
@@ -394,39 +402,46 @@ DEG_Compare <- reactive({
       labs(color='Significance',size='-log10 min P.Value', title=cor_string) 
   }
   if (input$volcano_label=="Upload") {
-    req(input$volcano_gene_list)
     volcano_gene_list <- input$volcano_gene_list
-    if(grepl("\n",volcano_gene_list)) {
-      volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
-    } else if(grepl(",",volcano_gene_list)) {
-      volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
+    if (!is.null(volcano_gene_list) && nchar(trimws(volcano_gene_list)) > 0) {
+      if(grepl("\n",volcano_gene_list)) {
+        volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
+      } else if(grepl(",",volcano_gene_list)) {
+        volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
+      }
+      volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
+      volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
+      uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | (Gene.Name %in% volcano_gene_list))  %>%
+        dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
+      if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
+      data.label<-plotdata%>%filter(UniqueID %in% uploadlist)
+    } else {
+      data.label <- plotdata[0, ]   # nothing entered yet -- base plot still renders, no labels
     }
-    volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
-    volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
-    uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | (Gene.Name %in% volcano_gene_list))  %>%
-      dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
-    validate(need(length(uploadlist)>0, message = "Please enter at least one valid gene."))
-    if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
-    data.label<-plotdata%>%filter(UniqueID %in% uploadlist)
-    
   }
   
   if (input$volcano_label=="Geneset") {
-    req(input$geneset_list)
     volcano_gene_list <- input$geneset_list
-    if(grepl("\n",volcano_gene_list)) {
-      volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
-    } else if(grepl(",",volcano_gene_list)) {
-      volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
+    if (!is.null(volcano_gene_list) && nchar(trimws(volcano_gene_list)) > 0) {
+      if(grepl("\n",volcano_gene_list)) {
+        volcano_gene_list <-  stringr::str_split(volcano_gene_list, "\n")[[1]]
+      } else if(grepl(",",volcano_gene_list)) {
+        volcano_gene_list <-  stringr::str_split(volcano_gene_list, ",")[[1]]
+      }
+      volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
+      volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
+      uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | 
+                                    (toupper(Gene.Name) %in% toupper(volcano_gene_list)))  %>%
+        dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
+      if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
+      data.label<-plotdata%>%filter(UniqueID %in% uploadlist)
+    } else {
+      data.label <- plotdata[0, ]
     }
-    volcano_gene_list <- gsub(" ", "", volcano_gene_list, fixed = TRUE)
-    volcano_gene_list <- unique(volcano_gene_list[volcano_gene_list != ""])
-    uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% volcano_gene_list) | (Protein.ID %in% volcano_gene_list) | 
-                                  (toupper(Gene.Name) %in% toupper(volcano_gene_list)))  %>%
-      dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
-    validate(need(length(uploadlist)>0, message = "Please select at least one valid gene."))
-    if (length(uploadlist)>input$Ngenes) {uploadlist=uploadlist[1:input$Ngenes]}
-    data.label<-plotdata%>%filter(UniqueID %in% uploadlist)
+  }
+  
+  if (input$volcano_label=="None") {
+    data.label <- plotdata[0, ]
   }
   
   
@@ -434,20 +449,66 @@ DEG_Compare <- reactive({
                                     'X_notsig Y_sig'='orange','X_notsig Y_notsig'='#00000022')) + 
     theme(legend.position=input$vlegendpos, legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1))
   
-  if (input$volcano_label=="Upload" || input$volcano_label=="Geneset" ) {
-    p=p+ geom_text_repel(data = data.label,  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
-                         color="coral3",  point.padding = unit(0.3, "lines"))
-  } #uploaded list use a different color. The DEGs colors are hard to see for un-sig genes.
-  if (input$volcano_label=="DEGs") {
-    if (input$DEG_comp_color=="No") {
-      p=p+ geom_text_repel(data = data.label, color="coral3",  aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
-                           point.padding = unit(0.3, "lines"))
-    } else {
-      p=p+ geom_text_repel(data = data.label, aes(label=labelgeneid.x),	size = input$lfontsize,	box.padding = unit(0.35, "lines"),	
-                           point.padding = unit(0.3, "lines"))
+  # ---- independent highlight overlay: works regardless of Label Genes mode, ----
+  # ---- only recomputes when "Apply Highlight" is clicked ----
+  hs <- highlight_settings()
+  
+  if (hs$active) {
+    parse_gene_list <- function(txt) {
+      x <- txt
+      if (grepl("\n", x)) { x <- stringr::str_split(x, "\n")[[1]] }
+      else if (grepl(",", x)) { x <- stringr::str_split(x, ",")[[1]] }
+      x <- gsub(" ", "", x, fixed = TRUE)
+      unique(x[x != ""])
     }
-  }  
-  #browser() #debug
+    lookup_ids <- function(gene_vec) {
+      if (length(gene_vec) == 0) return(character(0))
+      dplyr::filter(ProteinGeneName,
+                    (UniqueID %in% gene_vec) | (Protein.ID %in% gene_vec) | (toupper(Gene.Name) %in% toupper(gene_vec))) %>%
+        dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>% as.character()
+    }
+    
+    highlight_ids <- lookup_ids(parse_gene_list(hs$gene_list))
+    label_list_raw <- if (!is.null(hs$label_list)) parse_gene_list(hs$label_list) else character(0)
+    label_ids_raw <- lookup_ids(label_list_raw)
+    valid_label_ids <- intersect(label_ids_raw, highlight_ids)
+    
+    point_ids <- union(data.label$UniqueID, highlight_ids)
+    data.point.combined <- plotdata %>% dplyr::filter(UniqueID %in% point_ids)
+    data.point.combined$label_color <- ifelse(data.point.combined$UniqueID %in% highlight_ids, hs$color, input$volcano_subset_color)
+    
+    label_ids_final <- union(data.label$UniqueID, valid_label_ids)
+    data.label.combined <- plotdata %>% dplyr::filter(UniqueID %in% label_ids_final)
+    data.label.combined$label_color <- ifelse(data.label.combined$UniqueID %in% highlight_ids, hs$color, input$volcano_subset_color)
+    
+    if (nrow(data.point.combined) > 0) {
+      p <- p + geom_point(data = data.point.combined, color = data.point.combined$label_color, size = 1.5)
+    }
+    if (nrow(data.label.combined) > 0) {
+      p <- p + geom_text_repel(data = data.label.combined, aes(label = labelgeneid.x), color = data.label.combined$label_color,
+                               size = input$lfontsize, box.padding = unit(0.35, "lines"), point.padding = unit(0.3, "lines"),
+                               max.overlaps = Inf, seed = 42,
+                               max.time = 5, max.iter = 50000, force = 3, force_pull = 1,
+                               min.segment.length = 0)
+    }
+  } else {
+    if (nrow(data.label) > 0) {
+      if (input$volcano_label=="Upload" || input$volcano_label=="Geneset" ) {
+        p=p+ geom_text_repel(data = data.label,  aes(label=labelgeneid.x), size = input$lfontsize, box.padding = unit(0.35, "lines"),
+                             color="coral3",  point.padding = unit(0.3, "lines"))
+      }
+      if (input$volcano_label=="DEGs") {
+        if (input$DEG_comp_color=="No") {
+          p=p+ geom_text_repel(data = data.label, color="coral3",  aes(label=labelgeneid.x), size = input$lfontsize, box.padding = unit(0.35, "lines"),
+                               point.padding = unit(0.3, "lines"))
+        } else {
+          p=p+ geom_text_repel(data = data.label, aes(label=labelgeneid.x), size = input$lfontsize, box.padding = unit(0.35, "lines"),
+                               point.padding = unit(0.3, "lines"))
+        }
+      }
+    }
+  }
+  
   if (input$DEG_comp_XY=="Yes"){
     XY_min=min(min(plotdata$logFC.x), min(plotdata$logFC.y))
     XY_max=max(max(plotdata$logFC.x), max(plotdata$logFC.y))

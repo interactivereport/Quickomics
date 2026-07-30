@@ -624,18 +624,19 @@ ui <- fluidPage(
                                                            conditionalPanel("input.volcano_label=='Geneset'",
                                                                             uiOutput("html_geneset")
                                                            ),
-                                                           conditionalPanel("input.volcano_label!='None'",
-                                                                            radioButtons("volcano_subset_highlight", label="Highlight Another Set of Genes in a Different Color?",
-                                                                                         inline = TRUE, choices = c("Yes","No"), selected = "No"),
-                                                                            conditionalPanel("input.volcano_subset_highlight=='Yes'",
-                                                                                             textAreaInput("volcano_subset_gene_list",
-                                                                                                           "Enter Gene List to Highlight\n(UniqueID, Gene.Name or Protein.ID)",
-                                                                                                           "", cols = 5, rows=6),
-                                                                                             colourInput("volcano_subset_highlight_color", "Color of Highlight Gene List and Label:", "red"),
-                                                                                             textAreaInput("volcano_subset_label_list",
-                                                                                                           "Enter Genes From the Highlight List to Label\n(only genes also present in the list above will be labeled; genes entered here are always labeled, never dropped)",
-                                                                                                           "", cols = 5, rows=6)
-                                                                            )
+                                                           tags$hr(),
+                                                           radioButtons("volcano_subset_highlight", label="Highlight a Set of Genes in a Different Color?",
+                                                                        inline = TRUE, choices = c("No","Yes"), selected = "No"),
+                                                           conditionalPanel("input.volcano_subset_highlight=='Yes'",
+                                                                            textAreaInput("volcano_subset_gene_list",
+                                                                                          "Enter Gene List to Highlight\n(UniqueID, Gene.Name or Protein.ID)",
+                                                                                          "", cols = 5, rows=6),
+                                                                            colourInput("volcano_subset_highlight_color", "Color of Highlight Gene List and Label:", "red"),
+                                                                            textAreaInput("volcano_subset_label_list",
+                                                                                          "Enter Genes From the Highlight List to Label\n(only genes also present in the list above will be labeled; genes entered here are always labeled, never dropped)",
+                                                                                          "", cols = 5, rows=6),
+                                                                            actionButton("apply_highlight", "Apply Highlight",
+                                                                                         style="color: #0961E3; background-color: #F6E98C; border-color: #2e6da4")
                                                            )
                                          ),
                                          conditionalPanel("input.volcano_tabset!='DEG Counts'",
