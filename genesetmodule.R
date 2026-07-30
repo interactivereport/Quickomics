@@ -260,14 +260,7 @@ geneset_ui <- function(id) {
                                 #actionButton(ns("metabaseSave"), "Save to output"),
                                 uiOutput(ns("plot.metabase"))),
                        tabPanel(title="Wikipathways View",
-                                p("Select a wikipathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
-                                selectizeInput(ns("sel_wikipathways_set"), label="Wikipathways for Visualization", choices = NULL, multiple = FALSE, width="600px", 
-                                               options = list(placeholder =	'Type to search')),
-                                #actionButton(ns("metabaseSave"), "Save to output"),
-                                fluidRow( column( width = 4,  # adjust width as needed
-                                                  plotOutput(ns("wiki_legend"), height = 50)
-                                )),
-                                svgPanZoomOutput(ns("wikipathways_plot"),width = "100%", height = "100%")   
+                                uiOutput(ns("wikipathways_tab_ui"))
                        ),
                        tabPanel(title="Dot Plot",
                                 tags$p("Step for making Dot Plot: 1) Run GSEA or ORA and choose the correct Analysis Type from the left menu; 2) Select comparions to plot and click the select comparison button, optionally reorder them;  3) Adjust other settings from left menu as needed, and click the Plot/Refresh button."),
@@ -1350,7 +1343,20 @@ geneset_server <- function(id) {
                           })
                         })
                         
-                        #############################  Wiki  ######                        
+                        #############################  Wiki  ######      
+                        output$wikipathways_tab_ui <- renderUI({
+                          req(input$geneset_tabset == "Wikipathways View")
+                          tagList(
+                            p("Select a wikipathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
+                            selectizeInput(ns("sel_wikipathways_set"), label="Wikipathways for Visualization", choices = NULL, multiple = FALSE, width="600px",
+                                           options = list(placeholder = 'Type to search')),
+                            fluidRow( column( width = 4,
+                                              plotOutput(ns("wiki_legend"), height = 50)
+                            )),
+                            svgPanZoomOutput(ns("wikipathways_plot"), width = "100%", height = "100%")
+                          )
+                        })
+                        
                         wiki_plot_results<-reactive({
                           ID=input$sel_wikipathways_set
                           shiny::validate(need(ID!="", message = "Please select a Wikipathway to map logFC data to it."))
