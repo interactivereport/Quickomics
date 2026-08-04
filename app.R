@@ -631,7 +631,7 @@ ui <- fluidPage(
                                                                             textAreaInput("volcano_subset_gene_list",
                                                                                           "Enter Gene List to Highlight\n(UniqueID, Gene.Name or Protein.ID)",
                                                                                           "", cols = 5, rows=6),
-                                                                            colourInput("volcano_subset_highlight_color", "Color of Highlight Gene List and Label:", "red"),
+                                                                            colourInput("volcano_subset_highlight_color", "Color of Highlight Gene List and Label:", "black"),
                                                                             textAreaInput("volcano_subset_label_list",
                                                                                           "Enter Genes From the Highlight List to Label\n(only genes also present in the list above will be labeled; genes entered here are always labeled, never dropped)",
                                                                                           "", cols = 5, rows=6),

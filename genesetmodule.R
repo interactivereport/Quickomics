@@ -260,6 +260,12 @@ geneset_ui <- function(id) {
                                 #actionButton(ns("metabaseSave"), "Save to output"),
                                 uiOutput(ns("plot.metabase"))),
                        tabPanel(title="Wikipathways View",
+                                p("Select a wikipathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
+                                selectizeInput(ns("sel_wikipathways_set"), label="Wikipathways for Visualization", choices = NULL, multiple = FALSE, width="600px", 
+                                               options = list(placeholder = 'Type to search')),
+                                fluidRow( column( width = 4,
+                                                  plotOutput(ns("wiki_legend"), height = 50)
+                                )),
                                 uiOutput(ns("wikipathways_tab_ui"))
                        ),
                        tabPanel(title="Dot Plot",
@@ -1346,15 +1352,15 @@ geneset_server <- function(id) {
                         #############################  Wiki  ######      
                         output$wikipathways_tab_ui <- renderUI({
                           req(input$geneset_tabset == "Wikipathways View")
-                          tagList(
-                            p("Select a wikipathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
-                            selectizeInput(ns("sel_wikipathways_set"), label="Wikipathways for Visualization", choices = NULL, multiple = FALSE, width="600px",
-                                           options = list(placeholder = 'Type to search')),
-                            fluidRow( column( width = 4,
-                                              plotOutput(ns("wiki_legend"), height = 50)
-                            )),
+                          # tagList(
+                          #   p("Select a wikipathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
+                          #   selectizeInput(ns("sel_wikipathways_set"), label="Wikipathways for Visualization", choices = NULL, multiple = FALSE, width="600px",
+                          #                  options = list(placeholder = 'Type to search')),
+                          #   fluidRow( column( width = 4,
+                          #                     plotOutput(ns("wiki_legend"), height = 50)
+                          #   )),
                             svgPanZoomOutput(ns("wikipathways_plot"), width = "100%", height = "100%")
-                          )
+                          # )
                         })
                         
                         wiki_plot_results<-reactive({
@@ -1395,6 +1401,7 @@ geneset_server <- function(id) {
                         
                         output$wiki_legend<-renderPlot({
                           #validate(wiki_plot_results())
+                          req(input$sel_wikipathways_set != "") # && str_detect(input$sel_wikipathways_set, "WP\\d+$"))
                           p2=wiki_plot_results()
                           draw(p2$lgd)
                         })
