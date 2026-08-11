@@ -109,6 +109,16 @@ DataHeatMapReactive <- reactive({
   }
   
   if (input$heatmap_subset == "All") {
+    # Filter out genes with any missing values BEFORE selecting the top-N,
+    # so the requested gene count is guaranteed to be met (when enough
+    # complete-data genes exist), and clustering can never hit a NaN
+    # pairwise-distance failure downstream for this selection.
+    complete_rows <- rowSums(is.na(tmpdat)) == 0
+    n_incomplete <- sum(!complete_rows)
+    if (n_incomplete > 0) {
+      cat("Excluding", n_incomplete, "genes with missing values before selecting top", input$maxgenes, "genes\n")
+      tmpdat <- tmpdat[complete_rows, , drop = FALSE]
+    }
     if (nrow(tmpdat)>input$maxgenes) {
       if (input$heatmap_submethod=="Random") {
         tmpdat=tmpdat[sample(1:nrow(tmpdat), input$maxgenes),] #this will keep rownames
@@ -180,7 +190,6 @@ DataHeatMapReactive <- reactive({
   sel_rows1=rowSums(is.na(tmpdat))<ncol(tmpdat) #remove data rows with all NAs
   sel_rows2=rownames(tmpdat) %in% rownames(DataIn$data_wide) #remove duplicate rows caused by matching (e.g."ALDH7A1_P49419"   "ALDH7A1_P49419-2")
   tmpdat  <-  tmpdat[sel_rows1 & sel_rows2, ]
-  if (nrow(tmpdat)>5000 ) {tmpdat=tmpdat[sample(1:nrow(tmpdat), 5000),]; cat("Reduce data pionts to 5K\n")} #Use at most 5000 genes so the App won't crash
   
   df <- data.matrix(tmpdat)
   #use selected gene label
@@ -195,17 +204,45 @@ DataHeatMapReactive <- reactive({
   return(list("df"=df, "df_UniqueID" = tmpdat, "annotation"=annotation, "gene_annot_info"=gene_annot_info))
 })
 
+# Applies the "won't crash" row cap only where it's actually needed -- the two
+# static/base-graphics heatmaps (ComplexHeatmap and heatmap.2). The interactive
+# morpheus heatmap calls DataHeatMapReactive() directly and is intentionally left
+# uncapped, since morpheus is canvas-based and built for large matrices.
+# Keeps data.in and gene_annot_info consistently aligned by row index when capping occurs.
+cap_heatmap_rows <- function(DataHeatMap, max_rows = 5000) {
+  data.in <- DataHeatMap$df
+  gene_annot_info <- DataHeatMap$gene_annot_info
+  sel_idx <- seq_len(nrow(data.in))
+  if (nrow(data.in) > max_rows) {
+    sel_idx <- sample(sel_idx, max_rows)
+    data.in <- data.in[sel_idx, , drop = FALSE]
+    if (!is.null(gene_annot_info)) {
+      gene_annot_info <- gene_annot_info[sel_idx, , drop = FALSE]
+    }
+    cat("Reduce data points to", max_rows, "for static heatmap\n")
+  }
+  list(data.in = data.in, gene_annot_info = gene_annot_info, sel_idx = sel_idx)
+}
+
 
 observeEvent(input$plot_heatmap,{
   plot_heatmap_control( plot_heatmap_control()+1)
 })
 
+# Computed once per "Plot/Refresh" click and cached (eventReactive), so that
+# pheatmap2_out and heamap_gct both read the SAME capped/sampled subset rather
+# than each independently calling sample() and potentially disagreeing.
+pheatmap2_capped <- eventReactive(plot_heatmap_control(), {
+  cap_heatmap_rows(DataHeatMapReactive(), max_rows = 5000)
+})
+
 pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
     ptm <- proc.time()
     DataHeatMap <- DataHeatMapReactive()
-    data.in <- DataHeatMap$df
+    capped <- pheatmap2_capped()
+    data.in <- capped$data.in
+    gene_annot_info <- capped$gene_annot_info
     annotation <- DataHeatMap$annotation
-    gene_annot_info <- DataHeatMap$gene_annot_info
     sample_annot=NULL #column annotation
     if (!is.null(input$heatmap_annot)) {
       #functions to assign colors
@@ -408,7 +445,8 @@ observeEvent(input$pheatmap2, {
 
 heamap_gct <- eventReactive(plot_heatmap_control(),  {
   DataHeatMap <- DataHeatMapReactive()
-  data.in <- DataHeatMap$df_UniqueID
+  capped <- pheatmap2_capped()
+  data.in <- DataHeatMap$df_UniqueID[capped$sel_idx, , drop = FALSE]  # same rows as the paired static heatmap, by position
   annotation <- DataHeatMap$annotation
   tmpDataIn = DataQCReactive()  
   ProteinGeneName = tmpDataIn$ProteinGeneName
@@ -424,7 +462,8 @@ observeEvent(input$heatmap_gct, {
 staticheatmap_out <- reactive({
   withProgress(message = 'Making static heatmap 2:', value = 0, {
     DataHeatMap <- DataHeatMapReactive()
-    data.in <- DataHeatMap$df
+    capped <- cap_heatmap_rows(DataHeatMap, max_rows = 5000)
+    data.in <- capped$data.in
     annotation <- DataHeatMap$annotation
     
     cutree_rows = input$cutreerows
@@ -496,6 +535,15 @@ interactiveHeatmap <- eventReactive(input$action_heatmaps, {
   
   Rowv <- input$dendrogram %in% c("both", "row")
   Colv <- input$dendrogram %in% c("both", "column")
+  
+  if (Rowv | Colv) {
+    tmp <- try(hclust(dist(data.in, method = input$distanceMethod), method = input$agglomerationMethod), silent = TRUE)
+    if (inherits(tmp, "try-error")) {
+      N1 <- nrow(data.in)
+      data.in <- na.omit(data.in)
+      cat("NA caused morpheus cluster error, remove all rows containing NAs, from", N1, "to", nrow(data.in), "\n")
+    }
+  }
   
   col_annot_df <- NULL
   if (!is.null(input$heatmap_annot) && length(input$heatmap_annot) > 0) {
