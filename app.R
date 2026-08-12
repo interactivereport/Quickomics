@@ -663,7 +663,21 @@ ui <- fluidPage(
                                                             tags$p("Click a comparison name to view volcano plot."), tags$hr(),
                                                             DT::dataTableOutput("deg_counts")),
                                                    tabPanel(title="Volcano Plot (Static)",actionButton("volcano", "Save to output"), plotOutput("volcanoplotstatic", height=800)),
-                                                   tabPanel(title="Volcano Plot (Interactive)", plotlyOutput("volcanoplot", height=800)),
+                                                   tabPanel(title="Volcano Plot (Interactive)",
+                                                            hr(),
+                                                            p("Use the lasso or box-select tool in the plot's toolbar (top-right of the plot) to circle a region and see the genes it contains in the table below. Double-click the plot to clear your selection."),
+                                                            plotlyOutput("volcanoplot", height = 800),
+                                                            hr(),
+                                                            fluidRow(
+                                                              column(12, textOutput("volcano_selected_count"))
+                                                            ),
+                                                            fluidRow(
+                                                              column(12, actionButton("volcano_selected_to_highlight", "Send Selected Genes to Highlight List",
+                                                                                      style="color: #0961E3; background-color: #F6E98C; border-color: #2e6da4"))
+                                                            ),
+                                                            hr(),
+                                                            DT::dataTableOutput("volcano_selected_table")
+                                                   ),
                                                    tabPanel(title="DEGs in Two Comparisons",actionButton("DEG_comp", "Save to output"), plotOutput("DEG_Compare", height=800)),
                                                    tabPanel(title="Data Table", actionButton("DEG_data", "Save to output"), DT::dataTableOutput("volcanoData")),
                                                    tabPanel(title="Help", htmlOutput('help_volcano'))
