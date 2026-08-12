@@ -295,6 +295,7 @@ observeEvent(input$volcano_selected_to_highlight, {
   sel_ids <- volcano_selected_ids()
   req(length(sel_ids) > 0)
   updateTextAreaInput(session, "volcano_subset_gene_list", value = paste(sel_ids, collapse = "\n"))
+  updateTextAreaInput(session, "volcano_subset_label_list", value = "")  # clear stale force-label list -- it belonged to a different highlight set
   updateRadioButtons(session, "volcano_subset_highlight", selected = "Yes")
   showNotification(paste(length(sel_ids), "genes sent to the Highlight Gene List. Click 'Apply Highlight' on the Static plot to see them colored."), type = "message")
 })
@@ -409,7 +410,7 @@ volcanoplotstatic_out <- reactive({
     
     label_ids_final <- union(data.label$UniqueID, valid_label_ids)
     data.label.combined <- res %>% dplyr::filter(UniqueID %in% label_ids_final)
-    data.label.combined$label_color <- ifelse(data.label.combined$UniqueID %in% highlight_ids, hs$color, input$volcano_subset_color)
+    data.label.combined$label_color <- ifelse(data.label.combined$UniqueID %in% valid_label_ids, hs$color, input$volcano_subset_color)
     
     if (nrow(data.point.combined) > 0) {
       p <- p + geom_point(data = data.point.combined, color = data.point.combined$label_color, size = 1.5)
@@ -552,7 +553,7 @@ DEG_Compare <- reactive({
     
     label_ids_final <- union(data.label$UniqueID, valid_label_ids)
     data.label.combined <- plotdata %>% dplyr::filter(UniqueID %in% label_ids_final)
-    data.label.combined$label_color <- ifelse(data.label.combined$UniqueID %in% highlight_ids, hs$color, input$volcano_subset_color)
+    data.label.combined$label_color <- ifelse(data.label.combined$UniqueID %in% valid_label_ids, hs$color, input$volcano_subset_color)
     
     if (nrow(data.point.combined) > 0) {
       p <- p + geom_point(data = data.point.combined, color = data.point.combined$label_color, size = 1.5)
