@@ -202,10 +202,10 @@ output$volcanoplot <- renderPlotly({
   FCcut = log2(as.numeric(input$volcano_FCcut))
   pvalcut = as.numeric(input$volcano_pvalcut)
   if (input$volcano_psel == "Padj") {
-    p <- ggplot(res, aes(x = logFC, y =-log10(Adj.P.Value), text=str_c(UniqueID, "\n", Gene.Name )))
+    p <- ggplot(res, aes(x = logFC, y =-log10(Adj.P.Value), text=str_c(UniqueID, "\n", Gene.Name ), key = UniqueID))
     ylab <- "-log10(Padj.Value)"
   } else {
-    p <- ggplot(res, aes(x = logFC, y =-log10(P.Value), text=str_c(UniqueID, "\n", Gene.Name )))
+    p <- ggplot(res, aes(x = logFC, y =-log10(P.Value), text=str_c(UniqueID, "\n", Gene.Name ), key = UniqueID))
     ylab <- "-log10(P.Value)"
   }
   p <- p	+
@@ -221,9 +221,82 @@ output$volcanoplot <- renderPlotly({
                             legend.text=element_text(size=12))
   p$elementId <- NULL
   
-  p <- ggplotly(p) %>% layout(legend = list(orientation = 'h', y=-0.2))
+  p <- ggplotly(p, source = "volcano_select", tooltip = "text") %>%
+    plotly::toWebGL() %>%
+    layout(legend = list(orientation = 'h', y=-0.2), dragmode = "lasso") %>%
+    plotly::event_register("plotly_selected")
   p
   
+})
+
+# ---- Interactive selection: lasso/box-select genes on the plot above, see them in a table ----
+# Tracked in our own reactiveVal (rather than reading event_data() directly), so we
+# have full control to reset it, and so we can debounce -- plotly fires a stream of
+# "plotly_selected" events continuously during a drag, and reacting to every single
+# one (filtering the full result set each time) is what made the lasso feel sluggish.
+selected_gene_keys <- reactiveVal(character(0))
+
+volcano_selection_raw <- reactive({
+  plotly::event_data("plotly_selected", source = "volcano_select")
+})
+volcano_selection_debounced <- volcano_selection_raw %>% debounce(300)
+
+observeEvent(volcano_selection_debounced(), {
+  ed <- volcano_selection_debounced()
+  if (is.null(ed) || nrow(ed) == 0) {
+    selected_gene_keys(character(0))
+  } else {
+    selected_gene_keys(unique(as.character(ed$key)))
+  }
+})
+
+volcano_selected_ids <- reactive({
+  selected_gene_keys()
+})
+
+# Clear the volcano-plot selection whenever the comparison changes, so the
+# selected-gene table/count don't show stale results from a different test.
+observeEvent(input$volcano_test, {
+  selected_gene_keys(character(0))
+  plotly::plotlyProxy("volcanoplot", session) %>%
+    plotly::plotlyProxyInvoke("restyle", "selectedpoints", list(NULL))
+})
+
+output$volcano_selected_count <- renderText({
+  n <- length(volcano_selected_ids())
+  if (n == 0) {
+    "No genes selected yet -- use the lasso or box-select tool on the plot above."
+  } else {
+    paste0(n, " gene(s) selected.")
+  }
+})
+
+volcano_selected_table_data <- reactive({
+  sel_ids <- volcano_selected_ids()
+  req(length(sel_ids) > 0)
+  res <- DatavolcanoReactive()
+  tab <- res %>%
+    dplyr::filter(UniqueID %in% sel_ids) %>%           # also self-corrects if selection is stale after switching comparisons
+    dplyr::select(UniqueID, Gene.Name, logFC = logFC_ori, P.Value, Adj.P.Value) %>%
+    dplyr::arrange(P.Value)
+  tab[, sapply(tab, is.numeric)] <- signif(tab[, sapply(tab, is.numeric)], 3)
+  tab
+})
+
+output$volcano_selected_table <- DT::renderDT({
+  validate(need(length(volcano_selected_ids()) > 0, 
+                "Use the lasso or box-select tool on the plot above to select a region of genes."))
+  DT::datatable(volcano_selected_table_data(), extensions = 'Buttons', rownames = FALSE,
+                options = list(dom = 'lBfrtip', buttons = c('csv', 'excel'), pageLength = 15))
+})
+
+# Optional bridge: send the selected genes straight into the highlight-subset feature
+observeEvent(input$volcano_selected_to_highlight, {
+  sel_ids <- volcano_selected_ids()
+  req(length(sel_ids) > 0)
+  updateTextAreaInput(session, "volcano_subset_gene_list", value = paste(sel_ids, collapse = "\n"))
+  updateRadioButtons(session, "volcano_subset_highlight", selected = "Yes")
+  showNotification(paste(length(sel_ids), "genes sent to the Highlight Gene List. Click 'Apply Highlight' on the Static plot to see them colored."), type = "message")
 })
 
 
