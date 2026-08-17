@@ -48,10 +48,18 @@ api_health_check <- function(timeout_sec = 2) {
 #' Only actually attempts anything if QUICKOMICS_API_AUTOSTART=true --
 #' see the comment on api_compose_dir above for why this must stay off
 #' when QuickOmics and the API are on different servers.
+.api_autostart_notification_id <- "quickomics_api_autostart"
+
 ensure_api_running <- function(max_wait_sec = 30, poll_interval_sec = 2) {
   if (api_health_check()) return(invisible(TRUE))
-
+  
   if (!api_autostart_on) {
+    msg <- paste0(
+      "Quickomics API not reachable at ", api_base_url,
+      ". Please make sure the API settings (QUICKOMICS_API_URL) are correct ",
+      "and the API is running."
+    )
+    showNotification(msg, type = "error", duration = NULL)
     stop(
       "Quickomics API is not reachable at ", api_base_url, " and auto-start ",
       "is disabled. Start it manually (`docker compose up -d` in the API ",
@@ -61,8 +69,13 @@ ensure_api_running <- function(max_wait_sec = 30, poll_interval_sec = 2) {
       "on the SAME server as the API's docker-compose.yml)."
     )
   }
-
+  
   if (.api_autostart_cache$attempted) {
+    msg <- paste0(
+      "Quickomics API is still not reachable at ", api_base_url,
+      " after a previous auto-start attempt this session. Not retrying automatically."
+    )
+    showNotification(msg, type = "error", duration = NULL)
     stop(
       "Quickomics API is still not reachable at ", api_base_url,
       " after a previous auto-start attempt this session. Not retrying ",
@@ -71,8 +84,14 @@ ensure_api_running <- function(max_wait_sec = 30, poll_interval_sec = 2) {
     )
   }
   .api_autostart_cache$attempted <- TRUE
-
+  
   if (!nzchar(api_compose_dir)) {
+    msg <- paste0(
+      "Quickomics API not reachable at ", api_base_url,
+      ". Auto-start is enabled but QUICKOMICS_API_COMPOSE_DIR is not set -- ",
+      "please check the API settings."
+    )
+    showNotification(msg, type = "error", duration = NULL)
     stop(
       "QUICKOMICS_API_AUTOSTART is enabled but QUICKOMICS_API_COMPOSE_DIR ",
       "is not set -- don't know where to find docker-compose.yml."
@@ -80,33 +99,64 @@ ensure_api_running <- function(max_wait_sec = 30, poll_interval_sec = 2) {
   }
   compose_file <- file.path(api_compose_dir, "docker-compose.yml")
   if (!file.exists(compose_file)) {
+    msg <- paste0(
+      "Quickomics API not reachable at ", api_base_url,
+      ". Auto-start is enabled but no docker-compose.yml was found in '",
+      api_compose_dir, "' -- please check the API settings."
+    )
+    showNotification(msg, type = "error", duration = NULL)
     stop("QUICKOMICS_API_COMPOSE_DIR is set to '", api_compose_dir,
          "' but no docker-compose.yml was found there.")
   }
-
+  
+  showNotification(
+    paste0("Quickomics API not reachable at ", api_base_url,
+           " -- attempting to start it automatically..."),
+    id = .api_autostart_notification_id, type = "warning", duration = NULL
+  )
   message("Quickomics API not reachable at ", api_base_url,
           " -- attempting `docker compose up -d` in ", api_compose_dir, " ...")
-
+  
   out <- tryCatch(
     system2("docker", c("compose", "-f", shQuote(compose_file), "up", "-d"),
             stdout = TRUE, stderr = TRUE),
     error = function(e) {
+      msg <- paste0("Failed to start the Quickomics API: ", conditionMessage(e),
+                    ". Does this R process have permission to run docker commands?")
+      showNotification(msg, id = .api_autostart_notification_id, type = "error", duration = NULL)
       stop("Failed to run `docker compose up -d`: ", conditionMessage(e),
            ". Does this R process have permission to run docker commands?")
     }
   )
   message(paste(out, collapse = "\n"))
-
+  
   waited <- 0
   while (waited < max_wait_sec) {
     Sys.sleep(poll_interval_sec)
     waited <- waited + poll_interval_sec
     if (api_health_check()) {
+      showNotification(
+        paste0("Quickomics API is now reachable at ", api_base_url,
+               " (took ~", waited, "s)."),
+        id = .api_autostart_notification_id, type = "message", duration = 5
+      )
       message("Quickomics API is up (took ~", waited, "s).")
       return(invisible(TRUE))
     }
+    showNotification(
+      paste0("Quickomics API not reachable at ", api_base_url,
+             " -- still attempting to start it... (", waited, "s / ",
+             max_wait_sec, "s)"),
+      id = .api_autostart_notification_id, type = "warning", duration = NULL
+    )
   }
-
+  
+  showNotification(
+    paste0("Quickomics API is still not reachable at ", api_base_url,
+           " after attempting to start it (waited ", max_wait_sec, "s). ",
+           "Please check the API settings."),
+    id = .api_autostart_notification_id, type = "error", duration = NULL
+  )
   stop(
     "Started `docker compose up -d` but the API still isn't responding at ",
     api_base_url, " after ", max_wait_sec, "s. Check `docker compose logs` ",
@@ -165,26 +215,26 @@ api_get_token <- function() {
 #'   file.exists() check it replaces.
 api_get_project_meta <- function(project_id, source) {
   ensure_api_running()
-
+  
   fetch_once <- function(token) {
     httr::GET(
       paste0(api_base_url, "/datasets/", source, "/", project_id),
       httr::add_headers(Authorization = paste("Bearer", token))
     )
   }
-
+  
   token <- api_get_token()
   resp <- fetch_once(token)
-
+  
   if (httr::status_code(resp) == 401) {
     token <- api_fetch_token()
     resp <- fetch_once(token)
   }
-
+  
   if (httr::status_code(resp) == 404) {
     return(NULL)
   }
-
+  
   if (httr::status_code(resp) != 200) {
     stop(
       "Quickomics API: failed to fetch project metadata for '", project_id,
@@ -192,10 +242,10 @@ api_get_project_meta <- function(project_id, source) {
       ". Response: ", httr::content(resp, "text", encoding = "UTF-8")
     )
   }
-
+  
   parsed <- jsonlite::fromJSON(httr::content(resp, "text", encoding = "UTF-8"))
   unwrap <- function(x) if (is.list(x) || length(x) > 1) x[[1]] else x
-
+  
   list(
     Name            = unwrap(parsed$name),
     Species         = unwrap(parsed$species),
@@ -221,23 +271,23 @@ api_get_project_meta <- function(project_id, source) {
 #'   style checks downstream keep working unmodified.
 api_load <- function(project_id, source, envir = parent.frame()) {
   ensure_api_running()
-
+  
   fetch_once <- function(token) {
     httr::GET(
       paste0(api_base_url, "/datasets/", source, "/", project_id, "/bundle.rds"),
       httr::add_headers(Authorization = paste("Bearer", token))
     )
   }
-
+  
   token <- api_get_token()
   resp <- fetch_once(token)
-
+  
   # Cached token may have expired since it was minted -- refresh once and retry.
   if (httr::status_code(resp) == 401) {
     token <- api_fetch_token()
     resp <- fetch_once(token)
   }
-
+  
   if (httr::status_code(resp) != 200) {
     stop(
       "Quickomics API: failed to load project '", project_id,
@@ -245,9 +295,9 @@ api_load <- function(project_id, source, envir = parent.frame()) {
       ". Response: ", httr::content(resp, "text", encoding = "UTF-8")
     )
   }
-
+  
   bundle <- unserialize(httr::content(resp, "raw"))
-
+  
   assigned <- character(0)
   assign_if_present <- function(var_name, bundle_key) {
     value <- bundle[[bundle_key]]
@@ -273,7 +323,7 @@ api_load <- function(project_id, source, envir = parent.frame()) {
   assign_if_present("results_long",    "results")
   assign_if_present("data_results",    "data_results")
   assign_if_present("comp_info",       "comp_info")
-
+  
   # inputdata.R checks `identical(objs, c("results_long", "ProteinGeneName"))`
   # to detect comparison-only projects -- identical() on a character vector
   # is order-sensitive, but assign_if_present() above always adds
@@ -286,7 +336,7 @@ api_load <- function(project_id, source, envir = parent.frame()) {
   if (isTRUE(bundle$comp_only)) {
     assigned <- c("results_long", "ProteinGeneName")
   }
-
+  
   assigned
 }
 
@@ -303,26 +353,26 @@ api_load <- function(project_id, source, envir = parent.frame()) {
 #'   fresh, not treat this as a failure.
 api_load_network <- function(project_id, source) {
   ensure_api_running()
-
+  
   fetch_once <- function(token) {
     httr::GET(
       paste0(api_base_url, "/datasets/", source, "/", project_id, "/network/bundle.rds"),
       httr::add_headers(Authorization = paste("Bearer", token))
     )
   }
-
+  
   token <- api_get_token()
   resp <- fetch_once(token)
-
+  
   if (httr::status_code(resp) == 401) {
     token <- api_fetch_token()
     resp <- fetch_once(token)
   }
-
+  
   if (httr::status_code(resp) == 404) {
     return(NULL)
   }
-
+  
   if (httr::status_code(resp) != 200) {
     stop(
       "Quickomics API: failed to load network for project '", project_id,
@@ -330,7 +380,7 @@ api_load_network <- function(project_id, source) {
       ". Response: ", httr::content(resp, "text", encoding = "UTF-8")
     )
   }
-
+  
   network <- unserialize(httr::content(resp, "raw"))
   if (data.table::is.data.table(network)) {
     data.table::setDT(network)
@@ -352,22 +402,22 @@ api_load_network <- function(project_id, source) {
 #'   project (mirrors `exists("dataExpr")` being FALSE in the local case).
 api_load_wgcna <- function(project_id, source, envir = parent.frame()) {
   ensure_api_running()
-
+  
   fetch_once <- function(token) {
     httr::GET(
       paste0(api_base_url, "/datasets/", source, "/", project_id, "/wgcna/bundle.rds"),
       httr::add_headers(Authorization = paste("Bearer", token))
     )
   }
-
+  
   token <- api_get_token()
   resp <- fetch_once(token)
-
+  
   if (httr::status_code(resp) == 401) {
     token <- api_fetch_token()
     resp <- fetch_once(token)
   }
-
+  
   if (httr::status_code(resp) != 200) {
     stop(
       "Quickomics API: failed to load WGCNA results for project '", project_id,
@@ -375,9 +425,9 @@ api_load_wgcna <- function(project_id, source, envir = parent.frame()) {
       ". Response: ", httr::content(resp, "text", encoding = "UTF-8")
     )
   }
-
+  
   bundle <- unserialize(httr::content(resp, "raw"))
-
+  
   assign_if_present <- function(var_name) {
     value <- bundle[[var_name]]
     if (!is.null(value)) {
@@ -389,6 +439,6 @@ api_load_wgcna <- function(project_id, source, envir = parent.frame()) {
   assign_if_present("dataExpr")
   assign_if_present("picked_power")
   assign_if_present("sft")
-
+  
   invisible(NULL)
 }

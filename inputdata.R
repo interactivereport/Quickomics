@@ -52,7 +52,17 @@ observe({
   query <- parseQueryString(session$clientData$url_search)
   if (!is.null(query[['project']])) {
     ProjectID = query[['project']]
-    validate(need(ProjectID %in% saved_projects$ProjectID , message = "Please pass a valid ProjectID from URL."))
+    # NOTE: this observe() block has no render output of its own, so
+    # validate()/need() -- which only produces a visible message when caught
+    # by a render*() output -- would fail here completely silently. Use
+    # showNotification() instead so the user actually sees what went wrong.
+    if (!(ProjectID %in% saved_projects$ProjectID)) {
+      showNotification(
+        paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
+        type = "error", duration = NULL
+      )
+      return()
+    }
     ProjectInfo$ProjectID=ProjectID
     ProjectInfo$Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
     ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
@@ -64,8 +74,13 @@ observe({
   }
   if (!is.null(query[['unlisted']])) {
     ProjectID = query[['unlisted']]
-    validate(need(file.exists(str_c("unlisted/",  ProjectID, ".csv")), 
-                  message = "Please pass a valid ProjectID from URL. Files must be located in unlisted folder" ))
+    if (!file.exists(str_c("unlisted/",  ProjectID, ".csv"))) {
+      showNotification(
+        paste0("Project '", ProjectID, "' could not be found in the unlisted folder. Please check the project ID in the URL."),
+        type = "error", duration = NULL
+      )
+      return()
+    }
     unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
     ProjectInfo$ProjectID=ProjectID
     ProjectInfo$Name=unlisted_project$Name
@@ -80,15 +95,25 @@ observe({
   }
   if (!is.null(query[['serverfile']])) {
     ProjectID = query[['serverfile']]
-    meta <- tryCatch(
-      api_get_project_meta(ProjectID, "published"),
-      error = function(e) {
-        validate(need(FALSE, message = paste(
-          "Could not reach the Quickomics API to load this project:", conditionMessage(e)
-        )))
-      }
+    api_result <- tryCatch(
+      list(ok = TRUE, meta = api_get_project_meta(ProjectID, "published")),
+      error = function(e) list(ok = FALSE, error = conditionMessage(e))
     )
-    validate(need(!is.null(meta), message = "Please pass a valid ProjectID from URL. Project not found via the Quickomics API (published)."))
+    if (!api_result$ok) {
+      showNotification(
+        paste("Quickomics API is not working:", api_result$error),
+        type = "error", duration = NULL
+      )
+      return()
+    }
+    meta <- api_result$meta
+    if (is.null(meta)) {
+      showNotification(
+        paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
+        type = "error", duration = NULL
+      )
+      return()
+    }
     ProjectInfo$ProjectID=ProjectID
     ProjectInfo$Name=meta$Name
     ProjectInfo$Species=meta$Species
@@ -107,15 +132,25 @@ observe({
   }
   if (!is.null(query[['testfile']])) {
     ProjectID = query[['testfile']]
-    meta <- tryCatch(
-      api_get_project_meta(ProjectID, "unpublished"),
-      error = function(e) {
-        validate(need(FALSE, message = paste(
-          "Could not reach the Quickomics API to load this project:", conditionMessage(e)
-        )))
-      }
+    api_result <- tryCatch(
+      list(ok = TRUE, meta = api_get_project_meta(ProjectID, "unpublished")),
+      error = function(e) list(ok = FALSE, error = conditionMessage(e))
     )
-    validate(need(!is.null(meta), message = "Please pass a valid ProjectID from URL. Project not found via the Quickomics API (unpublished)."))
+    if (!api_result$ok) {
+      showNotification(
+        paste("Quickomics API is not working:", api_result$error),
+        type = "error", duration = NULL
+      )
+      return()
+    }
+    meta <- api_result$meta
+    if (is.null(meta)) {
+      showNotification(
+        paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
+        type = "error", duration = NULL
+      )
+      return()
+    }
     ProjectInfo$ProjectID=ProjectID
     ProjectInfo$Name=meta$Name
     ProjectInfo$Species=meta$Species
@@ -313,9 +348,9 @@ DataReactive <- reactive({
                    DT_MetaData_long <- DT_MetaData_long[, lapply(.SD, as.character)]
                    # Pivot longer (long format)
                    DT_MetaData_long <- data.table::melt(DT_MetaData_long, 
-                                                     id.vars = "sampleid",
-                                                     variable.name = "type",
-                                                     value.name = "group")
+                                                        id.vars = "sampleid",
+                                                        variable.name = "type",
+                                                        value.name = "group")
                    
                    # Returns names of columns where is.numeric is TRUE
                    num_cols <- names(MetaData)[sapply(MetaData, is.numeric)]
