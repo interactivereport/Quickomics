@@ -325,9 +325,16 @@ geneset_server <- function(id) {
                         if (system %in% c("QuickOmics", "RNAView")) {
                           #shinyjs::hide(id = "comparison_2")
                           working_project=reactiveVal()
+                          gsea_control<-reactiveVal(0)
+                          ora_control<-reactiveVal(0)
+                          group_order <- reactiveVal()
                           observe({
                             req(ProjectInfo)
                             working_project(ProjectInfo$ProjectID)
+                          })
+                          observe({
+                            req(DataReactive())
+                            group_order(DataReactive()$group_order)
                           })
                           #browser()
                         } else if (system=="xOmicsShiny") {
@@ -1977,6 +1984,9 @@ geneset_server <- function(id) {
                                   geom_point(shape = 21, color = "black",
                                              aes(fill = DeGeneNum, size = Negative.log10.padj)) +
                                   theme_classic() +
+                                  # drop = FALSE keeps every selected comparison on the x-axis,
+                                  # even ones with zero significant gene sets after filtering.
+                                  scale_x_discrete(drop = FALSE) +
                                   scale_fill_gradient(low = "grey", high = "red") +
                                   scale_size(range = c(input$geneset_dotplot_point_size_min, input$geneset_dotplot_point_size_max)) +
                                   labs(fill = "DeGeneNum", size = "-log10(adj.p)") +
@@ -2110,6 +2120,9 @@ geneset_server <- function(id) {
                                   geom_point(shape=21, color = "black", 
                                              aes(fill = NES, size=Negative.log10.padj)) +
                                   theme_classic() +
+                                  # drop = FALSE keeps every selected comparison on the x-axis,
+                                  # even ones with zero significant gene sets after filtering.
+                                  scale_x_discrete(drop = FALSE) +
                                   scale_fill_gradient2(low = "blue", mid = "grey", high = "red", midpoint = 0,  
                                                        limits = c(-nes_limit, nes_limit), breaks = seq(-nes_limit, nes_limit, length.out = 5)) +
                                   scale_size(range = c(input$geneset_dotplot_point_size_min, input$geneset_dotplot_point_size_max), 
