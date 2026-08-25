@@ -221,14 +221,33 @@ output$vennPDiagram <- renderPlot({
 	fillcor <- unlist(venndata$fillcor)
 	SetNum = length(vennlist)
 	futile.logger::flog.threshold(futile.logger::ERROR, name = "VennDiagramLogger")
+	# Labels here are already "<dataset>\n<comparison>" (see DataVennPReactive
+	# above) -- wrap each of those two lines separately so a long dataset name
+	# or comparison name doesn't overlap adjacent labels, without merging the
+	# two into one run-on line. Wrap width is user-adjustable (input$vennPcatwrap).
+	wrap_label <- function(x, width) {
+		parts <- strsplit(x, "\n", fixed = TRUE)[[1]]
+		wrap_hard <- function(p) {
+			chunks <- regmatches(p, gregexpr(paste0(".{1,", width, "}"), p, perl = TRUE))[[1]]
+			paste(chunks, collapse = "\n")
+		}
+		paste(vapply(parts, wrap_hard, character(1)), collapse = "\n")
+	}
+	cat_names <- vapply(names(vennlist), wrap_label, character(1), width = input$vennPcatwrap)
 	venn.plot <- venn.diagram(x = vennlist,
+		category.names = cat_names,
 		fill=fillcor,
 		lty=input$vennPlty, lwd=input$vennPlwd, alpha=input$vennPalpha,
 		cex=input$vennPcex, cat.cex=input$vennPcatcex, margin=input$vennPmargin,
 		fontface = input$vennPfontface, cat.fontface=input$vennPcatfontface,
 		main = input$vennPtitle, main.cex = input$vennPmaincex, main.pos = c(0.5, 1.1), main.fontface = "bold",
 	filename = NULL);
+	grid.newpage()
+	# Reserve ~12% of height at the bottom so wrapped category labels
+	# that extend below the diagram aren't cropped by the image boundary.
+	pushViewport(viewport(x = 0.5, y = 0.56, width = 1, height = 0.88, clip = "off"))
 	grid.draw(venn.plot);
+	popViewport()
 })
 
 output$SvennPDiagram <- renderPlot({

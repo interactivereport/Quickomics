@@ -102,19 +102,34 @@ vennDiagram_out <- reactive({
 	fillcor <- unlist(venndata$fillcor)
 	SetNum = length(vennlist)
 	futile.logger::flog.threshold(futile.logger::ERROR, name = "VennDiagramLogger")
+	# Wrap long comparison names onto multiple lines so Venn diagram category
+	# labels don't overlap -- wrap width is user-adjustable (input$catwrap).
+	# Only affects the displayed labels; vennlist's own names (used for fill
+	# color matching and downstream table/intersection lookups) are untouched.
+	wrap_hard <- function(x, width) {
+		chunks <- regmatches(x, gregexpr(paste0(".{1,", width, "}"), x, perl = TRUE))[[1]]
+		paste(chunks, collapse = "\n")
+	}
+	cat_names <- vapply(names(vennlist), wrap_hard, character(1), width = input$catwrap)
 	venn.plot <- venn.diagram(x = vennlist,
+		category.names = cat_names,
 		fill=fillcor, margin=input$margin,
 		lty=input$lty, lwd=input$lwd, alpha=input$alpha,
 		cex=input$cex, cat.cex=input$catcex,
 		fontface = input$fontface, cat.fontface=input$catfontface,
 		main = input$title, main.cex = input$maincex, main.pos = c(0.5, 1.1), main.fontface = "bold",
 	filename = NULL)
-	
+
 	return(venn.plot)
 })
 
 output$vennDiagram <- renderPlot({
+	grid.newpage()
+	# Reserve ~12% of height at the bottom so wrapped category labels
+	# that extend below the diagram aren't cropped by the image boundary.
+	pushViewport(viewport(x = 0.5, y = 0.56, width = 1, height = 0.88, clip = "off"))
 	grid.draw(vennDiagram_out())
+	popViewport()
 })
 
 #show all DEGs from selected comparisons
