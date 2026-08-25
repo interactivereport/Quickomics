@@ -244,6 +244,22 @@ pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
     gene_annot_info <- capped$gene_annot_info
     annotation <- DataHeatMap$annotation
     sample_annot=NULL #column annotation
+
+    # Optionally reorder samples into a nested/stratified block structure based
+    # on the selected annotation attributes, with the first selected attribute
+    # as the outermost grouping level (e.g. Genotype > Gender > Age). data.in's
+    # columns and annotation's rows are aligned by position, so reorder both the
+    # same way and downstream code (which builds df_annot from annotation) picks
+    # up the new order automatically.
+    reorder_by_annot <- isTRUE(input$heatmap_annot_reorder == "Yes") &&
+      !is.null(input$heatmap_annot) && length(input$heatmap_annot) > 0
+    if (reorder_by_annot) {
+      sort_cols <- annotation[, input$heatmap_annot, drop = FALSE]
+      ord <- do.call(order, as.list(sort_cols))
+      annotation <- annotation[ord, , drop = FALSE]
+      data.in <- data.in[, ord, drop = FALSE]
+    }
+
     if (!is.null(input$heatmap_annot)) {
       #functions to assign colors
       hm_m_color<-function(df, var, low_col="white", high_col=color, min=0, max=0.999) { #numeric annotations
@@ -315,6 +331,10 @@ pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
       cluster_rows = TRUE
     if (input$dendrogram == "both" | input$dendrogram == "column")
       cluster_cols = TRUE
+    # A column dendrogram would re-sort samples by similarity, undoing the
+    # manual stratified order requested above -- keep the nested block order.
+    if (reorder_by_annot)
+      cluster_cols = FALSE
     
     cexRow = as.numeric(as.character(input$hyfontsizep))
     cexCol = as.numeric(as.character(input$hxfontsizep))

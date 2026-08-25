@@ -482,7 +482,16 @@ ui <- fluidPage(
                                                           tags$hr()
                                          ),
                                          conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
-                                                           selectizeInput("heatmap_annot", label="Annotate Samples", choices=NULL, multiple = TRUE)),
+                                                           selectizeInput("heatmap_annot", label="Annotate Samples", choices=NULL, multiple = TRUE),
+                                                           conditionalPanel("input.heatmap_annot && input.heatmap_annot.length > 0",
+                                                                            radioButtons("heatmap_annot_reorder",
+                                                                                         label = "Reorder Samples by Annotation Attributes?",
+                                                                                         choices = c("No", "Yes"), selected = "No", inline = TRUE),
+                                                                            conditionalPanel("input.heatmap_annot_reorder=='Yes'",
+                                                                                             h5("Samples will be sorted in a nested/stratified order using the attributes above (first attribute = outermost grouping). Column clustering will be disabled.",
+                                                                                                style = "color:red; font-size:13px; font-family:arial; font-style:italic")
+                                                                            )
+                                                           )),
                                          column(width=5,selectInput("dendrogram", "Apply Clustering:", c("both" ,"none", "row", "column"))),
                                          column(width=5,selectInput("scale", "Apply Scaling:", c("none","row", "column"),selected="row")),
                                          conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 2'",
@@ -865,6 +874,7 @@ ui <- fluidPage(
                                                                                         sliderInput("cex", "Font size", min = 1, max = 4, value = 2, width = "100%"),
                                                                                         radioButtons("catfontface","Label Font face",list("plain", "bold", "italic"),	selected = "plain", inline = TRUE),
                                                                                         sliderInput("catcex", "Font size", min = 1, max = 2, step=0.1, value = 1.8, width = "100%"),
+                                                                                        sliderInput("catwrap", "Wrap Labels At (characters)", min = 5, max = 40, step = 1, value = 18, width = "100%"),
                                                                                         sliderInput("margin", "Margin", min = 0, max = 1, step=0.05, value = 0.1, width = "100%")
                                                                                  )
                                                                         ),
@@ -890,6 +900,7 @@ ui <- fluidPage(
                                                                                         sliderInput("vennPcex", "Font size", min = 1, max = 4, value = 2, width = "100%"),
                                                                                         radioButtons("vennPcatfontface", "Label Font face", list("plain", "bold", "italic"),	selected = "plain",	inline = TRUE),
                                                                                         sliderInput("vennPcatcex", "Font size", min = 1, max = 2, step=0.1, value = 1.8, width = "100%"),
+                                                                                        sliderInput("vennPcatwrap", "Wrap Labels At (characters)", min = 5, max = 40, step = 1, value = 18, width = "100%"),
                                                                                         sliderInput("vennPmargin", "Margin", min = 0, max = 1, step=0.05, value = 0.2, width = "100%")
                                                                                  )
                                                                         ),
