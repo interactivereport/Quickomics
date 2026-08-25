@@ -65,8 +65,18 @@ observe({
   {DataIngenes <- ProteinGeneName %>% dplyr::select(Gene.Name) %>% collect %>% .[["Gene.Name"]] %>%	as.character()}
   updateSelectizeInput(session,'sel_gene', choices= DataIngenes, selected= isolate(input$sel_gene), server=TRUE)
   attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") ))
-  updateSelectInput(session, "colorby", choices=c("None", attributes), selected="group")
-  updateSelectInput(session, "plotx", choices=attributes, selected="group")
+  
+  # Preserve the user's current colorby/plotx selection across group/sample
+  # changes (which re-trigger this observer via DataQCReactive()) instead of
+  # always resetting to "group" -- only fall back if the previous selection
+  # is no longer a valid choice (e.g. that attribute column no longer exists).
+  prev_colorby <- isolate(input$colorby)
+  sel_colorby <- if (!is.null(prev_colorby) && prev_colorby %in% c("None", attributes)) prev_colorby else "group"
+  updateSelectInput(session, "colorby", choices=c("None", attributes), selected=sel_colorby)
+  
+  prev_plotx <- isolate(input$plotx)
+  sel_plotx <- if (!is.null(prev_plotx) && prev_plotx %in% attributes) prev_plotx else "group"
+  updateSelectInput(session, "plotx", choices=attributes, selected=sel_plotx)
   
 })
 
@@ -75,8 +85,18 @@ observe({
   DataIn = DataQCReactive()
   tests = test_order()    #   all_tests()
   ProteinGeneName_Header = ProteinGeneNameHeader()
-  updateRadioButtons(session,'sel_geneid', inline = TRUE, choices=c(ProteinGeneName_Header[-1], "Gene.Name_UniqueID"), selected="Gene.Name")
-  updateSelectizeInput(session,'expression_test',choices=tests, selected=tests[1])
+  
+  # Preserve the user's current gene-label-type and comparison/test selection
+  # across group/sample changes (same pattern as colorby/plotx above) --
+  # only fall back to the default if the previous selection is no longer valid.
+  geneid_choices <- c(ProteinGeneName_Header[-1], "Gene.Name_UniqueID")
+  prev_geneid <- isolate(input$sel_geneid)
+  sel_geneid <- if (!is.null(prev_geneid) && prev_geneid %in% geneid_choices) prev_geneid else "Gene.Name"
+  updateRadioButtons(session,'sel_geneid', inline = TRUE, choices=geneid_choices, selected=sel_geneid)
+  
+  prev_test <- isolate(input$expression_test)
+  sel_test <- if (!is.null(prev_test) && prev_test %in% tests) prev_test else tests[1]
+  updateSelectizeInput(session,'expression_test',choices=tests, selected=sel_test)
 })
 
 #linear value parameters
@@ -113,7 +133,15 @@ observe({
         dplyr::filter(test == expression_test)
     }
     output$expfilteredgene <- renderText({paste("Selected Genes:",nrow(filteredgene),sep="")})
-    updateSelectInput(session,'sel_page', choices= seq_len(ceiling(nrow(filteredgene)/numperpage)))
+    
+    # Explicitly preserve the current page across group/sample changes --
+    # updateSelectInput() without an explicit `selected=` does NOT reliably
+    # keep the previous value once its underlying <select> options are
+    # replaced client-side; it silently falls back to the first option.
+    page_choices <- seq_len(ceiling(nrow(filteredgene)/numperpage))
+    prev_page <- isolate(input$sel_page)
+    sel_page_val <- if (!is.null(prev_page) && prev_page %in% as.character(page_choices)) prev_page else "1"
+    updateSelectInput(session,'sel_page', choices= page_choices, selected = sel_page_val)
   }
 })
 
