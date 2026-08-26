@@ -21,6 +21,38 @@ ui <- fluidPage(
             tags$script(src = "datatables/jquery.dataTables.min.js"),
             tags$script(src = "multidrag.js")
           ),
+          tags$head(
+            uiOutput("dynamic_sidebar_css"),
+            tags$style(HTML("
+    #sidebar_width_toggle {
+      position: fixed;
+      top: 6px;
+      right: 15px;
+      z-index: 1001;
+      padding: 4px 10px;
+    }
+    #sidebar_width_control {
+      position: fixed;
+      top: 42px;
+      right: 15px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    #sidebar_width_control label { font-size: 12px; margin-bottom: 2px; }
+  "))
+          ),
+          actionButton("sidebar_width_toggle", label = NULL, icon = icon("sliders-h"),
+                       title = "Adjust sidebar width"),
+          shinyjs::hidden(
+            div(id = "sidebar_width_control",
+                sliderInput("sidebar_width_pct", "Sidebar Width:", min = 15, max = 50, value = 25, step = 1, width = "180px")
+            )
+          ),
+          
           titlePanel(
             fluidRow(
               column(4, img(height =75 , src = "Quickomics.png")),
@@ -962,6 +994,18 @@ ui <- fluidPage(
 ) #for tagList
 
 server <- function(input, output, session) {
+  output$dynamic_sidebar_css <- renderUI({
+    main_pct <- 100 - input$sidebar_width_pct
+    tags$style(HTML(sprintf(
+      ".col-sm-3 { width: %d%%; } .col-sm-9 { width: %d%%; }",
+      input$sidebar_width_pct, main_pct
+    )))
+  })
+  
+  observeEvent(input$sidebar_width_toggle, {
+    shinyjs::toggle("sidebar_width_control")
+  })
+  
   source("inputdata.R",local = TRUE)
   source("process_uploaded_files.R",local = TRUE)
   source("groupandsample.R",local=TRUE)
