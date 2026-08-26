@@ -29,8 +29,7 @@ ui <- fluidPage(
             windowTitle = "Quickomics" ),
           
           
-          navbarPage(title ="", id="menu",
-                     
+          navbarPage(title ="", id="menu",                     
                      ##########################################################################################################
                      ## Select Dataset
                      ##########################################################################################################
@@ -509,10 +508,10 @@ ui <- fluidPage(
                                          conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
                                                            column(width=5,sliderInput("hxfontsizep", "Column Font Size:", min = 0, max = 20, step = 1, value = 10)),
                                                            column(width=5,sliderInput("hyfontsizep", "Row Font Size:", min = 0, max = 20, step = 1, value = 7)),
-                                                           radioButtons("heatmap_label",label="Gene Label",inline = TRUE, choices=""),
+                                                           column(width=12, radioButtons("heatmap_label",label="Gene Label",inline = TRUE, choices="")),
                                                            sliderInput("heatmap_N_genes", "Max Number of Genes to Label:", min = 0, max = 500, step = 10, value = 100),
                                                            h5("After changing parameters, please click Plot/Refresh button in the plot panel to generate heatmap."),
-                                                           radioButtons("heatmap_more_options", label="Show More Options", inline = TRUE, choices = c("Yes","No"), selected = "No"),
+                                                           radioButtons("heatmap_more_options", label="Show More Options", inline = TRUE, choices = c("Yes","No"), selected = "No"), 
                                                            conditionalPanel("input.heatmap_more_options=='Yes'",
                                                                             radioButtons("heatmap_annot_color",label="Color Setting for Annotations", choices=c("Auto-Set by Rand. Seed","Select Palette","Upload Colors"), selected="Auto-Set by Rand. Seed"),
                                                                             conditionalPanel("input.heatmap_annot_color=='Auto-Set by Rand. Seed'",
@@ -879,7 +878,14 @@ ui <- fluidPage(
                                                                                  )
                                                                         ),
                                                                         tabPanel(title="Venn Diagram (black & white)", plotOutput("SvennDiagram",height = 800, width = 800)),
-                                                                        tabPanel(title="Intersection Output", htmlOutput("vennHTML")),
+                                                                        tabPanel(title="Intersection Output",
+                                                                                 rclipboard::rclipboardSetup(),
+                                                                                 br(),
+                                                                                 helpText("Click one or more rows below to select a gene list."),
+                                                                                 uiOutput("venn_copy_btn"),
+                                                                                 br(),
+                                                                                 DT::dataTableOutput("venn_intersect_table")
+                                                                        ),
                                                                         tabPanel(title="DEG Table", actionButton("venn_DEG_data", "Save to output"), DT::dataTableOutput("venn_DEG_Data")),
                                                                         tabPanel(title="Help", htmlOutput('help_venn'))
                                                             )
@@ -905,7 +911,14 @@ ui <- fluidPage(
                                                                                  )
                                                                         ),
                                                                         tabPanel(title="Venn Diagram (black & white)", plotOutput("SvennPDiagram",height = 800,width = 800)),
-                                                                        tabPanel(title="Intersection Output", htmlOutput("vennPHTML")),
+                                                                        tabPanel(title="Intersection Output",
+                                                                                 rclipboard::rclipboardSetup(),
+                                                                                 br(),
+                                                                                 helpText("Click one or more rows below to select a gene list."),
+                                                                                 uiOutput("vennP_copy_btn"),
+                                                                                 br(),
+                                                                                 DT::dataTableOutput("vennP_intersect_table")
+                                                                        ),
                                                                         tabPanel(title="Help", htmlOutput('help_vennp'))
                                                                         
                                                             )
