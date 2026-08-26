@@ -188,35 +188,59 @@ output$SvennDiagram <- renderPlot({
 	venn(vennlist, show.plot = TRUE, intersections = FALSE)
 })
 
-output$vennHTML <- renderText({
-  DataIn = DataReactive()
-  ProteinGeneName = DataIn$ProteinGeneName
-  
+#' Intersection Output as a data.table: one row per non-empty Venn subset,
+#' with a comma-joined gene list (respecting the Gene.Name/AC/UniqueID
+#' choice, same as the old vennHTML text did) plus its size, so the DT UI
+#' below can offer row selection and a "copy gene list" button.
+VennIntersectReactive <- reactive({
+	DataIn = DataReactive()
+	ProteinGeneName = DataIn$ProteinGeneName
+
 	venndata <- DataVennReactive()
 	vennlist <- venndata$vennlist
+	validate(need(length(vennlist) >= 2, "Select at least 2 comparisons to see intersections."))
 
 	v.table <- venn(vennlist, show.plot = FALSE, intersections = TRUE)
 	intersect <- attr(v.table,"intersections")
-	
-	venndata <- DataVennReactive()
-	vennlist <- venndata$vennlist
-	v.table <- venn(vennlist,show.plot = FALSE, intersections = TRUE)
-	intersect <- attr(v.table,"intersections")
-	htmlstr <- "  <br>"
-	#browser() #debug
-	for (i in 1:length(intersect)) {
-		if(input$vennlistname == "Gene.Name"){
-		  genes<-ProteinGeneName%>%dplyr::filter(UniqueID %in% intersect[[i]])%>%dplyr::select(Gene.Name)%>%unlist()
-		  intersectlist <- toString(genes)
-			#intersectlist <- toString(sapply(strsplit(intersect[[i]],split= "\\_"),'[',1))
+
+	gene_lists <- lapply(intersect, function(ids) {
+		if (input$vennlistname == "Gene.Name") {
+			ProteinGeneName %>% dplyr::filter(UniqueID %in% ids) %>% dplyr::pull(Gene.Name)
 		} else if (input$vennlistname == "AC") {
-			intersectlist <- toString(sapply(strsplit(intersect[[i]],split= "\\_"),'[',2))
-		} else if (input$vennlistname == "UniqueID") {
-			intersectlist <- toString(intersect[[i]])
+			sapply(strsplit(ids, split = "\\_"), '[', 2)
+		} else {
+			ids
 		}
-		htmlstr <-  paste(htmlstr,"<p><b><font color=red>", names(intersect[i]),"</font></b>:",intersectlist, sep="")
-	}
-	htmlstr
+	})
+
+	data.frame(
+		Intersection = names(intersect),
+		Count = lengths(gene_lists),
+		Genes = vapply(gene_lists, toString, character(1)),
+		stringsAsFactors = FALSE, check.names = FALSE
+	)
+})
+
+output$venn_intersect_table <- DT::renderDataTable({
+	DT::datatable(VennIntersectReactive(), rownames = FALSE, selection = "multiple",
+		options = list(pageLength = 20, dom = "lfrtip"))
+})
+
+# clipText is baked into the button's HTML at render time (clipboard.js has
+# no server round-trip), so the button itself has to be regenerated via
+# renderUI every time the row selection changes.
+output$venn_copy_btn <- renderUI({
+	df <- VennIntersectReactive()
+	sel <- input$venn_intersect_table_rows_selected
+	req(length(sel) > 0)
+	genes <- unique(unlist(strsplit(df$Genes[sel], ", ", fixed = TRUE)))
+	rclipboard::rclipButton(
+		"venn_copy_genes_btn",
+		label = paste0("Copy Selected Gene List (", length(genes), " genes)"),
+		clipText = paste(genes, collapse = ","),
+		icon = icon("copy", lib = "glyphicon"),
+		class = "btn-primary btn-sm"
+	)
 })
 
 

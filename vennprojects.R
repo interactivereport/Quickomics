@@ -258,17 +258,41 @@ output$SvennPDiagram <- renderPlot({
 	venn(vennlist, show.plot = TRUE, intersections = FALSE)
 })
 
-output$vennPHTML <- renderText({
+#' Intersection Output as a data.table -- see VennIntersectReactive() in
+#' venn.R for the current-project equivalent. vennlist's values here are
+#' already Gene.Name strings (see DataVennPReactive above), so there's no
+#' Gene.Name/AC/UniqueID choice to make like the single-project tab has.
+VennPIntersectReactive <- reactive({
 	venndata <- DataVennPReactive()
 	vennlist <- venndata$vennlist
-	validate(need(length(vennlist)>=1, message = "Select projects."))
+	validate(need(length(vennlist)>=2, message = "Select at least 2 projects/comparisons to see intersections."))
 	v.table <- venn(vennlist,show.plot = FALSE, intersections = TRUE)
 	intersect <- attr(v.table,"intersections")
-	htmlstr <- "  <br>"
-	for (i in 1:length(intersect)) {
-		htmlstr <-  paste(htmlstr,"<p><b><font color=red>", names(intersect[i]),"</font></b>:",toString(intersect[[i]]), sep="")
-	}
-	htmlstr
+	data.frame(
+		Intersection = names(intersect),
+		Count = lengths(intersect),
+		Genes = vapply(intersect, toString, character(1)),
+		stringsAsFactors = FALSE, check.names = FALSE
+	)
+})
+
+output$vennP_intersect_table <- DT::renderDataTable({
+	DT::datatable(VennPIntersectReactive(), rownames = FALSE, selection = "multiple",
+		options = list(pageLength = 20, dom = "lfrtip"))
+})
+
+output$vennP_copy_btn <- renderUI({
+	df <- VennPIntersectReactive()
+	sel <- input$vennP_intersect_table_rows_selected
+	req(length(sel) > 0)
+	genes <- unique(unlist(strsplit(df$Genes[sel], ", ", fixed = TRUE)))
+	rclipboard::rclipButton(
+		"vennP_copy_genes_btn",
+		label = paste0("Copy Selected Gene List (", length(genes), " genes)"),
+		clipText = paste(genes, collapse = ","),
+		icon = icon("copy", lib = "glyphicon"),
+		class = "btn-primary btn-sm"
+	)
 })
 
 
