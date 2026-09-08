@@ -277,8 +277,26 @@ VennPIntersectReactive <- reactive({
 })
 
 output$vennP_intersect_table <- DT::renderDataTable({
-	DT::datatable(VennPIntersectReactive(), rownames = FALSE, selection = "multiple",
-		options = list(pageLength = 20, dom = "lfrtip"))
+	df <- VennPIntersectReactive()
+	# See VennIntersectReactive()/venn_intersect_table in venn.R for why --
+	# same wrap + truncate-with-show-all treatment, same shared JS render
+	# (venn_genes_show_all_js, defined once in global.R).
+	#
+	# vennlist's own names here are "<dataset>\n<comparison>" (see
+	# DataVennPReactive above), so split on that existing newline first --
+	# the column should fit the longer of the two lines, not the combined pair.
+	atomic_names <- unlist(strsplit(names(DataVennPReactive()$vennlist), "\n", fixed = TRUE))
+	col_width_px <- intersection_column_width_px(atomic_names)
+	df$Intersection <- gsub(":", "<br>", df$Intersection, fixed = TRUE)
+
+	DT::datatable(df, rownames = FALSE, selection = "multiple", escape = -1,
+		options = list(
+			pageLength = 20, dom = "lfrtip",
+			columnDefs = list(
+				list(targets = 0, width = paste0(col_width_px, "px"), className = "wrap-cell"),
+				list(targets = 2, render = venn_genes_show_all_js)
+			)
+		))
 })
 
 output$vennP_copy_btn <- renderUI({
@@ -288,7 +306,10 @@ output$vennP_copy_btn <- renderUI({
 	genes <- unique(unlist(strsplit(df$Genes[sel], ", ", fixed = TRUE)))
 	rclipboard::rclipButton(
 		"vennP_copy_genes_btn",
-		label = paste0("Copy Selected Gene List (", length(genes), " genes)"),
+		# "unique" for wording consistency with venn.R's copy button --
+		# duplicates can't actually occur here since each list going into
+		# venn() is already deduplicated by Gene.Name in DataVennPReactive().
+		label = paste0("Copy Selected Gene List (", length(genes), " unique genes)"),
 		clipText = paste(genes, collapse = ","),
 		icon = icon("copy", lib = "glyphicon"),
 		class = "btn-primary btn-sm"
