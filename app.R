@@ -24,16 +24,11 @@ ui <- fluidPage(
           tags$head(
             uiOutput("dynamic_sidebar_css"),
             tags$style(HTML("
-    #sidebar_width_toggle {
-      position: fixed;
-      top: 6px;
-      right: 15px;
-      z-index: 1001;
-      padding: 4px 10px;
-    }
+    /* Top-right, fixed -- clear of the logo (top-left) so there's no overlap.
+       Always visible now: no toggle button, no hidden/collapsed state. */
     #sidebar_width_control {
       position: fixed;
-      top: 42px;
+      top: 6px;
       right: 15px;
       z-index: 1000;
       background: rgba(255,255,255,0.95);
@@ -43,20 +38,25 @@ ui <- fluidPage(
       box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     }
     #sidebar_width_control label { font-size: 12px; margin-bottom: 2px; }
+    /* Venn Diagram Intersection Output tables: forces the Intersection
+       column to wrap (at the <br> tags inserted server-side) inside its
+       narrow columnDefs width, instead of overflowing. */
+    .wrap-cell { white-space: normal !important; word-break: break-word; }
   "))
           ),
-          actionButton("sidebar_width_toggle", label = NULL, icon = icon("sliders-h"),
-                       title = "Adjust sidebar width"),
-          shinyjs::hidden(
-            div(id = "sidebar_width_control",
-                sliderInput("sidebar_width_pct", "Sidebar Width:", min = 15, max = 50, value = 25, step = 1, width = "180px")
-            )
+          div(id = "sidebar_width_control",
+              sliderInput("sidebar_width_pct", "Set the Side Menu Width:", min = 15, max = 50, value = 25, step = 1, ticks = FALSE, width = "180px")
           ),
-          
+
           titlePanel(
             fluidRow(
               column(4, img(height =75 , src = "Quickomics.png")),
-              column(8,  h2(strong(textOutput('project')), align = 'left'))
+              # padding-right reserves space for #sidebar_width_control (a
+              # position:fixed box anchored to the viewport's top-right corner,
+              # so it occupies roughly the rightmost 220px regardless of window
+              # width) -- without this, a long project name can render right
+              # underneath it as the window narrows and this column shrinks.
+              column(8,  h2(strong(textOutput('project')), align = 'left'), style = "padding-right: 230px;")
             ),
             windowTitle = "Quickomics" ),
           
@@ -517,30 +517,42 @@ ui <- fluidPage(
                                                            conditionalPanel("input.heatmap_annot && input.heatmap_annot.length > 0",
                                                                             radioButtons("heatmap_annot_reorder",
                                                                                          label = "Reorder Samples by Annotation Attributes?",
-                                                                                         choices = c("No", "Yes"), selected = "No", inline = TRUE),
+                                                                                         choices = c("No", "Yes"), selected = "Yes", inline = TRUE),
                                                                             conditionalPanel("input.heatmap_annot_reorder=='Yes'",
                                                                                              h5("Samples will be sorted in a nested/stratified order using the attributes above (first attribute = outermost grouping). Column clustering will be disabled.",
                                                                                                 style = "color:red; font-size:13px; font-family:arial; font-style:italic")
                                                                             )
                                                            )),
-                                         column(width=5,selectInput("dendrogram", "Apply Clustering:", c("both" ,"none", "row", "column"))),
-                                         column(width=5,selectInput("scale", "Apply Scaling:", c("none","row", "column"),selected="row")),
+                                         # fluidRow (not bare column()s) so this row's floats are cleared via
+                                         # Bootstrap's .row clearfix -- otherwise, whenever "Apply Clustering:"
+                                         # happens to wrap onto two lines while "Apply Scaling:" stays on one,
+                                         # the uncleared height mismatch corrupts the float layout of every
+                                         # sibling that follows (including other fluidRows below, since a row's
+                                         # own clearfix only clears ITS children, not an uncleared row before it).
+                                         fluidRow(
+                                           column(width=5,selectInput("dendrogram", "Apply Clustering:", c("both" ,"none", "row", "column"))),
+                                           column(width=5,selectInput("scale", "Apply Scaling:", c("none","row", "column"),selected="row"))
+                                         ),
                                          conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 2'",
-                                                           column(width=5,selectInput("key", "Color Key:", c("TRUE", "FALSE"))),
-                                                           column(width=5,selectInput("srtCol", "angle of label", c("45", "60","90"))),
-                                                           column(width=5,sliderInput("hxfontsize", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
-                                                           column(width=5,sliderInput("hyfontsize", "Row Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
-                                                           column(width=5,sliderInput("right", "Set Margin Width", min = 0, max = 20, value = 5)),
-                                                           column(width=5,sliderInput("bottom", "Set Margin Height", min = 0, max = 20, value = 5))
+                                                           fluidRow(
+                                                             column(width=5,selectInput("key", "Color Key:", c("TRUE", "FALSE"))),
+                                                             column(width=5,selectInput("srtCol", "angle of label", c("45", "60","90"))),
+                                                             column(width=5,sliderInput("hxfontsize", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
+                                                             column(width=5,sliderInput("hyfontsize", "Row Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
+                                                             column(width=5,sliderInput("right", "Set Margin Width", min = 0, max = 20, value = 5)),
+                                                             column(width=5,sliderInput("bottom", "Set Margin Height", min = 0, max = 20, value = 5))
+                                                           )
                                          ),
                                          # conditionalPanel( "input.heatmap_tabset=='Interactive Heatmap'",
                                          #                   column(width=5,sliderInput("hxfontsizei", "Column Font Size:", min = 0, max = 3, step = 0.5, value = 1)),
                                          #                   column(width=5,sliderInput("hyfontsizei", "Row Font Size:", min = 0, max = 3, step = 0.5, value = 1))
                                          # ),
                                          conditionalPanel( "input.heatmap_tabset=='Static Heatmap Layout 1'",
-                                                           column(width=5,sliderInput("hxfontsizep", "Column Font Size:", min = 0, max = 20, step = 1, value = 10)),
-                                                           column(width=5,sliderInput("hyfontsizep", "Row Font Size:", min = 0, max = 20, step = 1, value = 7)),
-                                                           column(width=12, radioButtons("heatmap_label",label="Gene Label",inline = TRUE, choices="")),
+                                                           fluidRow(
+                                                             column(width=5,sliderInput("hxfontsizep", "Column Font Size:", min = 0, max = 20, step = 1, value = 10)),
+                                                             column(width=5,sliderInput("hyfontsizep", "Row Font Size:", min = 0, max = 20, step = 1, value = 7))
+                                                           ),
+                                                           radioButtons("heatmap_label",label="Gene Label",inline = TRUE, choices=""),
                                                            sliderInput("heatmap_N_genes", "Max Number of Genes to Label:", min = 0, max = 500, step = 10, value = 100),
                                                            h5("After changing parameters, please click Plot/Refresh button in the plot panel to generate heatmap."),
                                                            radioButtons("heatmap_more_options", label="Show More Options", inline = TRUE, choices = c("Yes","No"), selected = "No"), 
@@ -1000,10 +1012,6 @@ server <- function(input, output, session) {
       ".col-sm-3 { width: %d%%; } .col-sm-9 { width: %d%%; }",
       input$sidebar_width_pct, main_pct
     )))
-  })
-  
-  observeEvent(input$sidebar_width_toggle, {
-    shinyjs::toggle("sidebar_width_control")
   })
   
   source("inputdata.R",local = TRUE)

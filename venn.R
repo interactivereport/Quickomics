@@ -222,8 +222,30 @@ VennIntersectReactive <- reactive({
 })
 
 output$venn_intersect_table <- DT::renderDataTable({
-	DT::datatable(VennIntersectReactive(), rownames = FALSE, selection = "multiple",
-		options = list(pageLength = 20, dom = "lfrtip"))
+	df <- VennIntersectReactive()
+	# Size the Intersection column to the longest individual comparison name
+	# actually selected (venn_test1..5), so short names get a compact column
+	# and longer ones aren't hard-wrapped mid-word unnecessarily.
+	col_width_px <- intersection_column_width_px(names(DataVennReactive()$vennlist))
+	# Break the Intersection label at each ":" so a deep overlap name (e.g.
+	# "A:B:C:D") wraps onto its own lines in a narrow column instead of
+	# forcing the whole table wide. escape=-1 below leaves these <br> tags
+	# (and only these) un-escaped.
+	df$Intersection <- gsub(":", "<br>", df$Intersection, fixed = TRUE)
+
+	DT::datatable(df, rownames = FALSE, selection = "multiple", escape = -1,
+		options = list(
+			pageLength = 20, dom = "lfrtip",
+			columnDefs = list(
+				list(targets = 0, width = paste0(col_width_px, "px"), className = "wrap-cell"),
+				# Genes column: show only the first 50 genes with a "Show all"
+				# link appended, generated client-side at draw time -- the
+				# underlying data (read via df$Genes[sel] in venn_copy_btn
+				# below) always stays the full, untruncated list; only what's
+				# drawn on screen for type=="display" is shortened.
+				list(targets = 2, render = venn_genes_show_all_js)
+			)
+		))
 })
 
 # clipText is baked into the button's HTML at render time (clipboard.js has
@@ -236,7 +258,12 @@ output$venn_copy_btn <- renderUI({
 	genes <- unique(unlist(strsplit(df$Genes[sel], ", ", fixed = TRUE)))
 	rclipboard::rclipButton(
 		"venn_copy_genes_btn",
-		label = paste0("Copy Selected Gene List (", length(genes), " genes)"),
+		# "unique" called out explicitly: this count can differ from the
+		# Count column / "Show all (N genes)" link, which are both based on
+		# UniqueID membership -- two different UniqueIDs (e.g. distinct
+		# probes/isoforms) can share the same Gene.Name, so the deduplicated
+		# copy list can be shorter than the row's raw intersection size.
+		label = paste0("Copy Selected Gene List (", length(genes), " unique genes)"),
 		clipText = paste(genes, collapse = ","),
 		icon = icon("copy", lib = "glyphicon"),
 		class = "btn-primary btn-sm"

@@ -303,7 +303,116 @@ var GENESET_DEFAULT_MAX = 500;
 html_geneset_hm0 =str_replace_all(html_geneset0, "geneset_list", "geneset_list_hm")
 html_geneset_exp0 =str_replace_all(html_geneset0, "geneset_list", "geneset_list_exp")
 
+# Shared DT columnDefs render() for a "Genes" column: shows only the first 50
+# genes with a "Show all (N genes)" link appended, generated client-side at
+# draw time. Used by both venn.R and vennprojects.R's Intersection Output
+# tables. Only affects what's drawn for type=="display" -- sorting/filtering
+# and the underlying R-side data (what venn_copy_btn/vennP_copy_btn read via
+# df$Genes[sel]) always see the full, untruncated comma-joined gene list.
+venn_genes_show_all_js <- DT::JS(
+  "function(data, type, row) {",
+  "  if (type !== 'display') return data;",
+  "  var genes = data.split(', ');",
+  "  if (genes.length <= 50) return data;",
+  "  var shown = genes.slice(0, 50).join(', ');",
+  "  var rest = genes.slice(50).join(', ');",
+  "  var id = 'genes-rest-' + Math.random().toString(36).slice(2);",
+  "  return shown + ', <span id=\"' + id + '\" style=\"display:none\">' + rest + '</span>' +",
+  "    ' <a href=\"javascript:void(0)\" onclick=\"event.stopPropagation(); document.getElementById(\\'' + id + '\\').style.display=\\'inline\\'; this.style.display=\\'none\\';\">Show all (' + genes.length + ' genes)</a>';",
+  "}"
+)
 
+# Column width (px) for the Venn "Intersection Output" table's Intersection
+# column, sized to fit the longest INDIVIDUAL comparison name (not the whole
+# combined "A:B:C" string, which wraps at ":" via <br> regardless of this
+# width). Calibrated against this app's actual rendered DT cell font (14px
+# Helvetica Neue/Arial, ~7.2-8.9 px/char measured via canvas.measureText)
+# plus its 10px+10px cell padding. Clamped so one unusually long name can't
+# blow the column out arbitrarily wide -- beyond the ceiling it just falls
+# back to wrapping mid-word (word-break: break-word, .wrap-cell CSS class in
+# app.R), the same graceful degradation used before this existed.
+intersection_column_width_px <- function(atomic_names) {
+  longest_nchar <- max(nchar(atomic_names), 1)
+  max(90, min(280, ceiling(longest_nchar * 7.5) + 30))
+}
+
+
+
+# Best-effort: show the last commit date in the footer so it's obvious how
+# stale a running deployment is. Two sources, in priority order:
+#   1. Live git info -- but ONLY if this directory is itself a git repo
+#      ROOT, not merely nested somewhere under an unrelated ancestor .git.
+#      `git log`/`git rev-parse` walk up the directory tree by default, so
+#      without the toplevel check below, a production folder that happens
+#      to sit inside some unrelated version-controlled directory would
+#      silently report that OTHER repo's commit date instead of failing.
+#   2. BUILD_DATE.txt -- written by update_build_date.R (run manually,
+#      before copying the repo to a production deployment) and copied along
+#      with the rest of the app's plain files. This is the only source
+#      available once .git itself isn't part of the copy.
+# When a real git repo root IS found here, its live commit hash is also
+# compared against BUILD_DATE.txt (if present); if it's stale (or the file
+# is missing), this rewrites BUILD_DATE.txt from the live commit right here
+# at startup, so a dev checkout self-heals its own build stamp without
+# needing update_build_date.R run by hand every time -- that script stays
+# useful for a pure build/packaging pipeline that copies files without ever
+# booting the app. Either way this never blocks startup or changes what the
+# footer shows (live git info wins whenever it's available); a failed write
+# (e.g. read-only checkout) just logs a note and moves on.
+
+read_build_date_file <- function(path = "BUILD_DATE.txt") {
+  if (!file.exists(path)) return(NULL)
+  lines <- readLines(path, warn = FALSE)
+  kv <- strsplit(lines, ": ", fixed = TRUE)
+  keys <- vapply(kv, `[`, character(1), 1)
+  vals <- vapply(kv, function(x) if (length(x) >= 2) x[2] else NA_character_, character(1))
+  as.list(setNames(vals, keys))
+}
+
+git_repo_root_here <- function() {
+  inside <- suppressWarnings(system2("git", c("rev-parse", "--is-inside-work-tree"), stdout = TRUE, stderr = FALSE))
+  if (length(inside) != 1 || inside != "true") return(FALSE)
+  toplevel <- suppressWarnings(system2("git", c("rev-parse", "--show-toplevel"), stdout = TRUE, stderr = FALSE))
+  length(toplevel) == 1 && normalizePath(toplevel, mustWork = FALSE) == normalizePath(getwd(), mustWork = FALSE)
+}
+
+quickomics_commit_date <- tryCatch({
+  build_info <- read_build_date_file()
+  if (git_repo_root_here()) {
+    live_date <- suppressWarnings(system2("git", c("log", "-1", "--format=%cd", "--date=format:%Y-%m-%d"), stdout = TRUE, stderr = FALSE))
+    live_hash <- suppressWarnings(system2("git", c("log", "-1", "--format=%H"), stdout = TRUE, stderr = FALSE))
+    live_date_ok <- length(live_date) == 1 && grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", live_date)
+    live_hash_ok <- length(live_hash) == 1 && nzchar(live_hash)
+
+    is_stale <- is.null(build_info) || is.null(build_info$commit) || !identical(build_info$commit, live_hash)
+    if (is_stale && live_hash_ok) {
+      live_branch <- suppressWarnings(system2("git", c("rev-parse", "--abbrev-ref", "HEAD"), stdout = TRUE, stderr = FALSE))
+      write_ok <- tryCatch({
+        writeLines(
+          c(
+            paste0("commit: ", live_hash),
+            paste0("date: ", if (live_date_ok) live_date else NA),
+            paste0("branch: ", if (length(live_branch) == 1) live_branch else NA)
+          ),
+          "BUILD_DATE.txt"
+        )
+        TRUE
+      }, error = function(e) FALSE)
+      if (write_ok) {
+        message("BUILD_DATE.txt was stale -- updated it to commit ", substr(live_hash, 1, 8),
+                if (live_date_ok) paste0(" (", live_date, ")") else "", ".")
+      } else {
+        message("Note: BUILD_DATE.txt is stale and could not be auto-updated (read-only checkout?). ",
+                "Using the live commit date for now.")
+      }
+    }
+    if (live_date_ok) live_date else NA_character_
+  } else if (!is.null(build_info) && !is.null(build_info$date) && grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", build_info$date)) {
+    build_info$date
+  } else {
+    NA_character_
+  }
+}, error = function(e) NA_character_)
 
 footer_text = '
 <script>
@@ -317,6 +426,9 @@ var MY_SECRET_ID = /PHPSESSID=([^;]+)/i.test(document.cookie) ? RegExp.$1 : fals
 BioInfoRx and Biogen<br><a href="https://github.com/interactivereport/Quickomics/">More information at GitHub</a> | <a href="https://interactivereport.github.io/Quickomics/tutorial/docs/introduction.html">Tutorial</a>
 </div>
 '
+if (!is.na(quickomics_commit_date)) {
+  footer_text <- str_replace_all(footer_text, "QuickOmics ver4.0", str_c("QuickOmics ver4.0 (updated: ", quickomics_commit_date, ")"))
+}
 
 config=NULL
 server_dir=NULL
