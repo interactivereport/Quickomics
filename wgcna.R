@@ -642,6 +642,11 @@ wgcna_server <- function(id, parent_session) {
   shiny::moduleServer(id,
                       function(input, output, session) {
                         ns <- shiny::NS(id)
+                        # See the matching comment in correlation.R -- actionButton
+                        # click counts get bookmarked and restoring a non-zero count
+                        # silently re-triggers that button's own observeEvent.
+                        session$setBookmarkExclude(c("plotwgcna", "plot_module_trait", "plot_module_hub",
+                                                      "wgcna_gct", "Eigengene", "hub_gene"))
                         working_project <- reactiveVal()
                         MEs_updated <- reactiveVal()  # updated MEs data.frame
                         MEs_name_updated <- reactiveVal()  # updated MEs data.frame colnames
@@ -652,7 +657,54 @@ wgcna_server <- function(id, parent_session) {
                         df_hub_gene <- reactiveVal() 
                         module_trait_plot <- reactiveVal(NULL)
                         wgcna_data <- reactiveVal(NULL)  # list(wgcna, dataExpr, picked_power, sft)
-                        
+                        # Bookmarked "base_<attribute>" selections, captured at restore and
+                        # consumed by attribute_settings_ui's renderUI once it (re)builds those
+                        # dynamically-named inputs -- see the onRestored handler below.
+                        restored_base_levels <- reactiveVal(NULL)
+
+                        # WGCNAtopNum and WGCNA_trait_var have their value/choices forced back to
+                        # a project-derived default by observers that fire on every project load
+                        # (see below) -- including at restore time, right after Shiny's own
+                        # restore sets them. Reapply unconditionally for a few seconds after
+                        # restore, same pattern as app.R and genesetmodule.R.
+                        session$onRestored(function(state) {
+                          restored <- state$input
+                          base_keys <- grep("^base_", names(restored), value = TRUE)
+                          if (length(base_keys) > 0) {
+                            restored_base_levels(restored[base_keys])
+                          }
+
+                          pending <- list(
+                            WGCNAtopNum = list(
+                              value = restored$WGCNAtopNum,
+                              apply = function(v) updateNumericInput(session, "WGCNAtopNum", value = v)
+                            ),
+                            WGCNA_trait_var = list(
+                              value = restored$WGCNA_trait_var,
+                              apply = function(v) {
+                                req(DataReactive())
+                                updateSelectizeInput(session, "WGCNA_trait_var", choices = wgcna_trait_var_choices(), selected = v)
+                              }
+                            )
+                          )
+                          pending <- Filter(function(p) !is.null(p$value), pending)
+                          if (length(pending) > 0) {
+                            attempts_left <- 10  # ~3s at 300ms
+                            restore_observer <- NULL
+                            restore_observer <- observe({
+                              invalidateLater(300, session)
+                              isolate({
+                                attempts_left <<- attempts_left - 1
+                                for (nm in names(pending)) {
+                                  p <- pending[[nm]]
+                                  tryCatch(p$apply(p$value), error = function(e) NULL)
+                                }
+                                if (attempts_left <= 0) restore_observer$destroy()
+                              })
+                            })
+                          }
+                        })
+
                         observe({
                           req(ProjectInfo)
                           working_project(ProjectInfo$ProjectID)
@@ -1031,19 +1083,25 @@ wgcna_server <- function(id, parent_session) {
                           }, once = TRUE)
                         })
                         
-                        # Update Module-Trait Relationships menu
-                        observe({
-                          req(DataReactive())
-                          DataIn = DataReactive()
-                          MetaData = DataIn$MetaData
+                        # Valid Module-Trait attribute choices for the current project. Shared by
+                        # the populate observer below and the session-restore logic so both
+                        # build the exact same choice set.
+                        wgcna_trait_var_choices <- function() {
+                          DataIn <- DataReactive()
+                          MetaData <- DataIn$MetaData
                           req(MetaData)
                           attributes <- sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs")))
                           n <- nrow(MetaData)
-                          attributes <- attributes[sapply(attributes, function(a) {
+                          attributes[sapply(attributes, function(a) {
                             nd <- dplyr::n_distinct(MetaData[[a]], na.rm = TRUE)
                             nd >= 2 && nd < n
                           })]
-                          updateSelectizeInput(session, "WGCNA_trait_var", choices=attributes, selected="group")
+                        }
+
+                        # Update Module-Trait Relationships menu
+                        observe({
+                          req(DataReactive())
+                          updateSelectizeInput(session, "WGCNA_trait_var", choices=wgcna_trait_var_choices(), selected="group")
                         })
                         
                         output$attribute_settings_ui <- renderUI({
@@ -1058,14 +1116,19 @@ wgcna_server <- function(id, parent_session) {
                           ]
                           
                           # Build UI for each categorical attribute
+                          rb <- restored_base_levels()
                           lapply(categorical_attrs, function(attr) {
                             base_choices <- unique(MetaData[[attr]])
+                            base_id <- paste0("base_", attr)
+                            restored_val <- rb[[base_id]]
+                            selected <- if (!is.null(restored_val) && restored_val %in% base_choices) restored_val else base_choices[1]
                             wellPanel(
                               h4(attr),
                               selectInput(
-                                inputId = ns(paste0("base_", attr)),
+                                inputId = ns(base_id),
                                 label   = paste("Select base level for", attr),
-                                choices = base_choices
+                                choices = base_choices,
+                                selected = selected
                               )
                             )
                           })

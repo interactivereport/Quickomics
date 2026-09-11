@@ -31,7 +31,23 @@ observeEvent(list(input$pattern_attr, DataQCReactive()), {
     selected_groups <- allgroups
   }
   removed_groups <- allgroups[!(allgroups %in% selected_groups)]
-  
+
+  # If a bookmarked selection exists for this exact attribute, prefer it
+  # (validated against the current data) over the "all active groups"
+  # default above -- see restored_pattern_group_snapshot's definition in
+  # app.R. Only applies once pattern_attr has itself been restored back to
+  # the matching attribute, since group_source/group_dest are regenerated
+  # with these same fixed IDs for whichever attribute is currently selected.
+  snap <- restored_pattern_group_snapshot()
+  if (!is.null(snap) && identical(snap$attr, input$pattern_attr)) {
+    restored_source <- intersect(snap$source, allgroups)
+    if (length(restored_source) > 0) {
+      selected_groups <- restored_source
+      removed_groups  <- allgroups[!(allgroups %in% selected_groups)]
+    }
+    restored_pattern_group_snapshot(NULL)
+  }
+
   output$ui_sel_order_group <- renderUI({
     tags$div(fluidRow(
       column(7, shinyjqui::orderInput(

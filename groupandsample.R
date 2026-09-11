@@ -23,6 +23,62 @@ state <- reactiveValues(
 )
 
 ## =========================
+## SESSION RESTORE
+## =========================
+# Bookmarked group/sample/comparison selections, captured once at restore and
+# applied by the reconciler below. Deliberately decoupled from the
+# MetaData_long() populate observer above: empirically, onRestored() can fire
+# either before or after that observer's first run depending on how long
+# project data takes to load, so a snapshot captured here must be reconciled
+# independently of that ordering rather than consumed inline there.
+restored_gs_snapshot <- reactiveVal(NULL)
+
+session$onRestored(function(bm_state) {
+  restored <- bm_state$input
+  keep_keys <- grep("^keep_", names(restored), value = TRUE)
+  meta_snapshot <- setNames(lapply(keep_keys, function(k) restored[[k]]), sub("^keep_", "", keep_keys))
+  snap <- list(
+    samples = restored$source_s,
+    tests   = restored$source_test,
+    meta    = meta_snapshot
+  )
+  if (!is.null(snap$samples) || !is.null(snap$tests) || length(snap$meta) > 0) {
+    restored_gs_snapshot(snap)
+  }
+})
+
+# Reconcile the restored snapshot into the canonical state once real project
+# data is available (state$meta populated), validating every restored value
+# against what's actually valid for the current project so a stale/mismatched
+# bookmark can't leave the app in a broken state. Sets the same
+# updating_from_model lock the UI -> MODEL reconciliation observer already
+# uses for its own model-driven updates, so a UI read that hasn't caught up
+# to this change yet is correctly ignored instead of clobbering it back.
+observe({
+  req(length(state$meta) > 0)
+  snap <- restored_gs_snapshot()
+  req(!is.null(snap))
+
+  new_samples <- intersect(snap$samples, state$initial_samples)
+  if (length(new_samples) == 0) new_samples <- state$initial_samples
+
+  new_tests <- intersect(snap$tests, state$initial_tests)
+
+  new_meta <- lapply(names(state$initial_meta), function(attr) {
+    restored_attr <- snap$meta[[attr]]
+    valid <- intersect(restored_attr, state$initial_meta[[attr]])
+    if (length(valid) == 0) state$initial_meta[[attr]] else valid
+  })
+  names(new_meta) <- names(state$initial_meta)
+
+  updating_from_model(TRUE)
+  state$meta    <- new_meta
+  state$samples <- new_samples
+  state$tests   <- new_tests
+  restored_gs_snapshot(NULL)
+})
+
+## =========================
 ## CACHED KEYED DATA.TABLE VIEWS (Performance optimization)
 ## =========================
 # Two indexed views for fast lookups on different access patterns
@@ -410,6 +466,25 @@ output$ui_dest_test <- renderUI({
   )
 })
 
+# By default Shiny suspends (never executes) a renderUI whenever its tab
+# isn't the currently-active one. These five create the group/sample/test
+# orderInput widgets that input$source_s / input$keep_<attr> / input$source_test
+# etc. depend on -- if the user never visits "Groups and Samples" in a given
+# session, those inputs stay NULL server-side (the widgets were never
+# rendered to report a value), so a Save Session bookmark taken from any
+# OTHER tab silently captures an empty group/sample/test selection instead
+# of the real one. Confirmed directly: restoring a session with a reduced
+# sample set, then navigating only through other tabs before saving again,
+# produced a bookmark with an empty keep_group/source_s. Keeping these five
+# outputs always live (regardless of which tab is active) fixes it, since
+# Groups and Samples selection is global state every other tab depends on --
+# it must not depend on that specific tab having been visited.
+outputOptions(output, "ui_all_types",   suspendWhenHidden = FALSE)
+outputOptions(output, "ui_source_s",    suspendWhenHidden = FALSE)
+outputOptions(output, "ui_dest_s",      suspendWhenHidden = FALSE)
+outputOptions(output, "ui_source_test", suspendWhenHidden = FALSE)
+outputOptions(output, "ui_dest_test",   suspendWhenHidden = FALSE)
+
 
 ## =========================
 ## UI → MODEL RECONCILIATION
@@ -449,18 +524,18 @@ observe({
         identical(as.character(ui_tests),   as.character(state$tests))
     )
     incProgress(0.3)
-    
+
     # 3) If we are updating the model, WAIT until UI matches
     if (updating_from_model() && !ui_matches_model) {
       return()   # freeze reconciliation until UI catches up
     }
-    
+
     # 4) If UI now matches model, release the lock
     if (updating_from_model() && ui_matches_model) {
       updating_from_model(FALSE)
       return()
     }
-    
+
     if (reset_all() && !ui_matches_model) {
       return()
     }
@@ -498,10 +573,10 @@ observe({
     )
     
     if (same_meta && same_samples && same_tests) return()
-    
+
     # 7) commit model update
     updating_from_model(TRUE)
-    
+
     state$meta    <- new_state$meta
     state$samples <- new_state$samples
     state$tests   <- new_state$tests

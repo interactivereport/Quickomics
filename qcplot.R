@@ -179,7 +179,12 @@ pcaplot_out <- eventReactive (plot_pca_control(), {
   } else {
     label_sel=match(input$PCA_label, names(scores))
     # browser() #debug
-    labels=unlist(scores[, label_sel])	
+    # as.character() is required: scores' columns copied from MetaData are
+    # often factors (see filter_data_long()), and labels[!keep_s]="" below
+    # silently fails -- R's [<-.factor refuses "" as an invalid factor
+    # level and replaces the ENTIRE vector with NA -- when labels is a
+    # factor, breaking sample labeling entirely.
+    labels=as.character(unlist(scores[, label_sel]))
     if (input$PCA_subsample=="Subset") {
       PCA_list=str_split(input$PCA_list, "\n")[[1]]
       N_sel=match(PCA_list, samples)
@@ -193,12 +198,21 @@ pcaplot_out <- eventReactive (plot_pca_control(), {
   }
   
   if (input$PCAshapeby=="none") {shape_by=19} else {shape_by=input$PCAshapeby}
-  if (input$PCAsizeby=="none") {size_by=input$PCAdotsize} else {size_by=input$PCAsizeby}	
+  if (input$PCAsizeby=="none") {size_by=input$PCAdotsize} else {size_by=input$PCAsizeby}
+  # ggpubr::ggscatter's rug feature computes linewidth = size/2 internally,
+  # which only works when size is a fixed number -- it errors ("non-numeric
+  # argument to binary operator") when size is mapped to a variable (Size By
+  # != "none"). Disable rug for that combination instead of crashing.
+  use_rug <- input$rug
+  if (isTRUE(as.logical(use_rug)) && input$PCAsizeby != "none") {
+    use_rug <- FALSE
+    showNotification("Marginal rugs aren't supported when Size By is set to a variable -- showing the plot without rugs.", type = "warning")
+  }
   if (is.numeric(scores[[input$PCAcolorby]])) {  #when colorby is numeric, don't use color palette
-    p <- ggpubr::ggscatter(scores,x =PC1, y=PC2, color =input$PCAcolorby, shape=shape_by, size =size_by , ellipse = input$ellipsoid, mean.point = input$mean_point, rug = input$rug,
+    p <- ggpubr::ggscatter(scores,x =PC1, y=PC2, color =input$PCAcolorby, shape=shape_by, size =size_by , ellipse = input$ellipsoid, mean.point = input$mean_point, rug = use_rug,
                            label =labels, font.label = input$PCAfontsize, repel = TRUE,  ggtheme = theme_bw(base_size = 20) )
   } else {
-    p <- ggpubr::ggscatter(scores,x =PC1, y=PC2, color =input$PCAcolorby, shape=shape_by, size =size_by , palette= colorpal, ellipse = input$ellipsoid, mean.point = input$mean_point, rug = input$rug,
+    p <- ggpubr::ggscatter(scores,x =PC1, y=PC2, color =input$PCAcolorby, shape=shape_by, size =size_by , palette= colorpal, ellipse = input$ellipsoid, mean.point = input$mean_point, rug = use_rug,
                            label =labels, font.label = input$PCAfontsize, repel = TRUE,  ggtheme = theme_bw(base_size = 20) )
   }
   

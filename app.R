@@ -10,11 +10,16 @@
 ###########################################################################################################
 source("global.R",local = TRUE)$value
 
-ui <- fluidPage(
+# ui must be a function(request) (not a bare fluidPage() object) for Shiny's
+# bookmarking (enableBookmarking = "server" on shinyApp() below) to be able
+# to restore a saved session's URL-encoded state ID.
+ui <- function(request) {
+fluidPage(
   theme = shinytheme("cerulean"),
   windowTitle = "Quickomics",
   tagList(tags$head(tags$style(type = 'text/css','.navbar-brand{display:none;}')),
           useShinyjs(),
+          rclipboard::rclipboardSetup(),
           tags$head(
             tags$link(rel = "stylesheet", type = "text/css",
                       href = "datatables/jquery.dataTables.min.css"),
@@ -990,7 +995,15 @@ ui <- fluidPage(
                               downloadButton('downloadXLSX', 'Download tables in .xlsx'),
                               tags$br(),tags$hr(),
                               checkboxGroupInput("GCT_table_checked", "GCT tables to Save", choices=NULL, selected=NULL),
-                              downloadButton('downloadGCT', 'Download tables in .gct')
+                              downloadButton('downloadGCT', 'Download tables in .gct'),
+                              tags$br(),tags$hr(),
+                              h4("Save Session"),
+                              tags$p("Save your current settings (filters, comparisons, plot options, across all tabs) as a file -- upload it later to restore this exact state."),
+                              actionButton("save_session_btn", "Save Session", icon = icon("save", lib = "glyphicon")),
+                              uiOutput("save_session_url"),
+                              tags$hr(),
+                              tags$p("Or restore settings previously saved to a file:"),
+                              fileInput("upload_session_file", "Restore Session from File", accept = ".rds", width = "100%")
                      ),
                      
                      
@@ -1004,8 +1017,53 @@ ui <- fluidPage(
           )
   )
 ) #for tagList
+} #for ui function(request)
 
 server <- function(input, output, session) {
+  # actionButton/downloadButton click counts get bookmarked like any other
+  # input -- restoring a non-zero count silently re-triggers that button's
+  # own observeEvent right after restore, since Shiny can't distinguish
+  # "value changed because it was restored" from "value changed because it
+  # was clicked". Confirmed directly: restoring save_session_btn's own
+  # saved (non-zero) click count re-triggered ANOTHER session$doBookmark()
+  # immediately after the first restore, with no click involved. None of
+  # these buttons' click counts are meaningful state to restore -- their
+  # actual effects are already captured via whatever reactiveValues/state
+  # they produced, not via the click count itself -- so exclude them all.
+  # Module-scoped buttons (correlation.R/wgcna.R/genesetmodule.R/
+  # TimeSeries.R) are excluded separately, inside each module's own
+  # moduleServer(), using that module's own bare (un-namespaced) IDs.
+  session$setBookmarkExclude(c(
+    "save_session_btn",
+    # Every fileInput's value (name/size/type/datapath) gets bookmarked like
+    # any other input. Restoring one is never safe: the saved datapath
+    # always points at a per-session temp file (always contains "/"), and
+    # Shiny's OWN restore code explicitly rejects any file input value whose
+    # datapath contains "/" -- "Invalid '/' found in file input path" -- an
+    # UNCAUGHT error that breaks the whole session (confirmed directly: this
+    # is what actually produced a stuck/greyed-out "dead loop" after
+    # restoring a session that had a file upload in it, not a reactive
+    # loop in groupandsample.R). For upload_session_file specifically there
+    # was a second-order issue too: a restored non-NULL value re-triggers
+    # its own observeEvent below, generating yet another bookmark and
+    # redirecting again -- same root cause as the actionButton
+    # auto-retrigger issue elsewhere in this file, compounding the crash
+    # into a genuine repeat-forever loop.
+    "upload_session_file", "file1", "file2", "sd_cor_annot_color_file",
+    "file_gene_highlight", "file_gene_annot", "annot_color_file",
+    "F_sample", "F_exp", "F_comp", "F_annot",
+    "DEG_comp", "DEG_data", "Dendrograms", "PCA_refresh_sample", "Pattern_data", "ProteinGeneName",
+    "QCboxplot", "SampleCorrelation", "SampleDistance", "action_heatmaps",
+    "alignQC_OV", "alignQC_RA", "alignQC_TGL", "alignQC_TGR", "apply_highlight",
+    "boxplot", "browsing", "clear_saved_plots", "compute_PC", "covar_cat", "covar_num",
+    "data_wide", "downloadGCT", "downloadPDF", "downloadSVG", "downloadXLSX",
+    "heatmap_gct", "heatmap_test2sample", "histplot", "pattern", "pattern_plot",
+    "pcaplot", "pheatmap2", "plot_PCA", "plot_browsing", "plot_exp", "plot_heatmap",
+    "reset_all_types", "reset_group", "results", "sample", "staticheatmap",
+    "vennDiagram", "venn_DEG_data", "volcano", "volcano_selected_to_highlight",
+    "gennet", "customData", "uploadData"
+  ))
+
   output$dynamic_sidebar_css <- renderUI({
     main_pct <- 100 - input$sidebar_width_pct
     tags$style(HTML(sprintf(
@@ -1013,7 +1071,410 @@ server <- function(input, output, session) {
       input$sidebar_width_pct, main_pct
     )))
   })
-  
+
+  # Some restored inputs' *choices* are only ever populated lazily, when the
+  # user actually visits the tab that computes them -- e.g. sel_net_gene on
+  # Correlation Network: NetworkReactive() is gated on
+  # input$menu=="Correlation_Network" and can be an expensive correlation
+  # computation ("may take a few minutes" per its own progress message), so
+  # it's deliberately NOT forced to run eagerly just because a session is
+  # being restored. A fixed-duration poll (like the retry mechanism below)
+  # is useless here since there's no bound on how long until the user visits
+  # that tab. Instead, stash the restored value here; network.R's own
+  # observeEvent consumes and clears it the first time it actually computes
+  # choices, whenever that happens to be.
+  restored_sel_net_gene <- reactiveVal(NULL)
+
+  # Pattern Clustering's group_source/group_dest (Groups to Plot / Drag Here
+  # to Remove) are shinyjqui::orderInput widgets that get completely
+  # regenerated by pattern.R's own renderUI every time input$pattern_attr
+  # changes -- same fixed IDs are reused for whichever attribute is
+  # currently selected, so a raw restored value only makes sense once
+  # pattern_attr has itself been restored back to the matching attribute.
+  # Stashed here and consumed by pattern.R's own renderUI once that lines up.
+  restored_pattern_group_snapshot <- reactiveVal(NULL)
+
+  # State ID of the most recent session bookmark, so the download handler
+  # below can serve that exact bookmark's saved input.rds as a file.
+  last_bookmark_state_id <- reactiveVal(NULL)
+
+  ##########################################################################################################
+  ## Save Session (first pass): Shiny's built-in server-side bookmarking captures every plain input$-bound
+  ## widget's current value and saves it server-side under a short state ID; the returned URL restores them
+  ## all on load. Known gaps for a later pass: renderUI-created controls that don't exist yet at restore
+  ## time, the custom drag-and-drop Groups-and-Samples UI (multidrag.js, not a standard Shiny input), and
+  ## this session's DT/plotly selection state (lives in plain reactiveVals, not input$) -- none of those are
+  ## covered by plain bookmarking and would need explicit onBookmark/onRestore handling if wanted later.
+  ##########################################################################################################
+  observeEvent(input$save_session_btn, {
+    session$doBookmark()
+  })
+
+  onBookmarked(function(url) {
+    # The state ID is the last query-string segment Shiny appended to the
+    # current URL, e.g. "...?_state_id_=6ba545c11e3c6206".
+    state_id <- sub(".*_state_id_=", "", url)
+    last_bookmark_state_id(state_id)
+    output$save_session_url <- renderUI({
+      downloadButton("download_session_file", "Download Session File", class = "btn-default btn-sm")
+    })
+    showNotification("Session saved -- click the button below to download it.", type = "message")
+  })
+
+  # Serves the exact input.rds Shiny already wrote for the bookmark above --
+  # same values, same exclusions (action buttons etc.), just handed to the
+  # user as a portable file instead of (or alongside) the link. A link only
+  # keeps working as long as this exact server retains that state ID's
+  # folder on disk; the file survives a redeploy, a disk cleanup, or moving
+  # to a different server, and can be emailed/archived like any other file.
+  output$download_session_file <- downloadHandler(
+    filename = function() {
+      paste0("Quickomics_session_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".rds")
+    },
+    content = function(file) {
+      state_id <- last_bookmark_state_id()
+      req(state_id)
+      src <- file.path("shiny_bookmarks", state_id, "input.rds")
+      req(file.exists(src))
+      file.copy(src, file, overwrite = TRUE)
+    }
+  )
+
+  # Restoring from an uploaded file reuses the exact same restore pipeline
+  # as the URL: write the uploaded input.rds into a freshly-generated
+  # bookmark folder (same on-disk layout Shiny's own doBookmark() uses),
+  # then navigate the browser to that state ID's URL. Every onRestored()
+  # handler in this app (including the polling ones in modules) fires
+  # exactly as it would for a normal saved-link restore.
+  observeEvent(input$upload_session_file, {
+    req(input$upload_session_file)
+    uploaded <- tryCatch(readRDS(input$upload_session_file$datapath), error = function(e) NULL)
+    if (is.null(uploaded) || !is.list(uploaded)) {
+      showNotification("That file doesn't look like a Quickomics session file.", type = "error", duration = NULL)
+      return()
+    }
+    # Defensively strip any fileInput value the uploaded file might already
+    # contain (e.g. saved before this exclusion existed, or from a session
+    # that had one of these set at save time) -- restoring any of them
+    # crashes with "Invalid '/' found in file input path" (see the exclude
+    # list above for why). Belt-and-suspenders: setBookmarkExclude only
+    # stops *new* saves from including these; this stops a *previously*
+    # saved file from ever reintroducing one.
+    for (fk in c("upload_session_file", "file1", "file2", "sd_cor_annot_color_file",
+                 "file_gene_highlight", "file_gene_annot", "annot_color_file",
+                 "F_sample", "F_exp", "F_comp", "F_annot", "GS-custom_gmt_file")) {
+      uploaded[[fk]] <- NULL
+    }
+    new_state_id <- paste(sample(c(letters[1:6], 0:9), 16, replace = TRUE), collapse = "")
+    dest_dir <- file.path("shiny_bookmarks", new_state_id)
+    dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
+    saveRDS(uploaded, file.path(dest_dir, "input.rds"))
+    showNotification("Session file loaded -- restoring...", type = "message")
+    shinyjs::runjs(sprintf(
+      "window.location.href = window.location.pathname + '?_state_id_=%s';",
+      new_state_id
+    ))
+  })
+
+  onRestored(function(state) {
+    showNotification("Session restored from saved link.", type = "message")
+
+    # The active top-level tab (input$menu) needs an explicit updateTabsetPanel()
+    # rather than relying on Shiny's normal input restoration. Confirmed directly:
+    # 4 of these tabs (Gene Set Enrichment/gsea, WGCNA/wgcna, Correlation
+    # Analysis/Correlation, Time Course Analysis/time_series) are added via
+    # insertTab() at server runtime rather than being part of the static
+    # ui(request) output -- they don't exist in the DOM yet when Shiny's normal
+    # bookmark restoration tries to apply input$menu, so it silently falls back
+    # to the first tab instead. Re-applying it here works because insertTab()
+    # has already run (synchronously, earlier in this same server() call) by
+    # the time onRestored() fires.
+    if (!is.null(state$input$menu)) {
+      updateTabsetPanel(session, "menu", selected = state$input$menu)
+    }
+
+    # sel_net_gene (Correlation Network) -- see restored_sel_net_gene's
+    # definition above for why this is deferred rather than polled.
+    if (!is.null(state$input$sel_net_gene)) {
+      restored_sel_net_gene(state$input$sel_net_gene)
+    }
+
+    # group_source/group_dest (Pattern Clustering) -- see
+    # restored_pattern_group_snapshot's definition above.
+    if (!is.null(state$input$group_source) || !is.null(state$input$group_dest)) {
+      restored_pattern_group_snapshot(list(
+        attr   = state$input$pattern_attr,
+        source = state$input$group_source,
+        dest   = state$input$group_dest
+      ))
+    }
+
+    # Expression Plot's colorby/plotx/sel_geneid/expression_test/sel_page/
+    # sel_gene (barboxplot.R) get their *choices* populated by server-side
+    # observe() blocks that only run once project data has loaded -- at
+    # restore time those haven't run yet, so these inputs' own "preserve
+    # previous selection" isolate(input$X) check reads NULL and falls back
+    # to a hardcoded default, clobbering the restored value before we ever
+    # see it. sel_page's observer also *reactively* depends on
+    # expression_test/expression_fccut/expression_pvalcut/numperpage, so it
+    # re-fires (recomputing its own choices from scratch) again after THOSE
+    # get restored.
+    #
+    # A single post-flush reapply (session$onFlushed(fn, once=TRUE)) is not
+    # good enough for any of these: onFlushed(once=TRUE) only runs on the
+    # NEXT flush that happens to occur, and if nothing else in the app
+    # triggers one, it may simply never fire at all (confirmed directly --
+    # for sel_gene specifically, a bare onFlushed(once=TRUE) reapply never
+    # ran, not even once, in an otherwise-idle session). Poll instead:
+    # invalidateLater() *guarantees* its own recurring flush cycles, so the
+    # reapply is retried every ~300ms (up to ~6s) until each restored value
+    # actually sticks, regardless of what else is or isn't happening in the
+    # reactive graph. In practice this resolves within 1-2 attempts.
+    restored <- state$input
+    pending <- list(
+      colorby         = list(value = restored$colorby,         apply = function(v) updateSelectInput(session, "colorby", selected = v)),
+      plotx           = list(value = restored$plotx,           apply = function(v) updateSelectInput(session, "plotx", selected = v)),
+      sel_geneid      = list(value = restored$sel_geneid,       apply = function(v) updateRadioButtons(session, "sel_geneid", selected = v)),
+      expression_test = list(value = restored$expression_test, apply = function(v) updateSelectizeInput(session, "expression_test", selected = v)),
+      # Must re-supply the full page choices on every apply -- sel_page's own
+      # populate observer (barboxplot.R) computes choices from the current
+      # gene-count/numperpage and re-fires whenever expression_test etc.
+      # change (including when restored above), so a bare selected= outside
+      # its still-default choices=1 would silently fail to apply.
+      sel_page = list(value = restored$sel_page, apply = function(v) {
+        req(DataQCReactive())
+        results_long <- DataQCReactive()$tmp_results_long
+        req(results_long)
+        expression_test <- isolate(input$expression_test)
+        expression_fccut <- log2(as.numeric(isolate(input$expression_fccut)))
+        expression_pvalcut <- as.numeric(isolate(input$expression_pvalcut))
+        numperpage <- as.numeric(isolate(input$numperpage))
+        req(expression_test, numperpage)
+        if (identical(isolate(input$expression_psel), "Padj")) {
+          filteredgene <- results_long %>% dplyr::filter(abs(logFC) > expression_fccut & Adj.P.Value < expression_pvalcut) %>% dplyr::filter(test == expression_test)
+        } else {
+          filteredgene <- results_long %>% dplyr::filter(abs(logFC) > expression_fccut & P.Value < expression_pvalcut) %>% dplyr::filter(test == expression_test)
+        }
+        page_choices <- seq_len(ceiling(nrow(filteredgene) / numperpage))
+        updateSelectInput(session, "sel_page", choices = page_choices, selected = v)
+      }),
+      # Must re-supply the full choices list (DataIngenesReactive(), defined
+      # in barboxplot.R) on every apply -- a server=TRUE selectize update
+      # with no choices registers an empty searchable dataset, so the
+      # restored gene could never be found/rendered even though `selected`
+      # itself was set correctly.
+      sel_gene        = list(value = restored$sel_gene,         apply = function(v) updateSelectizeInput(session, "sel_gene", choices = isolate(DataIngenesReactive()), selected = v, server = TRUE)),
+      # Ylab/linear_base/linear_small_value (barboxplot.R's "linear value
+      # parameters" observe(), ~line 103) get unconditionally overwritten
+      # with a computed default every time exp_plot_Y_scale changes -- with
+      # no "preserve previous value" guard at all (unlike colorby/plotx
+      # etc.). Restoring exp_plot_Y_scale itself (a plain radio button,
+      # which restores natively -- no retry needed for it specifically)
+      # re-triggers that observer, clobbering a just-restored custom Ylab.
+      Ylab               = list(value = restored$Ylab,               apply = function(v) updateTextInput(session, "Ylab", value = v)),
+      linear_base        = list(value = restored$linear_base,        apply = function(v) updateTextInput(session, "linear_base", value = v)),
+      linear_small_value = list(value = restored$linear_small_value, apply = function(v) updateTextInput(session, "linear_small_value", value = v)),
+
+      # QC Plots (qcplot.R) -- PCAcolorby/PCAshapeby/PCAsizeby/PCA_label and
+      # the Covariates tab's sd_cor_annotate_by/sd_cor_label_by all get their
+      # choices+selected forced to a hardcoded default by the same
+      # observeEvent(all_metadata(), ...) block, which also fires again at
+      # restore time.
+      PCAcolorby = list(value = restored$PCAcolorby, apply = function(v) {
+        attrs <- sort(setdiff(colnames(all_metadata()), c("sampleid", "Order", "ComparePairs")))
+        updateSelectInput(session, "PCAcolorby", choices = attrs, selected = v)
+      }),
+      PCAshapeby = list(value = restored$PCAshapeby, apply = function(v) {
+        attrs <- sort(setdiff(colnames(all_metadata()), c("sampleid", "Order", "ComparePairs")))
+        updateSelectInput(session, "PCAshapeby", choices = c("none", attrs), selected = v)
+      }),
+      PCAsizeby = list(value = restored$PCAsizeby, apply = function(v) {
+        attrs <- sort(setdiff(colnames(all_metadata()), c("sampleid", "Order", "ComparePairs")))
+        updateSelectInput(session, "PCAsizeby", choices = c("none", attrs), selected = v)
+      }),
+      PCA_label = list(value = restored$PCA_label, apply = function(v) {
+        attrs <- sort(setdiff(colnames(all_metadata()), c("Order", "ComparePairs")))
+        updateRadioButtons(session, "PCA_label", inline = TRUE, choices = attrs, selected = v)
+      }),
+      sd_cor_annotate_by = list(value = restored$sd_cor_annotate_by, apply = function(v) {
+        attrs <- sort(setdiff(colnames(all_metadata()), c("sampleid", "Order", "ComparePairs")))
+        updateSelectizeInput(session, "sd_cor_annotate_by", choices = attrs, selected = v)
+      }),
+      sd_cor_label_by = list(value = restored$sd_cor_label_by, apply = function(v) {
+        attrs <- sort(setdiff(colnames(all_metadata()), c("Order", "ComparePairs")))
+        updateSelectInput(session, "sd_cor_label_by", choices = attrs, selected = v)
+      }),
+
+      # Heatmap (heatmap.R) -- same "observe(){...} fires on every
+      # all_metadata()/test_order() change, including at restore" pattern.
+      heatmap_test = list(value = restored$heatmap_test, apply = function(v) {
+        updateSelectizeInput(session, "heatmap_test", choices = test_order(), selected = v)
+      }),
+      heatmap_label = list(value = restored$heatmap_label, apply = function(v) {
+        updateRadioButtons(session, "heatmap_label", inline = TRUE, choices = ProteinGeneNameHeader()[-1], selected = v)
+      }),
+      heatmap_annot = list(value = restored$heatmap_annot, apply = function(v) {
+        attrs <- sort(setdiff(colnames(all_metadata()), c("sampleid", "Order", "ComparePairs")))
+        updateSelectInput(session, "heatmap_annot", choices = attrs, selected = v)
+      }),
+
+      # Volcano Plot (volcano.R) -- same pattern, keyed off test_order().
+      volcano_test = list(value = restored$volcano_test, apply = function(v) {
+        updateSelectizeInput(session, "volcano_test", choices = test_order(), selected = v)
+      }),
+      volcano_test1 = list(value = restored$volcano_test1, apply = function(v) {
+        updateSelectizeInput(session, "volcano_test1", choices = test_order(), selected = v)
+      }),
+      volcano_test2 = list(value = restored$volcano_test2, apply = function(v) {
+        updateSelectizeInput(session, "volcano_test2", choices = test_order(), selected = v)
+      }),
+      volcano_genelabel = list(value = restored$volcano_genelabel, apply = function(v) {
+        updateRadioButtons(session, "volcano_genelabel", inline = TRUE, choices = ProteinGeneNameHeader()[-1], selected = v)
+      }),
+
+      # Pattern Clustering (pattern.R) -- pattern_attr forced to "group" by
+      # observeEvent(DataQCReactive(), ...); group_source/group_dest are
+      # handled separately via restored_pattern_group_snapshot since they're
+      # regenerated (not update*Input-able) and keyed off pattern_attr.
+      pattern_attr = list(value = restored$pattern_attr, apply = function(v) {
+        req(DataQCReactive())
+        attrs <- sort(setdiff(colnames(DataQCReactive()$MetaData), c("sampleid", "Order", "ComparePairs")))
+        updateSelectInput(session, "pattern_attr", choices = attrs, selected = v)
+      }),
+      pattern_test = list(value = restored$pattern_test, apply = function(v) {
+        updateSelectizeInput(session, "pattern_test", choices = c("ALL", test_order()), selected = v)
+      }),
+
+      # AlignQC (alignQC.R) -- alignQC_var forced to a hardcoded default by
+      # observe(){...} whenever DataQCReactive() changes, including restore.
+      alignQC_var = list(value = restored$alignQC_var, apply = function(v) {
+        req(DataQCReactive())
+        MetaData <- DataQCReactive()$MetaData
+        num_col <- colnames(dplyr::select_if(MetaData, is.numeric))
+        req(length(num_col) > 0)
+        updateSelectizeInput(session, "alignQC_var", choices = num_col, selected = v)
+      }),
+
+      # QC Plots (qcplot.R) -- PCA_list (List of Samples to Label) gets
+      # unconditionally overwritten with the full current sample list by
+      # observe(){ updateTextAreaInput(...) } every time sample_order()
+      # changes, including at restore.
+      PCA_list = list(value = restored$PCA_list, apply = function(v) {
+        updateTextAreaInput(session, "PCA_list", value = v)
+      }),
+
+      # Volcano Plot (volcano.R) -- volcano_gene_list (List of genes to
+      # label, Upload mode) gets unconditionally overwritten with an
+      # auto-suggested DEG sample by observe(){...} every time volcano_test/
+      # volcano_FCcut/volcano_pvalcut/Ngenes/DataQCReactive() change,
+      # including at restore.
+      volcano_gene_list = list(value = restored$volcano_gene_list, apply = function(v) {
+        updateTextAreaInput(session, "volcano_gene_list", value = v)
+      }),
+
+      # Venn Diagram (venn.R) -- venn_test1..5, same "forced default on every
+      # project load" pattern, sharing venn_test_choices() with the populate
+      # observer.
+      venn_test1 = list(value = restored$venn_test1, apply = function(v) {
+        updateSelectizeInput(session, "venn_test1", choices = venn_test_choices(), selected = v)
+      }),
+      venn_test2 = list(value = restored$venn_test2, apply = function(v) {
+        updateSelectizeInput(session, "venn_test2", choices = venn_test_choices(), selected = v)
+      }),
+      venn_test3 = list(value = restored$venn_test3, apply = function(v) {
+        updateSelectizeInput(session, "venn_test3", choices = venn_test_choices(), selected = v)
+      }),
+      venn_test4 = list(value = restored$venn_test4, apply = function(v) {
+        updateSelectizeInput(session, "venn_test4", choices = venn_test_choices(), selected = v)
+      }),
+      venn_test5 = list(value = restored$venn_test5, apply = function(v) {
+        updateSelectizeInput(session, "venn_test5", choices = venn_test_choices(), selected = v)
+      }),
+
+      # Venn Diagram Across Projects (vennprojects.R) -- dataset1..5 pick
+      # which project each slot compares, and vennP_test1..5's choices
+      # depend on whichever project the matching datasetN currently points
+      # to, so must be read fresh (isolate) on every reapply -- same
+      # cascading pattern as sel_group/sel_attribute in correlation.R.
+      dataset1 = list(value = restored$dataset1, apply = function(v) {
+        updateSelectizeInput(session, "dataset1", choices = vennP_dataset_choices(), selected = v)
+      }),
+      dataset2 = list(value = restored$dataset2, apply = function(v) {
+        updateSelectizeInput(session, "dataset2", choices = vennP_dataset_choices(), selected = v)
+      }),
+      dataset3 = list(value = restored$dataset3, apply = function(v) {
+        updateSelectizeInput(session, "dataset3", choices = vennP_dataset_choices(), selected = v)
+      }),
+      dataset4 = list(value = restored$dataset4, apply = function(v) {
+        updateSelectizeInput(session, "dataset4", choices = vennP_dataset_choices(), selected = v)
+      }),
+      dataset5 = list(value = restored$dataset5, apply = function(v) {
+        updateSelectizeInput(session, "dataset5", choices = vennP_dataset_choices(), selected = v)
+      }),
+      vennP_test1 = list(value = restored$vennP_test1, apply = function(v) {
+        tests <- vennP_test_choices_for(isolate(input$dataset1))
+        req(tests)
+        updateSelectizeInput(session, "vennP_test1", choices = tests, selected = v)
+      }),
+      vennP_test2 = list(value = restored$vennP_test2, apply = function(v) {
+        tests <- vennP_test_choices_for(isolate(input$dataset2))
+        req(tests)
+        updateSelectizeInput(session, "vennP_test2", choices = tests, selected = v)
+      }),
+      vennP_test3 = list(value = restored$vennP_test3, apply = function(v) {
+        tests <- vennP_test_choices_for(isolate(input$dataset3))
+        req(tests)
+        updateSelectizeInput(session, "vennP_test3", choices = tests, selected = v)
+      }),
+      vennP_test4 = list(value = restored$vennP_test4, apply = function(v) {
+        tests <- vennP_test_choices_for(isolate(input$dataset4))
+        req(tests)
+        updateSelectizeInput(session, "vennP_test4", choices = tests, selected = v)
+      }),
+      vennP_test5 = list(value = restored$vennP_test5, apply = function(v) {
+        tests <- vennP_test_choices_for(isolate(input$dataset5))
+        req(tests)
+        updateSelectizeInput(session, "vennP_test5", choices = tests, selected = v)
+      })
+    )
+    pending <- Filter(function(p) !is.null(p$value), pending)
+
+    if (length(pending) > 0) {
+      # Always reapply every pending input on every tick -- deliberately NOT
+      # stopping as soon as isolate(input[[nm]]) appears to match. Confirmed
+      # directly (Ylab/exp_plot_Y_scale case) that this "stop on first
+      # match" shortcut is unsafe: a clobbering observer's update message
+      # can already have changed the value client-side (visually) before
+      # that change round-trips back to update input[[nm]] server-side, so
+      # a check right after applying our fix can read the OLD, still-
+      # correct server value, declare victory, and stop -- while the client
+      # has already moved on to the wrong one, with nothing left to correct
+      # it afterward. Unconditionally reapplying for a fixed ~3s window
+      # instead guarantees our value is re-asserted after any such stray
+      # clobber, at the trivial cost of a few redundant no-op messages.
+      attempts_left <- 10  # ~3s at 300ms
+      restore_observer <- NULL
+      restore_observer <- observe({
+        invalidateLater(300, session)
+        isolate({
+          attempts_left <<- attempts_left - 1
+          for (nm in names(pending)) {
+            p <- pending[[nm]]
+            # tryCatch so one input's apply() failing on an early attempt
+            # (e.g. sel_gene's DataIngenesReactive() req()-ing out before
+            # data has loaded yet) can't abort the rest of this tick's loop
+            # -- it just gets retried again next tick like normal.
+            tryCatch(p$apply(p$value), error = function(e) NULL)
+          }
+          if (attempts_left <= 0) {
+            restore_observer$destroy()
+          }
+        })
+      })
+    }
+  })
+
+
   source("inputdata.R",local = TRUE)
   source("process_uploaded_files.R",local = TRUE)
   source("groupandsample.R",local=TRUE)
@@ -1047,4 +1508,4 @@ server <- function(input, output, session) {
   source("scurve.R",local = TRUE)  
 }
 
-shinyApp(ui, server)
+shinyApp(ui, server, enableBookmarking = "server")

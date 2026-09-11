@@ -88,6 +88,24 @@ ORAEnrichment <- function(deGenes,universe, gsets, logFC, Dir="Both"){
   return(ora.stats)
 }
 
+# Safely combine a named list of per-comparison result data.frames into one
+# table with a leading "comparison" column, discarding empty comparisons.
+# Handles the case where every comparison is empty (e.g. ORA collapse +
+# a strict p.adj cutoff leaves nothing), which a plain bind_rows/relocate
+# would otherwise error on since no "comparison" column would exist.
+bind_rows_with_comparison <- function(res_list, after_pos) {
+  res <- res_list %>%
+    purrr::discard(~ nrow(.x) == 0) %>%
+    dplyr::bind_rows(.id = "comparison")
+  if (!"comparison" %in% names(res)) {
+    res$comparison <- character(0)
+  }
+  if (ncol(res) >= after_pos) {
+    res <- dplyr::relocate(res, comparison, .after = !!after_pos)
+  }
+  res
+}
+
 geneset_ui <- function(id) {
   ns <- shiny::NS(id)
   fluidRow(
@@ -245,7 +263,7 @@ geneset_ui <- function(id) {
                                 DT::dataTableOutput(ns("Expression"))),
                        tabPanel(title="Gene Set Heatmap", fluidRow( column(4,textInput(ns('analysis_type_2'), 'Analysis Type')%>%disabled()),
                                                                     column(4,textInput(ns('x2'), 'Gene Set')) ,
-                                                                    column(4,textInput(ns('comparison_name_2'), "Comparison"))),
+                                                                    column(4,selectInput(ns('comparison_name_2'), "Comparison", choices = NULL))),
                                 actionButton(ns("genesetheatmap"), "Save to output"),
                                 uiOutput(ns("plot.geneset.heatmap"))),
                        tabPanel(title="KEGG Pathway View",
@@ -296,6 +314,80 @@ geneset_server <- function(id) {
   shiny::moduleServer(id,
                       function(input, output, session) {
                         ns <- shiny::NS(id)
+                        # See the matching comment in correlation.R -- actionButton
+                        # click counts get bookmarked and restoring a non-zero count
+                        # silently re-triggers that button's own observeEvent.
+                        # custom_gmt_file's fileInfo (name/size/type/datapath) is never
+                        # safe to restore -- the datapath always points at a per-session
+                        # temp file, and Shiny's own restore code rejects any file input
+                        # value whose datapath contains "/" with an uncaught error that
+                        # breaks the whole session. See the matching comment in app.R.
+                        session$setBookmarkExclude(c("compute_gsea", "compute_ora", "genesetheatmap",
+                                                      "keggSave", "metabaseSave", "create_dotplot",
+                                                      "dotplot", "reset_comp", "cmp_subset_confirm",
+                                                      "custom_gmt_file"))
+
+                        # geneset_test and MSigDB_species(_*_GSEA) all have their choices/selection
+                        # forced back to a single default by observers that fire on every project
+                        # load (see below) -- including at restore time, which clobbers the
+                        # bookmarked selection right after Shiny's own restore sets it. Reapply
+                        # unconditionally for a few seconds after restore, same pattern as app.R.
+                        session$onRestored(function(state) {
+                          restored <- state$input
+                          pending <- list(
+                            geneset_test = list(
+                              value = restored$geneset_test,
+                              apply = function(v) {
+                                req(DataReactive())
+                                updateSelectizeInput(session, "geneset_test", choices = DataReactive()$tests, selected = v)
+                              }
+                            ),
+                            MSigDB_species = list(
+                              value = restored$MSigDB_species,
+                              apply = function(v) updateRadioButtons(session, "MSigDB_species", selected = v)
+                            ),
+                            MSigDB_species_human_GSEA = list(
+                              value = restored$MSigDB_species_human_GSEA,
+                              apply = function(v) updateCheckboxGroupInput(session, "MSigDB_species_human_GSEA", choices = gmt_choices_for_species("human"), selected = v)
+                            ),
+                            MSigDB_species_mouse_GSEA = list(
+                              value = restored$MSigDB_species_mouse_GSEA,
+                              apply = function(v) updateCheckboxGroupInput(session, "MSigDB_species_mouse_GSEA", choices = gmt_choices_for_species("mouse"), selected = v)
+                            ),
+                            MSigDB_species_rat_GSEA = list(
+                              value = restored$MSigDB_species_rat_GSEA,
+                              apply = function(v) updateCheckboxGroupInput(session, "MSigDB_species_rat_GSEA", choices = gmt_choices_for_species("rat"), selected = v)
+                            ),
+                            # map_genes gets unconditionally overwritten with a
+                            # computed default (based on whether MSigDB_species
+                            # matches ProjectInfo$Species) by
+                            # observeEvent(c(input$MSigDB_species,
+                            # ProjectInfo$Species), ...) below, which also fires
+                            # at restore time regardless of whether
+                            # MSigDB_species itself actually changed.
+                            map_genes = list(
+                              value = restored$map_genes,
+                              apply = function(v) updateSelectizeInput(session, "map_genes", selected = v)
+                            )
+                          )
+                          pending <- Filter(function(p) !is.null(p$value), pending)
+                          if (length(pending) > 0) {
+                            attempts_left <- 10  # ~3s at 300ms
+                            restore_observer <- NULL
+                            restore_observer <- observe({
+                              invalidateLater(300, session)
+                              isolate({
+                                attempts_left <<- attempts_left - 1
+                                for (nm in names(pending)) {
+                                  p <- pending[[nm]]
+                                  tryCatch(p$apply(p$value), error = function(e) NULL)
+                                }
+                                if (attempts_left <= 0) restore_observer$destroy()
+                              })
+                            })
+                          }
+                        })
+
                         combined_gsea_res <- reactiveVal()
                         combined_gsea_res_filtered <- reactiveVal()
                         
@@ -334,7 +426,7 @@ geneset_server <- function(id) {
                           })
                           observe({
                             req(DataReactive())
-                            group_order(DataReactive()$group_order)
+                            group_order(DataReactive()$groups)
                           })
                           #browser()
                         } else if (system=="xOmicsShiny") {
@@ -448,18 +540,27 @@ geneset_server <- function(id) {
                           }
                         })
                         
+                        # Gene set collection choices for one species, read from gmt_file_info.
+                        # Shared by the initial populate observer and the session-restore logic
+                        # below so both build the exact same choice set.
+                        gmt_choices_for_species <- function(species) {
+                          if (is.null(gmt_file_info)) return(character(0))
+                          gmt_info <- read.csv(gmt_file_info, fileEncoding="UTF-8-BOM")
+                          gmt_use <- gmt_info %>% filter(Show=="YES") %>% mutate(label=str_c(Short_name, " ", label_name, " (", N_sets, ")"))
+                          sel <- (gmt_use$Species == species)
+                          gmt_choice <- gmt_use$gmt_file_name[sel]
+                          names(gmt_choice) <- gmt_use$label[sel]
+                          gmt_choice
+                        }
+
                         observe({
                           if (!is.null(gmt_file_info)) {  #update gmt file choices
-                            gmt_info <- read.csv(gmt_file_info, fileEncoding="UTF-8-BOM")
-                            gmt_use<-gmt_info%>%filter(Show=="YES")%>%mutate(label=str_c(Short_name, " ", label_name, " (", N_sets, ")"))
-                            gmt_choice=gmt_use$gmt_file_name
-                            names(gmt_choice)=gmt_use$label
-                            selH=(gmt_use$Species=="human")
-                            updateCheckboxGroupInput(session, "MSigDB_species_human_GSEA", choices = gmt_choice[selH], selected = gmt_choice[selH][1] )
-                            selM=(gmt_use$Species=="mouse")
-                            updateCheckboxGroupInput(session, "MSigDB_species_mouse_GSEA", choices = gmt_choice[selM], selected = gmt_choice[selM][1])
-                            selR=(gmt_use$Species=="rat")
-                            updateCheckboxGroupInput(session, "MSigDB_species_rat_GSEA", choices = gmt_choice[selR], selected = gmt_choice[selR][1])
+                            choiceH <- gmt_choices_for_species("human")
+                            updateCheckboxGroupInput(session, "MSigDB_species_human_GSEA", choices = choiceH, selected = choiceH[1] )
+                            choiceM <- gmt_choices_for_species("mouse")
+                            updateCheckboxGroupInput(session, "MSigDB_species_mouse_GSEA", choices = choiceM, selected = choiceM[1])
+                            choiceR <- gmt_choices_for_species("rat")
+                            updateCheckboxGroupInput(session, "MSigDB_species_rat_GSEA", choices = choiceR, selected = choiceR[1])
                           }
                         })
                         #browser() 
@@ -789,7 +890,8 @@ geneset_server <- function(id) {
                           updateTextInput(session, 'analysis_type_2', value = analysis_type)
                           updateTextInput(session, 'analysis_type_3', value = analysis_type)
                           updateTextInput(session, 'comparison_name_1', value = comparison)
-                          updateTextInput(session, 'comparison_name_2', value = comparison)
+                          gs_comps <- names(Filter(function(df) info$value %in% df$GeneSet, gsea_results()))
+                          updateSelectInput(session, 'comparison_name_2', choices = gs_comps, selected = comparison)
                           updateTextInput(session, 'comparison_name_3', value = comparison)
                         })
                         
@@ -969,10 +1071,7 @@ geneset_server <- function(id) {
                           req(input$ORA_input_type != "Gene List")
                           withProgress(message = 'Running ORA...', value = 0, {
                             res_list <- res_list_raw <- ora_raw()
-                            res <- res_list_raw %>%
-                              purrr::discard(~ nrow(.x) == 0) %>%
-                              dplyr::bind_rows(.id = "comparison") %>%
-                              dplyr::relocate(comparison, .after = 1)
+                            res <- bind_rows_with_comparison(res_list_raw, after_pos = 1)
                             combined_ora_res(res)
                             if (input$ora_collapase) {
                               gsets_ORA <- gsets_Reactive()
@@ -990,14 +1089,13 @@ geneset_server <- function(id) {
                                   pval.threshold = 0.05
                                 )
                                 gsa <- gsa %>% dplyr::filter(GeneSet %in% collapsed_set$mainPathways)
-                                gsa$comparison <- comp
+                                if (nrow(gsa) > 0) {
+                                  gsa$comparison <- comp
+                                }
                                 gsa
                               })
                               names(res_list) <- names(res_list_raw)
-                              res <- res_list %>%
-                                purrr::discard(~ nrow(.x) == 0) %>%
-                                dplyr::bind_rows(.id = "comparison") %>%
-                                dplyr::relocate(comparison, .after = 2)
+                              res <- bind_rows_with_comparison(res_list, after_pos = 2)
                               combined_ora_res_filtered(res)
                             }
                             res_list
@@ -1008,11 +1106,11 @@ geneset_server <- function(id) {
                         filtered_ora <- reactive({
                           req(input$geneset_test)
                           res_list <- ora_results()
-                          res <- res_list %>%
-                            purrr::discard(~ nrow(.x) == 0) %>%
-                            dplyr::bind_rows(.id = "comparison") %>%
-                            dplyr::relocate(comparison, .after = 2) %>% 
-                            dplyr::filter(p.adj <= input$ora_pvalue)
+                          res <- bind_rows_with_comparison(res_list, after_pos = 2)
+                          if ("p.adj" %in% names(res)) {
+                            res <- dplyr::filter(res, p.adj <= input$ora_pvalue)
+                          }
+                          res
                         })
                         
                         observeEvent(filtered_ora(), {
@@ -1136,7 +1234,8 @@ geneset_server <- function(id) {
                             updateTextInput(session, 'analysis_type_2', value = analysis_type)
                             updateTextInput(session, 'analysis_type_3', value = analysis_type)
                             updateTextInput(session, 'comparison_name_1', value = comparison)
-                            updateTextInput(session, 'comparison_name_2', value = comparison)
+                            gs_comps <- names(Filter(function(df) info$value %in% df$GeneSet, ora_results()))
+                            updateSelectInput(session, 'comparison_name_2', choices = gs_comps, selected = comparison)
                             updateTextInput(session, 'comparison_name_3', value = comparison)
                           }
                         })

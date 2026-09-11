@@ -16,6 +16,32 @@ GetRDataFile <- function(Pname) {
   }
 }
 
+# dataset1..5 and vennP_test1..5 choices. Shared by each pair's populate
+# observer below and the session-restore logic in app.R, since vennP_testN's
+# choices require loading whichever project datasetN currently points to.
+vennP_dataset_choices <- function() {
+  data_sets <- c("empty", projects)
+  if (!is.null(pub_projects)) {
+    data_sets <- c(data_sets, pub_projects)
+  }
+  data_sets
+}
+
+vennP_test_choices_for <- function(dataset_val) {
+  if (is.null(dataset_val) || dataset_val == "empty" || dataset_val == "") {
+    return(NULL)
+  }
+  RDataFile <- GetRDataFile(dataset_val)
+  load(RDataFile)
+  tests <- as.character(MetaData$ComparePairs[MetaData$ComparePairs != ""])
+  comp_tests <- as.character(unique(results_long$test))
+  if (!all(tests %in% comp_tests)) { tests <- gsub("-", "vs", tests) }
+  if (length(tests) == 0) {
+    tests <- unique(as.character(results_long$test))
+  }
+  tests
+}
+
 observe({
 	#data_sets <- list.files(path = "./data", pattern = "\\.RData$", full.names = FALSE) %>% gsub("\\.RData$","",.)
 	data_sets  <- c("empty",projects)

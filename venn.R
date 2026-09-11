@@ -10,7 +10,10 @@
 ###########################################################################################################
 
 
-observe({
+# venn_test1..5 choices, padded out to exactly 5 slots with "Empty List".
+# Shared by the populate observer below and the session-restore logic in
+# app.R so both build the exact same choice set.
+venn_test_choices <- function() {
 	DataIn = DataReactive()
 	tmptests = DataIn$tests
 	req(tmptests)
@@ -23,6 +26,11 @@ observe({
 		emptylist = 5- ntest
 		tmptests = c(tmptests, rep("Empty List", emptylist))
 	}
+	tmptests
+}
+
+observe({
+	tmptests <- venn_test_choices()
 	for (i in 1:5){
 		venn_test <- paste("venn_test",i,sep="")
 		updateSelectizeInput(session, venn_test, choices=tmptests, selected=tmptests[i])
