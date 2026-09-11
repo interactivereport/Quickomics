@@ -48,10 +48,18 @@ observeEvent(input$exp_unit, {
   Eu=input$exp_unit; exp_unit(Eu)
 })
 
-observe({
-  query <- parseQueryString(session$clientData$url_search)
-  if (!is.null(query[['project']])) {
-    ProjectID = query[['project']]
+# Loads a project from one of the raw URL query-string parameters below.
+# Factored out (rather than left inline in the observe() below) so
+# app.R's onRestored() can also call it directly -- project/unlisted/
+# serverfile/testfile select the project straight from
+# session$clientData$url_search rather than from a Shiny input, so they're
+# never captured by Shiny's bookmarking and are gone from the URL once
+# Save Session's doBookmark() replaces it with "?_state_id_=...". Without
+# replaying this same lookup at restore time from a value captured at save
+# time, a session whose project was opened via one of these parameters
+# restores to no project at all.
+load_project_from_query <- function(key, ProjectID) {
+  if (key == 'project') {
     validate(need(ProjectID %in% saved_projects$ProjectID , message = "Please pass a valid ProjectID from URL."))
     ProjectInfo$ProjectID=ProjectID
     ProjectInfo$Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
@@ -60,10 +68,8 @@ observe({
     ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
     ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
-  }
-  if (!is.null(query[['unlisted']])) {
-    ProjectID = query[['unlisted']]
-    validate(need(file.exists(str_c("unlisted/",  ProjectID, ".csv")), 
+  } else if (key == 'unlisted') {
+    validate(need(file.exists(str_c("unlisted/",  ProjectID, ".csv")),
                   message = "Please pass a valid ProjectID from URL. Files must be located in unlisted folder" ))
     unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
     ProjectInfo$ProjectID=ProjectID
@@ -73,13 +79,11 @@ observe({
     ProjectInfo$file1= paste("unlisted/",  ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
     ProjectInfo$file3= paste("unlisted/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
-    if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
+    if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
-  }
-  if (!is.null(query[['serverfile']])) {
-    ProjectID = query[['serverfile']]
+  } else if (key == 'serverfile') {
     if (!is.null(server_dir)) {
-      validate(need(file.exists(str_c(server_dir, "/",  ProjectID, ".csv")), 
+      validate(need(file.exists(str_c(server_dir, "/",  ProjectID, ".csv")),
                     message = "Please pass a valid ProjectID from URL. Files must be located in server file folder" ))
       unlisted_project=read.csv(str_c(server_dir, "/",  ProjectID, ".csv"))
       ProjectInfo$ProjectID=ProjectID
@@ -89,14 +93,12 @@ observe({
       ProjectInfo$file1= paste(server_dir, "/",   ProjectID, ".RData", sep = "")  #data file
       ProjectInfo$file2= paste(server_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
       ProjectInfo$file3= paste(server_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
-      if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
+      if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
       if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
     }
-  }
-  if (!is.null(query[['testfile']])) {
-    ProjectID = query[['testfile']]
+  } else if (key == 'testfile') {
     if (!is.null(test_dir)) {
-      validate(need(file.exists(str_c(test_dir, "/",  ProjectID, ".csv")), 
+      validate(need(file.exists(str_c(test_dir, "/",  ProjectID, ".csv")),
                     message = "Please pass a valid ProjectID from URL. Files must be located in test file folder" ))
       unlisted_project=read.csv(str_c(test_dir, "/",  ProjectID, ".csv"))
       ProjectInfo$ProjectID=ProjectID
@@ -106,8 +108,20 @@ observe({
       ProjectInfo$file1= paste(test_dir, "/",   ProjectID, ".RData", sep = "")  #data file
       ProjectInfo$file2= paste(test_dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
       ProjectInfo$file3= paste(test_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
-      if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
+      if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
       if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
+    }
+  }
+}
+
+observe({
+  query <- parseQueryString(session$clientData$url_search)
+  # No early exit on a match -- matches the original behavior where all
+  # four blocks ran unconditionally, so if more than one of these
+  # parameters were somehow present at once, the last one (testfile) wins.
+  for (key in c('project', 'unlisted', 'serverfile', 'testfile')) {
+    if (!is.null(query[[key]])) {
+      load_project_from_query(key, query[[key]])
     }
   }
 })

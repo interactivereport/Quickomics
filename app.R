@@ -1110,6 +1110,22 @@ server <- function(input, output, session) {
     session$doBookmark()
   })
 
+  onBookmark(function(state) {
+    # project/unlisted/serverfile/testfile (inputdata.R) select the project
+    # straight from the raw URL query string, not from a Shiny input, so
+    # they're never part of `input` and are lost once doBookmark() replaces
+    # the URL's query string with "_state_id_=...". Capture whichever one
+    # loaded the current project so onRestored() can reload it explicitly
+    # via the same load_project_from_query() used in inputdata.R.
+    query <- parseQueryString(isolate(session$clientData$url_search))
+    for (key in c("project", "unlisted", "serverfile", "testfile")) {
+      if (!is.null(query[[key]])) {
+        state$values$qo_project_query_key <- key
+        state$values$qo_project_query_value <- query[[key]]
+      }
+    }
+  })
+
   onBookmarked(function(url) {
     # The state ID is the last query-string segment Shiny appended to the
     # current URL, e.g. "...?_state_id_=6ba545c11e3c6206".
@@ -1127,6 +1143,12 @@ server <- function(input, output, session) {
   # keeps working as long as this exact server retains that state ID's
   # folder on disk; the file survives a redeploy, a disk cleanup, or moving
   # to a different server, and can be emailed/archived like any other file.
+  # Bundles input.rds together with values.rds (present whenever onBookmark()
+  # above stashed the project-loading query parameter into state$values) --
+  # a plain file.copy() of input.rds alone would silently drop that, and a
+  # session whose project was opened via project/unlisted/serverfile/testfile
+  # (rather than the "Saved Projects" dropdown) would restore to no project
+  # at all when the downloaded file was re-uploaded later.
   output$download_session_file <- downloadHandler(
     filename = function() {
       paste0("Quickomics_session_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".rds")
@@ -1134,9 +1156,15 @@ server <- function(input, output, session) {
     content = function(file) {
       state_id <- last_bookmark_state_id()
       req(state_id)
-      src <- file.path("shiny_bookmarks", state_id, "input.rds")
-      req(file.exists(src))
-      file.copy(src, file, overwrite = TRUE)
+      input_src <- file.path("shiny_bookmarks", state_id, "input.rds")
+      req(file.exists(input_src))
+      values_src <- file.path("shiny_bookmarks", state_id, "values.rds")
+      bundle <- list(
+        .qo_format = "bundle_v1",
+        input = readRDS(input_src),
+        values = if (file.exists(values_src)) as.list(readRDS(values_src)) else list()
+      )
+      saveRDS(bundle, file)
     }
   )
 
@@ -1148,10 +1176,22 @@ server <- function(input, output, session) {
   # exactly as it would for a normal saved-link restore.
   observeEvent(input$upload_session_file, {
     req(input$upload_session_file)
-    uploaded <- tryCatch(readRDS(input$upload_session_file$datapath), error = function(e) NULL)
-    if (is.null(uploaded) || !is.list(uploaded)) {
+    uploaded_raw <- tryCatch(readRDS(input$upload_session_file$datapath), error = function(e) NULL)
+    if (is.null(uploaded_raw) || !is.list(uploaded_raw)) {
       showNotification("That file doesn't look like a Quickomics session file.", type = "error", duration = NULL)
       return()
+    }
+    # Current files bundle {input, values} (see download_session_file
+    # above, tagged .qo_format); files downloaded before that bundling
+    # existed are a bare input list with no wrapping -- keep restoring
+    # those too, just without whatever lived in values.rds (there wasn't
+    # any values.rds capture at all until this fix).
+    if (!is.null(uploaded_raw[[".qo_format"]])) {
+      uploaded_input <- uploaded_raw$input
+      uploaded_values <- uploaded_raw$values
+    } else {
+      uploaded_input <- uploaded_raw
+      uploaded_values <- list()
     }
     # Defensively strip any fileInput value the uploaded file might already
     # contain (e.g. saved before this exclusion existed, or from a session
@@ -1163,12 +1203,15 @@ server <- function(input, output, session) {
     for (fk in c("upload_session_file", "file1", "file2", "sd_cor_annot_color_file",
                  "file_gene_highlight", "file_gene_annot", "annot_color_file",
                  "F_sample", "F_exp", "F_comp", "F_annot", "GS-custom_gmt_file")) {
-      uploaded[[fk]] <- NULL
+      uploaded_input[[fk]] <- NULL
     }
     new_state_id <- paste(sample(c(letters[1:6], 0:9), 16, replace = TRUE), collapse = "")
     dest_dir <- file.path("shiny_bookmarks", new_state_id)
     dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
-    saveRDS(uploaded, file.path(dest_dir, "input.rds"))
+    saveRDS(uploaded_input, file.path(dest_dir, "input.rds"))
+    if (length(uploaded_values) > 0) {
+      saveRDS(uploaded_values, file.path(dest_dir, "values.rds"))
+    }
     showNotification("Session file loaded -- restoring...", type = "message")
     shinyjs::runjs(sprintf(
       "window.location.href = window.location.pathname + '?_state_id_=%s';",
@@ -1177,7 +1220,48 @@ server <- function(input, output, session) {
   })
 
   onRestored(function(state) {
+    # Shiny treats ANY query string without "_state_id_" as potential
+    # bookmark state (see the installed shiny package's
+    # RestoreContext$initialize()/decodeStateQueryString()) -- so a plain
+    # link like "?testfile=GSE..." with no real bookmark also sets
+    # restoreContext$active <- TRUE and fires this callback, just with
+    # nothing usable in state$input/state$values (decoding finds none of
+    # the "_inputs_"/"_values_" markers a real bookmark URL has, and treats
+    # that as an empty-but-active restore rather than an error). Confirmed
+    # directly: opening "?testfile=..." -- or even an unrelated "?foo=bar"
+    # -- fresh, with no prior Save Session, triggered this callback and its
+    # "Session restored" notification.
+    #
+    # state$dir is the reliable way to tell the two apart: it's only ever
+    # set (to the shiny_bookmarks/<state_id> directory) when Shiny actually
+    # loaded a bookmark via "_state_id_=..." (loadStateQueryString() in the
+    # shiny package); the query-string quirk above goes through
+    # decodeStateQueryString() instead, which never touches it, so it stays
+    # NULL. Bail out unless it's set, so unrelated query-string links don't
+    # get a false restore.
+    if (is.null(state$dir)) {
+      return()
+    }
+
     showNotification("Session restored from saved link.", type = "message")
+
+    # Reload the project that was active when this session was saved, if it
+    # was opened via a raw URL query parameter (project/unlisted/
+    # serverfile/testfile) rather than the "Saved Projects" dropdown --
+    # see onBookmark() above for why the parameter itself doesn't survive
+    # into the restored "_state_id_=..." URL. (The dropdown case needs no
+    # special handling here: input$sel_project is a normal bookmarked
+    # input, and inputdata.R's own observer already reacts to it once
+    # Shiny restores it.) Without this, restoring such a session loaded no
+    # project at all -- confirmed directly.
+    if (!is.null(state$values$qo_project_query_key)) {
+      tryCatch(
+        load_project_from_query(state$values$qo_project_query_key, state$values$qo_project_query_value),
+        error = function(e) {
+          showNotification(paste("Could not reload the saved session's project:", conditionMessage(e)), type = "error", duration = NULL)
+        }
+      )
+    }
 
     # The active top-level tab (input$menu) needs an explicit updateTabsetPanel()
     # rather than relying on Shiny's normal input restoration. Confirmed directly:
