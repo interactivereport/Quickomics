@@ -15,15 +15,21 @@
 ###########################################################################################################
 
 git_field <- function(args) {
-  out <- suppressWarnings(system2("git", args, stdout = TRUE, stderr = FALSE))
+  out <- suppressWarnings(system2("git", args, stdout = TRUE, stderr = TRUE))
+  status <- attr(out, "status")
+  if (!is.null(status) && status != 0) {
+    stop("`git ", paste(args, collapse = " "), "` failed (exit ", status, "):\n",
+         paste(out, collapse = "\n"))
+  }
   if (length(out) != 1 || !nzchar(out)) {
-    stop("`git ", paste(args, collapse = " "), "` returned no output -- is this run from inside the repo?")
+    stop("`git ", paste(args, collapse = " "), "` returned unexpected output:\n",
+         paste(out, collapse = "\n"))
   }
   out
 }
-
+ 
 commit_hash <- git_field(c("log", "-1", "--format=%H"))
-commit_date <- git_field(c("log", "-1", "--format=%cd", "--date=format:%Y-%m-%d"))
+commit_date <- git_field(c("log", "-1", "--format=%cd", "--date=short"))
 branch      <- git_field(c("rev-parse", "--abbrev-ref", "HEAD"))
 
 writeLines(
