@@ -382,9 +382,17 @@ correlation_server <- function(id, parent_session) {
                    output$filteredUniqueID_Browsing <- renderText({res_gene_count$msg_filter})
                  })
                  
-                 observeEvent(input$gene_list, {
+                 observe({
+                   # Plain observe() (like the Browsing block above), not
+                   # observeEvent(input$gene_list, ...) -- that only fired
+                   # when the uploaded gene text itself changed, so
+                   # switching "Genes Used in Correlation Analysis" from
+                   # Browsing to Upload Genes without touching the text box
+                   # left ProteinGeneName_sel() holding the stale Browsing
+                   # selection, and Compute/Refresh kept producing the same
+                   # result. This re-runs on every switch into "Upload
+                   # Genes" too, since it reads input$gene_subset below.
                    req(input$gene_subset == "Upload Genes")
-                   # req(input$gene_list != "")
                    gene_list <- input$gene_list
                    gene_list <- ProcessUploadGeneList(gene_list)
                    validate(need(length(gene_list) > 1, message = "Please input at least 2 matched genes."))
@@ -509,11 +517,20 @@ correlation_server <- function(id, parent_session) {
                      sel_attribute <- input$sel_attribute
                      MetaData = DataIn$MetaData # %>% filter(sampleid %in% sample_order(), !!sym(sel_attribute) %in% sel_group)
                      
-                     exp_tmp = data_long %>% 
+                     exp_tmp = data_long %>%
                        # dplyr::left_join(MetaData %>% dplyr::select(sampleid, !!sym(sel_attribute)), by = "sampleid", suffix = c("", "_meta")) %>%
                        dplyr::filter(UniqueID %in% tmpids) %>%       # , sampleid %in% MetaData$sampleid) %>%
                        dplyr::select(gene = UniqueID, !!sym(sel_attribute), expr) %>%
-                       dplyr::filter(!is.na(expr)) %>% 
+                       # Restrict to the groups the user actually selected --
+                       # without this, every level of sel_attribute (not just
+                       # the selected ones) ends up as a row after
+                       # pivot_wider below, so toCheck_list/combn() further
+                       # down produces every pairwise combination of ALL
+                       # groups for that attribute, not just the selected
+                       # ones (confirmed directly: selecting 2 of 3 Genotype
+                       # levels still returned all 3 pairwise rows).
+                       dplyr::filter(!!sym(sel_attribute) %in% sel_group) %>%
+                       dplyr::filter(!is.na(expr)) %>%
                        dplyr::mutate(TPM = 2^expr-adding_number) %>%
                        dplyr::group_by(!!sym(sel_attribute), gene) %>%
                        dplyr::summarise(mean_TPM = mean(TPM), .groups = "drop") %>%
