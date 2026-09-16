@@ -1171,7 +1171,16 @@ server <- function(input, output, session) {
   # at all when the downloaded file was re-uploaded later.
   output$download_session_file <- downloadHandler(
     filename = function() {
-      paste0("Quickomics_session_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".rds")
+      project_id <- ProjectInfo$ProjectID
+      if (is.null(project_id) || !nzchar(project_id)) {
+        project_id <- "Quickomics_session"
+      } else {
+        # Defensive: ProjectID can come straight from an uploaded file's
+        # name (see input$customData below), which isn't guaranteed to be
+        # filesystem-safe.
+        project_id <- gsub("[^A-Za-z0-9_.-]+", "_", project_id)
+      }
+      paste0(project_id, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".rds")
     },
     content = function(file) {
       state_id <- last_bookmark_state_id()
@@ -1213,6 +1222,37 @@ server <- function(input, output, session) {
       uploaded_input <- uploaded_raw
       uploaded_values <- list()
     }
+
+    # Only restore into a currently-open project that actually matches the
+    # one this session was saved for -- otherwise the restored settings
+    # (gene lists, comparisons, filters...) would silently apply to
+    # whatever project happens to be open, which is unlikely to make sense
+    # for it. Two ways a project gets captured in a bookmark: the "Saved
+    # Projects" dropdown (input$sel_project, a plain bookmarked input) or a
+    # raw URL query parameter (project/unlisted/serverfile/testfile -- not
+    # itself an input, so it's captured into values.rds by onBookmark()
+    # above instead; see qo_project_query_key/value there).
+    uploaded_project_id <- uploaded_input$sel_project
+    if (is.null(uploaded_project_id) || !nzchar(uploaded_project_id)) {
+      uploaded_project_id <- uploaded_values$qo_project_query_value
+    }
+    current_project_id <- isolate(ProjectInfo$ProjectID)
+    if (!identical(current_project_id, uploaded_project_id)) {
+      if (is.null(uploaded_project_id) || !nzchar(uploaded_project_id)) {
+        showNotification("Can't tell which project this session file was saved for -- open the matching project, then upload again.",
+                          type = "error", duration = NULL)
+      } else {
+        showNotification(
+          sprintf("This session file was saved for project \"%s\", but %s is currently open. Open \"%s\" first, then upload again.",
+                  uploaded_project_id,
+                  if (is.null(current_project_id)) "no project" else paste0("\"", current_project_id, "\""),
+                  uploaded_project_id),
+          type = "error", duration = NULL
+        )
+      }
+      return()
+    }
+
     # Defensively strip any fileInput value the uploaded file might already
     # contain (e.g. saved before this exclusion existed, or from a session
     # that had one of these set at save time) -- restoring any of them
