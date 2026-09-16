@@ -21,6 +21,24 @@ api_password <- Sys.getenv("QUICKOMICS_API_PASSWORD", "")
 api_compose_dir  <- Sys.getenv("QUICKOMICS_API_COMPOSE_DIR", "")
 api_autostart_on <- tolower(Sys.getenv("QUICKOMICS_API_AUTOSTART", "false")) %in% c("true", "1", "yes")
 
+# Retry/timeout settings for data-fetching calls (api_get_project_meta,
+# api_load, api_load_network, api_load_wgcna) -- NOT api_health_check or
+# api_fetch_token, see api_http_get_with_retry()'s own comment for why.
+#
+# Plumber runs as a single R process handling one request at a time (see
+# https://www.rplumber.io/articles/execution-model.html) -- with only one
+# pod (minReplicas: 1) and no way to change that from this side, a request
+# that arrives while the server is busy with someone else's slow call
+# simply queues and waits, rather than failing outright. These settings
+# make the client tolerate that wait instead of giving up too early, and
+# retry a modest number of times if the wait is long enough that an
+# upstream proxy/load balancer times the connection out first (a 502/503/
+# 504 in that case doesn't mean the request was bad, just that it didn't
+# get a chance to finish before something in the middle gave up on it).
+api_max_retries        <- as.integer(Sys.getenv("QUICKOMICS_API_MAX_RETRIES", "3"))
+api_timeout_sec         <- as.integer(Sys.getenv("QUICKOMICS_API_TIMEOUT_SEC", "120"))
+api_retry_backoff_sec   <- as.integer(Sys.getenv("QUICKOMICS_API_RETRY_BACKOFF_SEC", "2"))
+
 # Simple in-process token cache -- shared across all Shiny sessions in this
 # R process, since the API token represents the app's own service identity,
 # not an individual user. Survives for the life of the R process; a fresh
@@ -33,6 +51,61 @@ api_autostart_on <- tolower(Sys.getenv("QUICKOMICS_API_AUTOSTART", "false")) %in
 # `docker compose up` attempt on every single request.
 .api_autostart_cache <- new.env(parent = emptyenv())
 .api_autostart_cache$attempted <- FALSE
+
+#' Perform an HTTP GET with a generous timeout and retry-with-backoff for
+#' transient failures -- specifically network-level errors (connection
+#' dropped, DNS hiccup, etc.) and 502/503/504 responses, which are exactly
+#' what you'd see from a proxy/load balancer giving up on a request that
+#' got stuck queued behind another slow one on a single-threaded plumber
+#' process, rather than the API itself rejecting the request.
+#'
+#' Deliberately does NOT retry on 400/401/403/404 -- those are the server
+#' telling you something specific and non-transient (bad parameter, bad
+#' token, insufficient role, not found); retrying the identical request
+#' won't change any of those outcomes. 401 already gets its own one-shot
+#' refresh-token-and-retry-once handling at each call site below, which is
+#' a different, complementary mechanism to this one.
+#'
+#' Not used by api_health_check() (a fast, cheap liveness probe -- retrying
+#' it defeats its purpose of quickly telling ensure_api_running() whether
+#' the API is up) or api_fetch_token() directly (POST with a different
+#' body shape; add retry there too if login-time flakiness becomes an
+#' issue in practice).
+#'
+#' @param url Full request URL
+#' @param headers httr::add_headers(...) result (or similar) to pass through
+#' @return The httr response object from the final attempt. Callers handle
+#'   status codes exactly as before -- this only changes how many attempts
+#'   happen before returning.
+api_http_get_with_retry <- function(url, headers) {
+  attempt <- 0L
+  repeat {
+    attempt <- attempt + 1L
+    resp <- tryCatch(
+      httr::GET(url, headers, httr::timeout(api_timeout_sec)),
+      error = function(e) e
+    )
+    is_network_error <- inherits(resp, "error")
+    is_retryable_status <- !is_network_error && httr::status_code(resp) %in% c(502L, 503L, 504L)
+
+    if (!is_network_error && !is_retryable_status) {
+      return(resp)
+    }
+    if (attempt >= api_max_retries) {
+      if (is_network_error) {
+        stop("Quickomics API: request to ", url, " failed after ", api_max_retries,
+             " attempts: ", conditionMessage(resp))
+      }
+      return(resp)  # exhausted retries on a persistent 502/503/504 -- let the caller report it
+    }
+
+    backoff <- api_retry_backoff_sec * (2 ^ (attempt - 1L))
+    reason <- if (is_network_error) conditionMessage(resp) else paste0("HTTP ", httr::status_code(resp))
+    message("Quickomics API: request to ", url, " did not complete (", reason, "), attempt ",
+            attempt, "/", api_max_retries, " -- retrying in ", backoff, "s...")
+    Sys.sleep(backoff)
+  }
+}
 
 #' Check whether the API is currently reachable.
 api_health_check <- function(timeout_sec = 2) {
@@ -217,7 +290,7 @@ api_get_project_meta <- function(project_id, source) {
   ensure_api_running()
   
   fetch_once <- function(token) {
-    httr::GET(
+    api_http_get_with_retry(
       paste0(api_base_url, "/datasets/", source, "/", project_id),
       httr::add_headers(Authorization = paste("Bearer", token))
     )
@@ -273,7 +346,7 @@ api_load <- function(project_id, source, envir = parent.frame()) {
   ensure_api_running()
   
   fetch_once <- function(token) {
-    httr::GET(
+    api_http_get_with_retry(
       paste0(api_base_url, "/datasets/", source, "/", project_id, "/bundle.rds"),
       httr::add_headers(Authorization = paste("Bearer", token))
     )
@@ -355,7 +428,7 @@ api_load_network <- function(project_id, source) {
   ensure_api_running()
   
   fetch_once <- function(token) {
-    httr::GET(
+    api_http_get_with_retry(
       paste0(api_base_url, "/datasets/", source, "/", project_id, "/network/bundle.rds"),
       httr::add_headers(Authorization = paste("Bearer", token))
     )
@@ -404,7 +477,7 @@ api_load_wgcna <- function(project_id, source, envir = parent.frame()) {
   ensure_api_running()
   
   fetch_once <- function(token) {
-    httr::GET(
+    api_http_get_with_retry(
       paste0(api_base_url, "/datasets/", source, "/", project_id, "/wgcna/bundle.rds"),
       httr::add_headers(Authorization = paste("Bearer", token))
     )
