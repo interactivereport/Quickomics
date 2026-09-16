@@ -30,12 +30,23 @@ fluidPage(
             uiOutput("dynamic_sidebar_css"),
             tags$style(HTML("
     /* Top-right, fixed -- clear of the logo (top-left) so there's no overlap.
-       Always visible now: no toggle button, no hidden/collapsed state. */
-    #sidebar_width_control {
+       Panel sits to the LEFT of the toggle icon (same top offset) rather
+       than below it, so it never grows tall enough to reach the nav bar.
+       z-index above 1000 regardless: the navbar (.navbar-cerulean) is also
+       z-index 1000 and sits later in the DOM, so at an equal z-index it
+       would still paint on top of this panel. */
+    #sidebar_width_toggle {
       position: fixed;
       top: 6px;
       right: 15px;
-      z-index: 1000;
+      z-index: 1002;
+      padding: 4px 10px;
+    }
+    #sidebar_width_control {
+      position: fixed;
+      top: 6px;
+      right: 59px;
+      z-index: 1001;
       background: rgba(255,255,255,0.95);
       padding: 8px 12px;
       border-radius: 4px;
@@ -49,6 +60,10 @@ fluidPage(
     .wrap-cell { white-space: normal !important; word-break: break-word; }
   "))
           ),
+          actionButton("sidebar_width_toggle", label = NULL, icon = icon("sliders-h"),
+                       title = "Adjust sidebar width"),
+          # Visible by default (unlike the original toggle-driven version) --
+          # just click-to-collapse via the icon button above.
           div(id = "sidebar_width_control",
               sliderInput("sidebar_width_pct", "Set the Side Menu Width:", min = 15, max = 50, value = 25, step = 1, ticks = FALSE, width = "180px")
           ),
@@ -56,12 +71,13 @@ fluidPage(
           titlePanel(
             fluidRow(
               column(4, img(height =75 , src = "Quickomics.png")),
-              # padding-right reserves space for #sidebar_width_control (a
-              # position:fixed box anchored to the viewport's top-right corner,
-              # so it occupies roughly the rightmost 220px regardless of window
+              # padding-right reserves space for #sidebar_width_toggle plus
+              # #sidebar_width_control beside it (both position:fixed,
+              # anchored to the viewport's top-right corner, together
+              # occupying roughly the rightmost 280px regardless of window
               # width) -- without this, a long project name can render right
-              # underneath it as the window narrows and this column shrinks.
-              column(8,  h2(strong(textOutput('project')), align = 'left'), style = "padding-right: 230px;")
+              # underneath them as the window narrows and this column shrinks.
+              column(8,  h2(strong(textOutput('project')), align = 'left'), style = "padding-right: 280px;")
             ),
             windowTitle = "Quickomics" ),
           
@@ -1072,6 +1088,10 @@ server <- function(input, output, session) {
     )))
   })
 
+  observeEvent(input$sidebar_width_toggle, {
+    shinyjs::toggle("sidebar_width_control")
+  })
+
   # Some restored inputs' *choices* are only ever populated lazily, when the
   # user actually visits the tab that computes them -- e.g. sel_net_gene on
   # Correlation Network: NetworkReactive() is gated on
@@ -1557,7 +1577,6 @@ server <- function(input, output, session) {
       })
     }
   })
-
 
   source("inputdata.R",local = TRUE)
   source("process_uploaded_files.R",local = TRUE)
