@@ -172,14 +172,106 @@ correlation_ui <- function(id) {
 
 # ---- Server Module ----
 correlation_server <- function(id, parent_session) {
-  moduleServer(id, 
+  moduleServer(id,
                function(input, output, session) {
+                 # actionButton click counts get bookmarked like any other input --
+                 # restoring a non-zero count silently re-triggers that button's own
+                 # observeEvent right after restore (Shiny can't tell "value changed
+                 # because it was restored" from "value changed because it was
+                 # clicked"). None of these buttons' click counts are meaningful
+                 # state to restore, so exclude them all.
+                 session$setBookmarkExclude(c("go_to_qc", "compute_corr", "CorrPlot"))
                  ProteinGeneName_sel <- reactiveVal()
                  CorrPlot <- reactiveVal()
                  CorrPlot_ID <- reactiveVal()
                  genelabel <- reactiveVal()
                  CorrMethod <- reactiveVal()
-                 
+
+                 # sel_test/sel_sample/sel_attribute/sel_group/sel_gene/
+                 # gene_subset/sel_geneset all have their choices+selected
+                 # forced back to a hardcoded default by observers that fire
+                 # on every project load (see below) -- including at restore
+                 # time. Reapply unconditionally for a few seconds after
+                 # restore, same pattern as app.R.
+                 session$onRestored(function(state) {
+                   restored <- state$input
+                   pending <- list(
+                     sel_test = list(value = restored$sel_test, apply = function(v) {
+                       updateSelectizeInput(session, "sel_test", choices = test_order(), selected = v)
+                     }),
+                     sel_sample = list(value = restored$sel_sample, apply = function(v) {
+                       updateSelectizeInput(session, "sel_sample", choices = sample_order(), selected = v)
+                     }),
+                     sel_attribute = list(value = restored$sel_attribute, apply = function(v) {
+                       req(DataQCReactive())
+                       attrs <- sort(setdiff(colnames(DataQCReactive()$MetaData), c("sampleid", "Order", "ComparePairs")))
+                       updateSelectInput(session, "sel_attribute", choices = attrs, selected = v)
+                     }),
+                     # sel_group's choices depend on whichever attribute is
+                     # currently selected -- read isolate(input$sel_attribute)
+                     # fresh on every reapply, same as sel_group's own
+                     # observeEvent(input$sel_attribute, ...) does live.
+                     sel_group = list(value = restored$sel_group, apply = function(v) {
+                       req(DataQCReactive())
+                       attr <- isolate(input$sel_attribute)
+                       req(attr)
+                       DataIn <- DataQCReactive()
+                       if (attr %in% names(DataIn$tmp_group)) {
+                         groups <- DataIn$tmp_group[[attr]]
+                       } else {
+                         groups <- all_group_list()[[attr]]
+                       }
+                       updateSelectizeInput(session, "sel_group", choices = groups, selected = v)
+                     }),
+                     # Must re-supply the full choices list on every apply --
+                     # a server=TRUE selectize update with no choices
+                     # registers an empty searchable dataset (see sel_gene in
+                     # app.R for the same gotcha).
+                     sel_gene = list(value = restored$sel_gene, apply = function(v) {
+                       req(DataQCReactive())
+                       req(isolate(input$gene_label))
+                       ProteinGeneName <- DataQCReactive()$ProteinGeneName
+                       req(ProteinGeneName)
+                       if (isolate(input$gene_label) == "UniqueID") {
+                         DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>% as.character()
+                       } else {
+                         DataIngenes <- ProteinGeneName %>% dplyr::select(Gene.Name) %>% collect %>% .[["Gene.Name"]] %>% as.character()
+                       }
+                       updateSelectizeInput(session, "sel_gene", choices = DataIngenes, selected = v, server = TRUE)
+                     }),
+                     # gene_subset's choices depend on correlation_type --
+                     # same cascading pattern as sel_group/sel_attribute.
+                     gene_subset = list(value = restored$gene_subset, apply = function(v) {
+                       if (identical(isolate(input$correlation_type), "gene")) {
+                         choices <- c("Select", "Browsing", "Upload Genes", "Geneset")
+                       } else {
+                         choices <- c("All", "Browsing", "Upload Genes", "Geneset")
+                       }
+                       updateRadioButtons(session, "gene_subset", choices = choices, inline = TRUE, selected = v)
+                     }),
+                     sel_geneset = list(value = restored$sel_geneset, apply = function(v) {
+                       genesetnames <- GetGeneSetNames()
+                       updateSelectizeInput(session, "sel_geneset", choices = c('Type to Search' = '', genesetnames), selected = v, server = TRUE)
+                     })
+                   )
+                   pending <- Filter(function(p) !is.null(p$value), pending)
+                   if (length(pending) > 0) {
+                     attempts_left <- 10  # ~3s at 300ms
+                     restore_observer <- NULL
+                     restore_observer <- observe({
+                       invalidateLater(300, session)
+                       isolate({
+                         attempts_left <<- attempts_left - 1
+                         for (nm in names(pending)) {
+                           p <- pending[[nm]]
+                           tryCatch(p$apply(p$value), error = function(e) NULL)
+                         }
+                         if (attempts_left <= 0) restore_observer$destroy()
+                       })
+                     })
+                   }
+                 })
+
                  observeEvent(input$go_to_qc, {
                    updateNavbarPage(parent_session, inputId = "menu", selected = "QC_Plots")
                    updateTabsetPanel(parent_session, inputId = "groupplot_tabset", selected = "Sample-sample Distance")

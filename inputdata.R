@@ -48,14 +48,26 @@ observeEvent(input$exp_unit, {
   Eu=input$exp_unit; exp_unit(Eu)
 })
 
-observe({
-  query <- parseQueryString(session$clientData$url_search)
-  if (!is.null(query[['project']])) {
-    ProjectID = query[['project']]
-    # NOTE: this observe() block has no render output of its own, so
-    # validate()/need() -- which only produces a visible message when caught
-    # by a render*() output -- would fail here completely silently. Use
-    # showNotification() instead so the user actually sees what went wrong.
+# Loads a project from one of the raw URL query-string parameters below.
+# Factored out (rather than left inline in the observe() below) so
+# app.R's onRestored() can also call it directly -- project/unlisted/
+# serverfile/testfile select the project straight from
+# session$clientData$url_search rather than from a Shiny input, so they're
+# never captured by Shiny's bookmarking and are gone from the URL once
+# Save Session's doBookmark() replaces it with "?_state_id_=...". Without
+# replaying this same lookup at restore time from a value captured at save
+# time, a session whose project was opened via one of these parameters
+# restores to no project at all.
+#
+# Uses showNotification()+return() rather than validate()/need() for
+# invalid input, on purpose: this function is called both from a plain
+# observe() below (which has no render output of its own, so validate()
+# would fail completely silently there) AND from onRestored() in app.R, a
+# non-reactive context where an uncaught validate() condition surfaces as a
+# raw error instead of a clean message. showNotification() works correctly
+# in both places.
+load_project_from_query <- function(key, ProjectID) {
+  if (key == 'project') {
     if (!(ProjectID %in% saved_projects$ProjectID)) {
       showNotification(
         paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
@@ -71,9 +83,7 @@ observe({
     ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
     ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
     ProjectInfo$source=NULL  #local data/ folder project, not API-backed
-  }
-  if (!is.null(query[['unlisted']])) {
-    ProjectID = query[['unlisted']]
+  } else if (key == 'unlisted') {
     if (!file.exists(str_c("unlisted/",  ProjectID, ".csv"))) {
       showNotification(
         paste0("Project '", ProjectID, "' could not be found in the unlisted folder. Please check the project ID in the URL."),
@@ -90,11 +100,9 @@ observe({
     ProjectInfo$file2= paste("unlisted/", ProjectID, "_network.RData", sep = "") #Correlation results
     ProjectInfo$file3= paste("unlisted/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
     ProjectInfo$source=NULL  #unlisted/ folder project, not API-backed
-    if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path} 
+    if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
-  }
-  if (!is.null(query[['serverfile']])) {
-    ProjectID = query[['serverfile']]
+  } else if (key == 'serverfile') {
     api_result <- tryCatch(
       list(ok = TRUE, meta = api_get_project_meta(ProjectID, "published")),
       error = function(e) list(ok = FALSE, error = conditionMessage(e))
@@ -129,9 +137,7 @@ observe({
     ProjectInfo$source="published"  #routes file1/network/wgcna loading through the Quickomics API
     if (!is.null(meta$Path)) {ProjectInfo$Path=meta$Path}
     if (!is.null(meta$ExpressionUnit)) {updateTextInput(session, "exp_unit", value=meta$ExpressionUnit)}
-  }
-  if (!is.null(query[['testfile']])) {
-    ProjectID = query[['testfile']]
+  } else if (key == 'testfile') {
     api_result <- tryCatch(
       list(ok = TRUE, meta = api_get_project_meta(ProjectID, "unpublished")),
       error = function(e) list(ok = FALSE, error = conditionMessage(e))
@@ -161,6 +167,18 @@ observe({
     ProjectInfo$source="unpublished"  #routes file1/network/wgcna loading through the Quickomics API
     if (!is.null(meta$Path)) {ProjectInfo$Path=meta$Path}
     if (!is.null(meta$ExpressionUnit)) {updateTextInput(session, "exp_unit", value=meta$ExpressionUnit)}
+  }
+}
+
+observe({
+  query <- parseQueryString(session$clientData$url_search)
+  # No early exit on a match -- matches the original behavior where all
+  # four blocks ran unconditionally, so if more than one of these
+  # parameters were somehow present at once, the last one (testfile) wins.
+  for (key in c('project', 'unlisted', 'serverfile', 'testfile')) {
+    if (!is.null(query[[key]])) {
+      load_project_from_query(key, query[[key]])
+    }
   }
 })
 

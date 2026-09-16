@@ -58,20 +58,36 @@ edges_UniqueID_GeneName_mapping <- function(edges, ProteinGeneName) {
   return(edges)
 }
 
-observeEvent(list(NetworkReactive(), input$network_label), {
+observeEvent(list(NetworkReactive(), input$network_label, restored_sel_net_gene()), {
+  # restored_sel_net_gene() is included as a trigger (not just read via
+  # isolate() below) specifically because onRestored() is not guaranteed to
+  # run BEFORE this observer's first natural firing (e.g. when Save Session
+  # also restores input$menu to "Correlation_Network" directly, this
+  # observer's first run can beat onRestored() to the punch and find nothing
+  # pending yet). Reacting to it too means whichever happens last -- the tab
+  # visit or the restore -- still triggers a correct re-run.
   all_genes <- current_nw_genes()
   if (input$network_label == "UniqueID") {
     DataIngenes <- all_genes %>%	as.character()
   } else {
     DataIngenes <- DataQCReactive()$ProteinGeneName %>%
-      filter(UniqueID %in% all_genes) %>%  
-      pull(Gene.Name) %>%       
-      na.omit() %>%   
-      discard(~ .x == "") %>%  
+      filter(UniqueID %in% all_genes) %>%
+      pull(Gene.Name) %>%
+      na.omit() %>%
+      discard(~ .x == "") %>%
       unique() %>%
       as.character()
   }
   selected_genes <- intersect(input$sel_net_gene, DataIngenes)
+  # If a Save Session restore is waiting on this tab's choices to exist
+  # (see restored_sel_net_gene in app.R), apply it now instead of whatever
+  # input$sel_net_gene currently holds, then consume it so it doesn't
+  # override the user's own later selections on subsequent recomputations.
+  pending_restore <- isolate(restored_sel_net_gene())
+  if (!is.null(pending_restore)) {
+    selected_genes <- intersect(pending_restore, DataIngenes)
+    restored_sel_net_gene(NULL)
+  }
   updateSelectizeInput(session,'sel_net_gene', choices= DataIngenes, selected = selected_genes, server=TRUE)
   output$visnetwork <- renderVisNetwork({
     NULL  

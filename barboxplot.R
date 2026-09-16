@@ -50,19 +50,60 @@ result_long_to_wide <- function(df) {
   df_wide %>% dplyr::select(dplyr::all_of(id_cols), dplyr::all_of(ordered_cols))
 }
 
+# Applies the user's manual Y Axis Range only if it actually overlaps the
+# data being plotted. ylim()/scale_y_continuous(limits=...) clips any point
+# outside the range to NA at the scale level (not just visually) -- if the
+# chosen range misses the data entirely (e.g. a Linear-scale-transformed
+# range like 1-5 when the transformed values are nowhere near that), every
+# point in one or more groups gets clipped to NA, and ggplot2's stat/
+# grouping internals fail on the resulting empty group with an opaque
+# seq_len()/max() error rather than a clear message. Falls back to Auto and
+# tells the user, instead of crashing the plot.
+apply_manual_yrange <- function(p, expr_values, ymin, ymax) {
+  ymin <- suppressWarnings(as.numeric(ymin))
+  ymax <- suppressWarnings(as.numeric(ymax))
+  data_min <- suppressWarnings(min(expr_values, na.rm = TRUE))
+  data_max <- suppressWarnings(max(expr_values, na.rm = TRUE))
+  range_ok <- !is.na(ymin) && !is.na(ymax) && ymin < ymax &&
+    is.finite(data_min) && is.finite(data_max) &&
+    ymax >= data_min && ymin <= data_max
+  if (range_ok) {
+    p + ylim(ymin, ymax)
+  } else {
+    showNotification(
+      paste0("The manual Y Axis Range (", ymin, " to ", ymax,
+             ") does not fit the data (data range: ", signif(data_min, 3), " to ", signif(data_max, 3),
+             "), so it was switched to Auto."),
+      type = "warning", duration = 8
+    )
+    p
+  }
+}
+
 output$selectGroupSampleExpression <- renderUI(shared_header_content())
+
+# Exposed as a named reactive (rather than a local var inside the observe()
+# below) so the Save Session restore logic in app.R -- which runs in this
+# same sourced-with-local=TRUE environment -- can re-register the exact
+# same server=TRUE selectize choices when restoring sel_gene. Without
+# re-supplying the full choices, a later updateSelectizeInput(selected=...)
+# call registers an empty dataset and the restored gene can never be found.
+DataIngenesReactive <- reactive({
+  req(DataQCReactive())
+  DataIn = DataQCReactive()
+  ProteinGeneName = DataIn$ProteinGeneName
+  if (input$exp_label=="UniqueID") {
+    ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
+  } else {
+    ProteinGeneName %>% dplyr::select(Gene.Name) %>% collect %>% .[["Gene.Name"]] %>%	as.character()
+  }
+})
 
 observe({
   req(DataQCReactive())
   DataIn = DataQCReactive()      #  DataReactive()
   MetaData=DataIn$MetaData
-  ProteinGeneName = DataIn$ProteinGeneName
-  #ProteinGeneName = DataIn$data_results
-  #DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
-  if (input$exp_label=="UniqueID") {
-    DataIngenes <- ProteinGeneName %>% dplyr::select(UniqueID) %>% collect %>% .[["UniqueID"]] %>%	as.character()
-  } else
-  {DataIngenes <- ProteinGeneName %>% dplyr::select(Gene.Name) %>% collect %>% .[["Gene.Name"]] %>%	as.character()}
+  DataIngenes <- DataIngenesReactive()
   updateSelectizeInput(session,'sel_gene', choices= DataIngenes, selected= isolate(input$sel_gene), server=TRUE)
   attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs") ))
   
@@ -331,7 +372,18 @@ boxplot_out <- eventReactive(input$plot_exp,  {
   plotx=sym(input$plotx)
   ncol=input$exp_plot_ncol
   data_long_tmp <- DataExpReactive()$data_long_tmp
-  
+
+  # Drop unused factor levels (e.g. a Genotype/Age/etc. column carrying its
+  # full global level set from MetaData, even though this particular
+  # gene/sample subset has zero rows for some of those levels) before any
+  # plotting happens. Left in place, such a "phantom" empty level/group can
+  # make ggplot2's internal grouping machinery fail with an opaque
+  # seq_len()/max() error when multiple genes with different level coverage
+  # are faceted together -- this affects geom_boxplot's own stat and
+  # stat_summary identically, since the failure is in shared grouping code,
+  # not in either stat's specific math.
+  data_long_tmp <- droplevels(data_long_tmp)
+
   # Ensure labelgeneid factor respects the UniqueID factor order
   # Extract the UniqueID factor levels (which are in input order)
   uid_levels <- levels(data_long_tmp$UniqueID)
@@ -429,7 +481,7 @@ boxplot_out <- eventReactive(input$plot_exp,  {
              strip.text.x = element_text(size=input$expression_titlefontsize))
   }
   if (input$exp_plot_Y_range=="Manual") {
-    p <- p + ylim(input$exp_plot_Ymin, input$exp_plot_Ymax)
+    p <- apply_manual_yrange(p, data_long_tmp$expr, input$exp_plot_Ymin, input$exp_plot_Ymax)
   }
   p
 })
@@ -527,7 +579,13 @@ browsing_out <- eventReactive(plot_exp_control(),{
   if (input$exp_plot_Y_scale=='Linear') {
     data_long_tmp<-data_long_tmp%>%mutate(expr=input$linear_base^(expr-input$linear_small_value))
   }
-  
+  # See the matching comment in boxplot_out() above: drop unused factor
+  # levels (e.g. Genotype/Age carrying MetaData's full global level set)
+  # before plotting, so a level with zero rows for this gene/sample subset
+  # can't make ggplot2's grouping internals fail with an opaque
+  # seq_len()/max() error across multiple faceted genes.
+  data_long_tmp <- droplevels(data_long_tmp)
+
   p <- ggplot(data_long_tmp,aes(x=!!plotx,y=expr,fill=!!colorby)) +
     facet_wrap(~ labelgeneid, scales = "free",nrow = nrow, ncol = ncol)
   
@@ -573,7 +631,7 @@ browsing_out <- eventReactive(plot_exp_control(),{
   }
   
   if (input$exp_plot_Y_range=="Manual") {
-    p <- p + ylim(input$exp_plot_Ymin, input$exp_plot_Ymax)
+    p <- apply_manual_yrange(p, data_long_tmp$expr, input$exp_plot_Ymin, input$exp_plot_Ymax)
   }
   p
   

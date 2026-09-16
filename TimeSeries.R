@@ -440,8 +440,68 @@ TimeSeries_ui <- function(id) {
 
 # ---- Server Module ----
 TimeSeries_server <- function(id, parent_session) {
-  moduleServer(id, 
+  moduleServer(id,
                function(input, output, session) {
+                 # See the matching comment in correlation.R -- actionButton
+                 # click counts get bookmarked and restoring a non-zero count
+                 # silently re-triggers that button's own observeEvent.
+                 session$setBookmarkExclude(c("compute_DE", "compute_cluster", "save_ts_deg",
+                                               "ts_cluster_plot", "ts_tpm_gct", "ts_plot_sample_heatmap",
+                                               "ts_zscore_gct", "ts_plot_group_heatmap"))
+
+                 # ts_hm_annot_group/ts_hm_annot_sample only get populated once
+                 # the user re-runs clustering (compute_cluster, deliberately
+                 # excluded from bookmark restore above), which can happen well
+                 # after any fixed restore window -- captured here and consumed
+                 # by the observeEvent(DataClusterReactive(), ...) below whenever
+                 # that eventually fires, same pattern as WGCNA's base_<attr>.
+                 restored_ts_hm_annot <- reactiveVal(NULL)
+
+                 # sel_time_var/sel_condition_var get their choices populated
+                 # (and selected forced to NULL) by observeEvent(DataQCReactive(),
+                 # ...) below, which also fires again at restore time. Reapply
+                 # unconditionally for a few seconds after restore, same pattern
+                 # as app.R.
+                 session$onRestored(function(state) {
+                   restored <- state$input
+                   if (!is.null(restored$ts_hm_annot_group) || !is.null(restored$ts_hm_annot_sample)) {
+                     restored_ts_hm_annot(list(group = restored$ts_hm_annot_group, sample = restored$ts_hm_annot_sample))
+                   }
+
+                   pending <- list(
+                     sel_time_var = list(value = restored$sel_time_var, apply = function(v) {
+                       req(DataQCReactive())
+                       MetaData <- DataQCReactive()$MetaData
+                       MetaData_clean <- MetaData[, sapply(MetaData, function(x) length(unique(x)) > 1)]
+                       attrs <- sort(setdiff(colnames(MetaData_clean), c("sampleid", "Order", "ComparePairs")))
+                       updateSelectInput(session, "sel_time_var", choices = attrs, selected = v)
+                     }),
+                     sel_condition_var = list(value = restored$sel_condition_var, apply = function(v) {
+                       req(DataQCReactive())
+                       MetaData <- DataQCReactive()$MetaData
+                       MetaData_clean <- MetaData[, sapply(MetaData, function(x) length(unique(x)) > 1)]
+                       attrs <- sort(setdiff(colnames(MetaData_clean), c("sampleid", "Order", "ComparePairs")))
+                       updateSelectizeInput(session, "sel_condition_var", choices = attrs, selected = v)
+                     })
+                   )
+                   pending <- Filter(function(p) !is.null(p$value), pending)
+                   if (length(pending) > 0) {
+                     attempts_left <- 10  # ~3s at 300ms
+                     restore_observer <- NULL
+                     restore_observer <- observe({
+                       invalidateLater(300, session)
+                       isolate({
+                         attempts_left <<- attempts_left - 1
+                         for (nm in names(pending)) {
+                           p <- pending[[nm]]
+                           tryCatch(p$apply(p$value), error = function(e) NULL)
+                         }
+                         if (attempts_left <= 0) restore_observer$destroy()
+                       })
+                     })
+                   }
+                 })
+
                  linear_small_value <- reactiveVal()
                  linear_base <- reactiveVal()
                  time_col <- reactiveVal()
@@ -800,12 +860,33 @@ TimeSeries_server <- function(id, parent_session) {
                    req(DataClusterReactive())
                    time_col <- input$sel_time_var
                    cond_col <- tail(input$sel_condition_var, 1)
-                   updateSelectizeInput(session,'ts_hm_annot_group',choices=c(time_col, "Unified_Time", cond_col), selected=cond_col)
-                   
+
+                   # Prefer a bookmarked selection over the plain defaults
+                   # below, if one exists -- see restored_ts_hm_annot's
+                   # definition above.
+                   snap <- restored_ts_hm_annot()
+
+                   group_default <- c(time_col, "Unified_Time", cond_col)
+                   group_selected <- if (!is.null(snap) && length(snap$group) > 0) {
+                     intersect(snap$group, group_default)
+                   } else {
+                     character(0)
+                   }
+                   if (length(group_selected) == 0) group_selected <- cond_col
+                   updateSelectizeInput(session,'ts_hm_annot_group',choices=group_default, selected=group_selected)
+
                    req(DataQCReactive())
                    MetaData <- df_cluster_sample_meta() # DataQCReactive()$MetaData
                    attributes=sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs", "replaceable","sizeFactor") ))
-                   updateSelectizeInput(session,'ts_hm_annot_sample',choices=attributes, selected = c(time_col, "Unified_Time", cond_col))
+                   sample_selected <- if (!is.null(snap) && length(snap$sample) > 0) {
+                     intersect(snap$sample, attributes)
+                   } else {
+                     character(0)
+                   }
+                   if (length(sample_selected) == 0) sample_selected <- c(time_col, "Unified_Time", cond_col)
+                   updateSelectizeInput(session,'ts_hm_annot_sample',choices=attributes, selected = sample_selected)
+
+                   if (!is.null(snap)) restored_ts_hm_annot(NULL)
                  })
                  
 #################################################
