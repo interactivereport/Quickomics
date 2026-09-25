@@ -773,14 +773,14 @@ geneset_server <- function(id) {
                           })
                           names(res_list) <- names(getresults)
                           res_list
-                        })
-                        
-                        # Get pre-filtered GSEA result list as in the output table format, one item per comparison. 
+                        }, ignoreInit = TRUE)
+
+                        # Get pre-filtered GSEA result list as in the output table format, one item per comparison.
                         # Save the pre-filtered combined result table into combined_gsea_res() or combined_gsea_res_filtered() if using collapsed list.
                         gsea_results <- reactive({
                           withProgress(message = 'Running GSEA, please be patient...', value = 0, {
-                            log_info("GSEA: running.")
                             res_list_raw <- gsea_raw()
+                            log_info("GSEA: running.")
                             res_list <- lapply(names(res_list_raw), function(comp) {
                               output <- res_list_raw[[comp]]
                               output %>%
@@ -1071,16 +1071,16 @@ geneset_server <- function(id) {
                           })
                           names(res_list) <- names(getresults)
                           res_list
-                        })
-                        
-                        # Get pre-filtered ORA result list as in the output table format, one item per comparison. 
+                        }, ignoreInit = TRUE)
+
+                        # Get pre-filtered ORA result list as in the output table format, one item per comparison.
                         # Save the pre-filtered combined result table into combined_ora_res() or combined_ora_res_filtered() if using collapsed list.
-                        ora_results <- reactive({ 
+                        ora_results <- reactive({
                           req(working_project())
                           req(input$ORA_input_type != "Gene List")
                           withProgress(message = 'Running ORA...', value = 0, {
-                            log_info("ORA: running.")
                             res_list <- res_list_raw <- ora_raw()
+                            log_info("ORA: running.")
                             res <- bind_rows_with_comparison(res_list_raw, after_pos = 1)
                             combined_ora_res(res)
                             if (input$ora_collapase) {
@@ -1198,7 +1198,7 @@ geneset_server <- function(id) {
                             res <- 	gsa %>%dplyr::filter( p.adj <= input$ora_pvalue)                   # Using dplyr functions
                             #mutate_if(is.numeric,signif,digits = 3)
                           })
-                        })
+                        }, ignoreInit = TRUE)
                         
                         
                         output$MSigDB_ORA_list <-DT::renderDT(server=FALSE,{ withProgress(message = 'Processing...', value = 0, {
