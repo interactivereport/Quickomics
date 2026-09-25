@@ -482,7 +482,7 @@ correlation_server <- function(id, parent_session) {
                    } else {
                      ProteinGeneName_sel <- ProteinGeneName_sel()
                      genelabel <- genelabel()
-                     if (nrow(ProteinGeneName_sel) <= 1) log_warn("Correlation Analysis: fewer than 2 matched genes selected.")
+                     if (is.null(ProteinGeneName_sel) || nrow(ProteinGeneName_sel) <= 1) log_warn("Correlation Analysis: fewer than 2 matched genes selected.")
                      validate(need(nrow(ProteinGeneName_sel) > 1, message = "Please input at least 2 matched genes."))
                      tmpids <- ProteinGeneName_sel %>% dplyr::pull(UniqueID) %>% unique()
                    }

@@ -199,6 +199,7 @@ DatavolcanoReactive2 <- reactive({
 output$volcanoplot <- renderPlotly({
   res = DatavolcanoReactive()
   test_sel = input$volcano_test
+  log_debug("Volcano Plot (interactive): rendering ", test_sel, ".")
   FCcut = log2(as.numeric(input$volcano_FCcut))
   pvalcut = as.numeric(input$volcano_pvalcut)
   if (input$volcano_psel == "Padj") {
@@ -307,6 +308,7 @@ volcanoplotstatic_out <- reactive({
   DataIn = DataQCReactive()
   ProteinGeneName = DataIn$ProteinGeneName
   test_sel = input$volcano_test
+  log_debug("Volcano Plot (static): rendering ", test_sel, ".")
   FCcut = log2(as.numeric(input$volcano_FCcut))
   FCcut_rd=round(FCcut*1000)/1000
   pvalcut = as.numeric(input$volcano_pvalcut)
@@ -444,9 +446,10 @@ DEG_Compare <- reactive({
   res = DatavolcanoReactive1()
   res2=DatavolcanoReactive2()
   DataIn = DataQCReactive()
-  ProteinGeneName = DataIn$ProteinGeneName  
+  ProteinGeneName = DataIn$ProteinGeneName
   test_sel = input$volcano_test1
-  test_sel2 = input$volcano_test2	
+  test_sel2 = input$volcano_test2
+  log_debug("DEG Comparison Plot: rendering ", test_sel, " vs ", test_sel2, ".")
   FCcut = log2(as.numeric(input$volcano_FCcut))
   pvalcut = as.numeric(input$volcano_pvalcut)
   plotdata=merge(res, res2, by="UniqueID")

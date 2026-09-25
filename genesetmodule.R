@@ -848,7 +848,7 @@ geneset_server <- function(id) {
                         
                         output$MSigDB_GSEA <-  DT::renderDT(server=FALSE,{ withProgress(message = 'Processing...', value = 0, {
                           res <- filtered_gsea()
-                          if (nrow(res) == 0) log_warn("GSEA: no results pass the padj cutoff.")
+                          if (is.null(res) || nrow(res) == 0) log_warn("GSEA: no results pass the padj cutoff.")
                           validate(need(nrow(res)>0,"No results. Try to increase p.adj cutoff, or try a different comparison."))
                           res$Action<-vapply(1:nrow(res), function(i){
                             as.character(
@@ -1131,7 +1131,7 @@ geneset_server <- function(id) {
                           withProgress(message = 'Processing...', value = 0, {
                             res <- combined_ora_res_filtered()
 
-                            if (nrow(res) == 0) log_warn("ORA: no results pass the p.adj cutoff.")
+                            if (is.null(res) || nrow(res) == 0) log_warn("ORA: no results pass the p.adj cutoff.")
                             validate(need(nrow(res) > 0,
                                           "No results. Try to increase p.adj cutoff, or adjust DEG cutoff."))
                             
@@ -1203,7 +1203,7 @@ geneset_server <- function(id) {
                         
                         output$MSigDB_ORA_list <-DT::renderDT(server=FALSE,{ withProgress(message = 'Processing...', value = 0, {
                           res<-ora_results_list()
-                          if (nrow(res) == 0) log_warn("ORA (gene list): no results pass the p.adj cutoff.")
+                          if (is.null(res) || nrow(res) == 0) log_warn("ORA (gene list): no results pass the p.adj cutoff.")
                           validate(need(nrow(res)>0,"No results. Try to increase ORA p.adj cutoff, or use a different list."))
                           res$Action<-vapply(1:nrow(res), function(i){
                             as.character(
@@ -1344,7 +1344,7 @@ geneset_server <- function(id) {
                         keggView_out <- reactive({
                           withProgress(message = 'Making KEGG Pathway View...', value = 0, {
                             ID <- input$sel_kegg_set
-                            if (ID == "") log_warn("KEGG View: no pathway selected.")
+                            if (is.null(ID) || ID == "") log_warn("KEGG View: no pathway selected.")
                             validate(need(ID != "", "Please select a KEGG pathway to map logFC data to it."))
                             if (!stringr::str_detect(ID, "^(hsa|mmu|rno)\\d{5}")) log_warn("KEGG View: '", ID, "' is not a human/mouse/rat pathway.")
                             validate(need(stringr::str_detect(ID, "^(hsa|mmu|rno)\\d{5}"),
@@ -1489,7 +1489,7 @@ geneset_server <- function(id) {
                         
                         wiki_plot_results<-reactive({
                           ID=input$sel_wikipathways_set
-                          if (ID == "") log_warn("Wikipathways View: no pathway selected.")
+                          if (is.null(ID) || ID == "") log_warn("Wikipathways View: no pathway selected.")
                           shiny::validate(need(ID!="", message = "Please select a Wikipathway to map logFC data to it."))
                           if (!str_detect(ID, "WP\\d+$")) log_warn("Wikipathways View: '", ID, "' is not a human/mouse/rat pathway.")
                           shiny::validate(need(str_detect(ID, "WP\\d+$"), message = "Only works on human/mouse/rat Wiki pathways."))
@@ -1730,7 +1730,7 @@ geneset_server <- function(id) {
                         
                         output$SetHeatMap = renderPlot({
                           ID = input$x2
-                          if (ID == "") log_warn("Geneset Heatmap: no gene set selected.")
+                          if (is.null(ID) || ID == "") log_warn("Geneset Heatmap: no gene set selected.")
                           validate(need(ID!="", message = "Select one geneset by clicking a GeneSet name from 'Gene Set Enrichment Analysis (GSEA)' or 'Over-Representation Analysis (ORA)' tab."))
                           #grid.draw(genesetheatmap_out()$gtable)
                           draw(genesetheatmap_out(), merge_legend=T,  auto_adjust = FALSE)

@@ -982,7 +982,7 @@ wgcna_server <- function(id, parent_session) {
                           # Eigengene network
                           output$Eigenene_Network <- renderPlot({
                             MEs <- MEs_updated()
-                            if (ncol(MEs) <= 2) log_warn("WGCNA: fewer than 3 module eigengenes, cannot draw Eigengene Network.")
+                            if (is.null(MEs) || ncol(MEs) <= 2) log_warn("WGCNA: fewer than 3 module eigengenes, cannot draw Eigengene Network.")
                             validate(need(ncol(MEs) > 2, "Eigengene Network requires at least 3 module eigengenes."))
                             plotEigengeneNetworks(MEs, "Eigengene Network",
                                                   marDendro = c(2, 3, 2, 1),
