@@ -40,8 +40,8 @@ get_wgcna_netwk <-function(dataExpr, picked_power, scenario_number, set_mergeCut
     TOMFileBase = "ER"
   }
   
-  print(paste0("**** scenario ", as.character(scenario_number), " ****"))
-  
+  log_info("WGCNA: running scenario ", scenario_number, ".")
+
   t3 <- Sys.time()
   temp_cor <- cor
   cor <- WGCNA::cor         # Force it to use WGCNA cor function (fix a namespace conflict issue)
@@ -70,7 +70,7 @@ get_wgcna_netwk <-function(dataExpr, picked_power, scenario_number, set_mergeCut
                             numericLabels = T,
                             verbose = 3L)
   t4 <- Sys.time()
-  cat(paste0("scenario ", as.character(scenario_number), " run WGCNA: ", round(difftime(t4, t3, units='mins'),2), " min\n"))
+  log_info("WGCNA: scenario ", scenario_number, " completed in ", round(difftime(t4, t3, units='mins'),2), " min.")
   cor <- temp_cor
   return(netwk)
 }
@@ -783,6 +783,7 @@ wgcna_server <- function(id, parent_session) {
                               sft = if (exists("sft")) sft else NULL
                             ))
                           } else if (parent_session$input$menu == "wgcna") {
+                            log_warn("WGCNA: no pre-calculated file found for project ", ProjectInfo$ProjectID, ".")
                             showNotification("Cannot find pre-calculated wgcna file, no WGCNA results loaded.",
                                              duration = 5, type = "warning")
                           }
@@ -794,6 +795,7 @@ wgcna_server <- function(id, parent_session) {
                         # and its re-calculation could take a long time.
                         WGCNAReactive <- eventReactive(input$plotwgcna, {
                           withProgress(message = "Running WGCNA", detail = 'This may take a while...', value = 0.2, {
+                            log_info("WGCNA: Run clicked (topNum=", input$WGCNAtopNum, ", mergeCutHeight=", input$mergeCutHeight, ").")
                             # what if the user-imported data doesn't have $data_wide, $ProjectID..etc?
                             req(ProjectInfo, DataReactive()$data_wide, ProjectInfo$ProjectID)
                             DataIn = DataQCReactive()
@@ -806,12 +808,12 @@ wgcna_server <- function(id, parent_session) {
                             data_wide=data_wide[order(diff, decreasing=TRUE), ]                            
                             
                             if (nrow(data_wide)>10000 ) {
-                              data_wide=data_wide[1:10000, ] 
-                              cat("reduce gene size to 10K for project ", ProjectID, "\n")
-                            } 
-                            
-                            print(paste0("**** dim of dataExpr after-preprocssing is ****", dim(data_wide)))
-                            
+                              data_wide=data_wide[1:10000, ]
+                              log_info("WGCNA: reduced gene size to 10K for project ", ProjectID)
+                            }
+
+                            log_debug("WGCNA: dataExpr dims after preprocessing: ", paste(dim(data_wide), collapse=" x "))
+
                             default_n_gene <- nrow(data_wide)
                             
                             scenario <- 3L
@@ -843,7 +845,7 @@ wgcna_server <- function(id, parent_session) {
                               netwk <- get_wgcna_netwk(dataExpr, picked_power, 2, input$mergeCutHeight, input$WGCNAtopNum, ProjectID)
                             } else {
                               # Scenario 3: Not scenario 1 or 2, and recalculate everything
-                              print(paste0("**** compute everything from scratch ****"))
+                              log_info("WGCNA: computing everything from scratch (scenario 3).")
                               ProteinGeneName  <- DataIn$ProteinGeneName
                               topNum <- as.numeric(input$WGCNAtopNum)
                               gene_label <- input$WGCNAgenelable
@@ -860,15 +862,15 @@ wgcna_server <- function(id, parent_session) {
                               
                               # Generating adjacency and TOM similarity matrices based on the selected softpower
                               if (!is.na(sft$powerEstimate)){
-                                print("**** Pick power from sft$powerEstmate **** ")
+                                log_debug("WGCNA: picked power from sft$powerEstimate.")
                                 picked_power <- softPower <- sft$powerEstimate
                               } else {
-                                print("**** Use 6 as default if automatic selection fails **** ")
+                                log_warn("WGCNA: automatic soft-power selection failed, using 6 as default.")
                                 picked_power <- 6L
                               }
-                              
+
                               t3 <- Sys.time()
-                              cat(paste0("scenario 3 computing softpower: ", round(difftime(t3, t2, units='mins'),2), " min\n"))
+                              log_info("WGCNA: computed soft power in ", round(difftime(t3, t2, units='mins'),2), " min.")
                               netwk <- get_wgcna_netwk(dataExpr, picked_power, 3, input$mergeCutHeight, input$WGCNAtopNum, ProjectID)
                             }
                             out <- list(netwk = netwk, picked_power = picked_power, dataExpr = dataExpr)
@@ -880,6 +882,7 @@ wgcna_server <- function(id, parent_session) {
                         })
                         
                         observeEvent(input$Eigengene, {
+                          log_info("WGCNA: Module Eigengenes table saved to output.")
                           saved_table$Eigengene <- MEs_updated()
                         })
                         
@@ -979,6 +982,7 @@ wgcna_server <- function(id, parent_session) {
                           # Eigengene network
                           output$Eigenene_Network <- renderPlot({
                             MEs <- MEs_updated()
+                            if (ncol(MEs) <= 2) log_warn("WGCNA: fewer than 3 module eigengenes, cannot draw Eigengene Network.")
                             validate(need(ncol(MEs) > 2, "Eigengene Network requires at least 3 module eigengenes."))
                             plotEigengeneNetworks(MEs, "Eigengene Network",
                                                   marDendro = c(2, 3, 2, 1),
@@ -1070,11 +1074,13 @@ wgcna_server <- function(id, parent_session) {
                         })
                         
                         observeEvent(input$wgcna_gct, {
+                          log_info("WGCNA cluster GCT saved to output.")
                           saved_gcts$wgcna_gct <- wgcna_gct()
                         })
-                        
+
                         observeEvent(input$runORA_trigger, {
                           gene_list <- input$runORA_trigger
+                          log_info("WGCNA: sent ", length(strsplit(gene_list, ",|\\n")[[1]]), " gene(s) to ORA.")
                           updateNavbarPage(parent_session, inputId = "menu", selected = "gsea")
                           updateTabsetPanel(parent_session, inputId = "GS-geneset_tabset", selected = "Over-Representation Analysis (ORA)")
                           parent_session$onFlushed(function() {
@@ -1190,10 +1196,12 @@ wgcna_server <- function(id, parent_session) {
                         
                         observeEvent(input$plot_module_hub, {
                           withProgress(message = 'Processing...', value = 0, {
+                            log_info("WGCNA: Hub Gene Identification clicked (trait=", input$WGCNA_trait, ", module=", input$WGCNA_module, ").")
                             req(moduleTraitCor())
-                            if (is.null(input$WGCNA_trait) || input$WGCNA_trait == "") { 
-                              showNotification("Selecting a trait is required to run the analysis.", type = "error") 
-                              return() 
+                            if (is.null(input$WGCNA_trait) || input$WGCNA_trait == "") {
+                              log_warn("WGCNA: Hub Gene Identification clicked with no trait selected.")
+                              showNotification("Selecting a trait is required to run the analysis.", type = "error")
+                              return()
                             }
                             
                             # Retrive pre-computed wgcna result (load_wgcna_file) or on-the-fly result(WGCNAReactive()) 
@@ -1295,7 +1303,8 @@ wgcna_server <- function(id, parent_session) {
                             
                             # Sort by connectivity to identify hubs
                             hub_gene_info <- hub_gene_info[order(-hub_gene_info$Connectivity), ]
-                            
+
+                            log_info("WGCNA: hub gene analysis found ", nrow(hub_gene_info), " gene(s) in module ", selected_trait_module, ".")
                             df_hub_gene(hub_gene_info)
                           })
                           
@@ -1314,6 +1323,7 @@ wgcna_server <- function(id, parent_session) {
                           })
                           
                           observeEvent(input$hub_gene, {
+                            log_info("WGCNA: hub gene table saved to output.")
                             saved_table$hub_gene <- df_hub_gene()
                           })
                           

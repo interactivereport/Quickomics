@@ -346,6 +346,7 @@ correlation_server <- function(id, parent_session) {
                  observe({
                    req(input$gene_subset == "Select")
                    gene_list = input$sel_gene
+                   if (length(gene_list) <= 1) log_warn("Correlation Analysis: fewer than 2 genes selected.")
                    validate(need(length(gene_list) > 1, message = "Please input at least 2 matched genes."))
                    DataIn = DataQCReactive()
                    ProteinGeneName = DataIn$ProteinGeneName
@@ -395,6 +396,7 @@ correlation_server <- function(id, parent_session) {
                    req(input$gene_subset == "Upload Genes")
                    gene_list <- input$gene_list
                    gene_list <- ProcessUploadGeneList(gene_list)
+                   if (length(gene_list) <= 1) log_warn("Correlation Analysis: uploaded gene list has fewer than 2 matched genes.")
                    validate(need(length(gene_list) > 1, message = "Please input at least 2 matched genes."))
                    
                    DataIn = DataQCReactive()
@@ -469,16 +471,18 @@ correlation_server <- function(id, parent_session) {
                    output$Selected_groups <- renderText({msg_group})
                  })
                  
-                 CorrResult <- eventReactive(input$compute_corr, { 
+                 CorrResult <- eventReactive(input$compute_corr, {
+                   log_info("Correlation Analysis: Compute/Refresh clicked (type=", input$correlation_type, ").")
                    DataIn <- DataQCReactive()
                    data_long <- DataIn$tmp_data_long
-                   # preset_group=group_order() 
+                   # preset_group=group_order()
                    # preset_samples=sample_order()
                    if (input$gene_subset == "All") {
                      tmpids <- DataIn$ProteinGeneName %>% dplyr::pull(UniqueID) %>% unique()
                    } else {
-                     ProteinGeneName_sel <- ProteinGeneName_sel() 
-                     genelabel <- genelabel() 
+                     ProteinGeneName_sel <- ProteinGeneName_sel()
+                     genelabel <- genelabel()
+                     if (nrow(ProteinGeneName_sel) <= 1) log_warn("Correlation Analysis: fewer than 2 matched genes selected.")
                      validate(need(nrow(ProteinGeneName_sel) > 1, message = "Please input at least 2 matched genes."))
                      tmpids <- ProteinGeneName_sel %>% dplyr::pull(UniqueID) %>% unique()
                    }
@@ -495,6 +499,7 @@ correlation_server <- function(id, parent_session) {
                        tibble::column_to_rownames("gene") %>%
                        as.matrix()
                    } else if (input$correlation_type=='sample') {
+                     if (length(input$sel_sample) <= 1) log_warn("Correlation Analysis: fewer than 2 samples selected.")
                      validate(need(length(input$sel_sample) > 1, message = "Please input at least 2 samples."))
                      exp_tmp = data_long %>% 
                        dplyr::filter(UniqueID %in% tmpids, sampleid %in% input$sel_sample) %>%        # , group %in% preset_group, sampleid %in% input$sel_sample) %>%
@@ -510,6 +515,7 @@ correlation_server <- function(id, parent_session) {
                    } else if (input$correlation_type=='group') {
                      #browser()
                      sel_group <- input$sel_group
+                     if (length(sel_group) <= 1) log_warn("Correlation Analysis: fewer than 2 groups selected.")
                      validate(need(length(sel_group) > 1, message = "Please input at least 2 groups."))
                      adding_number <- ifelse(exp_unit() == "Expression Level", 0, as.numeric(str_extract(exp_unit(), "(?<=\\+)\\d*\\.?\\d+")))
                      if (is.na(adding_number)) {adding_number=0}
@@ -565,10 +571,11 @@ correlation_server <- function(id, parent_session) {
                    res_corr_sorted$rank <- rownames(res_corr_sorted)
                    
                    res_corr_sorted$Action <- "View Correlation Plot"
-                   res_corr_sorted <- res_corr_sorted %>% 
+                   res_corr_sorted <- res_corr_sorted %>%
                      dplyr::relocate(Action, .before = intercept) %>%
                      dplyr::relocate(rank, .before = 1)
-                   
+
+                   log_info("Correlation Analysis: computed ", nrow(res_corr_sorted), " pairwise correlation(s).")
                    return(list("corr_table" = res_corr_sorted, "exp_filtered" = exp_tmp ))
                  })
                  
@@ -649,6 +656,7 @@ correlation_server <- function(id, parent_session) {
                  })
                  
                  observeEvent(input$CorrPlot, {
+                   log_info("Correlation Plot (", CorrPlot_ID(), ") saved to output.")
                    saved_plots$CorrPlot[[CorrPlot_ID()]] <- CorrPlot()
                  })
                  

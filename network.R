@@ -116,9 +116,11 @@ NetworkReactive <- reactive({
       
       # Load cached network if full dataset and available
       if (n_sample_current == n_sample_all && file.exists(CorResFile)) {
+        log_info("Correlation Network: loading cached network from ", CorResFile)
         load(CorResFile)
         stopifnot(exists("network"))
       } else {
+        log_info("Correlation Network: computing correlation network for ", n_sample_current, " samples (no cache available).")
         data_wide = DataQCReactive()$tmp_data_wide
         withProgress(message = "Compute correlation network data.",
                      detail = "This may take a few minutes...",
@@ -130,6 +132,7 @@ NetworkReactive <- reactive({
           ProjectInfo$file2 <- CorResFile
         }
       }
+      log_info("Correlation Network: ", nrow(network), " edges available.")
       current_samples(sort(as.character(DataQCReactive()$tmp_sampleid)))
       current_network(network)
       current_nw_genes(unique(c(network$from, network$to)))
@@ -191,10 +194,12 @@ observe({
 			actionButton("gennet","Generate")
 		})
 	} else if (nrow(net$nodes) == 0) {
+		log_warn("Correlation Network: current cutoffs/selection produced zero nodes.")
 		output$myTabUI <- renderUI({
 			"Zero node. Try lower r cutoff, higher P Value cutoff or select other genes."
 		})
 	} else {
+	  log_warn("Correlation Network: current cutoffs/selection produced ", nrow(net$nodes), " nodes (over the 200 limit).")
 	  output$myTabUI <- renderUI({
 	    "Too many nodes (1 ~ 200 are acceptable). Try higher r cutoffs, , lower P Value cutoff or select fewer genes."
 	  })
@@ -203,6 +208,7 @@ observe({
 
 
 observeEvent(input$gennet,{
+	log_info("Correlation Network: Generate clicked (visNetwork).")
 	output$visnetwork <- renderVisNetwork({
 		withProgress(message = 'Making Network:', value = 0, {
 			isolate({

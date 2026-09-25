@@ -81,7 +81,7 @@ observeEvent(input$uploadData, {
     URL=str_c(URL_protocol,"//", URL_host, ":", URL_port)
   }
   if (url_pathname!="") {
-    URL=str_c(URL, str_replace(url_pathname, "/$", "") ) 
+    URL=str_c(URL, str_replace(url_pathname, "/$", "") )
   }
   cleanup_empty<-function(df) {
     df.empty=(is.na(df) | df=="")
@@ -89,12 +89,13 @@ observeEvent(input$uploadData, {
     selRow=!(rowSums( df.empty)==ncol(df))
     return(df[selRow, selCol])
   }
-  cat(URL, "\n")
+  log_debug("Upload Data: constructed base URL: ", URL)
   #create unique project ID
   Project_name=input$F_project_name
   ProjectID=str_c("PRJ_",  make.names(Project_name) )
   if (length(ProjectID>45) ) {ProjectID=substr(ProjectID, 1, 45)}
   ProjectID=str_c(ProjectID,"_", stri_rand_strings(1,6) )
+  log_info("Upload Data: processing submission '", Project_name, "' as project ", ProjectID)
   #get expression data
   withProgress(message = 'Processing...', value = 0, {
     species=input$Fspecies
@@ -155,10 +156,9 @@ observeEvent(input$uploadData, {
         if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
         setProgress(0.2, detail = "Loaded Protein Names"); Sys.sleep(0.1)
       } else { #gene
-        cat("working on ",species," genes for project", ProjectID, "\n")
+        log_debug("Upload Data: converting IDs to ", species, " gene names for project ", ProjectID)
         setProgress(0.1, detail = "Converting IDs to gene names..."); Sys.sleep(0.1)
-        browser() #bebug
-        
+
         if (input$F_ID_type=="Ensembl Gene ID" ) {
           IDall_old = IDall
           IDall = stringr::str_replace(IDall, "\\.\\d+$", "")
@@ -189,7 +189,7 @@ observeEvent(input$uploadData, {
       
       strOut=str_c("unlisted/", ProjectID, ".RData")
       save(results_long, ProteinGeneName, file=strOut)
-      cat("File ", strOut, " Saved\n" )
+      log_info("Upload Data: saved ", strOut)
       
       setProgress(1.6, detail ="Rdata file is created. Finished!")
       
@@ -261,9 +261,8 @@ observeEvent(input$uploadData, {
           if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
           setProgress(0.2, detail = "Loaded Protein Names"); Sys.sleep(0.1)
         } else { #gene
-          cat("working on ",species," genes for project", ProjectID, "\n")
+          log_debug("Upload Data: converting IDs to ", species, " gene names for project ", ProjectID)
           setProgress(0.1, detail = "Converting IDs to gene names..."); Sys.sleep(0.1)
-          #browser() #bebug
           if (input$F_ID_type=="Ensembl Gene ID" ) {
             IDall_old = IDall
             IDall = stringr::str_replace(IDall, "\\.\\d+$", "")
@@ -283,7 +282,6 @@ observeEvent(input$uploadData, {
               dplyr::filter(!duplicated(UniqueID))
           }
           
-          browser()
           ProteinGeneName$Protein.ID=NA
           ProteinGeneName <- ProteinGeneName %>% 
             dplyr::select(id,UniqueID, Gene.Name, Protein.ID, Description)
@@ -324,19 +322,20 @@ observeEvent(input$uploadData, {
       
       strOut=str_c("unlisted/", ProjectID, ".RData")
       save(data_long,data_results,data_wide,MetaData,ProteinGeneName,results_long,file=strOut)
-      cat("File ", strOut, " Saved\n" )
+      log_info("Upload Data: saved ", strOut)
       setProgress(0.5, detail ="Rdata files created. Now working on network, this may take a while...")
-      
+
       #network
       #if data_wide has many genes, trim down to 10K
       if (nrow(data_wide)>10000 ) {
         dataSD=apply(data_wide, 1, function(x) sd(x,na.rm=T))
         dataM=rowMeans(data_wide)
         diff=dataSD/(dataM+median(dataM))
-        data_wide=data_wide[order(diff, decreasing=TRUE)[1:10000], ]	 
-        cat("reduce gene size to 10K for project ", ProjectID, "\n")
+        data_wide=data_wide[order(diff, decreasing=TRUE)[1:10000], ]
+        log_info("Upload Data: reduced gene size to 10K for project ", ProjectID)
       }
-      
+
+      log_debug("Upload Data: computing correlation network for project ", ProjectID)
       system.time(cor_res <- Hmisc::rcorr(as.matrix(t(data_wide))) ) #120 seconds
       cormat <- cor_res$r
       pmat <- cor_res$P
@@ -348,7 +347,7 @@ observeEvent(input$uploadData, {
         p = signif(pmat[ut], 2),
         direction = as.integer(sign(cormat[ut]))
       )
-      cat(ProjectID," network size ", nrow(network), "\n" )
+      log_debug("Upload Data: ", ProjectID, " raw network size ", nrow(network))
       network <- network %>% mutate_if(is.factor, as.character) %>%
         dplyr::filter(!is.na(cor) & abs(cor) > 0.7 & p < 0.05)
       if (nrow(network)>2e6) {
@@ -359,8 +358,8 @@ observeEvent(input$uploadData, {
         network <- network %>% mutate_if(is.factor, as.character) %>%
           dplyr::filter(!is.na(cor) & abs(cor) > 0.85 & p < 0.005)
       }
-      cat(ProjectID," final network size ", nrow(network), "\n" )
-      
+      log_info("Upload Data: ", ProjectID, " final network size ", nrow(network))
+
       save(network,file=str_c("unlisted/", ProjectID, "_network.RData") )
       setProgress(1.6, detail =str_c("Finished computing network. Final nodes: ", nrow(network)))
       
@@ -379,7 +378,7 @@ observeEvent(input$uploadData, {
       ProjectInfo$file3= paste("unlisted/wgcna_", ProjectID, ".RData", sep = "") #place holder for wgcna results, not generated at this time
     }
     
-    cat("Finished processing data files for ", ProjectID, ".\n")
+    log_info("Upload Data: finished processing data files for project ", ProjectID)
     up_message2=str_c("The direct URL for the uploaded dataset is: ", URL, "/?unlisted=", ProjectID)
     upload_message(up_message2) 
     showAlert(str_c(URL, "/?unlisted=", ProjectID))

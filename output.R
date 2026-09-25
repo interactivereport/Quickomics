@@ -17,6 +17,7 @@ output$downloadPDF <- downloadHandler(
   },
   content = function(file) { withProgress(message = 'This takes a minute or two',{
     plots_checked=input$plots_checked
+    if (length(plots_checked) == 0) log_warn("Download PDF: no saved plots selected.")
     validate(need(length(plots_checked)>0, message = "Please choose at least one saved plot."))
     Np=0
     pdf(file = file, width=input$pdf_width, height=input$pdf_height)
@@ -199,13 +200,13 @@ output$downloadPDF <- downloadHandler(
     }
     
     dev.off()
-    cat("Saved to PDF", Np, "graphs.\n")
+    log_info("Download PDF: saved ", Np, " graphs.")
   })
   },contentType = "application/pdf"
 )
 
 observeEvent(input$clear_saved_plots, {
-  cat("clear saved plots\n")
+  log_info("Cleared all saved plots.")
   lapply(X = names(saved_plots), FUN = function(x) { saved_plots[[x]] <- NULL })
 })
 
@@ -360,8 +361,9 @@ output$downloadSVG <- downloadHandler(
   filename = function() {
     paste("output_",Sys.Date(),".svg", sep="")
   },
-  content = function(file) { withProgress(message = 'This takes a minute or two',{ 
+  content = function(file) { withProgress(message = 'This takes a minute or two',{
     plots_checked=input$plots_checked
+    if (length(plots_checked) == 0) log_warn("Download SVG: no saved plots selected.")
     validate(need(length(plots_checked)>0, message = "Please choose at least one saved plot."))
     Np=0
     svglite(file = file, width=input$pdf_width, height=input$pdf_height)
@@ -508,6 +510,7 @@ output$downloadSVG <- downloadHandler(
     }
     
     dev.off()
+    log_info("Download SVG: saved (first selected plot).")
   })
   },contentType = "application/svg"
 )
@@ -518,6 +521,7 @@ output$downloadXLSX <- downloadHandler(
     paste("output_",Sys.Date(),".xlsx", sep="")
   },
   content = function(file) { withProgress(message = 'This takes a minute or two',{
+    if (length(names(saved_table)) == 0) log_warn("Download XLSX: no saved tables to export.")
     wb <- createWorkbook(file)
     for (i in names(saved_table)) {
       addWorksheet(wb, i)
@@ -525,6 +529,7 @@ output$downloadXLSX <- downloadHandler(
       writeData(wb, i, res_table,rowNames = TRUE)
     }
     saveWorkbook(wb, file = file, overwrite = TRUE)
+    log_info("Download XLSX: saved ", length(names(saved_table)), " sheet(s).")
   })
   },contentType = "application/vnd.ms-excel"
 )
@@ -601,11 +606,13 @@ output$downloadGCT <- downloadHandler(
       }
       # Verify if any files were actually created
       if (length(files_to_zip) == 0) {
+        log_warn("Download GCT: no GCT files selected.")
         writeLines("No GCT files were selected for download.", "README.txt")
         files_to_zip <- "README.txt"
       }
       # Zip the files together
       zip::zip(zipfile = file, files = files_to_zip)
+      log_info("Download GCT: saved ", length(files_to_zip), " file(s).")
     })
     setwd(cwd)
   },

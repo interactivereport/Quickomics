@@ -116,7 +116,7 @@ DataHeatMapReactive <- reactive({
     complete_rows <- rowSums(is.na(tmpdat)) == 0
     n_incomplete <- sum(!complete_rows)
     if (n_incomplete > 0) {
-      cat("Excluding", n_incomplete, "genes with missing values before selecting top", input$maxgenes, "genes\n")
+      log_info("Heatmap: excluding ", n_incomplete, " genes with missing values before selecting top ", input$maxgenes, " genes.")
       tmpdat <- tmpdat[complete_rows, , drop = FALSE]
     }
     if (nrow(tmpdat)>input$maxgenes) {
@@ -148,11 +148,13 @@ DataHeatMapReactive <- reactive({
     
     heatmap_list <- gsub(" ", "", heatmap_list, fixed = TRUE)
     heatmap_list <- unique(heatmap_list[heatmap_list != ""])
-    
+
+    if (length(heatmap_list) <= 2) log_warn("Heatmap: uploaded gene list has ", length(heatmap_list), " genes (need > 2).")
     validate(need(length(heatmap_list)>2, message = "Please input at least 2 valid genes."))
-    
+
     uploadlist <- dplyr::filter(ProteinGeneName, (UniqueID %in% heatmap_list) | (Protein.ID %in% heatmap_list) | (toupper(Gene.Name) %in% toupper(heatmap_list)))  %>%
       dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
+    if (length(uploadlist) <= 2) log_warn("Heatmap: only ", length(uploadlist), " uploaded genes matched ProteinGeneName (need > 2).")
     validate(need(length(uploadlist)>2, message = "Please input at least 2 valid genes."))
     
     #restore order of the input list
@@ -183,7 +185,8 @@ DataHeatMapReactive <- reactive({
                                   (toupper(Protein.ID) %in% toupper(heatmap_list))  | (toupper(Gene.Name) %in% toupper(heatmap_list)))  %>%
       dplyr::select(UniqueID) %>% 	collect %>%	.[["UniqueID"]] %>%	as.character()
     
-    validate(need(length(uploadlist)>2, message = "Please select at least 2 valid genes."))    
+    if (length(uploadlist) <= 2) log_warn("Heatmap: only ", length(uploadlist), " geneset genes matched ProteinGeneName (need > 2).")
+    validate(need(length(uploadlist)>2, message = "Please select at least 2 valid genes."))
     tmpdat  <-  tmpdat[uploadlist,]
 
   }
@@ -197,7 +200,7 @@ DataHeatMapReactive <- reactive({
   selCol=match(input$heatmap_label, names(ProteinGeneName))
   
   if (sum(is.na(sel))==0 & sum(is.na(selCol)==0)) {rownames(df)=unlist(ProteinGeneName[sel, selCol])
-  } else {cat("gene lables not updated",sum(is.na(sel)), sum(is.na(selCol)), "\n")}
+  } else {log_warn("Heatmap: gene labels not updated -- ", sum(is.na(sel)), " unmatched UniqueID(s), ", sum(is.na(selCol)), " unmatched label column(s).")}
   #match sampleid order
   new_order=match(colnames(df), annotation$sampleid)
   annotation=annotation[new_order, ]
@@ -219,13 +222,14 @@ cap_heatmap_rows <- function(DataHeatMap, max_rows = 5000) {
     if (!is.null(gene_annot_info)) {
       gene_annot_info <- gene_annot_info[sel_idx, , drop = FALSE]
     }
-    cat("Reduce data points to", max_rows, "for static heatmap\n")
+    log_info("Heatmap: reduced data points to ", max_rows, " for static heatmap.")
   }
   list(data.in = data.in, gene_annot_info = gene_annot_info, sel_idx = sel_idx)
 }
 
 
 observeEvent(input$plot_heatmap,{
+  log_info("Heatmap: Plot/Refresh clicked.")
   plot_heatmap_control( plot_heatmap_control()+1)
 })
 
@@ -288,14 +292,13 @@ pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
         if (nrow(annot_color)>0) {
         attr_list=unique(annot_color$Attribute)
         color_list=NULL
-        #browser() #debug
         for (attr in attr_list) {
           subdata<-annot_color%>%filter(Attribute==attr)
           colorV=subdata$Color; names(colorV)=subdata$Value
           color_list[[attr]]=colorV
         }
         sample_annot=HeatmapAnnotation(df = df_annot, col=color_list)
-        } else {cat("Annotation Color File Attributes not matching MetaData!\n")}
+        } else {log_warn("Heatmap: uploaded annotation color file's Attributes don't match MetaData.")}
       } else { 
         is_num <- sapply(df_annot, is.numeric)
         num_cols <- names(df_annot)[is_num]
@@ -306,7 +309,8 @@ pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
           pal_cat_assigned <- sample(discrete_palettes, length(cat_cols), replace = (length(cat_cols) > length(discrete_palettes)))
           num_palette <- "Set1"
         } else if (input$heatmap_annot_color=="Select Palette") { #color with user selected palettes
-          validate(need(length(input$heatmap_cat_pal)>0,message = "Please select color palettes for category annotations")) 
+          if (length(input$heatmap_cat_pal) == 0) log_warn("Heatmap: no color palette selected for category annotations.")
+          validate(need(length(input$heatmap_cat_pal)>0,message = "Please select color palettes for category annotations"))
           pal_cat_assigned <- rep(input$heatmap_cat_pal,  length.out=length(cat_cols) )
           num_palette <- input$heatmap_num_pal
         }
@@ -314,8 +318,9 @@ pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
         color_list <- imap(df_annot, function(val, col_name) {
         idx <- match(col_name, if (is.numeric(val)) num_cols else cat_cols)
         if (is.numeric(val)) {
+          if (any(is.na(val))) log_warn("Heatmap: numeric annotation column '", col_name, "' contains NA values.")
           validate(
-            need(!any(is.na(val)), 
+            need(!any(is.na(val)),
                  paste0("Column '", col_name, "' contains NA values. Please remove NA values from the numeric attribute."))
           )
           hm_m_color(df_annot, col_name, high_col = color_num_assigned[idx])
@@ -387,7 +392,7 @@ pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
       if (inherits(tmp, "try-error")) {
         N1=nrow(data.in)
         data.in=na.omit(data.in)
-        cat("NA caused heatmap cluster error, remove all rows containing NAs, from", N1, "to", nrow(data.in), "\n")
+        log_warn("Heatmap: NAs caused a clustering error -- removed all rows with NAs, from ", N1, " to ", nrow(data.in), " rows.")
       }
     }
 
@@ -420,6 +425,7 @@ pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
     req(input$file_gene_highlight)
     annot_genes=read_csv(input$file_gene_highlight$datapath)
     ccl <- which(toupper(rownames(data.in)) %in% toupper(annot_genes$gene_name) )
+    if (length(ccl) == 0) log_warn("Heatmap: no genes in the highlight file matched the current heatmap rows.")
     validate(need(length(ccl)>0, message = "Please input at least one valid gene to highlight."))
     
     sel_col=match(toupper(rownames(data.in)[ccl]), toupper(annot_genes$gene_name) )
@@ -455,10 +461,11 @@ output$pheatmap2 <- renderPlot({
     p<-pheatmap2_out()
     withProgress(message = 'Drawing Heatmap...', value = 0, {
     draw(p, merge_legend=T,  auto_adjust = FALSE) })
-    cat("plotted heatmap",(proc.time() - ptm)[["elapsed"]], "\n")
+    log_debug("Heatmap: plotted in ", (proc.time() - ptm)[["elapsed"]], "s.")
 })
 
 observeEvent(input$pheatmap2, {
+  log_info("Heatmap saved to output.")
   saved_plots$pheatmap2 <- pheatmap2_out()
 }
 )
@@ -476,6 +483,7 @@ heamap_gct <- eventReactive(plot_heatmap_control(),  {
 })
 
 observeEvent(input$heatmap_gct, {
+  log_info("Heatmap GCT saved to output.")
   saved_gcts$heatmap_gct <- heamap_gct()
 })
 
@@ -543,25 +551,27 @@ output$staticheatmap <- renderPlot({
 })
 
 observeEvent(input$staticheatmap, {
+  log_info("Heatmap (layout 2) saved to output.")
   saved_plots$staticheatmap <- staticheatmap_out()
 }
 )
 
 
 interactiveHeatmap <- eventReactive(input$action_heatmaps, {
+  log_info("Interactive Heatmap (morpheus): generating.")
   DataHeatMap <- DataHeatMapReactive()
   data.in <- DataHeatMap$df
   annotation <- DataHeatMap$annotation
-  
+
   Rowv <- input$dendrogram %in% c("both", "row")
   Colv <- input$dendrogram %in% c("both", "column")
-  
+
   if (Rowv | Colv) {
     tmp <- try(hclust(dist(data.in, method = input$distanceMethod), method = input$agglomerationMethod), silent = TRUE)
     if (inherits(tmp, "try-error")) {
       N1 <- nrow(data.in)
       data.in <- na.omit(data.in)
-      cat("NA caused morpheus cluster error, remove all rows containing NAs, from", N1, "to", nrow(data.in), "\n")
+      log_warn("Interactive Heatmap: NAs caused a clustering error -- removed all rows with NAs, from ", N1, " to ", nrow(data.in), " rows.")
     }
   }
   

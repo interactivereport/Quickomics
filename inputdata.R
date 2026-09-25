@@ -59,8 +59,11 @@ observeEvent(input$exp_unit, {
 # time, a session whose project was opened via one of these parameters
 # restores to no project at all.
 load_project_from_query <- function(key, ProjectID) {
+  log_debug("load_project_from_query: key=", key, " ProjectID=", ProjectID)
   if (key == 'project') {
-    validate(need(ProjectID %in% saved_projects$ProjectID , message = "Please pass a valid ProjectID from URL."))
+    ok <- ProjectID %in% saved_projects$ProjectID
+    if (!ok) log_warn("Project load failed (key=project): '", ProjectID, "' not found in saved_projects.")
+    validate(need(ok , message = "Please pass a valid ProjectID from URL."))
     ProjectInfo$ProjectID=ProjectID
     ProjectInfo$Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
     ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
@@ -68,8 +71,12 @@ load_project_from_query <- function(key, ProjectID) {
     ProjectInfo$file1= paste("data/",  ProjectID, ".RData", sep = "")  #data file
     ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
     ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+    project_query_source(list(key = key, value = ProjectID))
+    log_info("Project loaded: ", ProjectID, " (source=project)")
   } else if (key == 'unlisted') {
-    validate(need(file.exists(str_c("unlisted/",  ProjectID, ".csv")),
+    ok <- file.exists(str_c("unlisted/",  ProjectID, ".csv"))
+    if (!ok) log_warn("Project load failed (key=unlisted): '", ProjectID, "' -- no unlisted/", ProjectID, ".csv")
+    validate(need(ok,
                   message = "Please pass a valid ProjectID from URL. Files must be located in unlisted folder" ))
     unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
     ProjectInfo$ProjectID=ProjectID
@@ -81,9 +88,13 @@ load_project_from_query <- function(key, ProjectID) {
     ProjectInfo$file3= paste("unlisted/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
     if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
+    project_query_source(list(key = key, value = ProjectID))
+    log_info("Project loaded: ", ProjectID, " (source=unlisted)")
   } else if (key == 'serverfile') {
     if (!is.null(server_dir)) {
-      validate(need(file.exists(str_c(server_dir, "/",  ProjectID, ".csv")),
+      ok <- file.exists(str_c(server_dir, "/",  ProjectID, ".csv"))
+      if (!ok) log_warn("Project load failed (key=serverfile): '", ProjectID, "' -- no ", server_dir, "/", ProjectID, ".csv")
+      validate(need(ok,
                     message = "Please pass a valid ProjectID from URL. Files must be located in server file folder" ))
       unlisted_project=read.csv(str_c(server_dir, "/",  ProjectID, ".csv"))
       ProjectInfo$ProjectID=ProjectID
@@ -95,10 +106,16 @@ load_project_from_query <- function(key, ProjectID) {
       ProjectInfo$file3= paste(server_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
       if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
       if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
+      project_query_source(list(key = key, value = ProjectID))
+      log_info("Project loaded: ", ProjectID, " (source=serverfile)")
+    } else {
+      log_warn("Project load failed (key=serverfile): server_dir is not configured.")
     }
   } else if (key == 'testfile') {
     if (!is.null(test_dir)) {
-      validate(need(file.exists(str_c(test_dir, "/",  ProjectID, ".csv")),
+      ok <- file.exists(str_c(test_dir, "/",  ProjectID, ".csv"))
+      if (!ok) log_warn("Project load failed (key=testfile): '", ProjectID, "' -- no ", test_dir, "/", ProjectID, ".csv")
+      validate(need(ok,
                     message = "Please pass a valid ProjectID from URL. Files must be located in test file folder" ))
       unlisted_project=read.csv(str_c(test_dir, "/",  ProjectID, ".csv"))
       ProjectInfo$ProjectID=ProjectID
@@ -110,6 +127,10 @@ load_project_from_query <- function(key, ProjectID) {
       ProjectInfo$file3= paste(test_dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
       if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
       if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
+      project_query_source(list(key = key, value = ProjectID))
+      log_info("Project loaded: ", ProjectID, " (source=testfile)")
+    } else {
+      log_warn("Project load failed (key=testfile): test_dir is not configured.")
     }
   }
 }
@@ -137,6 +158,7 @@ observe({
     ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
     ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
     # updateTabsetPanel(session, "Tables", selected = "Sample Table")
+    log_info("Project loaded: ", ProjectID, " (source=sel_project dropdown)")
   }
 })
 

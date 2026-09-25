@@ -43,7 +43,11 @@ session$onRestored(function(bm_state) {
     meta    = meta_snapshot
   )
   if (!is.null(snap$samples) || !is.null(snap$tests) || length(snap$meta) > 0) {
+    log_debug("Groups and Samples: captured restore snapshot -- ", length(snap$samples), " samples, ",
+              length(snap$tests), " tests, ", length(snap$meta), " meta attribute(s).")
     restored_gs_snapshot(snap)
+  } else {
+    log_debug("Groups and Samples: onRestored fired but found nothing to restore (source_s/source_test/keep_* all empty).")
   }
 })
 
@@ -71,6 +75,8 @@ observe({
   })
   names(new_meta) <- names(state$initial_meta)
 
+  log_debug("Groups and Samples: reconciling restored snapshot into canonical state -- ",
+            length(new_samples), " samples, ", length(new_tests), " tests.")
   updating_from_model(TRUE)
   state$meta    <- new_meta
   state$samples <- new_samples
@@ -137,6 +143,8 @@ observeEvent(MetaData_long(), {
   sample_order(state$samples)
   all_tests(state$tests)
   test_order(state$tests)
+  log_info("Groups and Samples: initialized with ", length(state$samples), " samples, ",
+           length(state$tests), " tests, ", length(init_meta), " attribute(s).")
 })
 
 ## =========================
@@ -328,7 +336,8 @@ reconcile_state <- function(visible, old_meta, old_samples, old_tests,
                             md_by_meta, md_by_sample, all_samples_vec, all_tests_vec) {
   # 1) Detect which source changed
   source <- detect_change_source(visible, old_meta, old_samples, old_tests, ui_meta, ui_samples, ui_tests)
-  
+  log_debug("Groups and Samples: reconcile_state driver=", source)
+
   # 2) No change → return old state
   if (source == "none") {
     return(list(meta = old_meta, samples = old_samples, tests = old_tests))
@@ -575,6 +584,8 @@ observe({
     if (same_meta && same_samples && same_tests) return()
 
     # 7) commit model update
+    log_debug("Groups and Samples: committing reconciled state -- ", length(new_state$samples),
+              " samples, ", length(new_state$tests), " tests.")
     updating_from_model(TRUE)
 
     state$meta    <- new_state$meta
@@ -584,7 +595,8 @@ observe({
 })
 
 observeEvent(input$reset_all_types, {
-  reset_all(TRUE)  
+  log_info("Groups and Samples: Reset clicked -- restoring initial selection.")
+  reset_all(TRUE)
   state$meta    <- state$initial_meta
   state$samples <- state$initial_samples
   state$tests   <- state$initial_tests

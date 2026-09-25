@@ -533,6 +533,8 @@ TimeSeries_server <- function(id, parent_session) {
                  
                  DEGReactive <- eventReactive(input$compute_DE, {
                    withProgress(message = 'Processing...', value = 0, {
+                     log_info("Time Course Analysis: computing DEGs (time=", input$sel_time_var,
+                              ", condition=", paste(input$sel_condition_var, collapse=","), ").")
                      req(DataQCReactive())
                      req(input$sel_time_var)
                      req(input$sel_condition_var)
@@ -540,14 +542,20 @@ TimeSeries_server <- function(id, parent_session) {
                      data_long <- DataIn$tmp_data_long
                      MetaData <- DataIn$MetaData
                      ProteinGeneName <- DataIn$ProteinGeneName
-                     
+
                      count_mtx <- get_count_mtx(data_long, linear_base(), linear_small_value())
-                     
-                     run_timecourse_DEG(MetaData,
+
+                     res <- run_timecourse_DEG(MetaData,
                                         count_mtx,
                                         time_variable = input$sel_time_var,
                                         Condition = input$sel_condition_var
                                         )
+                     if (identical(res$status, "success")) {
+                       log_info("Time Course Analysis: DEG computation succeeded.")
+                     } else {
+                       log_warn("Time Course Analysis: DEG computation failed: ", res$msg)
+                     }
+                     res
                    })
                  })
                  
@@ -597,6 +605,7 @@ TimeSeries_server <- function(id, parent_session) {
                  output$filtered_DEG <- renderText({filtered_DE()$msg})
                      
                  observeEvent(input$save_ts_deg, {
+                   log_info("Time Course Analysis: DEG data table saved to output.")
                    df <- filtered_DE()$df
                    if (input$ts_genelable == 'Gene.Name') {
                      df <- df %>%
@@ -636,6 +645,7 @@ TimeSeries_server <- function(id, parent_session) {
                  
                  DataClusterReactive <- eventReactive(input$compute_cluster, {
                    withProgress(message = 'Processing...', value = 0, {
+                     log_info("Time Course Analysis: computing DEG clusters.")
                      req(DEGReactive())
                      req(filtered_DE())
                      req(input$sel_condition_var)
@@ -786,6 +796,7 @@ TimeSeries_server <- function(id, parent_session) {
                  )
                  
                  observeEvent(input$ts_cluster_plot, {
+                   log_info("Time Series Cluster Plot saved to output.")
                    saved.num <- length(saved_plots$ts_cluster_plot) + 1
                    p <- cluster_plot() +
                      theme(
@@ -824,8 +835,9 @@ TimeSeries_server <- function(id, parent_session) {
                  })
                  
                  observeEvent(input$ts_tpm_gct, {
+                   log_info("Time Series cluster sample normalized log2TPM GCT saved to output.")
                    saved_gcts$ts_tpm_gct <- ts_TPM_gct()
-                 })       
+                 })
                  
                  ts_zscore_gct <- reactive({
                    DataIn = DataQCReactive()
@@ -853,8 +865,9 @@ TimeSeries_server <- function(id, parent_session) {
                  })
                  
                  observeEvent(input$ts_zscore_gct, {
+                   log_info("Time Series cluster group z-score GCT saved to output.")
                    saved_gcts$ts_zscore_gct <- ts_zscore_gct()
-                 })                    
+                 })
                  ############## 
                  observeEvent(DataClusterReactive(), {
                    req(DataClusterReactive())
@@ -892,6 +905,7 @@ TimeSeries_server <- function(id, parent_session) {
 #################################################
                  heatmap_sample_plot <- eventReactive(input$ts_plot_sample_heatmap, {
                    withProgress(message = "Processing...", value = 0, {
+                     log_info("Time Series: rendering sample heatmap.")
                      req(DataClusterReactive())
                      req(input$ts_hm_annot_sample)
                      DataCluster <-DataClusterReactive()
@@ -937,7 +951,8 @@ TimeSeries_server <- function(id, parent_session) {
                          pal_cat_assigned <- sample(discrete_palettes, length(cat_cols), replace = (length(cat_cols) > length(discrete_palettes)))
                          num_palette <- "Set1"
                        } else if (input$ts_hm_annot_color=="Select Palette") { #color with user selected palettes
-                         validate(need(length(input$ts_hm_cat_pal)>0,message = "Please select color palettes for category annotations")) 
+                         if (length(input$ts_hm_cat_pal) == 0) log_warn("Time Series heatmap: no color palette selected for category annotations.")
+                         validate(need(length(input$ts_hm_cat_pal)>0,message = "Please select color palettes for category annotations"))
                          pal_cat_assigned <- rep(input$ts_hm_cat_pal,  length.out=length(cat_cols) )
                          num_palette <- input$ts_hm_num_pal
                        }
@@ -1037,6 +1052,7 @@ TimeSeries_server <- function(id, parent_session) {
                  
                  heatmap_group_plot <- eventReactive(input$ts_plot_group_heatmap, {
                    withProgress(message = "Processing...", value = 0, {
+                     log_info("Time Series: rendering group heatmap.")
                      req(DataClusterReactive())
                      req(input$ts_hm_annot_group)
                      DataCluster <-DataClusterReactive()
@@ -1082,7 +1098,8 @@ TimeSeries_server <- function(id, parent_session) {
                          pal_cat_assigned <- sample(discrete_palettes, length(cat_cols), replace = (length(cat_cols) > length(discrete_palettes)))
                          num_palette <- "Set1"
                        } else if (input$ts_hm_annot_color=="Select Palette") { #color with user selected palettes
-                         validate(need(length(input$ts_hm_cat_pal)>0,message = "Please select color palettes for category annotations")) 
+                         if (length(input$ts_hm_cat_pal) == 0) log_warn("Time Series heatmap: no color palette selected for category annotations.")
+                         validate(need(length(input$ts_hm_cat_pal)>0,message = "Please select color palettes for category annotations"))
                          pal_cat_assigned <- rep(input$ts_hm_cat_pal,  length.out=length(cat_cols) )
                          num_palette <- input$ts_hm_num_pal
                        }

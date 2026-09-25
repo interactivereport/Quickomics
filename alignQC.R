@@ -19,6 +19,7 @@ alignQC_RA_p <- reactive({
   MetaData=DataIn$MetaData
   #rownames(MetaData) = MetaData$sampleid
   selN <- c("Exonic_Rate","Intronic_Rate","Intergenic_Rate")
+  if (sum(selN%in%colnames(MetaData))!=length(selN)) log_warn("Read Allocation plot: MetaData is missing one or more of ", paste(selN, collapse=", "), ".")
   validate(need(sum(selN%in%colnames(MetaData))==length(selN), message = "Sample MetaData must have Exonic_Rate, Intronic_Rate and Intergenic_Rate columns in order to make Read Allocation graph." ))
   p=NULL
   if(sum(selN%in%colnames(MetaData))==length(selN)){

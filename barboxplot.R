@@ -70,6 +70,8 @@ apply_manual_yrange <- function(p, expr_values, ymin, ymax) {
   if (range_ok) {
     p + ylim(ymin, ymax)
   } else {
+    log_warn("Expression Plot: manual Y range ", ymin, " to ", ymax, " does not fit data range ",
+             signif(data_min, 3), " to ", signif(data_max, 3), " -- falling back to Auto.")
     showNotification(
       paste0("The manual Y Axis Range (", ymin, " to ", ymax,
              ") does not fit the data (data range: ", signif(data_min, 3), " to ", signif(data_max, 3),
@@ -189,6 +191,7 @@ observe({
 
 DataExpReactive <- reactive({
   DataIn = DataQCReactive()
+  if (length(DataIn$tmp_group$group) == 0) log_warn("Expression Plot: no group(s) selected.")
   validate(need(length(DataIn$tmp_group$group)>0,"Please select group(s)."))
   
   data_long = DataIn$tmp_data_long
@@ -204,6 +207,7 @@ DataExpReactive <- reactive({
   
   
   if (input$exp_subset == "Select") {
+    if (length(input$sel_gene) == 0) log_warn("Expression Plot: no gene selected.")
     validate(need(length(input$sel_gene)>0,"Please select a gene."))
     if (input$exp_label=="UniqueID") {
       tmpids = ProteinGeneName[unique(na.omit(c(apply(ProteinGeneName,2,function(k) match(sel_gene,k))))),]
@@ -232,9 +236,11 @@ DataExpReactive <- reactive({
     }
     exp_list <- gsub(" ", "", exp_list, fixed = TRUE)
     exp_list <- unique(exp_list[exp_list != ""])
+    if (length(exp_list) == 0) log_warn("Expression Plot: uploaded gene list is empty.")
     validate(need(length(exp_list)>0, message = "Please input at least 1 valid genes."))
     tmpids_df <- dplyr::filter(ProteinGeneName, (UniqueID %in% exp_list) | (Protein.ID %in% exp_list) | (toupper(Gene.Name) %in% toupper(exp_list)))  %>%
       dplyr::select(UniqueID, Gene.Name, Protein.ID) %>% collect %>% as.data.frame()
+    if (nrow(tmpids_df) == 0) log_warn("Expression Plot: none of the uploaded genes matched ProteinGeneName.")
     validate(need(nrow(tmpids_df)>0, message = "Please input at least 1 valid genes."))
     # Match against all possible input identifiers to find the order
     # For each gene, find which identifier (UniqueID, Protein.ID, or Gene.Name) matches and get its position in exp_list
@@ -264,6 +270,7 @@ DataExpReactive <- reactive({
     exp_list <- unique(exp_list[exp_list != ""])
     tmpids_df <- dplyr::filter(ProteinGeneName, (UniqueID %in% exp_list) | (Protein.ID %in% exp_list) | (toupper(Gene.Name) %in% toupper(exp_list)))  %>%
       dplyr::select(UniqueID, Gene.Name, Protein.ID) %>% collect %>% as.data.frame()
+    if (nrow(tmpids_df) == 0) log_warn("Expression Plot: none of the geneset genes matched ProteinGeneName.")
     validate(need(nrow(tmpids_df)>0, message = "Please input at least 1 valid genes."))
     # Match against all possible input identifiers to find the order
     # For each gene, find which identifier (UniqueID, Protein.ID, or Gene.Name) matches and get its position in exp_list
@@ -281,7 +288,7 @@ DataExpReactive <- reactive({
     tmpids_order <- tmpids_df$UniqueID
     tmpids <- tmpids_order
   }
-  if (length(tmpids)>100) {cat("show only first 100 genes in exprssion plot.\n"); tmpids=tmpids[1:100]}
+  if (length(tmpids)>100) {log_info("Expression Plot: ", length(tmpids), " genes selected, showing only the first 100."); tmpids=tmpids[1:100]}
   
   data_long_tmp <- filter(data_long, UniqueID %in% tmpids) %>% 
     filter(!is.na(expr)) %>% as.data.frame()
@@ -364,6 +371,7 @@ output$res_dotplot <- DT::renderDT(server=FALSE,{
 
 
 boxplot_out <- eventReactive(input$plot_exp,  {
+  log_info("Expression Plot: Plot/Refresh clicked.")
   barcol = input$barcol
   DataIn = DataQCReactive()   #DataReactive()
   colorby=sym(input$colorby)
@@ -513,6 +521,7 @@ output$boxplot <- renderPlot({
 
 
 observeEvent(input$boxplot, {
+  log_info("Expression Plot saved to output.")
   saved.num <- length(saved_plots$boxplot) + 1
   saved_plots$boxplot[[saved.num]] <- boxplot_out()
 })
@@ -526,7 +535,9 @@ browsing_out <- eventReactive(plot_exp_control(),{
   DataIn = DataQCReactive()        # DataReactive()
   # req(input$sel_page)
   MetaData=DataIn$MetaData
+  if (length(MetaData$group) == 0) log_warn("Expression Plot (Browsing): no group(s) selected.")
   validate(need(length(MetaData$group)>0,"Please select group(s)."))
+  log_info("Expression Plot (Browsing): rendering page ", input$sel_page, " for test ", input$expression_test)
   barcol = input$barcol
   data_long = DataIn$tmp_data_long
   results_long = DataIn$tmp_results_long
@@ -573,6 +584,7 @@ browsing_out <- eventReactive(plot_exp_control(),{
   data_long_tmp<-data_long_tmp%>%mutate(Gene.Name_UniqueID=str_c(Gene.Name, "_", UniqueID))
   data_long_tmp$labelgeneid = data_long_tmp[,match(genelabel,colnames(data_long_tmp))]
   data_long_tmp$group = factor(data_long_tmp$group,levels = sel_group)
+  if (nrow(data_long_tmp) == 0) log_warn("Expression Plot (Browsing): no valid genes to plot on this page.")
   validate(need(nrow(data_long_tmp)>0, message = "Please select at least one valid gene to plot."))
   #browser() #debug
   data_long_tmp$labelgeneid=factor(data_long_tmp$labelgeneid, levels=unique(data_long_tmp$labelgeneid))
@@ -641,10 +653,11 @@ output$browsing <- renderPlot({
   ptm <- proc.time()
   withProgress(message = 'Drawing Expression Plot...\nIt may take a while', value = 0, {
     print(browsing_out()) })
-  cat("plotted expression plot",(proc.time() - ptm)[["elapsed"]], "\n")
+  log_debug("Expression Plot (Browsing): plotted in ", (proc.time() - ptm)[["elapsed"]], "s.")
 })
 
 observeEvent(input$browsing, {
+  log_info("Expression Plot (Browsing) saved to output.")
   saved.num <- length(saved_plots$browsing) +1
   saved_plots$browsing[[saved.num]] <- browsing_out()
 })
