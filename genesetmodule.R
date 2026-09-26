@@ -782,32 +782,40 @@ geneset_server <- function(id) {
                                 dplyr::bind_rows(.id = "comparison") %>%
                                 dplyr::relocate(comparison, .after = 1)
                               combined_gsea_res(res)  # unfiltered combined GSEA result table
-                              if (input$gsea_collapase) {
-                                res_list <- lapply(names(res_list_raw), function(comp) {
-                                  output <- res_list_raw[[comp]]
-                                  logFC_list <- DataGenesetReactive_GSEA()[[comp]]$gene_list
-                                  collapsed_set <- collapsePathways(
-                                    output[order(pval)][padj <= input$gsea_FDR],
-                                    gsets_Reactive(),
-                                    logFC_list
-                                  )
-                                  output <- output[pathway %in% collapsed_set$mainPathways]
-                                  output %>%
-                                    dplyr::mutate_if(is.numeric, signif, digits = 3) %>%
-                                    dplyr::rename(GeneSet = pathway) %>%
-                                    dplyr::select(-ES, -log2err) %>%
-                                    dplyr::arrange(padj, dplyr::desc(abs(NES))) %>%
-                                    tibble::rownames_to_column("rank") %>%
-                                    dplyr::relocate(GeneSet) %>%
-                                    dplyr::mutate(comparison = comp)
-                                })
-                                names(res_list) <- names(res_list_raw)
-                                res <- res_list %>%
-                                  purrr::discard(~ nrow(.x) == 0) %>%
-                                  dplyr::bind_rows(.id = "comparison") %>%
-                                  dplyr::relocate(comparison, .after = 1)
-                                combined_gsea_res_filtered(res)
-                              }
+                              # isolate() -- this whole block (checkbox, FDR cutoff, gene sets, the
+                              # DE gene lists) must only be captured at Compute-click time, same as
+                              # everything in gsea_raw(). Without it, reading these reactively here
+                              # (in a plain reactive(), unlike gsea_raw()'s auto-isolated eventReactive
+                              # body) would re-run this on every checkbox/cutoff/gene-set change, no
+                              # click needed.
+                              isolate({
+                                if (input$gsea_collapase) {
+                                  res_list <- lapply(names(res_list_raw), function(comp) {
+                                    output <- res_list_raw[[comp]]
+                                    logFC_list <- DataGenesetReactive_GSEA()[[comp]]$gene_list
+                                    collapsed_set <- collapsePathways(
+                                      output[order(pval)][padj <= input$gsea_FDR],
+                                      gsets_Reactive(),
+                                      logFC_list
+                                    )
+                                    output <- output[pathway %in% collapsed_set$mainPathways]
+                                    output %>%
+                                      dplyr::mutate_if(is.numeric, signif, digits = 3) %>%
+                                      dplyr::rename(GeneSet = pathway) %>%
+                                      dplyr::select(-ES, -log2err) %>%
+                                      dplyr::arrange(padj, dplyr::desc(abs(NES))) %>%
+                                      tibble::rownames_to_column("rank") %>%
+                                      dplyr::relocate(GeneSet) %>%
+                                      dplyr::mutate(comparison = comp)
+                                  })
+                                  names(res_list) <- names(res_list_raw)
+                                  res <- res_list %>%
+                                    purrr::discard(~ nrow(.x) == 0) %>%
+                                    dplyr::bind_rows(.id = "comparison") %>%
+                                    dplyr::relocate(comparison, .after = 1)
+                                  combined_gsea_res_filtered(res)
+                                }
+                              })
                             }
                             log_info("GSEA: completed, ", length(res_filter), " comparison(s) with results.")
                             res_list
@@ -1061,31 +1069,36 @@ geneset_server <- function(id) {
                             log_info("ORA: running.")
                             res <- bind_rows_with_comparison(res_list_raw, after_pos = 1)
                             combined_ora_res(res)
-                            if (input$ora_collapase) {
-                              gsets_ORA <- gsets_Reactive()
-                              res_list <- lapply(names(res_list_raw), function(comp) {
-                                gsa <- res_list_raw[[comp]]
-                                comp_res <- DataGenesetReactive_ORA()[[comp]]
-                                logFC_list <- comp_res$sig_genes
-                                all_genes  <- comp_res$all_genes
-                                
-                                collapsed_set <- collapsePathwaysORA(
-                                  foraRes = gsa %>% dplyr::mutate(pathway = GeneSet) %>% dplyr::filter(p.adj <= input$ora_pvalue),
-                                  pathways = gsets_ORA,
-                                  genes = names(logFC_list),
-                                  universe = all_genes,
-                                  pval.threshold = 0.05
-                                )
-                                gsa <- gsa %>% dplyr::filter(GeneSet %in% collapsed_set$mainPathways)
-                                if (nrow(gsa) > 0) {
-                                  gsa$comparison <- comp
-                                }
-                                gsa
-                              })
-                              names(res_list) <- names(res_list_raw)
-                              res <- bind_rows_with_comparison(res_list, after_pos = 2)
-                              combined_ora_res_filtered(res)
-                            }
+                            # isolate() -- see the matching comment in gsea_results(): this whole
+                            # block must only be captured at Compute-click time, not re-run whenever
+                            # the checkbox/p-value cutoff/gene sets change.
+                            isolate({
+                              if (input$ora_collapase) {
+                                gsets_ORA <- gsets_Reactive()
+                                res_list <- lapply(names(res_list_raw), function(comp) {
+                                  gsa <- res_list_raw[[comp]]
+                                  comp_res <- DataGenesetReactive_ORA()[[comp]]
+                                  logFC_list <- comp_res$sig_genes
+                                  all_genes  <- comp_res$all_genes
+
+                                  collapsed_set <- collapsePathwaysORA(
+                                    foraRes = gsa %>% dplyr::mutate(pathway = GeneSet) %>% dplyr::filter(p.adj <= input$ora_pvalue),
+                                    pathways = gsets_ORA,
+                                    genes = names(logFC_list),
+                                    universe = all_genes,
+                                    pval.threshold = 0.05
+                                  )
+                                  gsa <- gsa %>% dplyr::filter(GeneSet %in% collapsed_set$mainPathways)
+                                  if (nrow(gsa) > 0) {
+                                    gsa$comparison <- comp
+                                  }
+                                  gsa
+                                })
+                                names(res_list) <- names(res_list_raw)
+                                res <- bind_rows_with_comparison(res_list, after_pos = 2)
+                                combined_ora_res_filtered(res)
+                              }
+                            })
                             res_list
                           })
                         })
