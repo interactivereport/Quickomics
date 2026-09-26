@@ -314,8 +314,12 @@ geneset_server <- function(id) {
                         # temp file, and Shiny's own restore code rejects any file input
                         # value whose datapath contains "/" with an uncaught error that
                         # breaks the whole session. See the matching comment in app.R.
+                        # metabaseSave's actionButton is commented out in this repo's UI (no
+                        # metabase gmt file here -- see the file.exists() check up top), but the
+                        # Biogen repo variant of this file has it live. Keep excluding it so this
+                        # file stays drop-in compatible across both.
                         session$setBookmarkExclude(c("compute_gsea", "compute_ora", "genesetheatmap",
-                                                      "keggSave", "create_dotplot",
+                                                      "keggSave", "metabaseSave", "create_dotplot",
                                                       "dotplot", "reset_comp",
                                                       "custom_gmt_file"))
 
