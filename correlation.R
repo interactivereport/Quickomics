@@ -345,6 +345,7 @@ correlation_server <- function(id, parent_session) {
                  
                  observe({
                    req(input$gene_subset == "Select")
+                   req(DataQCReactive())
                    gene_list = input$sel_gene
                    if (length(gene_list) <= 1) log_warn("Correlation Analysis: fewer than 2 genes selected.")
                    validate(need(length(gene_list) > 1, message = "Please input at least 2 matched genes."))
@@ -394,6 +395,7 @@ correlation_server <- function(id, parent_session) {
                    # result. This re-runs on every switch into "Upload
                    # Genes" too, since it reads input$gene_subset below.
                    req(input$gene_subset == "Upload Genes")
+                   req(DataQCReactive())
                    gene_list <- input$gene_list
                    gene_list <- ProcessUploadGeneList(gene_list)
                    if (length(gene_list) <= 1) log_warn("Correlation Analysis: uploaded gene list has fewer than 2 matched genes.")
