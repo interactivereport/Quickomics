@@ -1135,9 +1135,33 @@ server <- function(input, output, session) {
   # Stashed here and consumed by pattern.R's own renderUI once that lines up.
   restored_pattern_group_snapshot <- reactiveVal(NULL)
 
-  # State ID of the most recent session bookmark, so the download handler
-  # below can serve that exact bookmark's saved input.rds as a file.
-  last_bookmark_state_id <- reactiveVal(NULL)
+  # On-disk directory of the most recent session bookmark, so the download
+  # handler below can serve that exact bookmark's saved input.rds as a file.
+  # Recorded from state$dir in onBookmark() rather than rebuilt as
+  # "shiny_bookmarks/<state_id>": that relative path is only where Shiny's
+  # *default* save interface writes (plain runApp(), e.g. RStudio). Hosts
+  # such as Shiny Server / Posit Connect / containerized deployments install
+  # their own "save.interface" that writes somewhere else entirely (e.g.
+  # /var/lib/shiny-server/bookmarks/...), so the rebuilt path didn't exist
+  # there, req() failed inside the download handler, and the download URL
+  # showed "An error has occurred!".
+  last_bookmark_dir <- reactiveVal(NULL)
+
+  # Same save interface Shiny's own doBookmark() uses (see
+  # saveShinySaveState() in the shiny package), so a session file uploaded
+  # below lands exactly where "?_state_id_=..." will later look for it on
+  # whatever host this is running on.
+  bookmark_save_interface <- function(id, callback) {
+    save_interface <- getShinyOption("save.interface", default = NULL)
+    if (is.null(save_interface)) {
+      save_interface <- function(id, callback) {
+        state_dir <- file.path(getShinyOption("appDir", default = getwd()), "shiny_bookmarks", id)
+        dir.create(state_dir, recursive = TRUE, showWarnings = FALSE)
+        callback(state_dir)
+      }
+    }
+    save_interface(id, callback)
+  }
 
   # Set once inside load_project_from_query() (inputdata.R) whenever it
   # successfully loads a project via one of the URL query keys (project/
@@ -1166,6 +1190,7 @@ server <- function(input, output, session) {
   })
 
   onBookmark(function(state) {
+    last_bookmark_dir(state$dir)
     # project/unlisted/serverfile/testfile (inputdata.R) select the project
     # straight from the raw URL query string, not from a Shiny input, so
     # they're never part of `input` and are lost once doBookmark() replaces
@@ -1184,11 +1209,10 @@ server <- function(input, output, session) {
   })
 
   onBookmarked(function(url) {
-    # The state ID is the last query-string segment Shiny appended to the
-    # current URL, e.g. "...?_state_id_=6ba545c11e3c6206".
-    state_id <- sub(".*_state_id_=", "", url)
-    last_bookmark_state_id(state_id)
-    log_info("Bookmark saved: state_id=", state_id)
+    # The state ID is only extracted here for the log line -- last_bookmark_dir()
+    # (set in onBookmark() above from state$dir) is what the download handler
+    # actually uses, since it's host-agnostic; this URL suffix isn't.
+    log_info("Bookmark saved: state_id=", sub(".*_state_id_=", "", url))
     output$save_session_url <- renderUI({
       downloadButton("download_session_file", "Download Session File", class = "btn-default btn-sm")
     })
@@ -1221,20 +1245,24 @@ server <- function(input, output, session) {
       paste0(project_id, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".rds")
     },
     content = function(file) {
-      state_id <- last_bookmark_state_id()
-      if (is.null(state_id)) log_warn("Download Session File clicked with no bookmark saved yet.")
-      req(state_id)
-      input_src <- file.path("shiny_bookmarks", state_id, "input.rds")
-      if (!file.exists(input_src)) log_error("Download Session File: input.rds missing for state_id=", state_id, " at ", input_src)
-      req(file.exists(input_src))
-      values_src <- file.path("shiny_bookmarks", state_id, "values.rds")
+      state_dir <- last_bookmark_dir()
+      if (is.null(state_dir)) {
+        log_warn("Download Session File clicked with no bookmark saved yet.")
+        stop("No saved session yet -- click Save Session first.")
+      }
+      input_src <- file.path(state_dir, "input.rds")
+      if (!file.exists(input_src)) {
+        log_error("Download Session File: input.rds missing at ", input_src)
+        stop("Saved session not found on the server: ", input_src)
+      }
+      values_src <- file.path(state_dir, "values.rds")
       bundle <- list(
         .qo_format = "bundle_v1",
         input = readRDS(input_src),
         values = if (file.exists(values_src)) as.list(readRDS(values_src)) else list()
       )
       saveRDS(bundle, file)
-      log_info("Session file downloaded for state_id=", state_id)
+      log_info("Session file downloaded from ", state_dir)
     }
   )
 
@@ -1312,12 +1340,12 @@ server <- function(input, output, session) {
       uploaded_input[[fk]] <- NULL
     }
     new_state_id <- paste(sample(c(letters[1:6], 0:9), 16, replace = TRUE), collapse = "")
-    dest_dir <- file.path("shiny_bookmarks", new_state_id)
-    dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
-    saveRDS(uploaded_input, file.path(dest_dir, "input.rds"))
-    if (length(uploaded_values) > 0) {
-      saveRDS(uploaded_values, file.path(dest_dir, "values.rds"))
-    }
+    bookmark_save_interface(new_state_id, function(dest_dir) {
+      saveRDS(uploaded_input, file.path(dest_dir, "input.rds"))
+      if (length(uploaded_values) > 0) {
+        saveRDS(uploaded_values, file.path(dest_dir, "values.rds"))
+      }
+    })
     log_info("Session file accepted for project '", uploaded_project_id, "', restoring as state_id=", new_state_id)
     showNotification("Session file loaded -- restoring...", type = "message")
     shinyjs::runjs(sprintf(
