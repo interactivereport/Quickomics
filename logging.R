@@ -1,15 +1,23 @@
 ###########################################################################################################
 ## Leveled logging for the Shiny server process.
 ##
-## Writes to stdout via cat() -- deliberately not to a dedicated file. Both
-## RStudio's console and Shiny Server (which captures each app process's
-## stdout/stderr into its own per-session log under /var/log/shiny-server/)
-## already give every running session its own log destination; duplicating
-## that with our own file management would just be redundant and, on a
-## deployment where the app directory itself isn't writable by the server
-## process, another thing that can fail. Each line is still tagged with a
-## short session id so multiple sessions sharing one console (e.g. during
-## local testing) stay distinguishable.
+## Writes to stderr via cat(file = stderr()) -- deliberately not to a
+## dedicated file. Both RStudio's console and Shiny Server already give every
+## running session its own log destination; duplicating that with our own file
+## management would just be redundant and, on a deployment where the app
+## directory itself isn't writable by the server process, another thing that
+## can fail. Each line is still tagged with a short session id so multiple
+## sessions sharing one console (e.g. during local testing) stay
+## distinguishable.
+##
+## stderr rather than stdout, and this matters: Shiny Server pipes the R
+## process's stderr into the per-app log under log_dir, but reads stdout only
+## to watch for its own "shiny_launch_info:" marker and discards every other
+## line (lib/worker/app-worker.js in rstudio/shiny-server). A bare cat() goes
+## to stdout, so those lines show up in RStudio and vanish under Shiny Server.
+## stderr is also unbuffered, while stdout is block-buffered whenever it isn't
+## a terminal -- so even where stdout is captured, bare cat() output can sit
+## unflushed for a long time in a process that stays alive.
 ##
 ## Usage: log_message("INFO", "Project loaded: ", ProjectID)
 ##    or: log_info("Project loaded: ", ProjectID)
@@ -124,10 +132,11 @@ log_message <- function(level, ..., session = shiny::getDefaultReactiveDomain())
       level,
       session_id,
       paste0(..., collapse = "")
-    ))
+    ), file = stderr())
   }, error = function(e) {
     cat(sprintf("[%s] [WARN ] [session:%s] log_message() itself failed: %s\n",
-                format(Sys.time(), "%Y-%m-%d %H:%M:%OS3"), session_id, conditionMessage(e)))
+                format(Sys.time(), "%Y-%m-%d %H:%M:%OS3"), session_id, conditionMessage(e)),
+        file = stderr())
   })
   invisible(NULL)
 }
@@ -154,7 +163,8 @@ set_session_log_level <- function(session, level) {
   # to a stricter level than before.
   session_id <- substr(session$token, 1, 8)
   cat(sprintf("[%s] [INFO ] [session:%s] Log level changed to %s\n",
-              format(Sys.time(), "%Y-%m-%d %H:%M:%OS3"), session_id, level))
+              format(Sys.time(), "%Y-%m-%d %H:%M:%OS3"), session_id, level),
+      file = stderr())
   invisible(NULL)
 }
 
