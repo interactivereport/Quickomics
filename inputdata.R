@@ -61,7 +61,7 @@ observeEvent(input$exp_unit, {
 # Loads a project from one of the raw URL query-string parameters below.
 # Factored out (rather than left inline in the observe() below) so
 # app.R's onRestored() can also call it directly -- project/unlisted/
-# serverfile/testfile select the project straight from
+# serverfile/testfile/api_serverfile/api_testfile/datalake select the project straight from
 # session$clientData$url_search rather than from a Shiny input, so they're
 # never captured by Shiny's bookmarking and are gone from the URL once
 # Save Session's doBookmark() replaces it with "?_state_id_=...". Without
@@ -78,8 +78,10 @@ observeEvent(input$exp_unit, {
 # in both places.
 load_project_from_query <- function(key, ProjectID) {
   mark_project_start(ProjectID)
+  log_debug("load_project_from_query: key=", key, " ProjectID=", ProjectID)
   if (key == 'project') {
     if (!(ProjectID %in% saved_projects$ProjectID)) {
+      log_warn("Project load failed (key=project): '", ProjectID, "' not found in saved_projects.")
       showNotification(
         paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
         type = "error", duration = NULL
@@ -94,8 +96,11 @@ load_project_from_query <- function(key, ProjectID) {
     ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
     ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
     ProjectInfo$source=NULL  #local data/ folder project, not API-backed
+    project_query_source(list(key = key, value = ProjectID))
+    log_info("Project loaded: ", ProjectID, " (source=project)")
   } else if (key == 'unlisted') {
     if (!file.exists(str_c("unlisted/",  ProjectID, ".csv"))) {
+      log_warn("Project load failed (key=unlisted): '", ProjectID, "' -- no unlisted/", ProjectID, ".csv")
       showNotification(
         paste0("Project '", ProjectID, "' could not be found in the unlisted folder. Please check the project ID in the URL."),
         type = "error", duration = NULL
@@ -113,110 +118,115 @@ load_project_from_query <- function(key, ProjectID) {
     ProjectInfo$source=NULL  #unlisted/ folder project, not API-backed
     if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
+    project_query_source(list(key = key, value = ProjectID))
+    log_info("Project loaded: ", ProjectID, " (source=unlisted)")
   } else if (key == 'serverfile') {
-    api_result <- tryCatch(
-      list(ok = TRUE, meta = api_get_project_meta(ProjectID, "published")),
-      error = function(e) list(ok = FALSE, error = conditionMessage(e))
-    )
-    if (!api_result$ok) {
-      showNotification(
-        paste("Quickomics API is not working:", api_result$error),
-        type = "error", duration = NULL
-      )
-      return()
-    }
-    meta <- api_result$meta
-    if (is.null(meta)) {
-      showNotification(
-        paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
-        type = "error", duration = NULL
-      )
-      return()
-    }
-    ProjectInfo$ProjectID=ProjectID
-    ProjectInfo$Name=meta$Name
-    ProjectInfo$Species=meta$Species
-    ProjectInfo$ShortName=meta$ShortName
-    # file1/file2/file3 are placeholders, not real paths, for API-sourced
-    # projects -- actual data loading goes through api_load()/
-    # api_load_network()/api_load_wgcna() (see below, network.R, wgcna.R),
-    # none of which dereference these strings as real file paths. They're
-    # kept non-NULL only because other code gates on `req(ProjectInfo$file1)`.
-    ProjectInfo$file1= paste0("api://published/", ProjectID, ".RData")
-    ProjectInfo$file2= paste0("api://published/", ProjectID, "_network.RData")
-    ProjectInfo$file3= paste0("api://published/wgcna_", ProjectID, ".RData")
-    ProjectInfo$source="published"  #routes file1/network/wgcna loading through the Quickomics API
-    if (!is.null(meta$Path)) {ProjectInfo$Path=meta$Path}
-    if (!is.null(meta$ExpressionUnit)) {updateTextInput(session, "exp_unit", value=meta$ExpressionUnit)}
+    # Reads {server_dir}/{ProjectID}.RData directly with base::load().
+    load_project_from_dir(key, ProjectID, server_dir, "server_dir")
   } else if (key == 'testfile') {
-    api_result <- tryCatch(
-      list(ok = TRUE, meta = api_get_project_meta(ProjectID, "unpublished")),
-      error = function(e) list(ok = FALSE, error = conditionMessage(e))
-    )
-    if (!api_result$ok) {
-      showNotification(
-        paste("Quickomics API is not working:", api_result$error),
-        type = "error", duration = NULL
-      )
-      return()
-    }
-    meta <- api_result$meta
-    if (is.null(meta)) {
-      showNotification(
-        paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
-        type = "error", duration = NULL
-      )
-      return()
-    }
-    ProjectInfo$ProjectID=ProjectID
-    ProjectInfo$Name=meta$Name
-    ProjectInfo$Species=meta$Species
-    ProjectInfo$ShortName=meta$ShortName
-    ProjectInfo$file1= paste0("api://unpublished/", ProjectID, ".RData")
-    ProjectInfo$file2= paste0("api://unpublished/", ProjectID, "_network.RData")
-    ProjectInfo$file3= paste0("api://unpublished/wgcna_", ProjectID, ".RData")
-    ProjectInfo$source="unpublished"  #routes file1/network/wgcna loading through the Quickomics API
-    if (!is.null(meta$Path)) {ProjectInfo$Path=meta$Path}
-    if (!is.null(meta$ExpressionUnit)) {updateTextInput(session, "exp_unit", value=meta$ExpressionUnit)}
+    # Reads {test_dir}/{ProjectID}.RData directly with base::load().
+    load_project_from_dir(key, ProjectID, test_dir, "test_dir")
+  } else if (key == 'api_serverfile') {
+    # Same published projects as serverfile, fetched through the Quickomics API.
+    load_project_from_api(key, ProjectID, "published")
+  } else if (key == 'api_testfile') {
+    # Same unpublished projects as testfile, fetched through the Quickomics API.
+    load_project_from_api(key, ProjectID, "unpublished")
   } else if (key == 'datalake') {
-    api_result <- tryCatch(
-      list(ok = TRUE, meta = api_get_project_meta(ProjectID, "datalake")),
-      error = function(e) list(ok = FALSE, error = conditionMessage(e))
-    )
-    if (!api_result$ok) {
-      showNotification(
-        paste("Quickomics API is not working:", api_result$error),
-        type = "error", duration = NULL
-      )
-      return()
-    }
-    meta <- api_result$meta
-    if (is.null(meta)) {
-      showNotification(
-        paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
-        type = "error", duration = NULL
-      )
-      return()
-    }
-    ProjectInfo$ProjectID=ProjectID
-    ProjectInfo$Name=meta$Name
-    ProjectInfo$Species=meta$Species
-    ProjectInfo$ShortName=meta$ShortName
-    ProjectInfo$file1= paste0("api://datalake/", ProjectID, ".RData")
-    ProjectInfo$file2= paste0("api://datalake/", ProjectID, "_network.RData")
-    ProjectInfo$file3= paste0("api://datalake/wgcna_", ProjectID, ".RData")
-    ProjectInfo$source="datalake"  #routes file1/network/wgcna loading through the Quickomics API
-    if (!is.null(meta$Path)) {ProjectInfo$Path=meta$Path}
-    if (!is.null(meta$ExpressionUnit)) {updateTextInput(session, "exp_unit", value=meta$ExpressionUnit)}
+    # Datalake projects are only reachable through the Quickomics API.
+    load_project_from_api(key, ProjectID, "datalake")
   }
 }
+
+# serverfile/testfile: project registered in a server-side folder as
+# {dir}/{ProjectID}.csv, with its data in {dir}/{ProjectID}.RData.
+load_project_from_dir <- function(key, ProjectID, dir, dir_name) {
+  if (is.null(dir)) {
+    log_warn("Project load failed (key=", key, "): ", dir_name, " is not configured.")
+    showNotification(
+      paste0("Cannot open '", ProjectID, "': ", dir_name, " is not configured on this server."),
+      type = "error", duration = NULL
+    )
+    return()
+  }
+  if (!file.exists(str_c(dir, "/",  ProjectID, ".csv"))) {
+    log_warn("Project load failed (key=", key, "): '", ProjectID, "' -- no ", dir, "/", ProjectID, ".csv")
+    showNotification(
+      paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
+      type = "error", duration = NULL
+    )
+    return()
+  }
+  unlisted_project=read.csv(str_c(dir, "/",  ProjectID, ".csv"))
+  ProjectInfo$ProjectID=ProjectID
+  ProjectInfo$Name=unlisted_project$Name
+  ProjectInfo$Species=unlisted_project$Species
+  ProjectInfo$ShortName=unlisted_project$ShortName
+  ProjectInfo$file1= paste(dir, "/",   ProjectID, ".RData", sep = "")  #data file
+  ProjectInfo$file2= paste(dir, "/",  ProjectID, "_network.RData", sep = "") #Correlation results
+  ProjectInfo$file3= paste(dir, "/",  "wgcna_", ProjectID, ".RData", sep = "") #wgcna results
+  ProjectInfo$source=NULL  #read directly from disk, not API-backed
+  if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
+  if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
+  project_query_source(list(key = key, value = ProjectID))
+  log_info("Project loaded: ", ProjectID, " (source=", key, ")")
+}
+
+# api_serverfile/api_testfile/datalake: project fetched through the
+# Quickomics API, where `source` is the API's {source} path segment
+# ("published", "unpublished" or "datalake").
+load_project_from_api <- function(key, ProjectID, source) {
+  api_result <- tryCatch(
+    list(ok = TRUE, meta = api_get_project_meta(ProjectID, source)),
+    error = function(e) list(ok = FALSE, error = conditionMessage(e))
+  )
+  if (!api_result$ok) {
+    log_warn("Project load failed (key=", key, "): Quickomics API error for '", ProjectID, "': ", api_result$error)
+    showNotification(
+      paste("Quickomics API is not working:", api_result$error),
+      type = "error", duration = NULL
+    )
+    return()
+  }
+  meta <- api_result$meta
+  if (is.null(meta)) {
+    log_warn("Project load failed (key=", key, "): '", ProjectID, "' not found in the Quickomics API (source=", source, ").")
+    showNotification(
+      paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
+      type = "error", duration = NULL
+    )
+    return()
+  }
+  ProjectInfo$ProjectID=ProjectID
+  ProjectInfo$Name=meta$Name
+  ProjectInfo$Species=meta$Species
+  ProjectInfo$ShortName=meta$ShortName
+  # file1/file2/file3 are placeholders, not real paths, for API-sourced
+  # projects -- actual data loading goes through api_load()/
+  # api_load_network()/api_load_wgcna() (see below, network.R, wgcna.R),
+  # none of which dereference these strings as real file paths. They're
+  # kept non-NULL only because other code gates on `req(ProjectInfo$file1)`.
+  ProjectInfo$file1= paste0("api://", source, "/", ProjectID, ".RData")
+  ProjectInfo$file2= paste0("api://", source, "/", ProjectID, "_network.RData")
+  ProjectInfo$file3= paste0("api://", source, "/wgcna_", ProjectID, ".RData")
+  ProjectInfo$source=source  #routes file1/network/wgcna loading through the Quickomics API
+  if (!is.null(meta$Path)) {ProjectInfo$Path=meta$Path}
+  if (!is.null(meta$ExpressionUnit)) {updateTextInput(session, "exp_unit", value=meta$ExpressionUnit)}
+  project_query_source(list(key = key, value = ProjectID))
+  log_info("Project loaded: ", ProjectID, " (source=", key, ")")
+}
+
+# URL query keys that select a project, in the order the observe() below
+# checks them.
+project_query_keys <- c('project', 'unlisted', 'serverfile', 'testfile',
+                        'api_serverfile', 'api_testfile', 'datalake')
 
 observe({
   query <- parseQueryString(session$clientData$url_search)
   # No early exit on a match -- matches the original behavior where all
   # blocks ran unconditionally, so if more than one of these parameters
   # were somehow present at once, the last one in this vector (datalake) wins.
-  for (key in c('project', 'unlisted', 'serverfile', 'testfile', 'datalake')) {
+  for (key in project_query_keys) {
     if (!is.null(query[[key]])) {
       load_project_from_query(key, query[[key]])
     }
@@ -236,6 +246,7 @@ observe({
     ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
     ProjectInfo$source=NULL  #local data/ folder project, not API-backed
     # updateTabsetPanel(session, "Tables", selected = "Sample Table")
+    log_info("Project loaded: ", ProjectID, " (source=sel_project dropdown)")
   }
 })
 

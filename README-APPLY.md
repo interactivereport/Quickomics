@@ -90,13 +90,14 @@ installs QuickOmics' R package dependencies).
 
 ## What did NOT change
 
-Every data-loading path other than `?serverfile=`/`?testfile=` -- the local
-`data/` folder, the `unlisted/` folder, and user file uploads -- is
+Every data-loading path other than `?api_serverfile=`/`?api_testfile=`/`?datalake=` -- the local
+`data/` folder, the `unlisted/` folder, `?serverfile=`/`?testfile=` (read
+directly from `server_dir`/`test_dir`), and user file uploads -- is
 completely untouched and still uses `base::load()` exactly as before.
 
 ## Network.R: one deliberate behavior change for API-sourced projects
 
-For projects loaded via `?serverfile=`/`?testfile=`, `network.R` no longer
+For projects loaded via `?api_serverfile=`/`?api_testfile=`/`?datalake=`, `network.R` no longer
 writes a `_network.RData` cache file back to disk after computing a fresh
 network -- there's no local network storage for an API-sourced project to
 write back to. Every other behavior (loading a cached network for the full
@@ -131,12 +132,12 @@ data.table-classed object right after `unserialize()`, in `api_load()`,
 ## How to test
 
 1. Start QuickOmics with the env vars above set.
-2. Visit `?serverfile=TST11809` (or any real published project ID).
+2. Visit `?api_serverfile=TST11809` (or any real published project ID).
 3. Confirm the project loads, the summary/sample table/results table all
    populate correctly, and (if you have server-side logs) that a request to
    `/datasets/published/TST11809/bundle.rds` actually hit the API rather
    than falling through to a local file read.
-4. Repeat with `?testfile=<some unpublished project>` to confirm the
+4. Repeat with `?api_testfile=<some unpublished project>` to confirm the
    unpublished path also works.
 5. Confirm a project loaded via the normal dropdown / `?project=` (local
    data/ folder) still works exactly as before -- this path should show

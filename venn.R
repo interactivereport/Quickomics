@@ -104,7 +104,7 @@ DataVennReactive <- reactive({
 })
 
 vennDiagram_out <- reactive({
-	print("drawing Venn diagram")
+	log_debug("Venn Diagram: drawing.")
 	venndata <- DataVennReactive()
 	vennlist <- venndata$vennlist
 	fillcor <- unlist(venndata$fillcor)
@@ -164,6 +164,7 @@ output$venn_DEG_Data <- DT::renderDataTable({
 })
 
 observeEvent(input$vennDiagram, {
+	log_info("Venn Diagram saved to output.")
 	saved.num <- length(saved_plots$vennDiagram) + 1
 	saved_plots$vennDiagram[[saved.num]] <- vennDiagram_out()
 })
@@ -185,12 +186,13 @@ observeEvent(input$venn_DEG_data, {
   sel_row=which(data_results$UniqueID %in% allIDs)
   #browser()#debug
   DEG_outdata=data_results[sel_row, c(name_col, selCol)]
+  log_info("Venn Diagram DEG data (", nrow(DEG_outdata), " rows) saved to output.")
   saved_table$DEG_outdata_Venn <- DEG_outdata
 })
 
 
 output$SvennDiagram <- renderPlot({
-	print("drawing Venn diagram 2")
+	log_debug("Venn Diagram: drawing simple (SvennDiagram) variant.")
 	venndata <- DataVennReactive()
 	vennlist <- venndata$vennlist
 	venn(vennlist, show.plot = TRUE, intersections = FALSE)
@@ -206,6 +208,7 @@ VennIntersectReactive <- reactive({
 
 	venndata <- DataVennReactive()
 	vennlist <- venndata$vennlist
+	if (length(vennlist) < 2) log_warn("Venn Diagram: fewer than 2 comparisons selected, cannot compute intersections.")
 	validate(need(length(vennlist) >= 2, "Select at least 2 comparisons to see intersections."))
 
 	v.table <- venn(vennlist, show.plot = FALSE, intersections = TRUE)

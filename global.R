@@ -4,6 +4,11 @@ options(bitmapType='cairo')
 options(stringsAsFactors=F)
 options(ggrepel.max.overlaps = Inf)
 
+# Sourced first, ahead of everything else, so log_message()/log_info()/etc.
+# are available to any code below (and to every other sourced file, all of
+# which load after global.R finishes).
+source("logging.R")
+
 
 suppressPackageStartupMessages({
 	library(shiny)

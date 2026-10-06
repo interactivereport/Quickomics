@@ -1,10 +1,11 @@
 ###########################################################################################################
 ## Thin R client for the Quickomics data API (see the QuickomicsAPI project).
 ##
-## Only invoked for projects loaded via ?serverfile=... / ?testfile=... URLs
-## (i.e. when ProjectInfo$source is set to "published"/"unpublished" in
-## inputdata.R). Every other data source -- the local data/ folder, the
-## unlisted/ folder, and user file uploads -- is untouched and continues to
+## Only invoked for projects loaded via ?api_serverfile=... / ?api_testfile=...
+## / ?datalake=... URLs (i.e. when ProjectInfo$source is set to "published"/
+## "unpublished"/"datalake" in inputdata.R). Every other data source -- the
+## local data/ folder, the unlisted/ folder, ?serverfile=/?testfile= read
+## directly from server_dir/test_dir, and user file uploads -- continues to
 ## use base::load() exactly as before.
 ###########################################################################################################
 
@@ -272,8 +273,8 @@ api_get_token <- function() {
 #' manifest SERVER-SIDE, where server_dir/test_dir are always valid paths,
 #' regardless of what machine QuickOmics itself is running on.
 #'
-#' This replaces reading server_dir/test_dir's .csv manifest directly via
-#' read.csv() in inputdata.R's serverfile/testfile branches -- that local
+#' This is the API counterpart of reading server_dir/test_dir's .csv manifest
+#' directly via read.csv() in inputdata.R's serverfile/testfile branches -- that local
 #' read only works if QuickOmics happens to share a filesystem with the
 #' API's network storage, which isn't guaranteed (and defeats the point of
 #' going through the API at all for everything else).

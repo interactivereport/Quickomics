@@ -55,6 +55,7 @@ DataPCAReactive <- reactive({
   #browser()
   DataIn <-  DataQCReactive()
   tmp_sampleid <- DataIn$tmp_sampleid
+  if (length(tmp_sampleid) <= 1) log_warn("PCA: fewer than 2 samples selected.")
   validate(need(length(tmp_sampleid)>1, message = "Please select at least two samples (please note samples are filtered by group selection as well)."))
   
   MetaData=DataIn$MetaData
@@ -138,6 +139,7 @@ output$QCboxplot <- renderPlot({
 })
 
 observeEvent(input$QCboxplot, {
+  log_info("QC Box Plot saved to output.")
   saved_plots$QCboxplot <- QCboxplot_out()
 })
 
@@ -148,11 +150,12 @@ observeEvent(input$plot_PCA, {
 })
 
 pcaplot_out <- eventReactive (plot_pca_control(), {
-  #browser()
+  log_info("PCA: Plot/Refresh clicked.")
   ptm <- proc.time()
   req(DataPCAReactive())
   req(input$PCA_label != "")
   pcnum=as.numeric(input$pcnum)
+  if (length(pcnum) != 2) log_warn("PCA: ", length(pcnum), " principal component(s) selected (need exactly 2).")
   validate(need(length(pcnum)==2, message = "Select 2 Prinical Components."))
   
   #DataQC <-  DataQCReactive()
@@ -189,6 +192,7 @@ pcaplot_out <- eventReactive (plot_pca_control(), {
       PCA_list=str_split(input$PCA_list, "\n")[[1]]
       N_sel=match(PCA_list, samples)
       N_sel=N_sel[!is.na(N_sel)]
+      if (length(N_sel) == 0) log_warn("PCA: no valid sample ID entered in the Subset label list.")
       validate(need(length(N_sel)>0, message = "Enter at least one valid sampleid to label"))
       keep_s=rep(FALSE, length(labels))
       keep_s[N_sel]=TRUE
@@ -206,6 +210,7 @@ pcaplot_out <- eventReactive (plot_pca_control(), {
   use_rug <- input$rug
   if (isTRUE(as.logical(use_rug)) && input$PCAsizeby != "none") {
     use_rug <- FALSE
+    log_warn("PCA: marginal rugs disabled because Size By is set to a variable (", input$PCAsizeby, ").")
     showNotification("Marginal rugs aren't supported when Size By is set to a variable -- showing the plot without rugs.", type = "warning")
   }
   if (is.numeric(scores[[input$PCAcolorby]])) {  #when colorby is numeric, don't use color palette
@@ -228,10 +233,11 @@ output$pcaplot <- renderPlot({
   ptm <- proc.time()
   withProgress(message = 'Drawing PCA Plot...', value = 0, {
     print(pcaplot_out()) })
-  cat("plotted PCA",(proc.time() - ptm)[["elapsed"]], "\n")
+  log_debug("PCA: plotted in ", (proc.time() - ptm)[["elapsed"]], "s.")
 })
 
 observeEvent(input$pcaplot, {
+  log_info("PCA Plot saved to output.")
   saved_plots$pcaplot <- pcaplot_out()
 }
 )
@@ -486,7 +492,7 @@ pheatmap_cor_out <- reactive({
           colorV <- subdata$Color; names(colorV) <- subdata$Value
           color_list[[attr]] <- colorV
         }
-      } else { cat("Correlation annotation color file attributes not matching MetaData!\n") }
+      } else { log_warn("Correlation Heatmap: uploaded annotation color file's Attributes don't match MetaData.") }
       top_annot  <- HeatmapAnnotation(df=annot_df, col=color_list, annotation_legend_param=annot_lgd_param)
       left_annot <- rowAnnotation(df=annot_df, col=color_list, annotation_legend_param=annot_lgd_param)
     } else {
@@ -497,6 +503,7 @@ pheatmap_cor_out <- reactive({
                                    replace=(length(cat_cols) > length(discrete_palettes)))
         num_palette <- "Set1"
       } else {
+        if (length(input$sd_cor_cat_pal) == 0) log_warn("Correlation Heatmap: no color palette selected for category annotations.")
         validate(need(length(input$sd_cor_cat_pal) > 0, "Please select color palettes for category annotations"))
         pal_cat_assigned <- rep(input$sd_cor_cat_pal, length.out=length(cat_cols))
         num_palette <- input$sd_cor_num_pal
@@ -505,6 +512,7 @@ pheatmap_cor_out <- reactive({
       color_list <- imap(annot_df, function(val, col_name) {
         idx <- match(col_name, if (is.numeric(val)) num_cols else cat_cols)
         if (is.numeric(val)) {
+          if (any(is.na(val))) log_warn("Correlation Heatmap: numeric annotation column '", col_name, "' contains NA values.")
           validate(need(!any(is.na(val)),
                         paste0("Column '", col_name, "' has NA values — remove them from the numeric attribute.")))
           hm_m_color(annot_df, col_name, high_col=color_num_assigned[idx])
@@ -591,10 +599,12 @@ output$pheatmap_cor <- renderPlot({
 })
 
 observeEvent(input$SampleDistance, {
+  log_info("Sample Distance Plot saved to output.")
   saved_plots$SampleDistance <- pheatmap_out()$ht
 })
 
 observeEvent(input$SampleCorrelation, {
+  log_info("Sample Correlation Plot saved to output.")
   saved_plots$SampleCorrelation <- pheatmap_cor_out()
 })
 
@@ -639,6 +649,7 @@ output$Dendrograms <- renderPlot({
 })
 
 observeEvent(input$Dendrograms, {
+  log_info("Sample Dendrogram saved to output.")
   saved_plots$Dendrograms <- Dendrograms_out()
 })
 
@@ -686,12 +697,14 @@ output$histplot <- renderPlot({
 })
 
 observeEvent(input$histplot, {
+  log_info("CV Distribution Plot saved to output.")
   saved_plots$histplot <- histplot_out()
 })
 
 
 ############PC_covariates QC Plots
 PC_covariates_out <-  eventReactive(input$compute_PC,{
+  log_info("PC Covariates: compute clicked for variates: ", paste(input$covar_variates, collapse=", "))
   DataQC <-  DataQCReactive()
   tmp_data_wide <- DataQC$tmp_data_wide
   MetaData=DataQC$MetaData
@@ -778,11 +791,13 @@ output$N_pairs<-renderText({str_c("There are ", Npairs_cov()[1]+Npairs_cov()[2],
 
 
 observeEvent(input$covar_cat, {
+  log_info("Categorical Covariates vs PCs plot saved to output.")
   data=PC_covariates_out()$sel_dataC
   saved_plots$covar_cat <- data$plot
 })
 
 observeEvent(input$covar_num, {
+  log_info("Numeric Covariates vs PCs plot saved to output.")
   data=PC_covariates_out()$sel_dataN
   saved_plots$covar_num<- data$plot
 })

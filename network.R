@@ -113,11 +113,10 @@ NetworkReactive <- reactive({
       if (is.null(CorResFile)) {
         CorResFile <- paste0("networkdata/", Pinfo$ProjectID, "_network.RData")
       }
-
       # API-sourced projects (ProjectInfo$source set to "published"/
-      # "unpublished") have no local network storage to write a cache file
-      # back to, so the write-back below is intentionally skipped for
-      # them. A 404 from the API (no precomputed network for this project)
+      # "unpublished"/"datalake") have no local network storage to write a
+      # cache file back to, so the write-back below is intentionally skipped
+      # for them. A 404 from the API (no precomputed network for this project)
       # is treated the same as a missing local file -- network stays NULL
       # and falls through to the compute-fresh branch below, no error.
       is_api_sourced <- !is.null(Pinfo$source)
@@ -125,14 +124,17 @@ NetworkReactive <- reactive({
 
       if (n_sample_current == n_sample_all) {
         if (is_api_sourced) {
+          log_info("Correlation Network: loading cached network through the Quickomics API (source=", Pinfo$source, ")")
           network <- api_load_network(Pinfo$ProjectID, Pinfo$source)
         } else if (file.exists(CorResFile)) {
+          log_info("Correlation Network: loading cached network from ", CorResFile)
           load(CorResFile)
           stopifnot(exists("network"))
         }
       }
 
       if (is.null(network)) {
+        log_info("Correlation Network: computing correlation network for ", n_sample_current, " samples (no cache available).")
         data_wide = DataQCReactive()$tmp_data_wide
         withProgress(message = "Compute correlation network data.",
                      detail = "This may take a few minutes...",
@@ -144,6 +146,7 @@ NetworkReactive <- reactive({
           ProjectInfo$file2 <- CorResFile
         }
       }
+      log_info("Correlation Network: ", nrow(network), " edges available.")
       current_samples(sort(as.character(DataQCReactive()$tmp_sampleid)))
       current_network(network)
       current_nw_genes(unique(c(network$from, network$to)))
@@ -205,10 +208,12 @@ observe({
 			actionButton("gennet","Generate")
 		})
 	} else if (nrow(net$nodes) == 0) {
+		log_warn("Correlation Network: current cutoffs/selection produced zero nodes.")
 		output$myTabUI <- renderUI({
 			"Zero node. Try lower r cutoff, higher P Value cutoff or select other genes."
 		})
 	} else {
+	  log_warn("Correlation Network: current cutoffs/selection produced ", nrow(net$nodes), " nodes (over the 200 limit).")
 	  output$myTabUI <- renderUI({
 	    "Too many nodes (1 ~ 200 are acceptable). Try higher r cutoffs, , lower P Value cutoff or select fewer genes."
 	  })
@@ -217,6 +222,7 @@ observe({
 
 
 observeEvent(input$gennet,{
+	log_info("Correlation Network: Generate clicked (visNetwork).")
 	output$visnetwork <- renderVisNetwork({
 		withProgress(message = 'Making Network:', value = 0, {
 			isolate({

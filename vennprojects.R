@@ -239,9 +239,10 @@ DataVennPReactive <- reactive({
 })
 
 output$vennPDiagram <- renderPlot({
-	print("drawing Venn diagram")
+	log_debug("Venn Diagram (projects): drawing.")
 	venndata <- DataVennPReactive()
 	vennlist <- venndata$vennlist
+	if (length(vennlist) < 1) log_warn("Venn Diagram (projects): no projects/comparisons selected.")
 	validate(need(length(vennlist)>=1, message = "Select projects."))
 
 	fillcor <- unlist(venndata$fillcor)
@@ -277,9 +278,10 @@ output$vennPDiagram <- renderPlot({
 })
 
 output$SvennPDiagram <- renderPlot({
-	print("drawing Venn diagram 2")
+	log_debug("Venn Diagram (projects): drawing simple (SvennPDiagram) variant.")
 	venndata <- DataVennPReactive()
 	vennlist <- venndata$vennlist
+	if (length(vennlist) < 1) log_warn("Venn Diagram (projects): no projects/comparisons selected.")
 	validate(need(length(vennlist)>=1, message = "Select projects."))
 	venn(vennlist, show.plot = TRUE, intersections = FALSE)
 })
@@ -291,6 +293,7 @@ output$SvennPDiagram <- renderPlot({
 VennPIntersectReactive <- reactive({
 	venndata <- DataVennPReactive()
 	vennlist <- venndata$vennlist
+	if (length(vennlist) < 2) log_warn("Venn Diagram (projects): fewer than 2 projects/comparisons selected, cannot compute intersections.")
 	validate(need(length(vennlist)>=2, message = "Select at least 2 projects/comparisons to see intersections."))
 	v.table <- venn(vennlist,show.plot = FALSE, intersections = TRUE)
 	intersect <- attr(v.table,"intersections")

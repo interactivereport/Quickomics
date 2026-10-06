@@ -199,6 +199,7 @@ DatavolcanoReactive2 <- reactive({
 output$volcanoplot <- renderPlotly({
   res = DatavolcanoReactive()
   test_sel = input$volcano_test
+  log_debug("Volcano Plot (interactive): rendering ", test_sel, ".")
   FCcut = log2(as.numeric(input$volcano_FCcut))
   pvalcut = as.numeric(input$volcano_pvalcut)
   if (input$volcano_psel == "Padj") {
@@ -294,6 +295,7 @@ output$volcano_selected_table <- DT::renderDT({
 observeEvent(input$volcano_selected_to_highlight, {
   sel_ids <- volcano_selected_ids()
   req(length(sel_ids) > 0)
+  log_info("Volcano Plot: sent ", length(sel_ids), " lasso-selected genes to Highlight Gene List.")
   updateTextAreaInput(session, "volcano_subset_gene_list", value = paste(sel_ids, collapse = "\n"))
   updateTextAreaInput(session, "volcano_subset_label_list", value = "")  # clear stale force-label list -- it belonged to a different highlight set
   updateRadioButtons(session, "volcano_subset_highlight", selected = "Yes")
@@ -306,6 +308,7 @@ volcanoplotstatic_out <- reactive({
   DataIn = DataQCReactive()
   ProteinGeneName = DataIn$ProteinGeneName
   test_sel = input$volcano_test
+  log_debug("Volcano Plot (static): rendering ", test_sel, ".")
   FCcut = log2(as.numeric(input$volcano_FCcut))
   FCcut_rd=round(FCcut*1000)/1000
   pvalcut = as.numeric(input$volcano_pvalcut)
@@ -443,9 +446,10 @@ DEG_Compare <- reactive({
   res = DatavolcanoReactive1()
   res2=DatavolcanoReactive2()
   DataIn = DataQCReactive()
-  ProteinGeneName = DataIn$ProteinGeneName  
+  ProteinGeneName = DataIn$ProteinGeneName
   test_sel = input$volcano_test1
-  test_sel2 = input$volcano_test2	
+  test_sel2 = input$volcano_test2
+  log_debug("DEG Comparison Plot: rendering ", test_sel, " vs ", test_sel2, ".")
   FCcut = log2(as.numeric(input$volcano_FCcut))
   pvalcut = as.numeric(input$volcano_pvalcut)
   plotdata=merge(res, res2, by="UniqueID")
@@ -599,11 +603,13 @@ output$DEG_Compare <- renderPlot({
 
 observeEvent(input$volcano, {
   test_sel = input$volcano_test
+  log_info("Volcano Plot (", test_sel, ") saved to output.")
   saved_plots$volcano[[test_sel]] <- volcanoplotstatic_out()
 })
 
 observeEvent(input$DEG_comp, {
   test_sel = paste(input$volcano_test1, "vs", input$volcano_test2)
+  log_info("DEG Comparison Plot (", test_sel, ") saved to output.")
   saved_plots$volcano[[test_sel]] <- DEG_Compare()
 })
 
@@ -628,6 +634,7 @@ output$volcanoData <- DT::renderDataTable({
 }) 
 
 observeEvent(input$DEG_data, {
+  log_info("DEG data table saved to output.")
   saved_table$DEG_data <- DEG_data()
 })
 

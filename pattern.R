@@ -162,7 +162,8 @@ filteredgeneReactive <- reactive({
     
     pattern_list <- gsub(" ", "", pattern_list, fixed = TRUE)
     pattern_list <- unique(pattern_list[pattern_list != ""])
-    
+
+    if (length(pattern_list) <= 2) log_warn("Pattern Clustering: uploaded gene list has ", length(pattern_list), " genes (need > 2).")
     validate(need(length(pattern_list) > 2, "input gene list"))
     
     return(
@@ -219,8 +220,9 @@ pattern_out <- eventReactive(input$pattern_plot, {
     subdatlong <- Datapattern$subdatlong
     sel_attr = input$pattern_attr
     sel_group = input$group_source
-    
+
     k=input$k
+    log_info("Pattern Clustering: running ", input$ClusterMethod, " with k=", k, " on ", length(Datapattern$filteredgene), " genes.")
     set.seed(123)
     if (input$ClusterMethod == "kmeans") {
       cl <- kmeans(subdatwide, k)
@@ -288,6 +290,7 @@ output$pattern<- renderPlot({
 
 
 observeEvent(input$pattern, {
+	log_info("Pattern Clustering (", input$ClusterMethod, ") plot saved to output.")
 	if (input$ClusterMethod == "kmeans") {
 		saved_plots$patternkmeans <- pattern_out()
 	} else if (input$ClusterMethod == "pam") {

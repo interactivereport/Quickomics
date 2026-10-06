@@ -1019,7 +1019,18 @@ fluidPage(
                               uiOutput("save_session_url"),
                               tags$hr(),
                               tags$p("Or restore settings previously saved to a file:"),
-                              fileInput("upload_session_file", "Restore Session from File", accept = ".rds", width = "100%")
+                              fileInput("upload_session_file", "Restore Session from File", accept = ".rds", width = "100%"),
+                              tags$hr(),
+                              h4("Diagnostics"),
+                              tags$p("Troubleshooting a problem? Raise the log level, reproduce it, then check the server console/log -- this only affects your own session, and takes effect immediately."),
+                              tags$p(tags$small(
+                                "Each level also shows everything above it, so DEBUG shows all messages and ERROR shows the fewest:", tags$br(),
+                                tags$b("DEBUG"), " -- fine-grained detail for tracing one specific problem (e.g. which branch of the code ran).", tags$br(),
+                                tags$b("INFO"), " -- normal narrative of what the app is doing (project loaded, plot saved, computation finished).", tags$br(),
+                                tags$b("WARN"), " -- something unexpected happened but the app recovered or showed a message instead of crashing.", tags$br(),
+                                tags$b("ERROR"), " -- an operation failed outright and could not complete."
+                              )),
+                              selectInput("log_level_select", "Log Level", choices = names(LOG_LEVELS), selected = log_level, width = "200px")
                      ),
                      
                      
@@ -1036,6 +1047,16 @@ fluidPage(
 } #for ui function(request)
 
 server <- function(input, output, session) {
+  log_info("Session started")
+  session$onSessionEnded(function() {
+    log_info("Session ended")
+  })
+
+  observeEvent(input$log_level_select, {
+    set_session_log_level(session, input$log_level_select)
+    log_debug("Debug-level logging is now active for this session.")
+  })
+
   # actionButton/downloadButton click counts get bookmarked like any other
   # input -- restoring a non-zero count silently re-triggers that button's
   # own observeEvent right after restore, since Shiny can't distinguish
@@ -1114,9 +1135,46 @@ server <- function(input, output, session) {
   # Stashed here and consumed by pattern.R's own renderUI once that lines up.
   restored_pattern_group_snapshot <- reactiveVal(NULL)
 
-  # State ID of the most recent session bookmark, so the download handler
-  # below can serve that exact bookmark's saved input.rds as a file.
-  last_bookmark_state_id <- reactiveVal(NULL)
+  # On-disk directory of the most recent session bookmark, so the download
+  # handler below can serve that exact bookmark's saved input.rds as a file.
+  # Recorded from state$dir in onBookmark() rather than rebuilt as
+  # "shiny_bookmarks/<state_id>": that relative path is only where Shiny's
+  # *default* save interface writes (plain runApp(), e.g. RStudio). Hosts
+  # such as Shiny Server / Posit Connect / containerized deployments install
+  # their own "save.interface" that writes somewhere else entirely (e.g.
+  # /var/lib/shiny-server/bookmarks/...), so the rebuilt path didn't exist
+  # there, req() failed inside the download handler, and the download URL
+  # showed "An error has occurred!".
+  last_bookmark_dir <- reactiveVal(NULL)
+
+  # Same save interface Shiny's own doBookmark() uses (see
+  # saveShinySaveState() in the shiny package), so a session file uploaded
+  # below lands exactly where "?_state_id_=..." will later look for it on
+  # whatever host this is running on.
+  bookmark_save_interface <- function(id, callback) {
+    save_interface <- getShinyOption("save.interface", default = NULL)
+    if (is.null(save_interface)) {
+      save_interface <- function(id, callback) {
+        state_dir <- file.path(getShinyOption("appDir", default = getwd()), "shiny_bookmarks", id)
+        dir.create(state_dir, recursive = TRUE, showWarnings = FALSE)
+        callback(state_dir)
+      }
+    }
+    save_interface(id, callback)
+  }
+
+  # Set once inside load_project_from_query() (inputdata.R) whenever it
+  # successfully loads a project via one of the URL query keys (project/
+  # unlisted/serverfile/testfile/api_serverfile/api_testfile/datalake) -- both on a fresh URL load AND when
+  # onRestored() below replays it during a restore. Read by onBookmark()
+  # to capture which key/value to save. Deliberately NOT re-derived from
+  # the current URL at save time: after a restore, the browser's URL is
+  # "?_state_id_=...", not the original query string, so re-parsing it
+  # would find nothing. Confirmed directly: without this reactiveVal,
+  # saving a session that had itself been restored from a URL-query-
+  # loaded project produced a second-generation bookmark that restored to
+  # no project at all.
+  project_query_source <- reactiveVal(NULL)
 
   ##########################################################################################################
   ## Save Session (first pass): Shiny's built-in server-side bookmarking captures every plain input$-bound
@@ -1127,30 +1185,34 @@ server <- function(input, output, session) {
   ## covered by plain bookmarking and would need explicit onBookmark/onRestore handling if wanted later.
   ##########################################################################################################
   observeEvent(input$save_session_btn, {
+    log_info("Save Session clicked for project ", isolate(ProjectInfo$ProjectID))
     session$doBookmark()
   })
 
   onBookmark(function(state) {
-    # project/unlisted/serverfile/testfile (inputdata.R) select the project
+    last_bookmark_dir(state$dir)
+    # project/unlisted/serverfile/testfile/api_serverfile/api_testfile/datalake (inputdata.R) select the project
     # straight from the raw URL query string, not from a Shiny input, so
     # they're never part of `input` and are lost once doBookmark() replaces
     # the URL's query string with "_state_id_=...". Capture whichever one
-    # loaded the current project so onRestored() can reload it explicitly
-    # via the same load_project_from_query() used in inputdata.R.
-    query <- parseQueryString(isolate(session$clientData$url_search))
-    for (key in c("project", "unlisted", "serverfile", "testfile")) {
-      if (!is.null(query[[key]])) {
-        state$values$qo_project_query_key <- key
-        state$values$qo_project_query_value <- query[[key]]
-      }
+    # loaded the current project (from project_query_source, NOT by
+    # re-parsing the current URL -- see its own comment for why) so
+    # onRestored() can reload it explicitly via load_project_from_query().
+    src <- isolate(project_query_source())
+    if (!is.null(src)) {
+      state$values$qo_project_query_key <- src$key
+      state$values$qo_project_query_value <- src$value
+      log_debug("onBookmark: captured project query ", src$key, "=", src$value)
+    } else {
+      log_debug("onBookmark: no project query source recorded (likely loaded via the Saved Projects dropdown).")
     }
   })
 
   onBookmarked(function(url) {
-    # The state ID is the last query-string segment Shiny appended to the
-    # current URL, e.g. "...?_state_id_=6ba545c11e3c6206".
-    state_id <- sub(".*_state_id_=", "", url)
-    last_bookmark_state_id(state_id)
+    # The state ID is only extracted here for the log line -- last_bookmark_dir()
+    # (set in onBookmark() above from state$dir) is what the download handler
+    # actually uses, since it's host-agnostic; this URL suffix isn't.
+    log_info("Bookmark saved: state_id=", sub(".*_state_id_=", "", url))
     output$save_session_url <- renderUI({
       downloadButton("download_session_file", "Download Session File", class = "btn-default btn-sm")
     })
@@ -1166,7 +1228,7 @@ server <- function(input, output, session) {
   # Bundles input.rds together with values.rds (present whenever onBookmark()
   # above stashed the project-loading query parameter into state$values) --
   # a plain file.copy() of input.rds alone would silently drop that, and a
-  # session whose project was opened via project/unlisted/serverfile/testfile
+  # session whose project was opened via project/unlisted/serverfile/testfile/api_serverfile/api_testfile/datalake
   # (rather than the "Saved Projects" dropdown) would restore to no project
   # at all when the downloaded file was re-uploaded later.
   output$download_session_file <- downloadHandler(
@@ -1183,17 +1245,24 @@ server <- function(input, output, session) {
       paste0(project_id, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".rds")
     },
     content = function(file) {
-      state_id <- last_bookmark_state_id()
-      req(state_id)
-      input_src <- file.path("shiny_bookmarks", state_id, "input.rds")
-      req(file.exists(input_src))
-      values_src <- file.path("shiny_bookmarks", state_id, "values.rds")
+      state_dir <- last_bookmark_dir()
+      if (is.null(state_dir)) {
+        log_warn("Download Session File clicked with no bookmark saved yet.")
+        stop("No saved session yet -- click Save Session first.")
+      }
+      input_src <- file.path(state_dir, "input.rds")
+      if (!file.exists(input_src)) {
+        log_error("Download Session File: input.rds missing at ", input_src)
+        stop("Saved session not found on the server: ", input_src)
+      }
+      values_src <- file.path(state_dir, "values.rds")
       bundle <- list(
         .qo_format = "bundle_v1",
         input = readRDS(input_src),
         values = if (file.exists(values_src)) as.list(readRDS(values_src)) else list()
       )
       saveRDS(bundle, file)
+      log_info("Session file downloaded from ", state_dir)
     }
   )
 
@@ -1205,8 +1274,10 @@ server <- function(input, output, session) {
   # exactly as it would for a normal saved-link restore.
   observeEvent(input$upload_session_file, {
     req(input$upload_session_file)
+    log_info("Session file uploaded: ", input$upload_session_file$name)
     uploaded_raw <- tryCatch(readRDS(input$upload_session_file$datapath), error = function(e) NULL)
     if (is.null(uploaded_raw) || !is.list(uploaded_raw)) {
+      log_warn("Uploaded file '", input$upload_session_file$name, "' is not a readable Quickomics session file.")
       showNotification("That file doesn't look like a Quickomics session file.", type = "error", duration = NULL)
       return()
     }
@@ -1229,7 +1300,7 @@ server <- function(input, output, session) {
     # whatever project happens to be open, which is unlikely to make sense
     # for it. Two ways a project gets captured in a bookmark: the "Saved
     # Projects" dropdown (input$sel_project, a plain bookmarked input) or a
-    # raw URL query parameter (project/unlisted/serverfile/testfile -- not
+    # raw URL query parameter (project/unlisted/serverfile/testfile/api_serverfile/api_testfile/datalake -- not
     # itself an input, so it's captured into values.rds by onBookmark()
     # above instead; see qo_project_query_key/value there).
     uploaded_project_id <- uploaded_input$sel_project
@@ -1239,9 +1310,12 @@ server <- function(input, output, session) {
     current_project_id <- isolate(ProjectInfo$ProjectID)
     if (!identical(current_project_id, uploaded_project_id)) {
       if (is.null(uploaded_project_id) || !nzchar(uploaded_project_id)) {
+        log_warn("Session file upload rejected: could not determine which project it was saved for.")
         showNotification("Can't tell which project this session file was saved for -- open the matching project, then upload again.",
                           type = "error", duration = NULL)
       } else {
+        log_warn("Session file upload rejected: file is for project '", uploaded_project_id,
+                  "' but '", current_project_id, "' is currently open.")
         showNotification(
           sprintf("This session file was saved for project \"%s\", but %s is currently open. Open \"%s\" first, then upload again.",
                   uploaded_project_id,
@@ -1266,12 +1340,13 @@ server <- function(input, output, session) {
       uploaded_input[[fk]] <- NULL
     }
     new_state_id <- paste(sample(c(letters[1:6], 0:9), 16, replace = TRUE), collapse = "")
-    dest_dir <- file.path("shiny_bookmarks", new_state_id)
-    dir.create(dest_dir, recursive = TRUE, showWarnings = FALSE)
-    saveRDS(uploaded_input, file.path(dest_dir, "input.rds"))
-    if (length(uploaded_values) > 0) {
-      saveRDS(uploaded_values, file.path(dest_dir, "values.rds"))
-    }
+    bookmark_save_interface(new_state_id, function(dest_dir) {
+      saveRDS(uploaded_input, file.path(dest_dir, "input.rds"))
+      if (length(uploaded_values) > 0) {
+        saveRDS(uploaded_values, file.path(dest_dir, "values.rds"))
+      }
+    })
+    log_info("Session file accepted for project '", uploaded_project_id, "', restoring as state_id=", new_state_id)
     showNotification("Session file loaded -- restoring...", type = "message")
     shinyjs::runjs(sprintf(
       "window.location.href = window.location.pathname + '?_state_id_=%s';",
@@ -1300,9 +1375,11 @@ server <- function(input, output, session) {
     # NULL. Bail out unless it's set, so unrelated query-string links don't
     # get a false restore.
     if (is.null(state$dir)) {
+      log_debug("onRestored fired with state$dir=NULL -- not a real bookmark restore, ignoring (see comment above).")
       return()
     }
 
+    log_info("Restoring session from bookmark: state_id=", basename(state$dir))
     showNotification("Session restored from saved link.", type = "message")
 
     # Reload the project that was active when this session was saved, if it
@@ -1318,6 +1395,8 @@ server <- function(input, output, session) {
       tryCatch(
         load_project_from_query(state$values$qo_project_query_key, state$values$qo_project_query_value),
         error = function(e) {
+          log_error("Failed to reload project on restore (", state$values$qo_project_query_key, "=",
+                    state$values$qo_project_query_value, "): ", conditionMessage(e))
           showNotification(paste("Could not reload the saved session's project:", conditionMessage(e)), type = "error", duration = NULL)
         }
       )

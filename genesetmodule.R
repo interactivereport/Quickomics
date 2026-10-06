@@ -17,8 +17,6 @@
 library(tibble)
 library(pathview)
 library(biomaRt)
-#library(enrichplot)
-#library(enrichR)
 library(ComplexHeatmap)
 library(fgsea)
 #library(wikiprofiler)
@@ -47,7 +45,6 @@ if (file.exists("db/human/metabase_maps_genesymbols.gmt")) {
 ORAEnrichment <- function(deGenes,universe, gsets, logFC, Dir="Both"){
   deGenes = deGenes[which(deGenes %in% universe)]
   tmp = rep(NA, length(gsets))
-  #ora.stats = data.frame(p.value=tmp, p.adj = tmp, DeGeneNum=tmp,UpGene= tmp, DownGene=tmp, SetNum = tmp, N_q=tmp, SetNumAll=tmp, DeGene_in_Set=tmp)
   ora.stats = data.frame(p.value=tmp, p.adj = tmp, DeGeneNum=tmp,DE_UpGene= tmp, DE_DownGene=tmp, SetNum = tmp, N_q=tmp, Fold_Enrich=tmp,
                          SetNumAll=tmp, Total_DEG=tmp, Total_Gene=tmp,  DeGene_in_Set=tmp)
   
@@ -217,7 +214,6 @@ geneset_ui <- function(id) {
                               column(width=6,sliderInput(ns("geneset_dotplot_point_size_max"), "Max point size", min = 1, max = 15, value = 6, step = 0.5)),
                               column(width=6,sliderInput(ns("geneset_dotplot_legend_title_size"), "Legend title size", min = 8, max = 24, value = 14)),
                               column(width=6,sliderInput(ns("geneset_dotplot_legend_text_size"), "Legend text size", min = 8, max = 24, value = 12)),
-                              # column(width=6,sliderInput(ns("geneset_dotplot_y_axis_text_wrapping_length"), "Wrapping length of Gene set name", min = 15, max = 80, value = 45)),
                               column(width=6,sliderInput(ns("geneset_dotplot_x_axis_text_size"), "Axis X text size", min = 8, max = 24, value = 12)),
                               column(width=6,sliderInput(ns("geneset_dotplot_y_axis_text_size"), "Axis Y text size", min = 8, max = 24, value = 12)),
                               column(width=6,sliderInput(ns("geneset_dotplot_width"), "Dot Plot Width:", min = 200, max = 3000, step = 50, value = 900)),
@@ -275,7 +271,6 @@ geneset_ui <- function(id) {
                                 p("Select a MetaBase Pathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
                                 selectizeInput(ns("sel_metabase_set"), label="MetaBase Pathway for Visualization", choices = NULL, multiple = FALSE, width="600px", 
                                                options = list(placeholder =	'Type to search')),
-                                #actionButton(ns("metabaseSave"), "Save to output"),
                                 uiOutput(ns("plot.metabase"))),
                        tabPanel(title="Wikipathways View",
                                 p("Select a wikipathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
@@ -290,9 +285,6 @@ geneset_ui <- function(id) {
                                 tags$p("Step for making Dot Plot: 1) Run GSEA or ORA and choose the correct Analysis Type from the left menu; 2) Select comparions to plot and click the select comparison button, optionally reorder them;  3) Adjust other settings from left menu as needed, and click the Plot/Refresh button."),
                                 tags$hr(),
                                 h4("Select and Order Comparisons for the Dot Plot"),
-                                # checkboxGroupInput(ns("cmp_subset"), "Choose comparisons to plot:", choices = NULL, selected = NULL, inline = TRUE),
-                                # radioButtons(ns("cmp_select_mode"), label = "",choices = c("Select All" = "all", "None" = "none"), inline = TRUE),
-                                # actionButton(ns("cmp_subset_confirm"), "Select comparisons"),
                                 uiOutput(ns('ui_sel_order_comp')),
                                 uiOutput(ns('reset_comp')),
                                 tags$hr(),
@@ -322,9 +314,13 @@ geneset_server <- function(id) {
                         # temp file, and Shiny's own restore code rejects any file input
                         # value whose datapath contains "/" with an uncaught error that
                         # breaks the whole session. See the matching comment in app.R.
+                        # metabaseSave's actionButton is commented out in this repo's UI (no
+                        # metabase gmt file here -- see the file.exists() check up top), but the
+                        # Biogen repo variant of this file has it live. Keep excluding it so this
+                        # file stays drop-in compatible across both.
                         session$setBookmarkExclude(c("compute_gsea", "compute_ora", "genesetheatmap",
                                                       "keggSave", "metabaseSave", "create_dotplot",
-                                                      "dotplot", "reset_comp", "cmp_subset_confirm",
+                                                      "dotplot", "reset_comp",
                                                       "custom_gmt_file"))
 
                         # geneset_test and MSigDB_species(_*_GSEA) all have their choices/selection
@@ -428,7 +424,6 @@ geneset_server <- function(id) {
                             req(DataReactive())
                             group_order(DataReactive()$groups)
                           })
-                          #browser()
                         } else if (system=="xOmicsShiny") {
                           output$loadedprojects <- renderUI({
                             req(length(working_project()) > 0)
@@ -485,7 +480,6 @@ geneset_server <- function(id) {
                                   if (input$dataset_2!="None" && input$geneset_test_2nd!=""){
                                     Data2<-DataInSets[[input$dataset_2]]
                                     if (!is.null(Data2)){
-                                      #browser()
                                       ProteinGeneName1<-Data1$ProteinGeneName%>%dplyr::select(UniqueID, Gene.Name, Protein.ID)
                                       ProteinGeneName2<-Data2$ProteinGeneName%>%dplyr::select(UniqueID, Gene.Name, Protein.ID)
                                       ProteinGeneName_combined<-rbind(ProteinGeneName1, ProteinGeneName2)%>%dplyr::filter(!duplicated(UniqueID))
@@ -518,8 +512,7 @@ geneset_server <- function(id) {
                           })
                         }
                         ###
-                        
-                        #active_tests<-reactiveVal(NULL)
+
                         observeEvent(working_project(), {
                           req(working_project())
                           req(DataReactive())
@@ -563,7 +556,6 @@ geneset_server <- function(id) {
                             updateCheckboxGroupInput(session, "MSigDB_species_rat_GSEA", choices = choiceR, selected = choiceR[1])
                           }
                         })
-                        #browser() 
                         observeEvent(working_project(),{
                           req(ProjectInfo)
                           if (!is.null(ProjectInfo$Species)) {
@@ -610,7 +602,6 @@ geneset_server <- function(id) {
                             path1<-gmtPathways(kegg_file)
                             kegg_names=names(path1)
                             kegg_choices= c('Type to Search' = '', kegg_names)
-                            #browser()
                             updateSelectizeInput(session, "sel_kegg_set", choices = kegg_choices, selected="Type to Search", server = TRUE)
                           }
                         })
@@ -631,7 +622,6 @@ geneset_server <- function(id) {
                             path1<-gmtPathways(wiki_file)
                             wiki_names=names(path1)
                             wiki_choices= c('Type to Search' = '', wiki_names)
-                            #browser()
                             updateSelectizeInput(session, "sel_wikipathways_set", choices = wiki_choices, selected="Type to Search", server = TRUE)
                           }
                         })
@@ -736,31 +726,30 @@ geneset_server <- function(id) {
                               CustomGeneset <- gsub(" ", "", CustomGeneset, fixed = TRUE)
                               CustomGeneset <- unique(CustomGeneset[!is.na(CustomGeneset)])
                               if (input$MSigDB_species == "human")  {CustomGeneset <- toupper(CustomGeneset)}
+                              if (length(CustomGeneset) <= 2) log_warn("Gene Set Enrichment: custom gene list has ", length(CustomGeneset), " genes (need > 2).")
                               validate(need(length(CustomGeneset)>2, message = "Please enter at least three custom genes"))
                               gsets_GSEA=c(gsets_GSEA, list(CustomGeneset=CustomGeneset))
                             }
                             if (input$custom_set_option=="File"){
                               req(input$custom_gmt_file)
                               CustomGeneset=gmtPathways(input$custom_gmt_file$datapath)
-                              #cat("loaded", length(CustomGeneset), "custom gene sets.\n")
-                              #browser() 
                               gsets_GSEA=c(gsets_GSEA, CustomGeneset)
                             }
-                            
-                            #browser() #debug
                           }
                           return(gsets_GSEA)
                         })
                         
                         observeEvent(input$compute_gsea, {
+                          log_info("Gene Set Enrichment: GSEA Compute clicked.")
                           gsea_control(gsea_control()+1)
                         })
-                        
-                        
+
+
                         # Create GSEA complete raw result list, one item per comparison
                         gsea_raw <- eventReactive(input$compute_gsea, {
                           getresults <- DataGenesetReactive_GSEA()
                           gsets_GSEA <- gsets_Reactive()
+                          if (length(gsets_GSEA) == 0) log_warn("GSEA: no gene sets selected.")
                           validate(need(length(gsets_GSEA) > 0, "Please select at least one gene set."))
                           gsMin <- input$gsetMin; gsMax <- input$gsetMax
                           
@@ -770,13 +759,14 @@ geneset_server <- function(id) {
                           })
                           names(res_list) <- names(getresults)
                           res_list
-                        })
-                        
-                        # Get pre-filtered GSEA result list as in the output table format, one item per comparison. 
+                        }, ignoreInit = TRUE)
+
+                        # Get pre-filtered GSEA result list as in the output table format, one item per comparison.
                         # Save the pre-filtered combined result table into combined_gsea_res() or combined_gsea_res_filtered() if using collapsed list.
                         gsea_results <- reactive({
                           withProgress(message = 'Running GSEA, please be patient...', value = 0, {
                             res_list_raw <- gsea_raw()
+                            log_info("GSEA: running.")
                             res_list <- lapply(names(res_list_raw), function(comp) {
                               output <- res_list_raw[[comp]]
                               output %>%
@@ -796,33 +786,42 @@ geneset_server <- function(id) {
                                 dplyr::bind_rows(.id = "comparison") %>%
                                 dplyr::relocate(comparison, .after = 1)
                               combined_gsea_res(res)  # unfiltered combined GSEA result table
-                              if (input$gsea_collapase) {
-                                res_list <- lapply(names(res_list_raw), function(comp) {
-                                  output <- res_list_raw[[comp]]
-                                  logFC_list <- DataGenesetReactive_GSEA()[[comp]]$gene_list
-                                  collapsed_set <- collapsePathways(
-                                    output[order(pval)][padj <= input$gsea_FDR],
-                                    gsets_Reactive(),
-                                    logFC_list
-                                  )
-                                  output <- output[pathway %in% collapsed_set$mainPathways]
-                                  output %>%
-                                    dplyr::mutate_if(is.numeric, signif, digits = 3) %>%
-                                    dplyr::rename(GeneSet = pathway) %>%
-                                    dplyr::select(-ES, -log2err) %>%
-                                    dplyr::arrange(padj, dplyr::desc(abs(NES))) %>%
-                                    tibble::rownames_to_column("rank") %>%
-                                    dplyr::relocate(GeneSet) %>%
-                                    dplyr::mutate(comparison = comp)
-                                })
-                                names(res_list) <- names(res_list_raw)
-                                res <- res_list %>%
-                                  purrr::discard(~ nrow(.x) == 0) %>%
-                                  dplyr::bind_rows(.id = "comparison") %>%
-                                  dplyr::relocate(comparison, .after = 1)
-                                combined_gsea_res_filtered(res)
-                              }
+                              # isolate() -- this whole block (checkbox, FDR cutoff, gene sets, the
+                              # DE gene lists) must only be captured at Compute-click time, same as
+                              # everything in gsea_raw(). Without it, reading these reactively here
+                              # (in a plain reactive(), unlike gsea_raw()'s auto-isolated eventReactive
+                              # body) would re-run this on every checkbox/cutoff/gene-set change, no
+                              # click needed.
+                              isolate({
+                                if (input$gsea_collapase) {
+                                  res_list <- lapply(names(res_list_raw), function(comp) {
+                                    output <- res_list_raw[[comp]]
+                                    logFC_list <- DataGenesetReactive_GSEA()[[comp]]$gene_list
+                                    collapsed_set <- collapsePathways(
+                                      output[order(pval)][padj <= input$gsea_FDR],
+                                      gsets_Reactive(),
+                                      logFC_list
+                                    )
+                                    output <- output[pathway %in% collapsed_set$mainPathways]
+                                    output %>%
+                                      dplyr::mutate_if(is.numeric, signif, digits = 3) %>%
+                                      dplyr::rename(GeneSet = pathway) %>%
+                                      dplyr::select(-ES, -log2err) %>%
+                                      dplyr::arrange(padj, dplyr::desc(abs(NES))) %>%
+                                      tibble::rownames_to_column("rank") %>%
+                                      dplyr::relocate(GeneSet) %>%
+                                      dplyr::mutate(comparison = comp)
+                                  })
+                                  names(res_list) <- names(res_list_raw)
+                                  res <- res_list %>%
+                                    purrr::discard(~ nrow(.x) == 0) %>%
+                                    dplyr::bind_rows(.id = "comparison") %>%
+                                    dplyr::relocate(comparison, .after = 1)
+                                  combined_gsea_res_filtered(res)
+                                }
+                              })
                             }
+                            log_info("GSEA: completed, ", length(res_filter), " comparison(s) with results.")
                             res_list
                           })
                         })
@@ -842,7 +841,8 @@ geneset_server <- function(id) {
                         })
                         
                         output$MSigDB_GSEA <-  DT::renderDT(server=FALSE,{ withProgress(message = 'Processing...', value = 0, {
-                          res <- filtered_gsea()                         
+                          res <- filtered_gsea()
+                          if (is.null(res) || nrow(res) == 0) log_warn("GSEA: no results pass the padj cutoff.")
                           validate(need(nrow(res)>0,"No results. Try to increase p.adj cutoff, or try a different comparison."))
                           res$Action<-vapply(1:nrow(res), function(i){
                             as.character(
@@ -850,7 +850,6 @@ geneset_server <- function(id) {
                                 paste0("clipbtn_", i), 
                                 label = "Copy Leading Edge Genes", 
                                 clipText = paste(unlist(res[i,  "leadingEdge"]), collapse=","), 
-                                #icon = icon("clipboard"),
                                 icon = icon("copy", lib = "glyphicon"),
                                 class = "btn-primary btn-sm"
                               )
@@ -882,17 +881,14 @@ geneset_server <- function(id) {
                           updateTabsetPanel(session, 'geneset_tabset', selected = 'Gene Expression')
                           updateTextInput(session, 'x1', value = info$value)
                           updateTextInput(session, 'x2', value = info$value)
-                          #updateTextInput(session, 'x3', value = info$value)
                           updateSelectizeInput(session, "sel_kegg_set",selected=info$value)
                           updateSelectizeInput(session, "sel_metabase_set",selected=info$value)
                           updateSelectizeInput(session, "sel_wikipathways_set",selected=info$value)
                           updateTextInput(session, 'analysis_type_1', value = analysis_type)
                           updateTextInput(session, 'analysis_type_2', value = analysis_type)
-                          updateTextInput(session, 'analysis_type_3', value = analysis_type)
                           updateTextInput(session, 'comparison_name_1', value = comparison)
                           gs_comps <- names(Filter(function(df) info$value %in% df$GeneSet, gsea_results()))
                           updateSelectInput(session, 'comparison_name_2', choices = gs_comps, selected = comparison)
-                          updateTextInput(session, 'comparison_name_3', value = comparison)
                         })
                         
                         
@@ -994,6 +990,7 @@ geneset_server <- function(id) {
                             ORA_list <-  stringr::str_split(ORA_list, ",")[[1]]
                           }
                           ORA_list<-ORA_list [ORA_list !=""]
+                          if (length(ORA_list) <= 1) log_warn("ORA: uploaded gene list has ", length(ORA_list), " genes (need > 1).")
                           validate(need(length(ORA_list)>1, message = "Please input at least 2 valid genes."))
                           DataIn = DataReactive()
                           ProteinGeneName = DataIn$ProteinGeneName
@@ -1031,6 +1028,7 @@ geneset_server <- function(id) {
                         })
                         
                         observeEvent(input$compute_ora, {
+                          log_info("Gene Set Enrichment: ORA Compute clicked.")
                           ora_control(ora_control()+1)
                         })
                         
@@ -1043,6 +1041,7 @@ geneset_server <- function(id) {
                         ora_raw <- eventReactive(ora_trigger(), {
                           getresults <- DataGenesetReactive_ORA()
                           gsets_ORA <- gsets_Reactive()
+                          if (length(gsets_ORA) == 0) log_warn("ORA: no gene sets selected.")
                           validate(need(length(gsets_ORA) > 0, "Please select at least one gene set."))
                           
                           res_list <- lapply(names(getresults), function(comp) {
@@ -1062,42 +1061,48 @@ geneset_server <- function(id) {
                           })
                           names(res_list) <- names(getresults)
                           res_list
-                        })
-                        
-                        # Get pre-filtered ORA result list as in the output table format, one item per comparison. 
+                        }, ignoreInit = TRUE)
+
+                        # Get pre-filtered ORA result list as in the output table format, one item per comparison.
                         # Save the pre-filtered combined result table into combined_ora_res() or combined_ora_res_filtered() if using collapsed list.
-                        ora_results <- reactive({ 
+                        ora_results <- reactive({
                           req(working_project())
                           req(input$ORA_input_type != "Gene List")
                           withProgress(message = 'Running ORA...', value = 0, {
                             res_list <- res_list_raw <- ora_raw()
+                            log_info("ORA: running.")
                             res <- bind_rows_with_comparison(res_list_raw, after_pos = 1)
                             combined_ora_res(res)
-                            if (input$ora_collapase) {
-                              gsets_ORA <- gsets_Reactive()
-                              res_list <- lapply(names(res_list_raw), function(comp) {
-                                gsa <- res_list_raw[[comp]]
-                                comp_res <- DataGenesetReactive_ORA()[[comp]]
-                                logFC_list <- comp_res$sig_genes
-                                all_genes  <- comp_res$all_genes
-                                
-                                collapsed_set <- collapsePathwaysORA(
-                                  foraRes = gsa %>% dplyr::mutate(pathway = GeneSet) %>% dplyr::filter(p.adj <= input$ora_pvalue),
-                                  pathways = gsets_ORA,
-                                  genes = names(logFC_list),
-                                  universe = all_genes,
-                                  pval.threshold = 0.05
-                                )
-                                gsa <- gsa %>% dplyr::filter(GeneSet %in% collapsed_set$mainPathways)
-                                if (nrow(gsa) > 0) {
-                                  gsa$comparison <- comp
-                                }
-                                gsa
-                              })
-                              names(res_list) <- names(res_list_raw)
-                              res <- bind_rows_with_comparison(res_list, after_pos = 2)
-                              combined_ora_res_filtered(res)
-                            }
+                            # isolate() -- see the matching comment in gsea_results(): this whole
+                            # block must only be captured at Compute-click time, not re-run whenever
+                            # the checkbox/p-value cutoff/gene sets change.
+                            isolate({
+                              if (input$ora_collapase) {
+                                gsets_ORA <- gsets_Reactive()
+                                res_list <- lapply(names(res_list_raw), function(comp) {
+                                  gsa <- res_list_raw[[comp]]
+                                  comp_res <- DataGenesetReactive_ORA()[[comp]]
+                                  logFC_list <- comp_res$sig_genes
+                                  all_genes  <- comp_res$all_genes
+
+                                  collapsed_set <- collapsePathwaysORA(
+                                    foraRes = gsa %>% dplyr::mutate(pathway = GeneSet) %>% dplyr::filter(p.adj <= input$ora_pvalue),
+                                    pathways = gsets_ORA,
+                                    genes = names(logFC_list),
+                                    universe = all_genes,
+                                    pval.threshold = 0.05
+                                  )
+                                  gsa <- gsa %>% dplyr::filter(GeneSet %in% collapsed_set$mainPathways)
+                                  if (nrow(gsa) > 0) {
+                                    gsa$comparison <- comp
+                                  }
+                                  gsa
+                                })
+                                names(res_list) <- names(res_list_raw)
+                                res <- bind_rows_with_comparison(res_list, after_pos = 2)
+                                combined_ora_res_filtered(res)
+                              }
+                            })
                             res_list
                           })
                         })
@@ -1119,8 +1124,9 @@ geneset_server <- function(id) {
                         
                         output$MSigDB_ORA <- DT::renderDT(server = FALSE, {
                           withProgress(message = 'Processing...', value = 0, {
-                            res <- combined_ora_res_filtered()   
-                            
+                            res <- combined_ora_res_filtered()
+
+                            if (is.null(res) || nrow(res) == 0) log_warn("ORA: no results pass the p.adj cutoff.")
                             validate(need(nrow(res) > 0,
                                           "No results. Try to increase p.adj cutoff, or adjust DEG cutoff."))
                             
@@ -1166,9 +1172,11 @@ geneset_server <- function(id) {
                           input$compute_ora
                         })
                         
-                        ora_results_list<- eventReactive (ora_list_trigger(), { 
+                        ora_results_list<- eventReactive (ora_list_trigger(), {
                           withProgress(message = 'Running ORA...', value = 0, {
+                            log_info("ORA (gene list): running.")
                             gsets_ORA<-gsets_Reactive()
+                            if (length(gsets_ORA) == 0) log_warn("ORA (gene list): no gene sets selected.")
                             validate(need(length(gsets_ORA)>0,"Please select at least one gene set."))
                             getresults <- DataGenesetReactive_ORA_list()
                             logFC_list <- 	getresults$sig_genes
@@ -1185,11 +1193,12 @@ geneset_server <- function(id) {
                             res <- 	gsa %>%dplyr::filter( p.adj <= input$ora_pvalue)                   # Using dplyr functions
                             #mutate_if(is.numeric,signif,digits = 3)
                           })
-                        })
+                        }, ignoreInit = TRUE)
                         
                         
                         output$MSigDB_ORA_list <-DT::renderDT(server=FALSE,{ withProgress(message = 'Processing...', value = 0, {
                           res<-ora_results_list()
+                          if (is.null(res) || nrow(res) == 0) log_warn("ORA (gene list): no results pass the p.adj cutoff.")
                           validate(need(nrow(res)>0,"No results. Try to increase ORA p.adj cutoff, or use a different list."))
                           res$Action<-vapply(1:nrow(res), function(i){
                             as.character(
@@ -1197,7 +1206,6 @@ geneset_server <- function(id) {
                                 paste0("clipbtn_", i), 
                                 label = "Copy DE Gene Names", 
                                 clipText = res[i,  "DeGene_in_Set"], 
-                                #icon = icon("clipboard"),
                                 icon = icon("copy", lib = "glyphicon"),
                                 class = "btn-primary btn-sm"
                               )
@@ -1225,18 +1233,14 @@ geneset_server <- function(id) {
                             updateTabsetPanel(session, 'geneset_tabset', selected = 'Gene Expression')
                             updateTextInput(session, 'x1', value = info$value)
                             updateTextInput(session, 'x2', value = info$value)
-                            #updateTextInput(session, 'x3', value = info$value)
-                            
                             updateSelectizeInput(session, "sel_kegg_set",selected=info$value)
                             updateSelectizeInput(session, "sel_metabase_set",selected=info$value)
                             updateSelectizeInput(session, "sel_wikipathways_set",selected=info$value)
                             updateTextInput(session, 'analysis_type_1', value = analysis_type)
                             updateTextInput(session, 'analysis_type_2', value = analysis_type)
-                            updateTextInput(session, 'analysis_type_3', value = analysis_type)
                             updateTextInput(session, 'comparison_name_1', value = comparison)
                             gs_comps <- names(Filter(function(df) info$value %in% df$GeneSet, ora_results()))
                             updateSelectInput(session, 'comparison_name_2', choices = gs_comps, selected = comparison)
-                            updateTextInput(session, 'comparison_name_3', value = comparison)
                           }
                         })
                         
@@ -1330,9 +1334,12 @@ geneset_server <- function(id) {
                         keggView_out <- reactive({
                           withProgress(message = 'Making KEGG Pathway View...', value = 0, {
                             ID <- input$sel_kegg_set
+                            if (is.null(ID) || ID == "") log_warn("KEGG View: no pathway selected.")
                             validate(need(ID != "", "Please select a KEGG pathway to map logFC data to it."))
+                            if (!stringr::str_detect(ID, "^(hsa|mmu|rno)\\d{5}")) log_warn("KEGG View: '", ID, "' is not a human/mouse/rat pathway.")
                             validate(need(stringr::str_detect(ID, "^(hsa|mmu|rno)\\d{5}"),
                                           "Only works on human/mouse/rat KEGG pathways."))
+                            log_info("KEGG View: rendering pathway ", ID, ".")
                             
                             # species code
                             species <- input$MSigDB_species
@@ -1351,13 +1358,7 @@ geneset_server <- function(id) {
                             
                             # collect all selected tests
                             tests <- input$geneset_test
-                            # if (input$kegg_more_tests == "Yes") {
-                            #   if (input$geneset_test2 != "None") tests <- c(tests, input$geneset_test2)
-                            #   if (input$geneset_test3 != "None") tests <- c(tests, input$geneset_test3)
-                            #   if (input$geneset_test4 != "None") tests <- c(tests, input$geneset_test4)
-                            #   if (input$geneset_test5 != "None") tests <- c(tests, input$geneset_test5)
-                            # }
-                            
+
                             # build FC_df across ALL comparisons
                             FC_df <- data.frame(UniqueID = unique(results_long$UniqueID)) %>%
                               dplyr::left_join(ProteinGeneName %>% dplyr::select(UniqueID, Gene.Name), by = "UniqueID")
@@ -1369,8 +1370,7 @@ geneset_server <- function(id) {
                               names(res_comp)[2] <- comp
                               FC_df <- FC_df %>% dplyr::left_join(res_comp, by = "UniqueID")
                             }
-                            
-                            # browser() #debug
+
                             # gene mapping
                             if (input$map_genes != "No Change (as it is)" &&
                                 !(ProjectInfo$Species == input$MSigDB_species && input$map_genes == "Homologous Genes")) {
@@ -1421,6 +1421,7 @@ geneset_server <- function(id) {
                                              cpd = as.numeric(input$kegg_logFC_cpd))
                               ))
                               if (inherits(tmp, "try-error")) {
+                                log_warn("KEGG View: gene-mapped pathview() failed for ", pid, ", retrying with compound data only.")
                                 tmp <- pathview(
                                   cpd.data = FCdata_compound,
                                   pathway.id = pid,
@@ -1458,20 +1459,14 @@ geneset_server <- function(id) {
                         #############################  Wiki  ######      
                         output$wikipathways_tab_ui <- renderUI({
                           req(input$geneset_tabset == "Wikipathways View")
-                          # tagList(
-                          #   p("Select a wikipathway by either clicking its name from the results table in the GSEA/ORA tab, or choose/search from the dropdown list below."),
-                          #   selectizeInput(ns("sel_wikipathways_set"), label="Wikipathways for Visualization", choices = NULL, multiple = FALSE, width="600px",
-                          #                  options = list(placeholder = 'Type to search')),
-                          #   fluidRow( column( width = 4,
-                          #                     plotOutput(ns("wiki_legend"), height = 50)
-                          #   )),
-                            svgPanZoomOutput(ns("wikipathways_plot"), width = "100%", height = "100%")
-                          # )
+                          svgPanZoomOutput(ns("wikipathways_plot"), width = "100%", height = "100%")
                         })
                         
                         wiki_plot_results<-reactive({
                           ID=input$sel_wikipathways_set
+                          if (is.null(ID) || ID == "") log_warn("Wikipathways View: no pathway selected.")
                           shiny::validate(need(ID!="", message = "Please select a Wikipathway to map logFC data to it."))
+                          if (!str_detect(ID, "WP\\d+$")) log_warn("Wikipathways View: '", ID, "' is not a human/mouse/rat pathway.")
                           shiny::validate(need(str_detect(ID, "WP\\d+$"), message = "Only works on human/mouse/rat Wiki pathways."))
                           wiki_ID=str_extract(ID, "WP\\d+$")
                           species=input$MSigDB_species
@@ -1492,7 +1487,7 @@ geneset_server <- function(id) {
                           }
                           FCdata=FC_df$logFC; names(FCdata)=FC_df$Gene.Name
                           
-                          cat(comp_sel, wiki_ID, length(FCdata), "\n")
+                          log_debug("Wikipathways View: comparison=", comp_sel, " wiki_ID=", wiki_ID, " n_genes=", length(FCdata))
                           p1 <- wpplot(wiki_ID)
                           p2 <- wp_bgfill_2025(p=p1, value=FCdata, logFC_max=input$wiki_logFC, high=input$wiki_high, mid=input$wiki_mid, low=input$wiki_low) 
                           return(p2)
@@ -1506,7 +1501,6 @@ geneset_server <- function(id) {
                         })
                         
                         output$wiki_legend<-renderPlot({
-                          #validate(wiki_plot_results())
                           req(input$sel_wikipathways_set != "") # && str_detect(input$sel_wikipathways_set, "WP\\d+$"))
                           p2=wiki_plot_results()
                           draw(p2$lgd)
@@ -1517,7 +1511,7 @@ geneset_server <- function(id) {
                         Data_metabase <- reactive({
                           req(DataReactive())
                           if (input$sel_metabase_set!="") {
-                            cat(input$sel_metabase_set, "\n") #for debug
+                            log_debug("MetabaseR: preparing data for ", input$sel_metabase_set)
                             #get data
                             dataIn=DataReactive()
                             results_long=dataIn$results_long
@@ -1533,19 +1527,12 @@ geneset_server <- function(id) {
                             Name_list<-ProteinGeneName%>%dplyr::filter(!is.na(Gene.Name), Gene.Name!="", Gene.Name!="NA")%>%
                               dplyr::select(Gene.Name)%>%unlist%>%unname
                             Gene2ID=mapIds(org.Hs.eg.db, keys=Name_list, column="ENTREZID", keytype="SYMBOL")
-                            #browser()
-                            df_ID<-data.frame(Gene.Name=names(Gene2ID), EntrezID=Gene2ID)%>%filter(!is.na(Gene.Name), Gene.Name!="", 
+                            df_ID<-data.frame(Gene.Name=names(Gene2ID), EntrezID=Gene2ID)%>%filter(!is.na(Gene.Name), Gene.Name!="",
                                                                                                    !duplicated(Gene.Name) )
                             ProteinGeneName1<-ProteinGeneName%>%dplyr::select(UniqueID, Gene.Name)%>%left_join(df_ID)
                             results_long<-results_long%>%left_join(ProteinGeneName1%>%dplyr::select(UniqueID, EntrezID))
                             #get logFC data from data_results
                             tests=input$geneset_test
-                            # if (input$kegg_more_tests=="Yes") {
-                            #   if (input$geneset_test2!="None") {tests=c(tests, input$geneset_test2)}
-                            #   if (input$geneset_test3!="None") {tests=c(tests, input$geneset_test3)}
-                            #   if (input$geneset_test4!="None") {tests=c(tests, input$geneset_test4)}
-                            #   if (input$geneset_test5!="None") {tests=c(tests, input$geneset_test5)}
-                            # }
                             data_plot<-list()
                             for (t in tests){
                               data1<-results_long%>%filter(test==t, !is.na(EntrezID))%>%dplyr::select(EntrezID, logFC, Adj.P.Value, UniqueID)
@@ -1564,13 +1551,13 @@ geneset_server <- function(id) {
                           if (input$sel_metabase_set!="") {
                             tmp<-try(view.map(input$sel_metabase_set)) #test if the metabaseR map can be loaded, some like "Oxidative phosphorylation" has issues
                             if (class(tmp)[1]=="try-error") {
-                              cat(input$sel_metabase_set, "can't be plotted\n")
+                              log_warn("MetabaseR: '", input$sel_metabase_set, "' cannot be plotted.")
                               tagList(tags$div(
                                 tags$p("This Metabase pathway cannot be drawn. Please select another pathway.")
-                              )) 
+                              ))
                             } else {
                               withProgress(message = 'Plotting metabase pathway...', value = 0, {
-                                cat(input$sel_metabase_set, "\n") #for debug
+                                log_info("MetabaseR: plotting ", input$sel_metabase_set)
                                 suppressWarnings(metabase_map<-  view.map(input$sel_metabase_set,
                                                                           datasets = Data_metabase(),  bg_image=FALSE,  input.types="gene", nwobj_style=input$obj_style ) )
                                 output$my_widget <- renderMetabase(metabase_map)
@@ -1583,12 +1570,14 @@ geneset_server <- function(id) {
                         })
                         
                         observeEvent(input$keggSave, {
-                          #ID = input$x3
                           ID=input$sel_kegg_set
                           img.file <- keggView_out()
                           if (file.exists(img.file)) {
+                            log_info("KEGG View (", ID, ") saved to output.")
                             img <- readPNG(img.file)
                             saved_plots$keggSave[[ID]] <- img
+                          } else {
+                            log_warn("KEGG View (", ID, "): save clicked but image file not found: ", img.file)
                           }
                         })
                         
@@ -1707,6 +1696,7 @@ geneset_server <- function(id) {
                         
                         output$SetHeatMap = renderPlot({
                           ID = input$x2
+                          if (is.null(ID) || ID == "") log_warn("Geneset Heatmap: no gene set selected.")
                           validate(need(ID!="", message = "Select one geneset by clicking a GeneSet name from 'Gene Set Enrichment Analysis (GSEA)' or 'Over-Representation Analysis (ORA)' tab."))
                           #grid.draw(genesetheatmap_out()$gtable)
                           draw(genesetheatmap_out(), merge_legend=T,  auto_adjust = FALSE)
@@ -1718,13 +1708,8 @@ geneset_server <- function(id) {
                         
                         
                         observeEvent(input$genesetheatmap, {
-                          #ID = input$x3
-                          # saved_plots$genesetheatmap[[ID]] <- genesetheatmap_out() #this only works on R4.0
-                          saved_plots$genesetheatmap<- genesetheatmap_out() #this works on R3.5 - 3.6
-                          
-                          #saved_plots$genesetheatmap <- genesetheatmap_out()$gtable
-                        }
-                        )
+                          saved_plots$genesetheatmap <- genesetheatmap_out()
+                        })
                         
                         geneset_Expression_data <- reactive({ 
                           analysis_type <- input$analysis_type_1
@@ -1801,8 +1786,6 @@ geneset_server <- function(id) {
                         
                         #############################  Dot plot  ######
                         analysis_type <- reactiveVal(NULL)
-                        # geneset_comps <- reactiveVal(NULL)
-                        # 
                         gset_plot <- reactiveVal(NULL)
                         current_plot <- reactiveVal(NULL)
                         gset_top_count <- reactiveVal(NULL)
@@ -2063,10 +2046,11 @@ geneset_server <- function(id) {
                                     gset_list <-  stringr::str_split(gset_list, ",")[[1]]
                                   }
                                   gset_list <- gset_list[gset_list != ""]
+                                  if (length(gset_list) == 0) log_warn("Geneset Dot Plot: no custom gene sets entered.")
                                   validate(need(length(gset_list)>0, message = "Please input at least 1 valid gene set."))
                                   gset_plot(gset_list)
                                 }
-                                
+
                                 GS_plot <- GS_all %>%
                                   filter(GeneSet %in% gset_plot()) %>%
                                   mutate(comparison = factor(comparison, levels = selected_dotplot_test))
@@ -2195,10 +2179,11 @@ geneset_server <- function(id) {
                                     gset_list <-  stringr::str_split(gset_list, ",")[[1]]
                                   }
                                   gset_list <- gset_list[gset_list != ""]
+                                  if (length(gset_list) == 0) log_warn("Geneset Dot Plot: no custom gene sets entered.")
                                   validate(need(length(gset_list)>0, message = "Please input at least 1 valid gene set."))
                                   gset_plot(gset_list)
                                 }
-                                
+
                                 GS_plot <- GS_all[GS_all$GeneSet %in% gset_plot(), ]
                                 GS_plot <- GS_all %>%
                                   filter(GeneSet %in% gset_plot()) %>%

@@ -20,7 +20,9 @@ Scurve_out <- reactive({
 	
 	gene_list <- DataExpReactive()$tmpids
 
+	if (length(gene_list) == 0) log_warn("S-Curve: no gene selected.")
 	validate(need(length(gene_list)>0,"Please select a gene or input gene."))
+	log_debug("S-Curve: plotting ", length(gene_list), " gene(s).")
 
 	scurve.data <- data_results %>%
 	dplyr::select(one_of(c("UniqueID","Gene.Name","Intensity","Protein.ID"))) %>%
