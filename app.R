@@ -1030,7 +1030,11 @@ fluidPage(
                                 tags$b("WARN"), " -- something unexpected happened but the app recovered or showed a message instead of crashing.", tags$br(),
                                 tags$b("ERROR"), " -- an operation failed outright and could not complete."
                               )),
-                              selectInput("log_level_select", "Log Level", choices = names(LOG_LEVELS), selected = log_level, width = "200px")
+                              selectInput("log_level_select", "Log Level", choices = names(LOG_LEVELS), selected = log_level, width = "200px"),
+                              tags$hr(),
+                              h4("Session Location"),
+                              tags$p("Which container is serving this session. Quote both when reporting a problem -- together they identify the log file to look at."),
+                              uiOutput("session_location")
                      ),
                      
                      
@@ -1047,9 +1051,32 @@ fluidPage(
 } #for ui function(request)
 
 server <- function(input, output, session) {
-  log_info("Session started")
+  # Where this session is actually running, for matching a user's report to a log.
+  #
+  # The pod name comes from the container itself. The ShinyProxy instance id can only
+  # arrive as an HTTP header: with container pre-initialization the container is created
+  # before any user is assigned to it, so no environment variable can carry a per-user
+  # value (the same reason ShinyProxy passes the username as X-SP-UserId). The header is
+  # configured as `http-headers: {proxy-id: "#{proxy.id}"}` on the app spec; httpuv
+  # uppercases it and turns "-" into "_", hence HTTP_PROXY_ID. It is absent when the app
+  # runs outside ShinyProxy (RStudio, plain docker run) or when that header isn't set.
+  pod_name <- Sys.getenv("HOSTNAME", unset = "")
+  if (!nzchar(pod_name)) pod_name <- unname(Sys.info()[["nodename"]])
+  proxy_id <- session$request$HTTP_PROXY_ID
+  if (is.null(proxy_id) || !nzchar(proxy_id)) proxy_id <- "not set (no ShinyProxy header)"
+
+  log_info("Session started on pod ", pod_name, " (ShinyProxy instance: ", proxy_id, ")")
   session$onSessionEnded(function() {
     log_info("Session ended")
+  })
+
+  # Mirrors the two ids into the Output tab, so a user can read them off the screen
+  # without anyone needing cluster access.
+  output$session_location <- renderUI({
+    tags$p(tags$small(
+      tags$b("Pod: "), tags$code(pod_name), tags$br(),
+      tags$b("ShinyProxy instance: "), tags$code(proxy_id)
+    ))
   })
 
   observeEvent(input$log_level_select, {
