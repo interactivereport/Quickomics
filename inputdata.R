@@ -441,6 +441,10 @@ DataReactive <- reactive({
                                                         id.vars = "sampleid",
                                                         variable.name = "type",
                                                         value.name = "group")
+                   # Missing values show up as an "NA" tile in Groups and Samples,
+                   # and the tile hands back the string "NA"; store them as "NA"
+                   # so that tile matches its samples (true NA never matches).
+                   DT_MetaData_long[is.na(group), group := "NA"]
                    
                    # Returns names of columns where is.numeric is TRUE
                    num_cols <- names(MetaData)[sapply(MetaData, is.numeric)]
