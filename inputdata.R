@@ -37,6 +37,16 @@ ProteinGeneNameHeader<- reactiveVal()
 exp_unit<-reactiveVal()
 #saved_palette <- reactiveVal()
 ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL, file3=NULL, Path=NULL, source=NULL)
+# Wall-clock bookkeeping for the "[timing]" console messages: `start` is set
+# the moment a project ID is input (URL parameter, project dropdown, or
+# upload) and consumed once when DataReactive() finishes for that project.
+load_timing <- new.env(parent = emptyenv())
+load_timing$start <- NULL
+load_timing$id <- NULL
+mark_project_start <- function(ProjectID) {
+  load_timing$start <- Sys.time()
+  load_timing$id <- ProjectID
+}
 showAlert<-reactiveVal()
 plot_pca_control<-reactiveVal(0)
 plot_heatmap_control<-reactiveVal(0)
@@ -67,6 +77,7 @@ observeEvent(input$exp_unit, {
 # raw error instead of a clean message. showNotification() works correctly
 # in both places.
 load_project_from_query <- function(key, ProjectID) {
+  mark_project_start(ProjectID)
   if (key == 'project') {
     if (!(ProjectID %in% saved_projects$ProjectID)) {
       showNotification(
@@ -167,15 +178,45 @@ load_project_from_query <- function(key, ProjectID) {
     ProjectInfo$source="unpublished"  #routes file1/network/wgcna loading through the Quickomics API
     if (!is.null(meta$Path)) {ProjectInfo$Path=meta$Path}
     if (!is.null(meta$ExpressionUnit)) {updateTextInput(session, "exp_unit", value=meta$ExpressionUnit)}
+  } else if (key == 'datalake') {
+    api_result <- tryCatch(
+      list(ok = TRUE, meta = api_get_project_meta(ProjectID, "datalake")),
+      error = function(e) list(ok = FALSE, error = conditionMessage(e))
+    )
+    if (!api_result$ok) {
+      showNotification(
+        paste("Quickomics API is not working:", api_result$error),
+        type = "error", duration = NULL
+      )
+      return()
+    }
+    meta <- api_result$meta
+    if (is.null(meta)) {
+      showNotification(
+        paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
+        type = "error", duration = NULL
+      )
+      return()
+    }
+    ProjectInfo$ProjectID=ProjectID
+    ProjectInfo$Name=meta$Name
+    ProjectInfo$Species=meta$Species
+    ProjectInfo$ShortName=meta$ShortName
+    ProjectInfo$file1= paste0("api://datalake/", ProjectID, ".RData")
+    ProjectInfo$file2= paste0("api://datalake/", ProjectID, "_network.RData")
+    ProjectInfo$file3= paste0("api://datalake/wgcna_", ProjectID, ".RData")
+    ProjectInfo$source="datalake"  #routes file1/network/wgcna loading through the Quickomics API
+    if (!is.null(meta$Path)) {ProjectInfo$Path=meta$Path}
+    if (!is.null(meta$ExpressionUnit)) {updateTextInput(session, "exp_unit", value=meta$ExpressionUnit)}
   }
 }
 
 observe({
   query <- parseQueryString(session$clientData$url_search)
   # No early exit on a match -- matches the original behavior where all
-  # four blocks ran unconditionally, so if more than one of these
-  # parameters were somehow present at once, the last one (testfile) wins.
-  for (key in c('project', 'unlisted', 'serverfile', 'testfile')) {
+  # blocks ran unconditionally, so if more than one of these parameters
+  # were somehow present at once, the last one in this vector (datalake) wins.
+  for (key in c('project', 'unlisted', 'serverfile', 'testfile', 'datalake')) {
     if (!is.null(query[[key]])) {
       load_project_from_query(key, query[[key]])
     }
@@ -185,6 +226,7 @@ observe({
 observe({
   if (input$sel_project!="") {
     ProjectID=input$sel_project
+    mark_project_start(ProjectID)
     ProjectInfo$ProjectID=ProjectID
     ProjectInfo$Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
     ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
@@ -263,6 +305,7 @@ output$ui.action <- renderUI({
 
 observeEvent(input$customData, {  
   ProjectInfo$ProjectID=str_replace(input$file1$name,  regex(".RData", ignore_case = TRUE), "")
+  mark_project_start(ProjectInfo$ProjectID)
   ProjectInfo$Name=input$project_name
   ProjectInfo$Species=input$species
   ProjectInfo$ShortName=input$project_name
@@ -275,14 +318,22 @@ observeEvent(input$customData, {
 observe({
   RDataFile <- ProjectInfo$file1
   req(RDataFile)
-  # ProjectInfo$source is set ("published"/"unpublished") only for projects
-  # loaded via ?serverfile=/?testfile=; everything else (local data/ folder,
-  # unlisted/ folder, file upload) still uses base::load() unchanged.
+  # ProjectInfo$source is set ("published"/"unpublished"/"datalake") only for
+  # projects loaded via ?serverfile=/?testfile=/?datalake=; everything else
+  # (local data/ folder, unlisted/ folder, file upload) still uses
+  # base::load() unchanged.
+  observe_start <- Sys.time()
   if (!is.null(ProjectInfo$source)) {
     objs <- api_load(ProjectInfo$ProjectID, ProjectInfo$source)
   } else {
     objs <- load(RDataFile)
   }
+  message(sprintf(
+    "[timing] tab-visibility observe load for '%s' (source=%s) took %.2f sec",
+    ProjectInfo$ProjectID,
+    if (is.null(ProjectInfo$source)) "local" else ProjectInfo$source,
+    as.numeric(difftime(Sys.time(), observe_start, units = "secs"))
+  ))
   
   comp_only <- identical(objs, c("results_long", "ProteinGeneName"))
   
@@ -305,17 +356,27 @@ DataReactive <- reactive({
                detail = 'This may take a while...',
                value = 0,
                {
+                 reactive_entry <- Sys.time()
                  RDataFile <- ProjectInfo$file1
-                 comp_info <- NULL 
-                 # ProjectInfo$source is set ("published"/"unpublished") only
-                 # for projects loaded via ?serverfile=/?testfile=; every
-                 # other source (local data/ folder, unlisted/ folder, file
-                 # upload) still uses base::load() completely unchanged.
+                 comp_info <- NULL
+                 # ProjectInfo$source is set ("published"/"unpublished"/
+                 # "datalake") only for projects loaded via
+                 # ?serverfile=/?testfile=/?datalake=; every other source
+                 # (local data/ folder, unlisted/ folder, file upload) still
+                 # uses base::load() completely unchanged.
+                 fetch_start <- Sys.time()
                  if (!is.null(ProjectInfo$source)) {
                    objs <- api_load(ProjectInfo$ProjectID, ProjectInfo$source)
                  } else {
                    objs <- load(RDataFile)
                  }
+                 fetch_secs <- as.numeric(difftime(Sys.time(), fetch_start, units = "secs"))
+                 message(sprintf(
+                   "[timing] DataReactive load for '%s' (source=%s) took %.2f sec",
+                   ProjectInfo$ProjectID,
+                   if (is.null(ProjectInfo$source)) "local" else ProjectInfo$source,
+                   fetch_secs
+                 ))
                  if (identical(objs, c("results_long", "ProteinGeneName"))) {
                    tests <- unique(as.character(results_long$test))                     
                    group_names <- NULL
@@ -573,6 +634,19 @@ DataReactive <- reactive({
                      rownames(sel_comp) <- sel_comp$Comparison
                    }
                  }
+                 if (!is.null(load_timing$start) && identical(load_timing$id, ProjectInfo$ProjectID)) {
+                   done <- Sys.time()
+                   message(sprintf(
+                     "[timing] '%s' (source=%s): %.2f sec from project ID input to DataReactive() ready = %.2f before DataReactive started + %.2f load + %.2f transform",
+                     ProjectInfo$ProjectID,
+                     if (is.null(ProjectInfo$source)) "local" else ProjectInfo$source,
+                     as.numeric(difftime(done, load_timing$start, units = "secs")),
+                     as.numeric(difftime(reactive_entry, load_timing$start, units = "secs")),
+                     fetch_secs,
+                     as.numeric(difftime(done, fetch_start, units = "secs")) - fetch_secs
+                   ))
+                   load_timing$start <- NULL  # report once per project selection
+                 }
                  return(
                    list(
                      "groups" = group_names,
@@ -682,7 +756,7 @@ output$results <- DT::renderDataTable({
   DataIn <- DataReactive()
   req(DataIn$data_results) 
   results <- DataIn$data_results %>%
-    dplyr::select(-one_of(c("Fasta.headers","UniqueID","id")))
+    dplyr::select(-dplyr::any_of(c("Fasta.headers","UniqueID","id")))
   results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
   DT::datatable(results,  extensions = 'Buttons',
                 options = list(
@@ -694,7 +768,7 @@ output$results <- DT::renderDataTable({
 output$sample <-  DT::renderDT(server=FALSE,{
   req(public_dataset)
   req(DataReactive()$MetaData)
-  meta<-DataReactive()$MetaData%>%dplyr::select(-Order, -ComparePairs)
+  meta<-DataReactive()$MetaData%>%dplyr::select(-dplyr::any_of(c("Order", "ComparePairs")))
   DT::datatable(meta,  extensions = 'Buttons',  options = list(
     dom = 'lBfrtip', pageLength = 15,
     buttons = list(
