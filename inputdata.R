@@ -326,6 +326,25 @@ observeEvent(input$customData, {
 })
 
 
+# One API download per project load: the tab-visibility observer below and
+# DataReactive() both need the project's bundle, so whichever runs first
+# downloads it and the other reuses it. It is released once both have used
+# it, so the session doesn't keep a second copy of the data around.
+api_bundle_holder <- new.env(parent = emptyenv())
+get_api_bundle <- function(user) {
+  key <- paste0(ProjectInfo$source, "/", ProjectInfo$ProjectID)
+  h <- api_bundle_holder
+  if (!identical(h$key, key) || is.null(h$bundle)) {
+    h$key <- key
+    h$bundle <- api_fetch_bundle(ProjectInfo$ProjectID, ProjectInfo$source)
+    h$users <- character(0)
+  }
+  bundle <- h$bundle
+  h$users <- union(h$users, user)
+  if (all(c("tabs", "data") %in% h$users)) h$bundle <- NULL
+  bundle
+}
+
 observe({
   RDataFile <- ProjectInfo$file1
   req(RDataFile)
@@ -335,7 +354,7 @@ observe({
   # base::load() unchanged.
   observe_start <- Sys.time()
   if (!is.null(ProjectInfo$source)) {
-    objs <- api_load(ProjectInfo$ProjectID, ProjectInfo$source)
+    objs <- api_load(ProjectInfo$ProjectID, ProjectInfo$source, bundle = get_api_bundle("tabs"))
   } else {
     objs <- load(RDataFile)
   }
@@ -377,7 +396,7 @@ DataReactive <- reactive({
                  # uses base::load() completely unchanged.
                  fetch_start <- Sys.time()
                  if (!is.null(ProjectInfo$source)) {
-                   objs <- api_load(ProjectInfo$ProjectID, ProjectInfo$source)
+                   objs <- api_load(ProjectInfo$ProjectID, ProjectInfo$source, bundle = get_api_bundle("data"))
                  } else {
                    objs <- load(RDataFile)
                  }

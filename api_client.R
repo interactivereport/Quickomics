@@ -329,26 +329,22 @@ api_get_project_meta <- function(project_id, source) {
   )
 }
 
-#' Load a project's full data bundle from the Quickomics API, assigning the
-#' same object names base::load(RDataFile) would have created directly
-#' into `envir` -- so existing code written against `objs <- load(RDataFile)`
-#' and bare object names (MetaData, ProteinGeneName, data_wide, ...) keeps
-#' working completely unchanged after switching the call site to
-#' `objs <- api_load(project_id, source)`.
+#' Download a project's full data bundle from the Quickomics API.
+#'
+#' Uses the gzip-compressed bundle.rds.gz endpoint: a project bundle is
+#' several times smaller compressed (e.g. 44 MB -> 7 MB for GSE76220), which
+#' matters when the API is reached over the internet.
 #'
 #' @param project_id Project ID (matches ProjectInfo$ProjectID)
-#' @param source "published" or "unpublished" (matches ProjectInfo$source)
-#' @param envir Environment to assign loaded objects into; defaults to the
-#'   caller's own environment, exactly like base::load()'s default behavior.
-#' @return Character vector of object names assigned -- mirrors load()'s own
-#'   return value, so `identical(objs, c("results_long", "ProteinGeneName"))`
-#'   style checks downstream keep working unmodified.
-api_load <- function(project_id, source, envir = parent.frame()) {
+#' @param source "published", "unpublished" or "datalake" (ProjectInfo$source)
+#' @return The bundle list (samples, genes, data_wide, expression_long,
+#'   results, data_results, comp_info, comp_only, ...), as the API sends it.
+api_fetch_bundle <- function(project_id, source) {
   ensure_api_running()
   
   fetch_once <- function(token) {
     api_http_get_with_retry(
-      paste0(api_base_url, "/datasets/", source, "/", project_id, "/bundle.rds"),
+      paste0(api_base_url, "/datasets/", source, "/", project_id, "/bundle.rds.gz"),
       httr::add_headers(Authorization = paste("Bearer", token))
     )
   }
@@ -370,7 +366,27 @@ api_load <- function(project_id, source, envir = parent.frame()) {
     )
   }
   
-  bundle <- unserialize(httr::content(resp, "raw"))
+  unserialize(memDecompress(httr::content(resp, "raw"), type = "gzip"))
+}
+
+#' Load a project's full data bundle from the Quickomics API, assigning the
+#' same object names base::load(RDataFile) would have created directly
+#' into `envir` -- so existing code written against `objs <- load(RDataFile)`
+#' and bare object names (MetaData, ProteinGeneName, data_wide, ...) keeps
+#' working completely unchanged after switching the call site to
+#' `objs <- api_load(project_id, source)`.
+#'
+#' @param project_id Project ID (matches ProjectInfo$ProjectID)
+#' @param source "published", "unpublished" or "datalake" (ProjectInfo$source)
+#' @param envir Environment to assign loaded objects into; defaults to the
+#'   caller's own environment, exactly like base::load()'s default behavior.
+#' @param bundle An already-downloaded bundle from api_fetch_bundle(); when
+#'   NULL (the default) it is downloaded here.
+#' @return Character vector of object names assigned -- mirrors load()'s own
+#'   return value, so `identical(objs, c("results_long", "ProteinGeneName"))`
+#'   style checks downstream keep working unmodified.
+api_load <- function(project_id, source, envir = parent.frame(), bundle = NULL) {
+  if (is.null(bundle)) bundle <- api_fetch_bundle(project_id, source)
   
   assigned <- character(0)
   assign_if_present <- function(var_name, bundle_key) {
