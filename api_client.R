@@ -448,19 +448,27 @@ api_load <- function(project_id, source, envir = parent.frame(), bundle = NULL) 
 api_load_network <- function(project_id, source) {
   ensure_api_running()
   
-  fetch_once <- function(token) {
+  fetch_once <- function(token, endpoint) {
     api_http_get_with_retry(
-      paste0(api_base_url, "/datasets/", source, "/", project_id, "/network/bundle.rds.gz"),
+      paste0(api_base_url, "/datasets/", source, "/", project_id, "/network/", endpoint),
       httr::add_headers(Authorization = paste("Bearer", token))
     )
   }
   
   token <- api_get_token()
-  resp <- fetch_once(token)
+  resp <- fetch_once(token, "bundle.rds.gz")
   
   if (httr::status_code(resp) == 401) {
     token <- api_fetch_token()
-    resp <- fetch_once(token)
+    resp <- fetch_once(token, "bundle.rds.gz")
+  }
+  
+  # An API deployed before bundle.rds.gz existed answers 404 for the route
+  # itself; ask it for the uncompressed bundle.rds instead.
+  gzipped <- TRUE
+  if (httr::status_code(resp) == 404) {
+    resp <- fetch_once(token, "bundle.rds")
+    gzipped <- FALSE
   }
   
   if (httr::status_code(resp) == 404) {
@@ -475,7 +483,8 @@ api_load_network <- function(project_id, source) {
     )
   }
   
-  network <- unserialize(memDecompress(httr::content(resp, "raw"), type = "gzip"))
+  raw_body <- httr::content(resp, "raw")
+  network <- unserialize(if (gzipped) memDecompress(raw_body, type = "gzip") else raw_body)
   if (data.table::is.data.table(network)) {
     data.table::setDT(network)
   }
