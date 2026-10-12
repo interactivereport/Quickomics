@@ -435,8 +435,12 @@ api_load <- function(project_id, source, envir = parent.frame(), bundle = NULL) 
 #' rather than assigning into an environment -- network.R's own code
 #' assigns the result to a local `network` variable itself.
 #'
+#' Uses the gzip-compressed network/bundle.rds.gz endpoint, like
+#' api_fetch_bundle(). For datalake projects the API gets the network from
+#' the datalake's {project_id}_network.RData file.
+#'
 #' @param project_id Project ID
-#' @param source "published" or "unpublished"
+#' @param source "published", "unpublished" or "datalake" (ProjectInfo$source)
 #' @return The network data.frame, or NULL if the API responds 404 (no
 #'   precomputed network for this project) -- same meaning as a missing
 #'   local file, not an error; callers should fall through to computing
@@ -446,7 +450,7 @@ api_load_network <- function(project_id, source) {
   
   fetch_once <- function(token) {
     api_http_get_with_retry(
-      paste0(api_base_url, "/datasets/", source, "/", project_id, "/network/bundle.rds"),
+      paste0(api_base_url, "/datasets/", source, "/", project_id, "/network/bundle.rds.gz"),
       httr::add_headers(Authorization = paste("Bearer", token))
     )
   }
@@ -471,7 +475,7 @@ api_load_network <- function(project_id, source) {
     )
   }
   
-  network <- unserialize(httr::content(resp, "raw"))
+  network <- unserialize(memDecompress(httr::content(resp, "raw"), type = "gzip"))
   if (data.table::is.data.table(network)) {
     data.table::setDT(network)
   }
