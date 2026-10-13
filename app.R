@@ -792,10 +792,14 @@ fluidPage(
                                          selectInput("pattern_attr", label="Select Pattern Variable", choices=NULL),
                                          # selectizeInput("pattern_group", label="Select Groups (re-order under Groups and Samples tab)", choices=NULL, multiple=TRUE),
                                          radioButtons("ClusterMethod", label="Cluster Method", inline = FALSE, choices = c("Soft Clustering" = "mfuzz", "K-means" = "kmeans")),
-                                         sliderInput("k", "Cluster Number:", min = 3, max = 12, step = 1, value = 6),
-                                         conditionalPanel("input.ClusterMethod=='kmeans'",
-                                                          sliderInput("pattern_font", "Font Size:", min = 12, max = 24, step = 1, value = 14),
-                                                          sliderInput("pattern_Xangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45)),
+                                         radioButtons("pattern_transform", label="Cluster On", inline = FALSE,
+                                                      choices = c("Trend only (z-score)" = "zscore",
+                                                                  "Trend and size of change (centred)" = "center",
+                                                                  "Mean expression (no transform)" = "none"),
+                                                      selected = "zscore"),
+                                         sliderInput("k", "Cluster Number:", min = 2, max = 12, step = 1, value = 6),
+                                         sliderInput("pattern_font", "Font Size:", min = 12, max = 24, step = 1, value = 14),
+                                         sliderInput("pattern_Xangle", label= "X Angle", min = 0, max = 90, step = 15, value = 45),
                                          sliderInput("pattern_ncol", label= "Column Number", min = 1, max = 6, step = 1, value = 3),
                                          conditionalPanel("input.Pattern_tabset=='Data Table'",
                                                           radioButtons("DataFormat", label="Data Output Format:", inline = TRUE, choices = c("Wide Format" = "wide","Long Format" = "long"))
@@ -806,10 +810,35 @@ fluidPage(
                                        tabsetPanel(id="Pattern_tabset",
                                                    #tabPanel(title="Optimal Number of Clusters", plotOutput("nbclust", height=800)),
                                                    tabPanel(title="Clustering of Centroid Profiles",
+                                                            tags$details(
+                                                              tags$summary(
+                                                                tags$strong("Click to view what the clusters are based on (Cluster On options) & suggested workflow",
+                                                                            style = "color: #28a745; cursor: pointer;")
+                                                              ),
+                                                              tags$div(
+                                                                style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                                                tags$p("Each gene is summarised as its mean log expression in each group under Groups to Plot (in that order). Cluster On decides how these group means are transformed before clustering; the plots show the transformed values. Example gene with group means 10, 12, 11:"),
+                                                                tags$ul(
+                                                                  tags$li(tags$strong("Trend only (z-score), default:"), " the gene's mean is subtracted and the result divided by its SD (example: -1, 1, 0). Genes that go up, down or peak together fall in the same cluster, whatever their expression level or size of change. Use this to group genes by direction of change. Best on DEGs: a nearly flat gene is stretched to the same height, so noise can look like a trend."),
+                                                                  tags$li(tags$strong("Trend and size of change (centred):"), " only the gene's mean is subtracted (example: -1, +1, 0). Values are log2 fold changes vs the gene's own average (+1 = twice its average), so genes with the same trend but a large or a small change fall in different clusters. Use this to split one trend into strong and weak responders."),
+                                                                  tags$li(tags$strong("Mean expression (no transform):"), " the group means as they are (example: 10, 12, 11). Clusters are driven mostly by expression level, not by trend. Kept for comparison with earlier results.")
+                                                                ),
+                                                                tags$p(tags$strong("Suggested workflow for genes that change over time:")),
+                                                                tags$ol(
+                                                                  tags$li("Run Time Course Analysis with the Time only test to get the genes that change over time."),
+                                                                  tags$li("Group them by trend with DEG Clustering Analysis in Time Course Analysis (degPatterns, which picks the number of clusters itself and keeps conditions separate). Alternatively, paste the genes here (upload genes), select the time variable as Pattern Variable and cluster with Trend only (z-score) to choose the number of clusters yourself or use Soft Clustering."),
+                                                                  tags$li("Optionally separate one trend by size of change: degPatterns groups genes by correlation, which ignores magnitude, so it cannot do this. Copy the genes of one trend cluster from the DEG Clustering table, paste them here (upload genes) and cluster with Trend and size of change (centred) and 2-3 clusters to separate strong and weak responders.")
+                                                                ),
+                                                                tags$p("Groups are averaged over all selected samples. If the trend differs between conditions, subset the samples to one condition first (Groups and Samples). Genes missing a group are left out; with z-score, genes with the same mean in every group are left out too."),
+                                                                tags$p(tags$strong("Cluster Method:"), " K-means assigns each gene to one cluster and draws the cluster mean as a thick line. Soft Clustering (Mfuzz fuzzy c-means) gives each gene a membership (0-1) in every cluster; genes with membership of at least 0.4 are drawn, coloured by membership (red = strong member, yellow = weak).")
+                                                              )
+                                                            ),
+                                                            tags$br(),
                                                             uiOutput('ui_sel_order_group'),
                                                             uiOutput('reset_group'),
                                                             tags$br(),
                                                             actionButton("pattern_plot", "Plot", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
+                                                            span(textOutput("pattern_msg", inline = TRUE), style = "color:blue; font-size:15px; font-style:italic; margin-left:10px"),
                                                             tags$br(),tags$hr(),
                                                             actionButton("pattern", "Save to output"),
                                                             plotOutput("pattern", height=800)),

@@ -183,7 +183,7 @@ output$downloadPDF <- downloadHandler(
       Np=Np+1
     }
     if (!is.null(saved_plots$patternmfuzz) & ("Pattern Clustering (Soft Clustering)" %in% plots_checked)){
-      replayPlot(saved_plots$patternmfuzz)
+      print(saved_plots$patternmfuzz)
       Np=Np+1
     }
     
@@ -494,7 +494,7 @@ output$downloadSVG <- downloadHandler(
       Np=Np+1
     }
     if (Np==0 & !is.null(saved_plots$patternmfuzz) & ("Pattern Clustering (Soft Clustering)" %in% plots_checked)){
-      replayPlot(saved_plots$patternmfuzz)
+      print(saved_plots$patternmfuzz)
       Np=Np+1
     }
     ## correlation analysis

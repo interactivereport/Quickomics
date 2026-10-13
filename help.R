@@ -118,8 +118,14 @@ output$help_pattern <- renderText({
 	<li>Cluster Mehtod: <a href=\"https://en.wikipedia.org/wiki/Fuzzy_clustering\" target=\"_blank\"> soft (fuzzy) clustering </a>,
 	 <a href=\"https://en.wikipedia.org/wiki/K-means_clustering\" target=\"_blank\"> k-means</a>, 
 	 <a href=\"https://en.wikipedia.org/wiki/K-medoids\" target=\"_blank\">  partitioning around medoids (PAM)</a></li>
-	<li>program determined the optimal number of clusters</li>
-	<li>If the gene sets are KEGG pathway, it will label the gene as well relative expression on the KEGG pathway. Save pathway by right click </li>
+	<li>Each gene is summarised as its mean log expression in each selected group, in the order shown under Groups to Plot. Genes missing a group are left out.</li>
+	<li>Cluster On decides what the clusters are based on:
+	  <ul>
+	  <li><b>Trend only (z-score)</b> (default): each gene's group means are centred and scaled to mean 0 and SD 1. Genes going up, down or peaking together cluster together whatever their expression level or size of change. Best for grouping genes by direction of change, e.g. Time only DEGs from Time Course Analysis.</li>
+	  <li><b>Trend and size of change (centred)</b>: the gene's own mean is subtracted, so values are log2 fold changes vs the gene's average (e.g. +1 = twice its average). Same-trend genes with large and small changes fall in different clusters. Useful to split one trend cluster into strong and weak responders (paste its genes with upload genes and use 2-3 clusters).</li>
+	  <li><b>Mean expression (no transform)</b>: previous behaviour. Clusters are driven mostly by expression level.</li>
+	  </ul></li>
+	<li>Plots show the values that were clustered. For z-score and centred, all K-means panels share one y scale and 0 is the gene's own average; Soft Clustering shows genes with membership &ge; 0.4, coloured by membership.</li>
     <li><a href=\"https://interactivereport.github.io/Quickomics/tutorial/docs/pattern-clustering-module.html#pattern-clustering-module\">Tutorial</a></li>
 	</ul>"
 	htmlstr
