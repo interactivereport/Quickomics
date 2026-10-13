@@ -116,61 +116,113 @@ parse_time <- function(x) {
   factor(canonical, levels = unique(canonical[ord]), ordered = FALSE)
 }
 
-run_timecourse_DEG <- function(MetaData, count_mtx,time_variable,Condition) {
-  library(DESeq2)
-  library(dplyr)
-  library(tibble)
-  
+# Sample table and LRT model formulas shared by the DESeq2 and limma tests.
+# test = "interaction": genes whose time trend differs between levels of the
+#   last Condition variable (full ~ Condition + Time + lastCondition:Time,
+#   reduced ~ Condition + Time).
+# test = "time": genes that change over time, adjusting for Condition
+#   (full ~ Condition + Time, reduced ~ Condition; with no Condition,
+#   ~ Time vs ~ 1).
+ts_prepare_design <- function(MetaData, samples, time_variable, Condition, test = "interaction") {
   # -----------------------------
   # 1. Prepare metadata
   # -----------------------------
   sample_meta <- MetaData %>%
-    filter(sampleid %in% colnames(count_mtx)) %>%
-    arrange(match(sampleid, colnames(count_mtx)))
+    filter(sampleid %in% samples) %>%
+    arrange(match(sampleid, samples))
   # Convert all factor columns to character (DEGreport safety)
   sample_meta[] <- lapply(sample_meta, function(x) {
     if (is.factor(x)) as.character(x) else x
   })
-  # # Create required columns
-  # sample_meta$sample <- sample_meta$sampleid
-  # 
   # Create ordered time factor
   if (!is.numeric(sample_meta[[time_variable]])) {
     sample_meta$Unified_Time <- parse_time(sample_meta[[time_variable]])
   } else {
     sample_meta$Unified_Time <- factor(sample_meta[[time_variable]], levels = sort(unique(sample_meta[[time_variable]])))
-    
   }
   # -----------------------------
   # 1b. Factor all Condition columns
   # -----------------------------
+  Condition <- setdiff(Condition, time_variable)
   for (col in Condition) {
     sample_meta[[col]] <- factor(sample_meta[[col]])
   }
-  
-  # Last covariate is the one to test interaction
-  interaction_cov <- tail(Condition, 1)
-  
+  if (nlevels(droplevels(sample_meta$Unified_Time)) < 2) {
+    return(list(status = "error", msg = "The time variable needs at least 2 time points in the selected samples."))
+  }
+  if (test == "interaction" && length(Condition) == 0) {
+    return(list(status = "error", msg = "Time x Condition test needs at least one Condition Variable. Use the Time only test to find genes that change over time without a condition."))
+  }
+  # Constant "condition" so degPatterns and the plots/heatmaps downstream
+  # (which all expect one condition column) still work with no condition.
+  if (length(Condition) == 0) sample_meta[[ts_no_condition_col]] <- "All"
+
   # Set rownames
   rownames(sample_meta) <- sample_meta$sampleid
-  
+
   # -----------------------------
-  # 2. Build DESeq2 model formulas
+  # 2. Build model formulas
   # -----------------------------
-  # Main effects: all covariates
-  main_effects <- paste(Condition, collapse = " + ")
-  
-  # Full model: all covariates + time + lastCov:time
-  full_formula <- as.formula(
-    paste("~", main_effects, "+ Unified_Time +", 
-          paste0(interaction_cov, ":Unified_Time"))
+  if (test == "time") {
+    # Main effects (if any) stay in both models; Time is what gets tested.
+    main_effects <- if (length(Condition) > 0) paste(Condition, collapse = " + ") else "1"
+    full_formula    <- as.formula(paste("~", if (length(Condition) > 0) paste(main_effects, "+ Unified_Time") else "Unified_Time"))
+    reduced_formula <- as.formula(paste("~", main_effects))
+  } else {
+    # Last covariate is the one to test interaction
+    interaction_cov <- tail(Condition, 1)
+    # Main effects: all covariates
+    main_effects <- paste(Condition, collapse = " + ")
+
+    # Full model: all covariates + time + lastCov:time
+    full_formula <- as.formula(
+      paste("~", main_effects, "+ Unified_Time +",
+            paste0(interaction_cov, ":Unified_Time"))
+    )
+
+    # Reduced model: drop interaction
+    reduced_formula <- as.formula(
+      paste("~", main_effects, "+ Unified_Time")
+    )
+  }
+  list(status = "success", sample_meta = sample_meta, Condition = Condition,
+       full_formula = full_formula, reduced_formula = reduced_formula)
+}
+
+# Detailed message shown when the full model cannot be fitted. detail adds
+# method-specific information (e.g. which limma coefficients are not estimable).
+ts_design_error_msg <- function(method, d, detail = NULL) {
+  method_name <- if (identical(method, "limma")) "limma" else "DESeq2"
+  causes <- c(
+    "- Some combinations of your variables (Condition x Time) have zero samples.",
+    "- One variable (e.g., 'Batch') perfectly overlaps with another (e.g., 'Condition') or with Time.",
+    "- A column in your metadata contains only one unique value in the selected samples."
   )
-  
-  # Reduced model: drop interaction
-  reduced_formula <- as.formula(
-    paste("~", main_effects, "+ Unified_Time")
-  )
-  
+  if (identical(method, "limma")) causes <- c(causes,
+    "- There are not more samples than model coefficients, so limma has no residual degrees of freedom to estimate the variance.")
+  paste(c(
+    sprintf("Design Matrix Error (%s): The variables in your formula are confounded, so the model cannot be fitted.", method_name),
+    sprintf("Full model: %s   Reduced model: %s", paste(deparse(d$full_formula), collapse = ""), paste(deparse(d$reduced_formula), collapse = "")),
+    detail,
+    "Possible causes:",
+    causes,
+    "Please simplify your design (remove a Condition Variable, or use the Time only test) or check your sample metadata for redundant columns."
+  ), collapse = "\n")
+}
+
+# DESeq2 LRT on counts (RNA-seq). Returns the common time-course result:
+# results (one row per gene, with pvalue/padj), expr (VST matrix used by
+# clustering and Similar Pattern Search), sample_meta, plus dds.
+run_timecourse_DEG <- function(MetaData, count_mtx,time_variable,Condition, test = "interaction") {
+  library(DESeq2)
+  library(dplyr)
+  library(tibble)
+
+  d <- ts_prepare_design(MetaData, colnames(count_mtx), time_variable, Condition, test)
+  if (d$status != "success") return(d)
+  sample_meta <- d$sample_meta
+  count_mtx <- count_mtx[, sample_meta$sampleid]
+
   # -----------------------------
   # 3. Build DESeq2 object
   # -----------------------------
@@ -178,53 +230,105 @@ run_timecourse_DEG <- function(MetaData, count_mtx,time_variable,Condition) {
     DESeqDataSetFromMatrix(
       countData = count_mtx,
       colData   = sample_meta,
-      design    = full_formula
+      design    = d$full_formula
     )
-  }, error = function(e) {
-    if (grepl("full rank", e$message)) {
-      return("RANK_ERROR")
-    }
-    stop(e$message)
-  })
-  
-  # # Use validate to show the message in the UI
-  # validate(
-  #   need(!is.character(dds) || dds != "RANK_ERROR", 
-  #     paste(
-  #     "Design Matrix Error: The variables in your formula are confounded.",
-  #     "Possible causes:",
-  #     "- Some combinations of your variables have zero samples.",
-  #     "- One variable (e.g., 'Batch') perfectly overlaps with another (e.g., 'Condition').",
-  #     "- A column in your metadata contains only one unique value.",
-  #     "Please simplify your design formula or check your sample metadata for redundant columns.",
-  #     sep = "\n"
-  #   ))
-  # )
+  }, error = function(e) e)
 
-  if (is.character(dds) && dds == "RANK_ERROR") {
-    return(list(status = "error", message = "Design Matrix Error: Variables are confounded."))
+  # Errors here come from the design (not full rank, a variable with one
+  # value, ...); show them with the detailed design message.
+  if (inherits(dds, "error")) {
+    detail <- if (!grepl("full rank", conditionMessage(dds)))
+      paste("Model error:", gsub("\\s+", " ", conditionMessage(dds)))
+    return(list(status = "error", msg = ts_design_error_msg("deseq2", d, detail)))
   }
     
   # Filter low-count genes
   dds <- dds[rowSums(counts(dds)) > 1, ]
   # LRT test
-  dds <- DESeq(dds, test = "LRT", reduced = reduced_formula)
-  
-  # # -----------------------------
-  # # 4. Extract LRT results
-  # # -----------------------------
-  # res_lrt <- results(dds)
-  # return(dds)
-  return(list(status = "success", dds = dds))
+  dds <- DESeq(dds, test = "LRT", reduced = d$reduced_formula)
+
+  res <- as.data.frame(results(dds))
+  return(list(status = "success", method = "deseq2", dds = dds, test = test,
+              results = res, mean_col = "baseMean",
+              expr = assay(vst(dds, blind = TRUE)), expr_label = "VST",
+              sample_meta = as.data.frame(colData(dds)),
+              full_formula = deparse(d$full_formula), reduced_formula = deparse(d$reduced_formula)))
 }
 
-run_DEG_cluster <- function(dds, sig_gene, condition_var) {
-  res_lrt <- results(dds)
-  sample_meta <- as.data.frame(colData(dds))
+# limma moderated F-test of the same full vs reduced models, for continuous
+# log-scale data (proteomics, microarray, metabolomics). expr_mtx is genes x
+# samples on the log scale, NA = missing. Genes are kept only with at least
+# min_per_group non-missing values in every condition x time group, so every
+# group mean exists for clustering and Similar Pattern Search; remaining NAs
+# are left to limma (it fits each gene on the samples it has).
+run_timecourse_limma <- function(MetaData, expr_mtx, time_variable, Condition, test = "interaction", min_per_group = 2) {
+  library(limma)
 
-  rld <- vst(dds, blind = TRUE)
-  rld_mat <- assay(rld)
-  cluster_rlog <- rld_mat[sig_gene, ]
+  d <- ts_prepare_design(MetaData, colnames(expr_mtx), time_variable, Condition, test)
+  if (d$status != "success") return(d)
+  sample_meta <- d$sample_meta
+  expr_mtx <- as.matrix(expr_mtx[, sample_meta$sampleid, drop = FALSE])
+
+  cond_var <- if (length(d$Condition) > 0) tail(d$Condition, 1) else ts_no_condition_col
+  grp <- paste(sample_meta[[cond_var]], sample_meta$Unified_Time, sep = "_")
+  grp_idx <- split(seq_len(ncol(expr_mtx)), grp)
+  n_ok <- sapply(grp_idx, function(ix) rowSums(!is.na(expr_mtx[, ix, drop = FALSE])))
+  if (is.null(dim(n_ok))) n_ok <- matrix(n_ok, nrow = nrow(expr_mtx))
+  # A group with fewer samples than min_per_group only needs all its samples.
+  need <- pmin(min_per_group, lengths(grp_idx))
+  keep <- apply(sweep(n_ok, 2, need, ">="), 1, all)
+  n_total <- nrow(expr_mtx)
+  expr_mtx <- expr_mtx[keep, , drop = FALSE]
+  if (nrow(expr_mtx) < 2) {
+    return(list(status = "error", msg = sprintf("Only %d genes/proteins have at least %d values in every condition x time group.", nrow(expr_mtx), min_per_group)))
+  }
+
+  design_full <- tryCatch(model.matrix(d$full_formula, data = sample_meta), error = function(e) e)
+  if (inherits(design_full, "error")) {
+    return(list(status = "error", msg = ts_design_error_msg("limma", d, paste("Model error:", gsub("\\s+", " ", conditionMessage(design_full))))))
+  }
+  design_red  <- model.matrix(d$reduced_formula, data = sample_meta)
+  not_est <- limma::nonEstimable(design_full)
+  if (qr(design_full)$rank < ncol(design_full) || length(not_est) > 0) {
+    return(list(status = "error", msg = ts_design_error_msg("limma", d,
+      if (length(not_est) > 0) paste("Coefficients that cannot be estimated:", paste(not_est, collapse = ", ")))))
+  }
+  if (nrow(design_full) <= ncol(design_full)) {
+    return(list(status = "error", msg = ts_design_error_msg("limma", d,
+      sprintf("The model has %d coefficients but only %d samples.", ncol(design_full), nrow(design_full)))))
+  }
+  test_coefs <- setdiff(colnames(design_full), colnames(design_red))
+
+  fit <- lmFit(expr_mtx, design_full)
+  fit <- eBayes(fit, trend = TRUE)
+  tt <- topTable(fit, coef = test_coefs, number = Inf, sort.by = "none")
+  # With a single tested coefficient (e.g. 2 time points) topTable reports a
+  # moderated t instead of F; F = t^2 and the p-values are the same test.
+  F_stat <- if (!is.null(tt$F)) tt$F else tt$t^2
+  res <- data.frame(AveExpr = tt$AveExpr, F = F_stat, pvalue = tt$P.Value, padj = tt$adj.P.Val,
+                    row.names = rownames(tt))
+
+  # For clustering/similarity only: fill each NA with its own condition x
+  # time group mean, which leaves every group mean unchanged.
+  expr_filled <- expr_mtx
+  for (g in unique(grp)) {
+    ix <- which(grp == g)
+    sub <- expr_filled[, ix, drop = FALSE]
+    m <- rowMeans(sub, na.rm = TRUE)
+    na_pos <- which(is.na(sub), arr.ind = TRUE)
+    if (nrow(na_pos) > 0) sub[na_pos] <- m[na_pos[, 1]]
+    expr_filled[, ix] <- sub
+  }
+
+  return(list(status = "success", method = "limma", test = test,
+              results = res, mean_col = "AveExpr",
+              expr = expr_filled, expr_label = "log expression",
+              sample_meta = sample_meta, n_filtered = n_total - nrow(expr_mtx), min_per_group = min_per_group,
+              full_formula = deparse(d$full_formula), reduced_formula = deparse(d$reduced_formula)))
+}
+
+run_DEG_cluster <- function(expr_mat, sample_meta, sig_gene, condition_var) {
+  cluster_rlog <- expr_mat[sig_gene, ]
   
   clusters <- degPatterns(
     cluster_rlog,
@@ -235,11 +339,65 @@ run_DEG_cluster <- function(dds, sig_gene, condition_var) {
   )
   
   return(list(
-    rlog = rld_mat,
+    rlog = expr_mat,
     cluster_rlog = cluster_rlog,
     sample_meta = sample_meta,
     clusters = clusters
   ))
+}
+
+ts_no_condition_col <- "AllSamples"
+
+# Positive whole number from a numericInput, falling back to a default
+# while the box is empty or invalid.
+ts_pos_int <- function(x, default) {
+  x <- suppressWarnings(as.integer(x))
+  if (length(x) != 1 || is.na(x) || x < 1) default else x
+}
+
+# Mean VST expression per (condition, time) group, the same collapsing
+# degPatterns does before clustering. Returns genes x groups, with groups
+# ordered by condition then time, plus the group table.
+ts_group_profiles <- function(vst_mat, sample_meta, cond_var) {
+  sample_meta <- as.data.frame(sample_meta)
+  cond <- as.character(sample_meta[[cond_var]])
+  cond_levels <- if (is.factor(sample_meta[[cond_var]])) levels(droplevels(sample_meta[[cond_var]])) else unique(cond)
+  time <- droplevels(as.factor(sample_meta$Unified_Time))
+  groups <- expand.grid(time = levels(time), condition = cond_levels, stringsAsFactors = FALSE)
+  groups$label <- paste(groups$condition, groups$time, sep = "_")
+  key <- paste(cond, as.character(time), sep = "_")
+  groups <- groups[groups$label %in% key, , drop = FALSE]
+  prof <- sapply(groups$label, function(g) rowMeans(vst_mat[, key == g, drop = FALSE]))
+  if (is.null(dim(prof))) prof <- matrix(prof, nrow = nrow(vst_mat), dimnames = list(rownames(vst_mat), groups$label))
+  groups$time <- factor(groups$time, levels = levels(time))
+  list(profiles = prof, groups = groups)
+}
+
+# Rank genes by how closely their group-mean profile follows the anchor
+# gene's. Kendall is what degPatterns clusters on; with few time points
+# Kendall has many ties, so Pearson on the same profile breaks them, then
+# change_distance (RMS difference of the mean-centred profiles, i.e. how
+# close the size of each change is to the anchor's). With only 2 groups
+# every correlation is +1 or -1, so change_distance does the ranking.
+find_similar_genes <- function(profiles, anchor, method = "kendall", direction = "similar", candidates = NULL) {
+  stopifnot(anchor %in% rownames(profiles))
+  a <- profiles[anchor, ]
+  pool <- if (is.null(candidates)) rownames(profiles) else intersect(candidates, rownames(profiles))
+  pool <- setdiff(pool, anchor)
+  m <- profiles[pool, , drop = FALSE]
+  m <- m[apply(m, 1, function(x) sd(x) > 0), , drop = FALSE]
+  r_main <- if (method == "pearson") cor(t(m), a) else cor(t(m), a, method = method)
+  r_pear <- cor(t(m), a)
+  sgn <- if (direction == "opposite") -1 else 1
+  a_c <- sgn * (a - mean(a))
+  m_c <- m - rowMeans(m)
+  change_dist <- sqrt(rowMeans(sweep(m_c, 2, a_c)^2))
+  df <- data.frame(UniqueID = rownames(m), r = as.vector(r_main), pearson_r = as.vector(r_pear),
+                   change_distance = as.vector(change_dist), stringsAsFactors = FALSE)
+  df <- df[order(-sgn * round(df$r, 10), -sgn * round(df$pearson_r, 10), df$change_distance), ]
+  df$rank <- seq_len(nrow(df))
+  rownames(df) <- NULL
+  df
 }
 
 # ---- UI Module ----
@@ -252,14 +410,41 @@ TimeSeries_ui <- function(id) {
              radioButtons(ns("ts_genelable"),label="Select Gene Label",inline = TRUE, choices=c("Gene.Name","UniqueID"), selected="Gene.Name"),
              conditionalPanel(ns = ns, "input.TimeSeries_tabset =='Time-Series DE Analysis'",
                               selectInput(ns("sel_time_var"), label="Select Time Variable", choices=NULL),
-                              selectizeInput(ns("sel_condition_var"), label="Select Condition Variable", choices=NULL,multiple=TRUE),
+                              selectizeInput(ns("sel_condition_var"), label="Select Condition Variable (optional for Time only)", choices=NULL,multiple=TRUE),
+                              radioButtons(ns("ts_method"), label="Data Type / Method",
+                                           choices = c("RNA-seq counts (DESeq2 LRT)" = "deseq2",
+                                                       "Continuous log values, e.g. proteomics (limma F-test)" = "limma"),
+                                           selected = "deseq2"),
+                              conditionalPanel(ns = ns, "input.ts_method == 'limma'",
+                                               numericInput(ns("ts_min_per_group"), label = "Min. Non-missing Values per Condition x Time Group",
+                                                            value = 2, min = 1, step = 1)),
+                              radioButtons(ns("ts_test"), label="Test",
+                                           choices = c("Time x Condition (trend differs between conditions)" = "interaction",
+                                                       "Time only (changes over time)" = "time"),
+                                           selected = "interaction"),
                               actionButton(ns("compute_DE"), "Run Time-Series DE Analysis", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
                               tags$hr()
              ),
-             conditionalPanel(ns = ns, "input.TimeSeries_tabset =='Time-Series DE Analysis' || input.TimeSeries_tabset =='DEG Clustering Analysis'",
+             conditionalPanel(ns = ns, "input.TimeSeries_tabset =='Time-Series DE Analysis' || input.TimeSeries_tabset =='DEG Clustering Analysis' || input.TimeSeries_tabset =='Similar Pattern Search'",
                               sliderInput(ns("padjCutoff"), label="Set the Adjusted p-value Cutoff:", min = 0, max = 1, step = 0.01, value = 0.05),
                               sliderInput(ns("top_n"), label="Select Number of Top DEGs for Clustering", min = 300, max = 1500, step = 100, value = 1000),
                               span(textOutput(ns("filtered_DEG")), style = "color:blue; font-size:15px; font-family:arial; font-style:italic")
+             ),
+             conditionalPanel(ns = ns, "input.TimeSeries_tabset =='Similar Pattern Search'",
+                              tags$hr(),
+                              selectizeInput(ns("sim_gene"), label="Gene to Match", choices=NULL, multiple=FALSE,
+                                             options = list(placeholder = "Type to search")),
+                              radioButtons(ns("sim_pool"), label="Search Among", inline = TRUE,
+                                           choices = c("All tested genes" = "all", "Time-series DEGs above" = "deg"), selected = "all"),
+                              radioButtons(ns("sim_direction"), label="Find", inline = TRUE,
+                                           choices = c("Similar pattern" = "similar", "Opposite pattern" = "opposite"), selected = "similar"),
+                              radioButtons(ns("sim_method"), label="Similarity", inline = TRUE,
+                                           choices = c("Kendall" = "kendall", "Pearson" = "pearson", "Spearman" = "spearman"), selected = "kendall"),
+                              sliderInput(ns("sim_top_n"), label="Number of Similar Genes to List", min = 10, max = 500, step = 10, value = 50),
+                              sliderInput(ns("sim_plot_n"), label="Number of Top Similar Genes to Plot", min = 1, max = 100, step = 1, value = 10),
+                              radioButtons(ns("sim_plot_scale"), label="Plot Scale", inline = TRUE,
+                                           choices = c("Centered log2 (keeps change size)" = "centered", "Z-score" = "zscore"), selected = "centered"),
+                              actionButton(ns("compute_similar"), "Find Similar Genes", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4")
              ),
              conditionalPanel(ns = ns, "input.TimeSeries_tabset =='DEG Clustering Analysis'",
                               actionButton(ns("compute_cluster"), "Run Clustering", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
@@ -325,38 +510,37 @@ TimeSeries_ui <- function(id) {
                                 br(),
                                 tags$details(
                                   tags$summary(
-                                    tags$strong("Click to view DESeq2 LRT Methodology & Example", 
+                                    tags$strong("Click to view Time-Series DE Methodology (DESeq2 LRT / limma) & Example", 
                                                 style = "color: #28a745; cursor: pointer;")
                                   ),
                                   tags$div(
                                     style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
-                                    tags$p("DESeq2 offers the Likelihood ratio test (LRT) test which is used to identify genes whose expression changes over time differently between your selected condition groups."),
-                                    tags$p(
-                                      "The LRT is comparing the full model to the reduced model to identify significant genes. ", 
-                                      tags$strong("The resulting p-values don't tell you about a single fold-change. They tell you if the gene's entire trend is significantly different between your groups."), 
-                                      "Essentially the LRT test is testing whether the term(s) removed in the ‘reduced’ model explains a significant amount of variation in the data"
+                                    tags$p("Both methods compare a full model to a reduced model. A gene is significant when the term(s) dropped from the reduced model explain a significant amount of its variation over time. ",
+                                           tags$strong("The p-values describe the gene's whole trend, not a single fold change.")),
+                                    tags$p(tags$strong("1. Data Type / Method (option on the left):")),
+                                    tags$ul(
+                                      tags$li(tags$strong("RNA-seq counts (DESeq2 LRT):"), " the project's log values are converted back to counts and DESeq2's likelihood ratio test (LRT) compares the two models. For RNA-seq data. Columns: baseMean (mean normalized count), stat (LRT chi-square), pvalue, padj."),
+                                      tags$li(tags$strong("Continuous log values (limma F-test):"), " the same two models are compared with limma's moderated F-test (eBayes with intensity trend) on the project's log values. For proteomics, microarray, metabolomics or other normalized log-scale data; it can also be used on RNA-seq log values (limma-trend). Columns: AveExpr (mean log expression), F, pvalue, padj. ",
+                                              "Missing values are kept as missing; genes/proteins with fewer than the set number of values in any condition x time group (or missing in any sample of a smaller group) are left out, so every group mean exists for clustering and Similar Pattern Search.")
                                     ),
-                                    tags$p(tags$strong("Example:")),
-                                    tags$p(
-                                      "User select ", 
-                                      tags$strong("Age"), 
-                                      " as the Time Variable and ",
-                                      tags$strong("Tissue, Treatment"),     
-                                      " as the Condition Variables."
+                                    tags$p("The default method is chosen from the expression unit (TPM/FPKM/CPM/counts: DESeq2, otherwise limma) and can be changed."),
+                                    tags$p(tags$strong("2. Test (option on the left), available with both methods:")),
+                                    tags$ul(
+                                      tags$li(tags$strong("Time x Condition:"), " finds genes whose time trend is different between the levels of the last Condition Variable. Needs at least one Condition Variable."),
+                                      tags$li(tags$strong("Time only:"), " finds genes that change over time, adjusting for the Condition Variables. Condition Variables are optional.")
                                     ),
-                                    tags$p("Then the full model will be:"),
-                                    tags$p(tags$strong("Tissue + Treatment + Treatment:Age")),
-                                    tags$p(" and the reduced module will be:"),
-                                    tags$p(tags$strong("Tissue + Treatment")),
-                                    tags$p(
-                                      "It always test the effect of the last variable in the Select Condition Variables input box with time. ",
-                                      tags$strong("Any DEGs identified will show different time-course trends between the Condition groups.")
-                                    )
+                                    tags$p(tags$strong("Example:"), " Time Variable ", tags$strong("Age"), ", Condition Variables ", tags$strong("Tissue, Treatment"), "."),
+                                    tags$ul(
+                                      tags$li("Time x Condition: full model ", tags$strong("Tissue + Treatment + Age + Treatment:Age"), ", reduced model ", tags$strong("Tissue + Treatment + Age"), ". Significant genes have different Age trends between Treatment groups."),
+                                      tags$li("Time only: full model ", tags$strong("Tissue + Treatment + Age"), ", reduced model ", tags$strong("Tissue + Treatment"), ". Significant genes change with Age. With no Condition Variable: ", tags$strong("Age"), " vs ", tags$strong("1"), ".")
+                                    ),
+                                    tags$p("Time is treated as a categorical factor (one level per time point). The DEGs from either method and test can be clustered in DEG Clustering Analysis, and any tested gene can be used in Similar Pattern Search.")
                                   )
                                 ),
                                 br(),
                                 actionButton(ns("save_ts_deg"), "Save to output"),
                                 br(),br(),
+                                tags$style(HTML(paste0("#", ns("ts_deg"), ".shiny-output-error-validation { white-space: pre-line; }"))),
                                 DT::DTOutput(ns("ts_deg"))),
                        tabPanel(title="DEG Clustering Analysis",
                                 tabsetPanel(id=ns("ts_cluster_tabset"),
@@ -433,6 +617,34 @@ TimeSeries_ui <- function(id) {
                                                      plotOutput(ns("ts_group_heatmap"))
                                                      )
                                 )
+                       ),
+                       tabPanel(title="Similar Pattern Search",
+                                br(),
+                                tags$details(
+                                  tags$summary(
+                                    tags$strong("Click to view Similar Pattern Search Methodology",
+                                                style = "color: #28a745; cursor: pointer;")
+                                  ),
+                                  tags$div(
+                                    style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
+                                    tags$p("Finds genes whose expression changes over time the same way (or the opposite way) as a selected gene. Run the Time-Series DE Analysis first; this uses its samples, time variable and last Condition Variable."),
+                                    tags$p("Each gene's expression (VST or log values) is averaged per condition and time point (the same profile DEG Clustering uses), then every gene's profile is correlated with the selected gene's profile. ",
+                                           tags$strong("Kendall"), " (default) only looks at the up/down ordering, the same similarity DEG Clustering uses, so expression level and fold-change size do not matter. ",
+                                           tags$strong("Pearson"), " also rewards similar relative step sizes. With few time points Kendall has many ties; ties are broken by Pearson r."),
+                                    tags$p("With a condition selected, the profile covers every condition (e.g. Ctrl T1..Tn then Treated T1..Tn), so a match must follow the selected gene in each condition."),
+                                    tags$p("Ties are broken by Pearson r, then by ", tags$strong("change_distance"), ": the RMS difference between the gene's and the selected gene's mean-centred profiles (log2 scale), so genes whose changes are also similar in size come first."),
+                                    tags$p(tags$strong("Search Among:"), " all genes tested in the DE run, or only the Time-series DEGs passing the cutoffs above. Each gene's DE padj is shown for reference."),
+                                    tags$p("Expression used: VST for the DESeq2 method, the project's own log values for the limma method.")
+                                  )
+                                ),
+                                br(),
+                                span(textOutput(ns("sim_msg")), style = "color:blue; font-size:15px; font-family:arial; font-style:italic"),
+                                plotOutput(ns("sim_plot"), width = "1000px", height = "500px"),
+                                actionButton(ns("save_sim_plot"), "Save to output"),
+                                br(), br(),
+                                uiOutput(ns("sim_actions")),
+                                br(),
+                                DT::DTOutput(ns("sim_table"))
                        )
            )         
     )
@@ -447,7 +659,8 @@ TimeSeries_server <- function(id, parent_session) {
                  # silently re-triggers that button's own observeEvent.
                  session$setBookmarkExclude(c("compute_DE", "compute_cluster", "save_ts_deg",
                                                "ts_cluster_plot", "ts_tpm_gct", "ts_plot_sample_heatmap",
-                                               "ts_zscore_gct", "ts_plot_group_heatmap"))
+                                               "ts_zscore_gct", "ts_plot_group_heatmap",
+                                               "compute_similar", "save_sim_plot"))
 
                  # ts_hm_annot_group/ts_hm_annot_sample only get populated once
                  # the user re-runs clustering (compute_cluster, deliberately
@@ -475,6 +688,9 @@ TimeSeries_server <- function(id, parent_session) {
                        MetaData_clean <- MetaData[, sapply(MetaData, function(x) length(unique(x)) > 1)]
                        attrs <- sort(setdiff(colnames(MetaData_clean), c("sampleid", "Order", "ComparePairs")))
                        updateSelectInput(session, "sel_time_var", choices = attrs, selected = v)
+                     }),
+                     ts_method = list(value = restored$ts_method, apply = function(v) {
+                       updateRadioButtons(session, "ts_method", selected = v)
                      }),
                      sel_condition_var = list(value = restored$sel_condition_var, apply = function(v) {
                        req(DataQCReactive())
@@ -521,6 +737,16 @@ TimeSeries_server <- function(id, parent_session) {
                    unit=str_replace_all(str_extract(expU, "\\(.+\\+"), "(\\(|\\+)", "")
                  })
                  
+                 # Default the method from the expression unit: count-like
+                 # units (TPM/FPKM/CPM/counts) -> DESeq2, anything else
+                 # (e.g. log2 intensity) -> limma.
+                 observeEvent(exp_unit(), {
+                   expU <- exp_unit()
+                   req(expU)
+                   method <- if (grepl("TPM|FPKM|RPKM|CPM|count", expU, ignore.case = TRUE)) "deseq2" else "limma"
+                   updateRadioButtons(session, "ts_method", selected = method)
+                 })
+
                  observeEvent(DataQCReactive(), {
                    req(DataQCReactive())
                    DataIn = DataQCReactive()
@@ -533,23 +759,47 @@ TimeSeries_server <- function(id, parent_session) {
                  
                  DEGReactive <- eventReactive(input$compute_DE, {
                    withProgress(message = 'Processing...', value = 0, {
-                     log_info("Time Course Analysis: computing DEGs (time=", input$sel_time_var,
+                     log_info("Time Course Analysis: computing DEGs (test=", input$ts_test, ", time=", input$sel_time_var,
                               ", condition=", paste(input$sel_condition_var, collapse=","), ").")
                      req(DataQCReactive())
                      req(input$sel_time_var)
-                     req(input$sel_condition_var)
                      DataIn = DataQCReactive()
                      data_long <- DataIn$tmp_data_long
                      MetaData <- DataIn$MetaData
                      ProteinGeneName <- DataIn$ProteinGeneName
 
-                     count_mtx <- get_count_mtx(data_long, linear_base(), linear_small_value())
+                     if (identical(input$ts_method, "limma")) {
+                       # limma works on the app's log values directly; missing
+                       # values stay NA (not 0 as in the DESeq2 count matrix).
+                       expr_mtx <- data_long %>%
+                         dplyr::select(UniqueID, sampleid, expr) %>%
+                         tidyr::pivot_wider(names_from = sampleid, values_from = expr) %>%
+                         tibble::column_to_rownames("UniqueID") %>%
+                         as.matrix()
+                       min_n <- suppressWarnings(as.integer(input$ts_min_per_group))
+                       if (is.na(min_n) || min_n < 1) min_n <- 1
+                       res <- run_timecourse_limma(MetaData,
+                                                   expr_mtx,
+                                                   time_variable = input$sel_time_var,
+                                                   Condition = input$sel_condition_var,
+                                                   test = input$ts_test,
+                                                   min_per_group = min_n)
+                     } else {
+                       count_mtx <- get_count_mtx(data_long, linear_base(), linear_small_value())
 
-                     res <- run_timecourse_DEG(MetaData,
-                                        count_mtx,
-                                        time_variable = input$sel_time_var,
-                                        Condition = input$sel_condition_var
-                                        )
+                       res <- run_timecourse_DEG(MetaData,
+                                          count_mtx,
+                                          time_variable = input$sel_time_var,
+                                          Condition = input$sel_condition_var,
+                                          test = input$ts_test
+                                          )
+                     }
+                     # Remember the variables this result was built with, so
+                     # clustering/similar-gene search stay consistent with it
+                     # even if the inputs change afterwards.
+                     conds <- setdiff(input$sel_condition_var, input$sel_time_var)
+                     res$time_var <- input$sel_time_var
+                     res$cond_var <- if (length(conds) > 0) tail(conds, 1) else ts_no_condition_col
                      if (identical(res$status, "success")) {
                        log_info("Time Course Analysis: DEG computation succeeded.")
                      } else {
@@ -564,9 +814,7 @@ TimeSeries_server <- function(id, parent_session) {
                    res <- DEGReactive()
                    
                    if (res$status == "success") {
-                     dds <- res$dds
-                     
-                     df<- results(dds) %>%
+                     df<- res$results %>%
                        data.frame() %>%
                        rownames_to_column("gene") %>%
                        as_tibble() %>%
@@ -582,17 +830,22 @@ TimeSeries_server <- function(id, parent_session) {
                          dplyr:: rename(UniqueID = gene) %>%
                          dplyr:: filter(!is.na(Gene.Name), Gene.Name != "") %>%
                          dplyr:: group_by(Gene.Name) %>%
-                         dplyr:: slice_max(baseMean, n = 1, with_ties = FALSE) %>%
+                         dplyr:: slice_max(.data[[res$mean_col]], n = 1, with_ties = FALSE) %>%
                          dplyr:: ungroup() %>%
                          dplyr:: rename(gene = Gene.Name) %>%
                          dplyr:: relocate(gene, .before = 1)
                      }
                      
                      nrow = nrow(df)
-                     max_padj = max(df$padj)
+                     test_name <- paste0(ifelse(identical(res$test, "time"), "Time only", "Time x Condition"),
+                                         ", ", ifelse(identical(res$method, "limma"), "limma", "DESeq2"))
+                     if (identical(res$method, "limma") && res$n_filtered > 0)
+                       test_name <- sprintf("%s; %d genes/proteins with < %d values in a group left out", test_name, res$n_filtered, res$min_per_group)
+                     max_padj = if (nrow > 0) max(df$padj) else NA
                      list(
                        df = df,
-                       msg = sprintf("Top %s DEGs are selected with maximum padj %.3f.", nrow, max_padj)
+                       msg = if (nrow == 0) sprintf("No genes pass padj < %s (%s).", input$padjCutoff, test_name) else
+                         sprintf("Top %s DEGs (%s) are selected with maximum padj %.3f.", nrow, test_name, max_padj)
                      )
                    } else {
                      list(
@@ -602,7 +855,8 @@ TimeSeries_server <- function(id, parent_session) {
                    }
                  })
                      
-                 output$filtered_DEG <- renderText({filtered_DE()$msg})
+                 # Errors: first line here, the full multi-line message in the DE table area.
+                 output$filtered_DEG <- renderText({sub("\n.*", "", filtered_DE()$msg)})
                      
                  observeEvent(input$save_ts_deg, {
                    log_info("Time Course Analysis: DEG data table saved to output.")
@@ -620,18 +874,8 @@ TimeSeries_server <- function(id, parent_session) {
                    req(filtered_DE())
                    df <- filtered_DE()$df
                    
-                   validate(
-                     need(!is.null(df),
-                       paste(
-                       "Design Matrix Error: The variables in your formula are confounded.",
-                       "Possible causes:",
-                       "- Some combinations of your variables have zero samples.",
-                       "- One variable (e.g., 'Batch') perfectly overlaps with another (e.g., 'Condition').",
-                       "- A column in your metadata contains only one unique value.",
-                       "Please simplify your design formula or check your sample metadata for redundant columns.",
-                       sep = "\n"
-                     ))
-                   )
+                   # Use validate to show the (multi-line) error message in the UI
+                   validate(need(!is.null(df), filtered_DE()$msg))
                    
                    if (input$ts_genelable == 'Gene.Name') {
                      df <- df %>%
@@ -648,18 +892,16 @@ TimeSeries_server <- function(id, parent_session) {
                      log_info("Time Course Analysis: computing DEG clusters.")
                      req(DEGReactive())
                      req(filtered_DE())
-                     req(input$sel_condition_var)
                      
                      res <- DEGReactive()
-                     dds <- res$dds
                      filtered_dds <- filtered_DE()$df
                      sig_gene <- filtered_dds$gene
                      if (input$ts_genelable == 'Gene.Name') {
                        sig_gene <- filtered_dds$UniqueID
                      }
-                     time_col(input$sel_time_var)
-                     cond_col(tail(input$sel_condition_var, 1))
-                     res_cluster <- run_DEG_cluster(dds, sig_gene, cond_col())
+                     time_col(res$time_var)
+                     cond_col(res$cond_var)
+                     res_cluster <- run_DEG_cluster(res$expr, res$sample_meta, sig_gene, cond_col())
                      
                      df_cluster_normalized <- res_cluster$clusters$normalized
                      df_counts <- res_cluster$clusters$counts
@@ -673,10 +915,13 @@ TimeSeries_server <- function(id, parent_session) {
                      df_cluster <- res_cluster$clusters$df
                      genes_ordered <- df_cluster[order(df_cluster$cluster), "genes"]
                      
+                     # No condition selected -> constant AllSamples column, which has no tmp_group entry.
+                     cond_levels <- DataQCReactive()$tmp_group[[cond_col()]]
+                     if (is.null(cond_levels)) cond_levels <- unique(as.character(df_cluster_normalized[[cond_col()]]))
                      group_meta <- df_cluster_normalized %>% 
                        dplyr::select(all_of(c('merge', time_col(), "Unified_Time", cond_col()))) %>% 
                        distinct() %>% 
-                       dplyr::mutate(!!cond_col() := factor(!!sym(cond_col()), levels = DataQCReactive()$tmp_group[[cond_col()]])) %>%
+                       dplyr::mutate(!!cond_col() := factor(!!sym(cond_col()), levels = cond_levels)) %>%
                        dplyr::arrange(!!sym(cond_col()), Unified_Time) %>%
                        dplyr::mutate(!!cond_col() := as.character(!!sym(cond_col())))
                      
@@ -770,7 +1015,7 @@ TimeSeries_server <- function(id, parent_session) {
                      DataCluster <-DataClusterReactive()
                      clusters <- DataCluster$clusters
                      
-                     interaction_cov <- tail(input$sel_condition_var, 1)
+                     interaction_cov <- cond_col()
                      
                      clusters$plot$data[[interaction_cov]] <- factor(
                        clusters$plot$data[[interaction_cov]], 
@@ -811,6 +1056,161 @@ TimeSeries_server <- function(id, parent_session) {
                    saved_plots$ts_cluster_plot[[saved.num]] <- p
                  })
                  
+                 ############## Similar Pattern Search
+                 # Expression of every gene tested in the current DE run (VST
+                 # for DESeq2, the app's log values for limma).
+                 ts_vst <- reactive({
+                   req(DEGReactive())
+                   res <- DEGReactive()
+                   req(identical(res$status, "success"))
+                   res$expr
+                 })
+
+                 ts_gene_choices <- reactive({
+                   req(DEGReactive())
+                   res <- DEGReactive()
+                   req(identical(res$status, "success"))
+                   ids <- rownames(res$expr)
+                   labels <- ids
+                   if (input$ts_genelable == 'Gene.Name') {
+                     ProteinGeneName <- DataQCReactive()$ProteinGeneName
+                     gn <- ProteinGeneName$Gene.Name[match(ids, ProteinGeneName$UniqueID)]
+                     labels <- ifelse(is.na(gn) | gn == "", ids, gn)
+                     # A gene name shared by several IDs needs the ID to tell them apart.
+                     dup <- labels %in% labels[duplicated(labels)]
+                     labels[dup] <- paste0(labels[dup], " (", ids[dup], ")")
+                   }
+                   o <- order(labels)
+                   setNames(ids[o], labels[o])
+                 })
+
+                 observeEvent(ts_gene_choices(), {
+                   choices <- ts_gene_choices()
+                   # Keep the current gene if it is still in this run.
+                   sel <- isolate(input$sim_gene)
+                   if (is.null(sel) || !(sel %in% choices)) sel <- character(0)
+                   updateSelectizeInput(session, "sim_gene", choices = choices, selected = sel, server = TRUE)
+                 })
+
+                 SimilarReactive <- eventReactive(input$compute_similar, {
+                   validate(need(!is.null(input$compute_DE) && input$compute_DE > 0, "Please run the Time-Series DE Analysis first."))
+                   req(DEGReactive())
+                   res <- DEGReactive()
+                   validate(need(identical(res$status, "success"), "The Time-Series DE Analysis did not finish; please fix it first."))
+                   validate(need(!is.null(input$sim_gene) && input$sim_gene != "", "Please select a gene to match."))
+                   withProgress(message = "Finding similar genes...", value = 0, {
+                     anchor <- input$sim_gene
+                     vst_mat <- ts_vst()
+                     validate(need(anchor %in% rownames(vst_mat), "The selected gene was not tested in the current DE run."))
+                     sample_meta <- res$sample_meta
+                     prof <- ts_group_profiles(vst_mat, sample_meta, res$cond_var)
+                     validate(need(sd(prof$profiles[anchor, ]) > 0, "The selected gene has the same mean expression at every time point."))
+                     candidates <- NULL
+                     if (input$sim_pool == "deg") {
+                       df_deg <- filtered_DE()$df
+                       candidates <- if ("UniqueID" %in% names(df_deg)) df_deg$UniqueID else df_deg$gene
+                       validate(need(length(candidates) > 0, "No Time-series DEGs pass the current cutoffs."))
+                     }
+                     sim <- find_similar_genes(prof$profiles, anchor, method = input$sim_method,
+                                               direction = input$sim_direction, candidates = candidates)
+                     lrt <- res$results
+                     ProteinGeneName <- DataQCReactive()$ProteinGeneName
+                     sim <- sim %>%
+                       dplyr::mutate(Gene.Name = ProteinGeneName$Gene.Name[match(UniqueID, ProteinGeneName$UniqueID)],
+                                     DE_padj = lrt[UniqueID, "padj"],
+                                     mean_expr = lrt[UniqueID, res$mean_col]) %>%
+                       dplyr::select(rank, UniqueID, Gene.Name, r, pearson_r, change_distance, DE_padj, mean_expr) %>%
+                       head(ts_pos_int(input$sim_top_n, 50))
+                     names(sim)[names(sim) == "r"] <- paste0(input$sim_method, "_r")
+                     names(sim)[names(sim) == "mean_expr"] <- res$mean_col
+                     log_info("Time Course Analysis: similar pattern search for ", anchor, " (", input$sim_method, ", ",
+                              input$sim_direction, ", pool=", input$sim_pool, ") returned ", nrow(sim), " genes.")
+                     list(table = sim, profiles = prof$profiles, groups = prof$groups, anchor = anchor,
+                          cond_var = res$cond_var, time_var = res$time_var, method = input$sim_method,
+                          direction = input$sim_direction, expr_label = res$expr_label)
+                   })
+                 })
+
+                 sim_label <- function(ids) {
+                   if (input$ts_genelable == 'Gene.Name') {
+                     ProteinGeneName <- DataQCReactive()$ProteinGeneName
+                     gn <- ProteinGeneName$Gene.Name[match(ids, ProteinGeneName$UniqueID)]
+                     ifelse(is.na(gn) | gn == "", ids, gn)
+                   } else ids
+                 }
+
+                 output$sim_msg <- renderText({
+                   sim <- SimilarReactive()
+                   msg <- sprintf("%s genes with the most %s pattern to %s (%s on condition x time means of %s).",
+                                  nrow(sim$table), ifelse(sim$direction == "opposite", "opposite", "similar"),
+                                  sim_label(sim$anchor), tools::toTitleCase(sim$method), sim$expr_label)
+                   if (ncol(sim$profiles) < 3) msg <- paste(msg, "Only 2 condition x time groups: every correlation is +1 or -1, so genes are ranked by direction and then by how close their change size is (change_distance).")
+                   msg
+                 })
+
+                 sim_plot <- reactive({
+                   sim <- SimilarReactive()
+                   n_plot <- min(ts_pos_int(input$sim_plot_n, 10), nrow(sim$table))
+                   ids <- c(sim$anchor, head(sim$table$UniqueID, n_plot))
+                   # Z-scores of the best matches are often identical to the
+                   # selected gene's (that is what a near-perfect correlation
+                   # means), so they would sit exactly under its line. The
+                   # centred scale keeps each gene's change size apart.
+                   pm <- sim$profiles[ids, , drop = FALSE]
+                   z <- if (input$sim_plot_scale == "zscore") t(scale(t(pm))) else pm - rowMeans(pm)
+                   expr_label <- sim$expr_label
+                   groups <- sim$groups
+                   df <- data.frame(UniqueID = rep(ids, times = ncol(z)),
+                                    label = groups$label[rep(seq_len(ncol(z)), each = length(ids))],
+                                    z = as.vector(z), stringsAsFactors = FALSE)
+                   df <- dplyr::left_join(df, groups, by = "label")
+                   df$condition <- factor(df$condition, levels = unique(groups$condition))
+                   df$Gene <- factor(ifelse(df$UniqueID == sim$anchor, "Selected gene", "Matched genes"),
+                                     levels = c("Matched genes", "Selected gene"))
+                   p <- ggplot(df, aes(x = time, y = z, group = UniqueID)) +
+                     geom_line(data = df[df$Gene == "Matched genes", ], aes(color = Gene), alpha = 0.7, linewidth = 0.8) +
+                     geom_point(data = df[df$Gene == "Matched genes", ], aes(color = Gene), alpha = 0.7, size = 1.5) +
+                     # Dashed so matched lines lying right underneath stay visible.
+                     geom_line(data = df[df$Gene == "Selected gene", ], aes(color = Gene), linewidth = 1.4, linetype = "dashed") +
+                     scale_color_manual(values = c("Matched genes" = "grey40", "Selected gene" = "red")) +
+                     labs(x = sim$time_var, color = NULL,
+                          y = if (input$sim_plot_scale == "zscore") paste("Z-score of mean", expr_label) else paste("Mean", expr_label, "(centred)"),
+                          title = paste0(sim_label(sim$anchor), " and top ", n_plot, " ",
+                                         ifelse(sim$direction == "opposite", "opposite", "similar"), " genes")) +
+                     theme_bw(base_size = 16) + theme(legend.position = "bottom")
+                   if (length(unique(groups$condition)) > 1) p <- p + facet_wrap(~ condition, nrow = 1)
+                   p
+                 })
+
+                 output$sim_plot <- renderPlot({ sim_plot() })
+
+                 observeEvent(input$save_sim_plot, {
+                   log_info("Time Course Analysis: similar pattern plot saved to output.")
+                   saved.num <- length(saved_plots$ts_similar_plot) + 1
+                   saved_plots$ts_similar_plot[[saved.num]] <- sim_plot()
+                 })
+
+                 output$sim_actions <- renderUI({
+                   sim <- SimilarReactive()
+                   genes <- paste(unique(sim_label(c(sim$anchor, sim$table$UniqueID))), collapse = ",")
+                   tagList(
+                     rclipButton("clipbtn_sim", label = "Copy seed + selected genes", clipText = genes,
+                                 icon = icon("copy", lib = "glyphicon"), class = "btn-primary btn-sm"),
+                     # Uses the same plotExp_ click handler as the DEG Cluster Result table.
+                     HTML(sprintf('<button id="plotExp_sim" class="btn btn-info btn-sm" data-genes="%s">Create Expression Plot</button>',
+                                  paste(unique(sim_label(c(sim$anchor, head(sim$table$UniqueID, ts_pos_int(input$sim_plot_n, 10))))), collapse = ",")))
+                   )
+                 })
+
+                 output$sim_table <- DT::renderDT({
+                   sim <- SimilarReactive()
+                   df <- sim$table
+                   num_cols <- names(df)[sapply(df, is.numeric) & names(df) != "rank"]
+                   DT::datatable(df, rownames = FALSE, extensions = 'Buttons',
+                                 options = list(dom = "Blfrtip", buttons = c("csv", "excel", "print"), pageLength = 20)) %>%
+                     formatSignif(columns = num_cols, digits = 3)
+                 })
+
                  ##############                            
                  ts_TPM_gct <- reactive({
                    DataIn = DataQCReactive()
@@ -871,8 +1271,8 @@ TimeSeries_server <- function(id, parent_session) {
                  ############## 
                  observeEvent(DataClusterReactive(), {
                    req(DataClusterReactive())
-                   time_col <- input$sel_time_var
-                   cond_col <- tail(input$sel_condition_var, 1)
+                   time_col <- time_col()
+                   cond_col <- cond_col()
 
                    # Prefer a bookmarked selection over the plain defaults
                    # below, if one exists -- see restored_ts_hm_annot's
