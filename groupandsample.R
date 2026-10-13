@@ -221,7 +221,7 @@ reconcile_from_meta <- function(old_meta, ui_meta, ui_tests, ui_samples,
     if (!is.null(required_samples)) {
       all(required_samples %in% names(samples_set))
     } else {
-      FALSE
+      TRUE  # no sample mapping for this test: keep it rather than drop it
     }
   }, FUN.VALUE = logical(1))]
   
@@ -266,7 +266,7 @@ reconcile_from_samples <- function(old_samples, ui_samples, ui_meta, ui_tests,
     if (!is.null(required_samples)) {
       all(required_samples %in% names(samples_set))
     } else {
-      FALSE
+      TRUE  # no sample mapping for this test: keep it rather than drop it
     }
   }, FUN.VALUE = logical(1))]
   

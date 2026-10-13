@@ -540,7 +540,21 @@ DataReactive <- reactive({
                    ProteinGeneNameHeader(colnames(ProteinGeneName))
                    sel_comp=NULL
                    # browser() #debug
-                   if (!is.null(comp_info)) {
+                   # Start every project load with an empty lookup so a previous
+                   # project's comparisons can't leak into this one.
+                   test_id_lookup(list())
+                   # comp_info is only usable when at least one comparison has
+                   # Group_name, Group_test and Group_ctrl filled in. Otherwise (e.g.
+                   # all NA, as in TargetALS_Plasma) fall back to splitting the
+                   # comparison name at "vs", same as when comp_info is missing.
+                   filled <- function(x) !is.na(x) & trimws(as.character(x)) != ""
+                   comp_usable <- !is.null(comp_info) &&
+                     all(c("Group_name", "Group_test", "Group_ctrl") %in% colnames(comp_info)) &&
+                     any(filled(comp_info$Group_name) & filled(comp_info$Group_test) & filled(comp_info$Group_ctrl))
+                   if (!is.null(comp_info) && !comp_usable) {
+                     log_info("comp_info has no usable Group_name/Group_test/Group_ctrl values; matching comparisons to samples by splitting test names at 'vs'.")
+                   }
+                   if (comp_usable) {
                      # 1. Convert to data.table locally for speed
                      # keep.rownames = "Comparison" preserves your test names
                      sel_comp_dt <- data.table::as.data.table(comp_info, keep.rownames = "Comparison")
@@ -615,10 +629,27 @@ DataReactive <- reactive({
                        if (nrow(sel_comp) == 0) sel_comp <- NULL
                      }
                    } else if (length(tests) > 0) {
-                     # 1. Create the base data.frame using data.table for speed
-                     # We use tstrsplit to split "GroupA vs GroupB" into two columns at once
-                     sel_comp_dt <- data.table::data.table(Comparison = tests)
-                     sel_comp_dt[, c("Group_test", "Group_ctrl") := data.table::tstrsplit(Comparison, "vs", fixed = TRUE)]
+                     # 1. Split each test name into its test and control group, e.g.
+                     # "A vs B", "A_vs_B", "A.vs.B". Separators are tried from most to
+                     # least specific; a split counts only when both halves are values
+                     # of MetaData$group. Tests that can't be split get NA groups (no
+                     # samples, no lookup entry), so Groups and Samples keeps them.
+                     known_groups <- unique(as.character(MetaData$group))
+                     split_test_name <- function(test_name) {
+                       for (sep in c("_vs_", ".vs.", " vs ", "-vs-", "vs")) {
+                         parts <- strsplit(test_name, sep, fixed = TRUE)[[1]]
+                         if (length(parts) != 2) next
+                         parts <- gsub("^[[:space:]_.-]+|[[:space:]_.-]+$", "", parts)
+                         if (all(parts %in% known_groups)) return(parts)
+                       }
+                       c(NA_character_, NA_character_)
+                     }
+                     split_parts <- lapply(as.character(tests), split_test_name)
+                     sel_comp_dt <- data.table::data.table(
+                       Comparison = tests,
+                       Group_test = vapply(split_parts, `[`, character(1), 1),
+                       Group_ctrl = vapply(split_parts, `[`, character(1), 2)
+                     )
                      
                      # 2. Set Row Names (converting to data.frame at the end)
                      # 3. Prepare for Sample ID lookup
@@ -657,15 +688,22 @@ DataReactive <- reactive({
                        subset_list = NA_character_
                      )]
                      
-                     # 7. Update the reactiveVal with raw vectors for instant access
+                     # 7. Update the reactiveVal with raw vectors for instant access.
+                     # Only tests matched to samples get an entry.
                      id_mapping <- lapply(res_list, `[[`, "ids_vec")
                      names(id_mapping) <- sel_comp_dt$Comparison
+                     id_mapping <- id_mapping[lengths(id_mapping) > 0]
                      
                      test_id_lookup(id_mapping)
                      
-                     # 8. Final conversion to data.frame with Row Names
-                     sel_comp <- as.data.frame(sel_comp_dt)
-                     rownames(sel_comp) <- sel_comp$Comparison
+                     # 8. Final conversion to data.frame with Row Names, dropping
+                     # tests with no matched samples
+                     sel_comp <- as.data.frame(sel_comp_dt[N_samples > 0])
+                     if (nrow(sel_comp) == 0) {
+                       sel_comp <- NULL
+                     } else {
+                       rownames(sel_comp) <- sel_comp$Comparison
+                     }
                    }
                  }
                  if (!is.null(load_timing$start) && identical(load_timing$id, ProjectInfo$ProjectID)) {
