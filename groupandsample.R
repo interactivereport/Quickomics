@@ -81,6 +81,9 @@ observe({
   state$meta    <- new_meta
   state$samples <- new_samples
   state$tests   <- new_tests
+  # A restored session should open on the data it was saved with, so the
+  # restored selection is applied right away instead of waiting for a click.
+  apply_group_sample_changes(new_meta, new_samples, new_tests)
   restored_gs_snapshot(NULL)
 })
 
@@ -385,14 +388,51 @@ reconcile_state <- function(visible, old_meta, old_samples, old_tests,
 ## MODEL → UI RENDERING
 ## =========================
 
-# Step 1: Propagate state changes to reactiveVals only.
-# Kept separate from renderUI blocks to prevent double-rendering.
-observe({
+# Step 1: Push the edited selection to the reactiveVals the rest of the app
+# reads (active_group_list/sample_order/test_order, and through them
+# DataQCReactive()). This no longer happens on every edit: edits on this page
+# only change `state` (sample meta, sample list, comparison list), and the
+# downstream data is updated only when the user clicks "Apply Changes to
+# Project Data" (plus project load, session restore and Save Session).
+apply_group_sample_changes <- function(meta = isolate(state$meta),
+                                       samples = isolate(state$samples),
+                                       tests = isolate(state$tests)) {
+  log_info("Groups and Samples: applying selection to project data -- ", length(samples),
+           " samples, ", length(tests), " tests.")
+  active_group_list(meta)
+  sample_order(samples)
+  test_order(tests)
+}
+
+# TRUE when the selection on this page differs from what is applied.
+gs_has_pending <- reactive({
   req(length(state$meta) > 0)
-  active_group_list(state$meta)
-  sample_order(state$samples)
-  test_order(state$tests)
+  !identical(lapply(state$meta, as.character), lapply(active_group_list(), as.character)) ||
+    !identical(as.character(state$samples), as.character(sample_order())) ||
+    !identical(as.character(state$tests), as.character(test_order()))
 })
+
+observeEvent(input$apply_gs_changes, {
+  req(length(state$meta) > 0)
+  if (!isTRUE(gs_has_pending())) {
+    showNotification("No pending changes to apply.", type = "message", duration = 3)
+    return()
+  }
+  withProgress(message = "Applying changes to project data ...", {
+    apply_group_sample_changes()
+  })
+})
+
+output$gs_pending_note <- renderUI({
+  req(length(state$meta) > 0)
+  if (isTRUE(gs_has_pending())) {
+    tags$span(style = "color:#d9534f; font-weight:bold; margin-left:10px;",
+              "Changes not applied yet. Other tabs still use the previous selection.")
+  } else {
+    tags$span(style = "color:#5cb85c; margin-left:10px;", "All changes applied.")
+  }
+})
+outputOptions(output, "gs_pending_note", suspendWhenHidden = FALSE)
 
 # Step 2: Each renderUI lives at the top level so it fires exactly once
 # per state change, with no dependency on other reactiveVals updated above.
@@ -605,16 +645,19 @@ observeEvent(input$reset_all_types, {
 shared_header_content <- reactive({
   req(state$meta, state$samples)
   total_samples <- length(state$initial_samples)
-  kept_samples  <- length(state$samples)
+  kept_samples  <- length(sample_order())
   total_tests   <- length(state$initial_tests)
-  kept_tests    <- length(state$tests)
+  kept_tests    <- length(test_order())
   summary_text <- paste0(
     "Selected ", kept_samples, " / ", total_samples, " Samples; ",
     kept_tests,   " / ", total_tests,   " Comparisons. ",
     "(Update Selection at: Top Menu → Groups and Samples.)"
   )
   tagList(
-    tags$p(summary_text),
+    tags$p(summary_text,
+           if (isTRUE(gs_has_pending()))
+             tags$span(style = "color:#d9534f; font-weight:bold;",
+                       " Groups and Samples has changes that are not applied yet.")),
     tags$hr()
   )
 })

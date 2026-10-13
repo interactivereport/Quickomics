@@ -156,6 +156,8 @@ fluidPage(
                                 column(10,
                                        wellPanel(
                                          actionButton("reset_all_types", "Reset All"),
+                                         actionButton("apply_gs_changes", "Apply Changes to Project Data"),
+                                         uiOutput("gs_pending_note", inline = TRUE),
                                          tagList(tags$div(
                                            tags$p("Tip: Use Ctrl (or Cmd on Mac) + click to pick multiple values.")
                                          )),  
@@ -1123,7 +1125,7 @@ server <- function(input, output, session) {
     "data_wide", "downloadGCT", "downloadPDF", "downloadSVG", "downloadXLSX",
     "heatmap_gct", "heatmap_test2sample", "histplot", "pattern", "pattern_plot",
     "pcaplot", "pheatmap2", "plot_PCA", "plot_browsing", "plot_exp", "plot_heatmap",
-    "reset_all_types", "reset_group", "results", "sample", "staticheatmap",
+    "reset_all_types", "apply_gs_changes", "reset_group", "results", "sample", "staticheatmap",
     "vennDiagram", "venn_DEG_data", "volcano", "volcano_selected_to_highlight",
     "gennet", "customData", "uploadData"
   ))
@@ -1213,6 +1215,14 @@ server <- function(input, output, session) {
   ##########################################################################################################
   observeEvent(input$save_session_btn, {
     log_info("Save Session clicked for project ", isolate(ProjectInfo$ProjectID))
+    # The bookmark stores the Groups and Samples selection as shown on that
+    # page, and restore applies it. Apply pending edits now so the saved
+    # session matches what the user gets back.
+    if (isTRUE(tryCatch(gs_has_pending(), error = function(e) FALSE))) {
+      apply_group_sample_changes()
+      showNotification("Unapplied Groups and Samples changes were applied before saving.",
+                       type = "message", duration = 5)
+    }
     session$doBookmark()
   })
 
