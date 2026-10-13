@@ -298,7 +298,7 @@ DataExpReactive <- reactive({
   # Reorder data_long_tmp to match tmpids order
   data_long_tmp$UniqueID <- factor(data_long_tmp$UniqueID, levels = tmpids)
   if (input$exp_plot_Y_scale=='Linear') {
-    data_long_tmp <- data_long_tmp %>% mutate(expr=input$linear_base^(expr-input$linear_small_value))
+    data_long_tmp <- data_long_tmp %>% mutate(expr=input$linear_base^expr-input$linear_small_value)
   }
   result_long_tmp=NULL
   if (!is.null(results_long)) {
@@ -589,7 +589,7 @@ browsing_out <- eventReactive(plot_exp_control(),{
   #browser() #debug
   data_long_tmp$labelgeneid=factor(data_long_tmp$labelgeneid, levels=unique(data_long_tmp$labelgeneid))
   if (input$exp_plot_Y_scale=='Linear') {
-    data_long_tmp<-data_long_tmp%>%mutate(expr=input$linear_base^(expr-input$linear_small_value))
+    data_long_tmp<-data_long_tmp%>%mutate(expr=input$linear_base^expr-input$linear_small_value)
   }
   # See the matching comment in boxplot_out() above: drop unused factor
   # levels (e.g. Genotype/Age carrying MetaData's full global level set)

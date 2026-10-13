@@ -17,7 +17,7 @@ library(DEGreport)
 get_count_mtx <- function(data_long, linear_base, linear_small_value) {
   if (is.na(linear_base)) linear_base = 2
   if (is.na(linear_small_value)) linear_small_value = 1
-  data_long_linear <- data_long %>% mutate(expr=linear_base^(expr-linear_small_value))
+  data_long_linear <- data_long %>% mutate(expr=pmax(linear_base^expr-linear_small_value, 0))
   
   data_wide_linear <- data_long_linear %>%
     dplyr::select(UniqueID, sampleid, expr) %>%
