@@ -11,6 +11,10 @@ observe({
 active_group_list <- reactiveVal(list())
 all_group_list <- reactiveVal(list())
 updating_from_model <- reactiveVal(FALSE)
+# Attribute values the user has dragged to "Remove", per attribute. Meta edits
+# subset the current samples, and these stay excluded until the user drags
+# them back (or presses Reset All / loads another project).
+meta_user_removed <- reactiveVal(list())
 reset_all <- reactiveVal(FALSE)
 
 state <- reactiveValues(
@@ -136,6 +140,7 @@ observeEvent(MetaData_long(), {
   state$tests   <- if (!is.null(all_tests())) all_tests() else character()
   
   state$initial_meta    <- init_meta
+  meta_user_removed(list())
   state$initial_samples <- state$samples
   state$initial_tests   <- state$tests
   
@@ -178,33 +183,56 @@ detect_change_source <- function(visible, old_meta, old_samples, old_tests,
 ## RECONCILIATION FUNCTIONS
 ## =========================
 # A) META → SAMPLES → TESTS
+# Sequential subsetting: a meta edit starts from the CURRENT samples, not the
+# original ones. Removing values drops their samples from the current set;
+# putting a value back re-adds its samples, except those carrying a value the
+# user removed from another attribute.
 reconcile_from_meta <- function(old_meta, ui_meta, ui_tests, ui_samples, 
-                                md_by_meta, md_by_sample, all_samples_vec, all_tests_vec) {
+                                md_by_meta, md_by_sample, all_samples_vec, all_tests_vec,
+                                user_removed = list()) {
   attrs <- names(ui_meta)
   
   # 1) Detect changed attributes
   changed_attrs <- attrs[!mapply(identical, lapply(ui_meta, as.character), lapply(old_meta, as.character))]
   
   if (length(changed_attrs) == 0) {
-    return(list(meta = ui_meta, samples = ui_samples, tests = ui_tests))
+    return(list(meta = ui_meta, samples = ui_samples, tests = ui_tests, user_removed = user_removed))
   }
   
-  base_order <- unique(c(ui_samples, all_samples_vec))
-  new_samples <- ui_samples # Default fallback
+  samples_with <- function(attr, vals) {
+    vals <- as.character(vals)
+    if (length(vals) == 0) return(character())
+    as.character(md_by_meta[.(rep(attr, length(vals)), vals), sampleid, nomatch = 0L])
+  }
   
-  # 2) Recompute sample order driven by changed attributes using keyed lookup
+  # 2) Update the current sample set from what was removed/added per attribute
+  new_set <- as.character(ui_samples)
   for (attr in changed_attrs) {
-    ui_vals <- ui_meta[[attr]]
+    old_vals <- as.character(old_meta[[attr]])
+    new_vals <- as.character(ui_meta[[attr]])
+    removed  <- setdiff(old_vals, new_vals)
+    added    <- setdiff(new_vals, old_vals)
+    user_removed[[attr]] <- setdiff(union(user_removed[[attr]], removed), added)
     
-    # Use keyed data.table for fast type/group lookup
-    blocks <- lapply(ui_vals, function(val) {
-      # Binary search on (type, group) key
-      relevant_samples <- md_by_meta[.(attr, val), sampleid, nomatch = 0L]
-      base_order[base_order %in% relevant_samples]
-    })
-    
-    new_samples <- unlist(blocks, use.names = FALSE)
+    if (length(removed) > 0) new_set <- setdiff(new_set, samples_with(attr, removed))
+    if (length(added) > 0) {
+      back <- samples_with(attr, added)
+      for (other in setdiff(names(user_removed), attr)) {
+        back <- setdiff(back, samples_with(other, user_removed[[other]]))
+      }
+      new_set <- union(new_set, back)
+    }
   }
+  
+  # Order samples by the UI order of the (last) changed attribute's values,
+  # keeping the current sample order within each value
+  base_order <- unique(c(as.character(ui_samples), as.character(all_samples_vec)))
+  base_order <- base_order[base_order %in% new_set]
+  ord_attr <- changed_attrs[length(changed_attrs)]
+  blocks <- lapply(ui_meta[[ord_attr]], function(val) {
+    base_order[base_order %in% samples_with(ord_attr, val)]
+  })
+  new_samples <- unique(c(unlist(blocks, use.names = FALSE), base_order))
   
   # 3) Recompute meta for ALL attributes using reordered md slices
   # Filter md_by_meta to only keep rows matching new_samples
@@ -233,7 +261,7 @@ reconcile_from_meta <- function(old_meta, ui_meta, ui_tests, ui_samples,
   added_tests <- setdiff(logical_tests, kept_tests)
   new_tests   <- c(kept_tests, added_tests)
   
-  list(meta = new_meta, samples = new_samples, tests = new_tests)
+  list(meta = new_meta, samples = new_samples, tests = new_tests, user_removed = user_removed)
 }
 
 # B) SAMPLES → META → TESTS
@@ -290,31 +318,36 @@ reconcile_from_tests <- function(old_tests, ui_tests, ui_meta, ui_samples,
   if (!tests_changed) {
     return(list(meta = ui_meta, samples = ui_samples, tests = ui_tests))
   }
-  
-  kept_tests    <- ui_tests
-  removed_tests <- setdiff(all_tests_vec, kept_tests)
-  
-  # Vectorized lookup using keyed data.table
-  get_samples_from_test <- function(test_name) {
-    groups <- trimws(strsplit(as.character(test_name), "vs")[[1]])
-    # Binary search on (type, group) won't work here since we need across types
-    # Instead, filter by group values across all types
-    md_by_meta[group %in% groups, unique(sampleid)]
+  # Reordering comparisons only (same set) changes nothing else, so removed
+  # samples and meta values are not put back.
+  if (setequal(as.character(old_tests), as.character(ui_tests))) {
+    return(list(meta = ui_meta, samples = ui_samples, tests = ui_tests))
   }
   
-  # 2) Samples in kept and removed tests
-  samples_in_kept    <- unique(unlist(lapply(kept_tests, get_samples_from_test)))
-  samples_in_removed <- unique(unlist(lapply(removed_tests, get_samples_from_test)))
+  kept_tests <- ui_tests
   
-  # 3) Samples only in removed tests
-  samples_only_removed <- setdiff(samples_in_removed, samples_in_kept)
+  # Samples of a comparison: its test_id_lookup entry when there is one,
+  # otherwise the groups named on either side of "vs"
+  get_samples_from_test <- function(test_name) {
+    ids <- test_id_lookup()[[as.character(test_name)]]
+    if (!is.null(ids)) return(as.character(ids))
+    groups <- trimws(strsplit(as.character(test_name), "vs")[[1]])
+    as.character(md_by_meta[group %in% groups, unique(sampleid)])
+  }
+  samples_of <- function(tests) unique(unlist(lapply(tests, get_samples_from_test), use.names = FALSE))
   
-  # 4) Final samples = all samples − samples_only_removed
-  final_samples <- all_samples_vec[!(all_samples_vec %in% samples_only_removed)]
+  # Sequential, like the meta edits: start from the CURRENT samples.
+  # 2) Removing comparisons drops only their samples that no remaining
+  #    comparison uses
+  removed_now <- setdiff(as.character(old_tests), as.character(ui_tests))
+  drop <- setdiff(samples_of(removed_now), samples_of(kept_tests))
+  # 3) Adding comparisons back re-adds their samples
+  added_now <- setdiff(as.character(ui_tests), as.character(old_tests))
+  add <- samples_of(added_now)
   
-  # preserve UI order where possible
-  final_samples <- unique(c(ui_samples, all_samples_vec))
-  final_samples <- final_samples[final_samples %in% (all_samples_vec[!(all_samples_vec %in% samples_only_removed)])]
+  # 4) Keep current order, append re-added samples in project order
+  final_samples <- setdiff(as.character(ui_samples), drop)
+  final_samples <- c(final_samples, setdiff(as.character(all_samples_vec)[as.character(all_samples_vec) %in% add], final_samples))
   
   # 5) Recompute meta from final samples using keyed lookup
   attrs <- names(ui_meta)
@@ -336,7 +369,8 @@ reconcile_from_tests <- function(old_tests, ui_tests, ui_meta, ui_samples,
 # MASTER RECONCILER
 reconcile_state <- function(visible, old_meta, old_samples, old_tests,
                             ui_meta, ui_samples, ui_tests,
-                            md_by_meta, md_by_sample, all_samples_vec, all_tests_vec) {
+                            md_by_meta, md_by_sample, all_samples_vec, all_tests_vec,
+                            user_removed = list()) {
   # 1) Detect which source changed
   source <- detect_change_source(visible, old_meta, old_samples, old_tests, ui_meta, ui_samples, ui_tests)
   log_debug("Groups and Samples: reconcile_state driver=", source)
@@ -349,7 +383,8 @@ reconcile_state <- function(visible, old_meta, old_samples, old_tests,
   # 3) META is the driver
   if (source == "meta") {
     out <- reconcile_from_meta(old_meta[visible], ui_meta[visible], ui_tests, ui_samples, 
-                               md_by_meta, md_by_sample, all_samples_vec, all_tests_vec)
+                               md_by_meta, md_by_sample, all_samples_vec, all_tests_vec,
+                               user_removed)
     
     # Use keyed lookup to get metadata for output samples
     md_filt <- md_by_sample[.(out$samples), nomatch = 0L]
@@ -604,8 +639,14 @@ observe({
       md_by_meta    = md_by_meta_val,
       md_by_sample  = md_by_sample_val,
       all_samples_vec = all_samples_vec,
-      all_tests_vec = all_tests_vec
+      all_tests_vec = all_tests_vec,
+      user_removed  = isolate(meta_user_removed())
     )
+    # Remember removed values; a value that is back in the selection (e.g. a
+    # sample dragged back in) is no longer counted as removed.
+    ur <- if (!is.null(new_state$user_removed)) new_state$user_removed else isolate(meta_user_removed())
+    for (a in names(ur)) ur[[a]] <- setdiff(ur[[a]], as.character(new_state$meta[[a]]))
+    meta_user_removed(ur[lengths(ur) > 0])
     
     # 6) identity gate vs current model
     same_meta <- identical(
@@ -637,6 +678,7 @@ observe({
 observeEvent(input$reset_all_types, {
   log_info("Groups and Samples: Reset clicked -- restoring initial selection.")
   reset_all(TRUE)
+  meta_user_removed(list())
   state$meta    <- state$initial_meta
   state$samples <- state$initial_samples
   state$tests   <- state$initial_tests
