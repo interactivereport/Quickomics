@@ -1039,6 +1039,7 @@ fluidPage(
                               downloadButton('downloadPDF', 'Download PDF'),
                               downloadButton('downloadSVG', 'Download SVG (for the first selected plot)'),
                               tags$br(),tags$hr(),
+                              checkboxGroupInput("tables_checked", "Tables to Save", choices=NULL, selected=NULL),
                               downloadButton('downloadXLSX', 'Download tables in .xlsx'),
                               tags$br(),tags$hr(),
                               checkboxGroupInput("GCT_table_checked", "GCT tables to Save", choices=NULL, selected=NULL),

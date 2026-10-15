@@ -377,8 +377,9 @@ ts_group_profiles <- function(vst_mat, sample_meta, cond_var) {
 # gene's. Kendall is what degPatterns clusters on; with few time points
 # Kendall has many ties, so Pearson on the same profile breaks them, then
 # change_distance (RMS difference of the mean-centred profiles, i.e. how
-# close the size of each change is to the anchor's). With only 2 groups
-# every correlation is +1 or -1, so change_distance does the ranking.
+# close the size of each change is to the anchor's). Both r values are
+# compared at 2 decimals. With only 2 groups every correlation is +1 or -1,
+# so change_distance does the ranking.
 find_similar_genes <- function(profiles, anchor, method = "kendall", direction = "similar", candidates = NULL) {
   stopifnot(anchor %in% rownames(profiles))
   a <- profiles[anchor, ]
@@ -394,7 +395,11 @@ find_similar_genes <- function(profiles, anchor, method = "kendall", direction =
   change_dist <- sqrt(rowMeans(sweep(m_c, 2, a_c)^2))
   df <- data.frame(UniqueID = rownames(m), r = as.vector(r_main), pearson_r = as.vector(r_pear),
                    change_distance = as.vector(change_dist), stringsAsFactors = FALSE)
-  df <- df[order(-sgn * round(df$r, 10), -sgn * round(df$pearson_r, 10), df$change_distance), ]
+  # r values that agree to 2 decimals count as tied, so among genes with the
+  # same shape the one whose changes are closest in size comes first.
+  # Comparing r at full precision let 7th-decimal differences decide, which
+  # put nearly flat genes ahead of genes changing as much as the anchor.
+  df <- df[order(-sgn * round(df$r, 2), -sgn * round(df$pearson_r, 2), df$change_distance), ]
   df$rank <- seq_len(nrow(df))
   rownames(df) <- NULL
   df
@@ -519,7 +524,7 @@ TimeSeries_ui <- function(id) {
                                            tags$strong("The p-values describe the gene's whole trend, not a single fold change.")),
                                     tags$p(tags$strong("1. Data Type / Method (option on the left):")),
                                     tags$ul(
-                                      tags$li(tags$strong("RNA-seq counts (DESeq2 LRT):"), " the project's log values are converted back to counts and DESeq2's likelihood ratio test (LRT) compares the two models. For RNA-seq data. Columns: baseMean (mean normalized count), stat (LRT chi-square), pvalue, padj."),
+                                      tags$li(tags$strong("RNA-seq counts (DESeq2 LRT):"), " the project's log values (e.g. log2 TPM) are converted back to the linear scale (e.g. TPM), rounded to whole numbers and treated as counts, since raw counts are not available in the project; DESeq2's likelihood ratio test (LRT) then compares the two models. For RNA-seq data; because the input is TPM rather than real counts, p-values are approximate. Columns: baseMean (mean of the normalized values), stat (LRT chi-square), pvalue, padj."),
                                       tags$li(tags$strong("Continuous log values (limma F-test):"), " the same two models are compared with limma's moderated F-test (eBayes with intensity trend) on the project's log values. For proteomics, microarray, metabolomics or other normalized log-scale data; it can also be used on RNA-seq log values (limma-trend). Columns: AveExpr (mean log expression), F, pvalue, padj. ",
                                               "Missing values are kept as missing; genes/proteins with fewer than the set number of values in any condition x time group (or missing in any sample of a smaller group) are left out, so every group mean exists for clustering and Similar Pattern Search.")
                                     ),
@@ -607,6 +612,7 @@ TimeSeries_ui <- function(id) {
                                                      actionButton(ns("ts_tpm_gct"), "Save sample normalized log2TPM GCT data file to output"),
                                                      br(),
                                                      actionButton(ns("ts_plot_sample_heatmap"), "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
+                                                     actionButton(ns("save_ts_sample_heatmap"), "Save to output"),
                                                      plotOutput(ns("ts_sample_heatmap"))
                                                      ),
                                             tabPanel(title="Time‑series Group Heatmap",
@@ -614,6 +620,7 @@ TimeSeries_ui <- function(id) {
                                                      actionButton(ns("ts_zscore_gct"), "Save group z-score GCT data file to output"),
                                                      br(),
                                                      actionButton(ns("ts_plot_group_heatmap"), "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
+                                                     actionButton(ns("save_ts_group_heatmap"), "Save to output"),
                                                      plotOutput(ns("ts_group_heatmap"))
                                                      )
                                 )
@@ -627,20 +634,41 @@ TimeSeries_ui <- function(id) {
                                   ),
                                   tags$div(
                                     style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
-                                    tags$p("Finds genes whose expression changes over time the same way (or the opposite way) as a selected gene. Run the Time-Series DE Analysis first; this uses its samples, time variable and last Condition Variable."),
-                                    tags$p("Each gene's expression (VST or log values) is averaged per condition and time point (the same profile DEG Clustering uses), then every gene's profile is correlated with the selected gene's profile. ",
+                                    tags$p("Finds genes whose expression changes over time the same way (or the opposite way) as the seed gene (the gene chosen in Gene to Match). Run the Time-Series DE Analysis first; this uses its samples, time variable and last Condition Variable."),
+                                    tags$p("Each gene's expression (VST or log values) is averaged per time point, or per condition and time point when a Condition Variable is selected (the same profile DEG Clustering uses), then every gene's profile is correlated with the seed gene's profile. ",
                                            tags$strong("Kendall"), " (default) only looks at the up/down ordering, the same similarity DEG Clustering uses, so expression level and fold-change size do not matter. ",
                                            tags$strong("Pearson"), " also rewards similar relative step sizes. With few time points Kendall has many ties; ties are broken by Pearson r."),
-                                    tags$p("With a condition selected, the profile covers every condition (e.g. Ctrl T1..Tn then Treated T1..Tn), so a match must follow the selected gene in each condition."),
-                                    tags$p("Ties are broken by Pearson r, then by ", tags$strong("change_distance"), ": the RMS difference between the gene's and the selected gene's mean-centred profiles (log2 scale), so genes whose changes are also similar in size come first."),
+                                    tags$p("Without a Condition Variable (Time only test), the profile is the time-point means T1..Tn. With a condition selected, the profile covers every condition (e.g. Ctrl T1..Tn then Treated T1..Tn), so a match must follow the seed gene in each condition; this also applies to a Time only test run with a condition selected."),
+                                    tags$p(tags$strong("change_distance"), " measures how close the size of the gene's changes is to the seed gene's (log2 scale, lower = closer). Both profiles are centred on their own mean, which removes expression level; change_distance is the root mean square of the differences between the two centred profiles:"),
+                                    tags$ul(
+                                      tags$li("Example: seed gene means 4.22, 3.62, 3.80 (centred +0.34, -0.26, -0.08); matched gene means 3.75, 3.55, 3.61 (centred +0.12, -0.09, -0.03)."),
+                                      tags$li("Differences: -0.23, +0.17, +0.06; change_distance = sqrt((0.051 + 0.029 + 0.003) / 3) = 0.17."),
+                                      tags$li("0 = identical changes (only the expression level differs). A gene that does not change at all scores the seed gene's own RMS change, so values close to the largest in the table usually mean the gene barely changes.")
+                                    ),
+                                    tags$p(tags$strong("Ranking:"), " genes are sorted by the chosen correlation, then Pearson r, both compared at 2 decimals (0.996 and 0.999 count as tied), and then by change_distance. With few time points many genes reach r = 1.00, so change_distance usually decides among them."),
+                                    tags$p(tags$strong("How to pick the top genes from the table:")),
+                                    tags$ol(
+                                      tags$li("Shape: keep genes with r close to 1 (e.g. 0.9 or higher; close to -1 for an Opposite search)."),
+                                      tags$li("Size of change: among those, prefer a small change_distance. change_distance is how far the gene's centred profile is from the seed gene's, so a larger value means it is further from the seed gene."),
+                                      tags$li("Evidence: check DE_padj. A gene with a small DE_padj really changes over time; a large DE_padj means its profile may be noise even if it matches well."),
+                                      tags$li("Abundance: check baseMean (DESeq2) or AveExpr (limma). Very low values are noisier."),
+                                      tags$li("Search Among Time-series DEGs only to apply the DE filter automatically, then use the table's column sorting and search box, Copy seed + selected genes, or Create Expression Plot.")
+                                    ),
                                     tags$p(tags$strong("Search Among:"), " all genes tested in the DE run, or only the Time-series DEGs passing the cutoffs above. Each gene's DE padj is shown for reference."),
-                                    tags$p("Expression used: VST for the DESeq2 method, the project's own log values for the limma method.")
+                                    tags$p(tags$strong("Expression used:"), " VST for the DESeq2 method, the project's own log values for the limma method."),
+                                    tags$p(tags$strong("VST"), " (variance stabilizing transformation, DESeq2::vst) puts count-like values on a log2-like scale: the app's log values (e.g. log2 TPM) are converted back to the linear scale (e.g. TPM), rounded and treated as counts (raw counts are not available), normalized with DESeq2 size factors, and transformed with vst(blind = TRUE). For moderate and high values VST is close to log2 of the normalized values; for low values it shrinks values together so noisy low-expression genes do not swing widely. Differences of 1 are therefore about a 2-fold change, and changes of low-expression genes are slightly compressed. The group means in the plot and in change_distance are VST means.")
                                   )
                                 ),
                                 br(),
+                                actionButton(ns("save_sim_plot"), "Save plot to output"),
+                                actionButton(ns("save_sim_table"), "Save table to output"),
+                                br(), br(),
                                 span(textOutput(ns("sim_msg")), style = "color:blue; font-size:15px; font-family:arial; font-style:italic"),
-                                plotOutput(ns("sim_plot"), width = "1000px", height = "500px"),
-                                actionButton(ns("save_sim_plot"), "Save to output"),
+                                # The plot area appears only after the first search, so the
+                                # tab has no large empty box before that.
+                                conditionalPanel(ns = ns, "input.compute_similar > 0",
+                                  plotly::plotlyOutput(ns("sim_plot"), width = "1000px", height = "500px")
+                                ),
                                 br(), br(),
                                 uiOutput(ns("sim_actions")),
                                 br(),
@@ -660,7 +688,8 @@ TimeSeries_server <- function(id, parent_session) {
                  session$setBookmarkExclude(c("compute_DE", "compute_cluster", "save_ts_deg",
                                                "ts_cluster_plot", "ts_tpm_gct", "ts_plot_sample_heatmap",
                                                "ts_zscore_gct", "ts_plot_group_heatmap",
-                                               "compute_similar", "save_sim_plot"))
+                                               "compute_similar", "save_sim_plot", "save_sim_table",
+                                               "save_ts_sample_heatmap", "save_ts_group_heatmap"))
 
                  # ts_hm_annot_group/ts_hm_annot_sample only get populated once
                  # the user re-runs clustering (compute_cluster, deliberately
@@ -856,7 +885,12 @@ TimeSeries_server <- function(id, parent_session) {
                  })
                      
                  # Errors: first line here, the full multi-line message in the DE table area.
-                 output$filtered_DEG <- renderText({sub("\n.*", "", filtered_DE()$msg)})
+                 # Read the message first: inside sub() (an S4 generic here) a pending req()
+                 # would surface as an error instead of a blank box.
+                 output$filtered_DEG <- renderText({
+                   msg <- filtered_DE()$msg
+                   sub("\n.*", "", msg)
+                 })
                      
                  observeEvent(input$save_ts_deg, {
                    log_info("Time Course Analysis: DEG data table saved to output.")
@@ -865,9 +899,10 @@ TimeSeries_server <- function(id, parent_session) {
                      df <- df %>%
                        dplyr::select(-UniqueID)
                    }
-                   num_cols <- names(df)[sapply(df, is.numeric)]
-                   
-                   saved_table$DEG_data <- df
+                   # Own sheet name: "DEG_data" is used by the DEGs tab and
+                   # would overwrite (or be overwritten by) that table.
+                   saved_table$TimeSeries_DE <- as.data.frame(df)
+                   showNotification("Time-Series DE table saved to output.", type = "message")
                  })
                  
                  output$ts_deg<- DT::renderDT({
@@ -1101,10 +1136,10 @@ TimeSeries_server <- function(id, parent_session) {
                    withProgress(message = "Finding similar genes...", value = 0, {
                      anchor <- input$sim_gene
                      vst_mat <- ts_vst()
-                     validate(need(anchor %in% rownames(vst_mat), "The selected gene was not tested in the current DE run."))
+                     validate(need(anchor %in% rownames(vst_mat), "The seed gene was not tested in the current DE run."))
                      sample_meta <- res$sample_meta
                      prof <- ts_group_profiles(vst_mat, sample_meta, res$cond_var)
-                     validate(need(sd(prof$profiles[anchor, ]) > 0, "The selected gene has the same mean expression at every time point."))
+                     validate(need(sd(prof$profiles[anchor, ]) > 0, "The seed gene has the same mean expression at every time point."))
                      candidates <- NULL
                      if (input$sim_pool == "deg") {
                        df_deg <- filtered_DE()$df
@@ -1121,6 +1156,9 @@ TimeSeries_server <- function(id, parent_session) {
                                      mean_expr = lrt[UniqueID, res$mean_col]) %>%
                        dplyr::select(rank, UniqueID, Gene.Name, r, pearson_r, change_distance, DE_padj, mean_expr) %>%
                        head(ts_pos_int(input$sim_top_n, 50))
+                     # With Pearson as the method, r already is the Pearson r;
+                     # drop the tiebreak copy so the table has one pearson_r.
+                     if (identical(input$sim_method, "pearson")) sim$pearson_r <- NULL
                      names(sim)[names(sim) == "r"] <- paste0(input$sim_method, "_r")
                      names(sim)[names(sim) == "mean_expr"] <- res$mean_col
                      log_info("Time Course Analysis: similar pattern search for ", anchor, " (", input$sim_method, ", ",
@@ -1141,11 +1179,47 @@ TimeSeries_server <- function(id, parent_session) {
 
                  output$sim_msg <- renderText({
                    sim <- SimilarReactive()
-                   msg <- sprintf("%s genes with the most %s pattern to %s (%s on condition x time means of %s).",
+                   grp_name <- if (identical(sim$cond_var, ts_no_condition_col)) "time-point" else "condition x time"
+                   msg <- sprintf("%s genes with the most %s pattern to %s (%s on %s means of %s).",
                                   nrow(sim$table), ifelse(sim$direction == "opposite", "opposite", "similar"),
-                                  sim_label(sim$anchor), tools::toTitleCase(sim$method), sim$expr_label)
-                   if (ncol(sim$profiles) < 3) msg <- paste(msg, "Only 2 condition x time groups: every correlation is +1 or -1, so genes are ranked by direction and then by how close their change size is (change_distance).")
+                                  sim_label(sim$anchor), tools::toTitleCase(sim$method), grp_name, sim$expr_label)
+                   if (ncol(sim$profiles) < 3) msg <- paste0(msg, " Only 2 ", grp_name, " groups: every correlation is +1 or -1, so genes are ranked by direction and then by how close their change size is (change_distance).")
                    msg
+                 })
+
+                 # Long table of the plotted profiles, shared by the static
+                 # ggplot (saved to output) and the interactive plotly view.
+                 sim_plot_data <- reactive({
+                   sim <- SimilarReactive()
+                   n_plot <- min(ts_pos_int(input$sim_plot_n, 10), nrow(sim$table))
+                   ids <- c(sim$anchor, head(sim$table$UniqueID, n_plot))
+                   pm <- sim$profiles[ids, , drop = FALSE]
+                   z <- if (input$sim_plot_scale == "zscore") t(scale(t(pm))) else pm - rowMeans(pm)
+                   groups <- sim$groups
+                   df <- data.frame(UniqueID = rep(ids, times = ncol(z)),
+                                    label = groups$label[rep(seq_len(ncol(z)), each = length(ids))],
+                                    z = as.vector(z), stringsAsFactors = FALSE)
+                   df <- dplyr::left_join(df, groups, by = "label")
+                   df$condition <- factor(df$condition, levels = unique(groups$condition))
+                   lab <- sim_label(ids)
+                   # Two IDs with the same gene name get the ID appended so
+                   # legend entries and hover labels stay distinguishable.
+                   dup <- lab %in% lab[duplicated(lab)] & lab != ids
+                   lab[dup] <- paste0(lab[dup], " (", ids[dup], ")")
+                   df$gene_label <- lab[match(df$UniqueID, ids)]
+                   val_name <- if (input$sim_plot_scale == "zscore") "z-score" else "centred value"
+                   tab <- sim$table
+                   r_col <- paste0(sim$method, "_r")
+                   i <- match(df$UniqueID, tab$UniqueID)
+                   df$hover <- ifelse(df$UniqueID == sim$anchor,
+                                      sprintf("<b>%s</b> (seed gene)<br>%s<br>%s: %.3g", df$gene_label, df$label, val_name, df$z),
+                                      sprintf("<b>%s</b><br>rank %s, %s = %.3f, change_distance = %.3g<br>%s<br>%s: %.3g",
+                                              df$gene_label, tab$rank[i], r_col, tab[[r_col]][i], tab$change_distance[i],
+                                              df$label, val_name, df$z))
+                   list(df = df, n_plot = n_plot, anchor = sim$anchor, time_var = sim$time_var,
+                        ylab = if (input$sim_plot_scale == "zscore") paste("Z-score of mean", sim$expr_label) else paste("Mean", sim$expr_label, "(centred)"),
+                        title = paste0(sim_label(sim$anchor), " and top ", n_plot, " ",
+                                       ifelse(sim$direction == "opposite", "opposite", "similar"), " genes"))
                  })
 
                  sim_plot <- reactive({
@@ -1153,7 +1227,7 @@ TimeSeries_server <- function(id, parent_session) {
                    n_plot <- min(ts_pos_int(input$sim_plot_n, 10), nrow(sim$table))
                    ids <- c(sim$anchor, head(sim$table$UniqueID, n_plot))
                    # Z-scores of the best matches are often identical to the
-                   # selected gene's (that is what a near-perfect correlation
+                   # seed gene's (that is what a near-perfect correlation
                    # means), so they would sit exactly under its line. The
                    # centred scale keeps each gene's change size apart.
                    pm <- sim$profiles[ids, , drop = FALSE]
@@ -1165,14 +1239,14 @@ TimeSeries_server <- function(id, parent_session) {
                                     z = as.vector(z), stringsAsFactors = FALSE)
                    df <- dplyr::left_join(df, groups, by = "label")
                    df$condition <- factor(df$condition, levels = unique(groups$condition))
-                   df$Gene <- factor(ifelse(df$UniqueID == sim$anchor, "Selected gene", "Matched genes"),
-                                     levels = c("Matched genes", "Selected gene"))
+                   df$Gene <- factor(ifelse(df$UniqueID == sim$anchor, "Seed gene", "Matched genes"),
+                                     levels = c("Matched genes", "Seed gene"))
                    p <- ggplot(df, aes(x = time, y = z, group = UniqueID)) +
                      geom_line(data = df[df$Gene == "Matched genes", ], aes(color = Gene), alpha = 0.7, linewidth = 0.8) +
                      geom_point(data = df[df$Gene == "Matched genes", ], aes(color = Gene), alpha = 0.7, size = 1.5) +
                      # Dashed so matched lines lying right underneath stay visible.
-                     geom_line(data = df[df$Gene == "Selected gene", ], aes(color = Gene), linewidth = 1.4, linetype = "dashed") +
-                     scale_color_manual(values = c("Matched genes" = "grey40", "Selected gene" = "red")) +
+                     geom_line(data = df[df$Gene == "Seed gene", ], aes(color = Gene), linewidth = 1.4, linetype = "dashed") +
+                     scale_color_manual(values = c("Matched genes" = "grey40", "Seed gene" = "red")) +
                      labs(x = sim$time_var, color = NULL,
                           y = if (input$sim_plot_scale == "zscore") paste("Z-score of mean", expr_label) else paste("Mean", expr_label, "(centred)"),
                           title = paste0(sim_label(sim$anchor), " and top ", n_plot, " ",
@@ -1182,7 +1256,67 @@ TimeSeries_server <- function(id, parent_session) {
                    p
                  })
 
-                 output$sim_plot <- renderPlot({ sim_plot() })
+                 # Interactive view: one trace per gene so hovering names the
+                 # gene; hovering a line highlights it and dims the others.
+                 output$sim_plot <- plotly::renderPlotly({
+                   pd <- sim_plot_data()
+                   df <- pd$df
+                   conds <- levels(df$condition)
+                   genes <- c(setdiff(unique(df$UniqueID), pd$anchor), pd$anchor)
+                   panels <- lapply(conds, function(cd) {
+                     d <- df[df$condition == cd, ]
+                     p <- plotly::plot_ly()
+                     for (g in genes) {
+                       dg <- d[d$UniqueID == g, ]
+                       dg <- dg[order(dg$time), ]
+                       if (nrow(dg) == 0) next
+                       is_anchor <- g == pd$anchor
+                       p <- plotly::add_trace(p, x = as.character(dg$time), y = dg$z, type = "scatter",
+                                              mode = if (is_anchor) "lines" else "lines+markers",
+                                              name = if (is_anchor) paste(dg$gene_label[1], "(seed)") else dg$gene_label[1],
+                                              legendgroup = g, showlegend = cd == conds[1],
+                                              text = dg$hover, hoverinfo = "text",
+                                              line = list(color = if (is_anchor) "red" else "rgba(102,102,102,0.8)",
+                                                          width = if (is_anchor) 3 else 1.5,
+                                                          dash = if (is_anchor) "dash" else "solid"),
+                                              marker = list(color = "rgba(102,102,102,0.8)", size = 5))
+                     }
+                     plotly::layout(p, xaxis = list(title = pd$time_var, type = "category",
+                                                    categoryorder = "array", categoryarray = levels(df$time)),
+                                    annotations = if (length(conds) > 1) list(list(text = cd, x = 0.5, y = 1.06, xref = "paper",
+                                                                                   yref = "paper", showarrow = FALSE, xanchor = "center")))
+                   })
+                   fig <- if (length(panels) > 1) plotly::subplot(panels, nrows = 1, shareY = TRUE, titleX = TRUE) else panels[[1]]
+                   fig <- plotly::layout(fig, title = list(text = pd$title, x = 0.02),
+                                         yaxis = list(title = pd$ylab),
+                                         legend = list(title = list(text = "Gene")),
+                                         hovermode = "closest")
+                   htmlwidgets::onRender(fig, "
+                     function(el) {
+                       var base = el.data.map(function(t) { return t.line.width; });
+                       el.on('plotly_hover', function(e) {
+                         var grp = el.data[e.points[0].curveNumber].legendgroup;
+                         var op = el.data.map(function(t) { return t.legendgroup === grp ? 1 : 0.15; });
+                         var w = el.data.map(function(t, k) { return t.legendgroup === grp ? base[k] + 2 : base[k]; });
+                         Plotly.restyle(el, {'opacity': op, 'line.width': w});
+                       });
+                       el.on('plotly_unhover', function() {
+                         Plotly.restyle(el, {'opacity': 1, 'line.width': base});
+                       });
+                     }")
+                 })
+
+                 observeEvent(input$save_sim_table, {
+                   if (is.null(input$compute_similar) || input$compute_similar == 0) {
+                     showNotification("Click Find Similar Genes first.", type = "warning")
+                     return()
+                   }
+                   sim <- SimilarReactive()
+                   log_info("Time Course Analysis: similar pattern table saved to output.")
+                   saved_table$TimeSeries_SimilarPattern <- data.frame(seed_gene = sim_label(sim$anchor), sim$table,
+                                                                       check.names = FALSE)
+                   showNotification("Similar Pattern table saved to output.", type = "message")
+                 })
 
                  observeEvent(input$save_sim_plot, {
                    log_info("Time Course Analysis: similar pattern plot saved to output.")
@@ -1448,6 +1582,17 @@ TimeSeries_server <- function(id, parent_session) {
                    input$ts_hm_height 
                  })                 
 
+                 # Saves the heatmap last drawn with Plot/Refresh.
+                 observeEvent(input$save_ts_sample_heatmap, {
+                   if (is.null(input$ts_plot_sample_heatmap) || input$ts_plot_sample_heatmap == 0) {
+                     showNotification("Click Plot/Refresh to draw the heatmap first.", type = "warning")
+                     return()
+                   }
+                   log_info("Time Series: sample heatmap saved to output.")
+                   saved.num <- length(saved_plots$ts_sample_heatmap) + 1
+                   saved_plots$ts_sample_heatmap[[saved.num]] <- heatmap_sample_plot()
+                 })
+
 #################################################
                  
                  heatmap_group_plot <- eventReactive(input$ts_plot_group_heatmap, {
@@ -1594,6 +1739,17 @@ TimeSeries_server <- function(id, parent_session) {
                  }, height = function() {
                    input$ts_hm_height 
                  })                 
+
+                 # Saves the heatmap last drawn with Plot/Refresh.
+                 observeEvent(input$save_ts_group_heatmap, {
+                   if (is.null(input$ts_plot_group_heatmap) || input$ts_plot_group_heatmap == 0) {
+                     showNotification("Click Plot/Refresh to draw the heatmap first.", type = "warning")
+                     return()
+                   }
+                   log_info("Time Series: group heatmap saved to output.")
+                   saved.num <- length(saved_plots$ts_group_heatmap) + 1
+                   saved_plots$ts_group_heatmap[[saved.num]] <- heatmap_group_plot()
+                 })
                })
 }
 

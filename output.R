@@ -159,6 +159,36 @@ output$downloadPDF <- downloadHandler(
         }
       }
     }
+
+    if (!is.null(saved_plots$ts_similar_plot)){
+      for (i in 1:length(saved_plots$ts_similar_plot)) {
+        title_tmp <- paste("Time Series Similar Pattern Plot (",i,")",sep="")
+        if (title_tmp %in% plots_checked) {
+          print(saved_plots$ts_similar_plot[[i]])
+          Np=Np+1
+        }
+      }
+    }
+
+    if (!is.null(saved_plots$ts_sample_heatmap)){
+      for (i in 1:length(saved_plots$ts_sample_heatmap)) {
+        title_tmp <- paste("Time Series Sample Heatmap (",i,")",sep="")
+        if (title_tmp %in% plots_checked) {
+          draw(saved_plots$ts_sample_heatmap[[i]], merge_legend=T)
+          Np=Np+1
+        }
+      }
+    }
+
+    if (!is.null(saved_plots$ts_group_heatmap)){
+      for (i in 1:length(saved_plots$ts_group_heatmap)) {
+        title_tmp <- paste("Time Series Group Heatmap (",i,")",sep="")
+        if (title_tmp %in% plots_checked) {
+          draw(saved_plots$ts_group_heatmap[[i]], merge_legend=T)
+          Np=Np+1
+        }
+      }
+    }
     
     ###vennDiagram
     if (!is.null(saved_plots$vennDiagram)){
@@ -345,6 +375,21 @@ observe({
       summary=c(summary, title_tmp)
     }
   }
+  if (!is.null(saved_plots$ts_similar_plot)){
+    for (i in 1:length(saved_plots$ts_similar_plot)) {
+      summary=c(summary, paste("Time Series Similar Pattern Plot (",i,")",sep=""))
+    }
+  }
+  if (!is.null(saved_plots$ts_sample_heatmap)){
+    for (i in 1:length(saved_plots$ts_sample_heatmap)) {
+      summary=c(summary, paste("Time Series Sample Heatmap (",i,")",sep=""))
+    }
+  }
+  if (!is.null(saved_plots$ts_group_heatmap)){
+    for (i in 1:length(saved_plots$ts_group_heatmap)) {
+      summary=c(summary, paste("Time Series Group Heatmap (",i,")",sep=""))
+    }
+  }
   
   #cat("saved plots are:", summary, "\n")
   saved_plot_list(summary)
@@ -508,6 +553,44 @@ output$downloadSVG <- downloadHandler(
         }
       }
     }
+
+    ## Time Series
+    if (Np==0 & !is.null(saved_plots$ts_cluster_plot)){
+      for (i in 1:length(saved_plots$ts_cluster_plot)) {
+        title_tmp <- paste("Time Series Cluster Plot (",i,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          print(saved_plots$ts_cluster_plot[[i]])
+          Np=Np+1
+        }
+      }
+    }
+    if (Np==0 & !is.null(saved_plots$ts_similar_plot)){
+      for (i in 1:length(saved_plots$ts_similar_plot)) {
+        title_tmp <- paste("Time Series Similar Pattern Plot (",i,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          print(saved_plots$ts_similar_plot[[i]])
+          Np=Np+1
+        }
+      }
+    }
+    if (Np==0 & !is.null(saved_plots$ts_sample_heatmap)){
+      for (i in 1:length(saved_plots$ts_sample_heatmap)) {
+        title_tmp <- paste("Time Series Sample Heatmap (",i,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          draw(saved_plots$ts_sample_heatmap[[i]], merge_legend=T)
+          Np=Np+1
+        }
+      }
+    }
+    if (Np==0 & !is.null(saved_plots$ts_group_heatmap)){
+      for (i in 1:length(saved_plots$ts_group_heatmap)) {
+        title_tmp <- paste("Time Series Group Heatmap (",i,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          draw(saved_plots$ts_group_heatmap[[i]], merge_legend=T)
+          Np=Np+1
+        }
+      }
+    }
     
     dev.off()
     log_info("Download SVG: saved (first selected plot).")
@@ -516,20 +599,30 @@ output$downloadSVG <- downloadHandler(
 )
 
 
+# List the saved tables on the Output page so it is visible what goes into
+# the .xlsx; all are ticked by default.
+observe({
+  tbls <- names(saved_table)
+  tbls <- tbls[!vapply(tbls, function(x) is.null(saved_table[[x]]), logical(1))]
+  updateCheckboxGroupInput(session, "tables_checked", choices = tbls, selected = tbls)
+})
+
 output$downloadXLSX <- downloadHandler( 
   filename = function() {
     paste("output_",Sys.Date(),".xlsx", sep="")
   },
   content = function(file) { withProgress(message = 'This takes a minute or two',{
     if (length(names(saved_table)) == 0) log_warn("Download XLSX: no saved tables to export.")
+    tables_checked <- input$tables_checked
+    validate(need(length(tables_checked) > 0, message = "Please choose at least one saved table."))
     wb <- createWorkbook(file)
-    for (i in names(saved_table)) {
+    for (i in intersect(names(saved_table), tables_checked)) {
       addWorksheet(wb, i)
       res_table <- saved_table[[i]]
       writeData(wb, i, res_table,rowNames = TRUE)
     }
     saveWorkbook(wb, file = file, overwrite = TRUE)
-    log_info("Download XLSX: saved ", length(names(saved_table)), " sheet(s).")
+    log_info("Download XLSX: saved ", length(tables_checked), " sheet(s).")
   })
   },contentType = "application/vnd.ms-excel"
 )
