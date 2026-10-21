@@ -228,6 +228,24 @@ output$downloadPDF <- downloadHandler(
         }
       }
     }
+    if (!is.null(saved_plots$CorrTargetPlot)){
+      for (p.name in names(saved_plots$CorrTargetPlot)) {
+        title_tmp <- paste("Gene-Target Correlation Plot (",p.name,")",sep="")
+        if (title_tmp %in% plots_checked) {
+          print(saved_plots$CorrTargetPlot[[p.name]])
+          Np=Np+1
+        }
+      }
+    }
+    if (!is.null(saved_plots$CorrTargetHeatmap)){
+      for (i in 1:length(saved_plots$CorrTargetHeatmap)) {
+        title_tmp <- paste("Gene-Target Correlation Heatmap (",i,")",sep="")
+        if (title_tmp %in% plots_checked) {
+          draw(saved_plots$CorrTargetHeatmap[[i]], merge_legend=T)
+          Np=Np+1
+        }
+      }
+    }
     
     dev.off()
     log_info("Download PDF: saved ", Np, " graphs.")
@@ -365,6 +383,16 @@ observe({
       p.name <- names(saved_plots$CorrPlot)[i]
       title_tmp <- paste("Correlation Plot (",p.name,")",sep="")
       summary=c(summary,  title_tmp)
+    }
+  }
+  if (!is.null(saved_plots$CorrTargetPlot)){
+    for (p.name in names(saved_plots$CorrTargetPlot)) {
+      summary=c(summary, paste("Gene-Target Correlation Plot (",p.name,")",sep=""))
+    }
+  }
+  if (!is.null(saved_plots$CorrTargetHeatmap)){
+    for (i in 1:length(saved_plots$CorrTargetHeatmap)) {
+      summary=c(summary, paste("Gene-Target Correlation Heatmap (",i,")",sep=""))
     }
   }
   
@@ -549,6 +577,24 @@ output$downloadSVG <- downloadHandler(
         title_tmp <- paste("Correlation Plot (",p.name,")",sep="")
         if (Np==0 & title_tmp %in% plots_checked) {
           print(saved_plots$CorrPlot[[p.name]])
+          Np=Np+1
+        }
+      }
+    }
+    if (Np==0 & !is.null(saved_plots$CorrTargetPlot)){
+      for (p.name in names(saved_plots$CorrTargetPlot)) {
+        title_tmp <- paste("Gene-Target Correlation Plot (",p.name,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          print(saved_plots$CorrTargetPlot[[p.name]])
+          Np=Np+1
+        }
+      }
+    }
+    if (Np==0 & !is.null(saved_plots$CorrTargetHeatmap)){
+      for (i in 1:length(saved_plots$CorrTargetHeatmap)) {
+        title_tmp <- paste("Gene-Target Correlation Heatmap (",i,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          draw(saved_plots$CorrTargetHeatmap[[i]], merge_legend=T)
           Np=Np+1
         }
       }
