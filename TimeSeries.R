@@ -373,6 +373,39 @@ ts_group_profiles <- function(vst_mat, sample_meta, cond_var) {
   list(profiles = prof, groups = groups)
 }
 
+# Highest minus lowest time-point mean of the project's log values (e.g.
+# log2 TPM, not VST), per gene. Without a condition variable one column
+# max_time_log2FC; otherwise one column per condition,
+# max_time_log2FC_<condition>, the range over time within that condition.
+# Missing values are left out of the means.
+ts_time_range <- function(data_long, sample_meta, cond_var, genes) {
+  sample_meta <- as.data.frame(sample_meta)
+  log_mat <- data_long %>%
+    dplyr::filter(UniqueID %in% genes, sampleid %in% sample_meta$sampleid) %>%
+    dplyr::select(UniqueID, sampleid, expr) %>%
+    tidyr::pivot_wider(names_from = sampleid, values_from = expr) %>%
+    tibble::column_to_rownames("UniqueID") %>%
+    as.matrix()
+  log_mat <- log_mat[intersect(genes, rownames(log_mat)), , drop = FALSE]
+  sample_meta <- sample_meta[sample_meta$sampleid %in% colnames(log_mat), , drop = FALSE]
+  log_mat <- log_mat[, sample_meta$sampleid, drop = FALSE]
+  cond <- as.character(sample_meta[[cond_var]])
+  cond_levels <- if (is.factor(sample_meta[[cond_var]])) levels(droplevels(sample_meta[[cond_var]])) else unique(cond)
+  time <- as.character(sample_meta$Unified_Time)
+  out <- data.frame(UniqueID = rownames(log_mat), stringsAsFactors = FALSE)
+  for (cl in cond_levels) {
+    tps <- unique(time[cond == cl])
+    tm <- sapply(tps, function(t) rowMeans(log_mat[, cond == cl & time == t, drop = FALSE], na.rm = TRUE))
+    if (is.null(dim(tm))) tm <- matrix(tm, nrow = nrow(log_mat))
+    tm[is.nan(tm)] <- NA
+    rng <- if (ncol(tm) < 2) rep(NA_real_, nrow(log_mat)) else
+      do.call(pmax, c(as.data.frame(tm), na.rm = TRUE)) - do.call(pmin, c(as.data.frame(tm), na.rm = TRUE))
+    col <- if (identical(cond_var, ts_no_condition_col)) "max_time_log2FC" else paste0("max_time_log2FC_", cl)
+    out[[col]] <- rng
+  }
+  out
+}
+
 # Rank genes by how closely their group-mean profile follows the anchor
 # gene's. Kendall is what degPatterns clusters on; with few time points
 # Kendall has many ties, so Pearson on the same profile breaks them, then
@@ -528,6 +561,7 @@ TimeSeries_ui <- function(id) {
                                       tags$li(tags$strong("Continuous log values (limma F-test):"), " the same two models are compared with limma's moderated F-test (eBayes with intensity trend) on the project's log values. For proteomics, microarray, metabolomics or other normalized log-scale data; it can also be used on RNA-seq log values (limma-trend). Columns: AveExpr (mean log expression), F, pvalue, padj. ",
                                               "Missing values are kept as missing; genes/proteins with fewer than the set number of values in any condition x time group (or missing in any sample of a smaller group) are left out, so every group mean exists for clustering and Similar Pattern Search.")
                                     ),
+                                    tags$p(tags$strong("max_time_log2FC:"), " highest minus lowest time-point mean of the project's log values (e.g. log2 TPM, not VST), i.e. the log2 fold change between the highest and the lowest time point. With a Condition Variable there is one column per condition, max_time_log2FC_<condition>, the range over time within that condition. Also shown in the Similar Pattern Search table."),
                                     tags$p("The default method is chosen from the expression unit (TPM/FPKM/CPM/counts: DESeq2, otherwise limma) and can be changed."),
                                     tags$p(tags$strong("2. Test (option on the left), available with both methods:")),
                                     tags$ul(
@@ -830,6 +864,7 @@ TimeSeries_server <- function(id, parent_session) {
                      res$time_var <- input$sel_time_var
                      res$cond_var <- if (length(conds) > 0) tail(conds, 1) else ts_no_condition_col
                      if (identical(res$status, "success")) {
+                       res$time_range <- ts_time_range(data_long, res$sample_meta, res$cond_var, rownames(res$results))
                        log_info("Time Course Analysis: DEG computation succeeded.")
                      } else {
                        log_warn("Time Course Analysis: DEG computation failed: ", res$msg)
@@ -849,7 +884,8 @@ TimeSeries_server <- function(id, parent_session) {
                        as_tibble() %>%
                        filter(padj < input$padjCutoff) %>%
                        arrange(padj) %>%
-                       head(n = input$top_n)
+                       head(n = input$top_n) %>%
+                       dplyr::left_join(res$time_range, by = c("gene" = "UniqueID"))
                      
                      if (input$ts_genelable == 'Gene.Name') {
                        req(DataQCReactive())
@@ -1155,6 +1191,7 @@ TimeSeries_server <- function(id, parent_session) {
                                      DE_padj = lrt[UniqueID, "padj"],
                                      mean_expr = lrt[UniqueID, res$mean_col]) %>%
                        dplyr::select(rank, UniqueID, Gene.Name, r, pearson_r, change_distance, DE_padj, mean_expr) %>%
+                       dplyr::left_join(res$time_range, by = "UniqueID") %>%
                        head(ts_pos_int(input$sim_top_n, 50))
                      # With Pearson as the method, r already is the Pearson r;
                      # drop the tiebreak copy so the table has one pearson_r.
@@ -1283,11 +1320,16 @@ TimeSeries_server <- function(id, parent_session) {
                      }
                      plotly::layout(p, xaxis = list(title = pd$time_var, type = "category",
                                                     categoryorder = "array", categoryarray = levels(df$time)),
-                                    annotations = if (length(conds) > 1) list(list(text = cd, x = 0.5, y = 1.06, xref = "paper",
-                                                                                   yref = "paper", showarrow = FALSE, xanchor = "center")))
+                                    annotations = if (length(conds) > 1) list(list(text = cd, x = 0.5, y = 1.01, xref = "paper",
+                                                                                   yref = "paper", showarrow = FALSE, xanchor = "center",
+                                                                                   yanchor = "bottom")))
                    })
                    fig <- if (length(panels) > 1) plotly::subplot(panels, nrows = 1, shareY = TRUE, titleX = TRUE) else panels[[1]]
-                   fig <- plotly::layout(fig, title = list(text = pd$title, x = 0.02),
+                   # Title on its own line at the top, panel labels on the line below,
+                   # so neither runs into the other or the toolbar.
+                   fig <- plotly::layout(fig, title = list(text = pd$title, x = 0.02, xanchor = "left",
+                                                           y = 0.98, yref = "container", yanchor = "top"),
+                                         margin = list(t = 70),
                                          yaxis = list(title = pd$ylab),
                                          legend = list(title = list(text = "Gene")),
                                          hovermode = "closest")
