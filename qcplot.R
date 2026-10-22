@@ -84,6 +84,7 @@ DataPCAReactive <- reactive({
       )
     }
   }
+  scores <- metadata_factor_attrs(scores, keep_numeric = c(numeric_keep_attributes, colnames(pca$x)))
   #browser() #debug
   return(list('scores'=scores,'percentVar'=percentVar))
 })

@@ -259,6 +259,19 @@ hm_c_color<-function(df, var, colPal, sort=T) { #category annotation
   return(colorSet)
 }
 
+#Heatmap and PCA only: treat numeric sample attributes as categories, levels in ascending order.
+#Columns listed here (exact names) stay numeric.
+numeric_keep_attributes <- c("RIN", "Intragenic_Rate", "Exonic_Rate", "Mapping_Rate", "Genes_Detected",
+  "Estimated_Library_Size", "Mapped", "Intergenic_Rate", "Total_Purity_Filtered_Reads_Sequenced",
+  "Intronic_Rate", "Fragment_Length_Mean", "rRNA_rate", "Duplication_Rate_of_Mapped")
+metadata_factor_attrs <- function(df, keep_numeric = numeric_keep_attributes) {
+  for (col in setdiff(names(df), keep_numeric)) {
+    x <- df[[col]]
+    if (is.numeric(x)) df[[col]] <- factor(x, levels = sort(unique(x)))
+  }
+  df
+}
+
 
 options(shiny.maxRequestSize = 40*1024^2)  #upload files up to 30 Mb
 

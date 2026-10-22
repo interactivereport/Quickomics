@@ -97,6 +97,7 @@ DataHeatMapReactive <- reactive({
   annotation<-annotation%>%left_join(MetaData)
   sel_group <- tmpDataIn$tmp_group$group
   annotation$group = factor(tmp_group, levels=sel_group)
+  annotation <- metadata_factor_attrs(annotation)
 
   if (input$heatmap_subset == "Subset") {
     if(length(filteredGene())>0) {
