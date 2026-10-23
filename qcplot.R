@@ -40,6 +40,8 @@ observeEvent(all_metadata(), {
   # Correlation heatmap controls
   updateSelectizeInput(session, "sd_cor_annotate_by", choices=attributes, selected="group")
   updateSelectInput(session,    "sd_cor_label_by",    choices=attrs,      selected="sampleid")
+  # Covariates tab
+  updateSelectizeInput(session, "covar_variates", choices=attributes, selected=attributes)
 })
 
 observe({
@@ -706,6 +708,7 @@ observeEvent(input$histplot, {
 ############PC_covariates QC Plots
 PC_covariates_out <-  eventReactive(input$compute_PC,{
   log_info("PC Covariates: compute clicked for variates: ", paste(input$covar_variates, collapse=", "))
+  validate(need(length(input$covar_variates) > 0, message = "Please select at least one covariate."))
   DataQC <-  DataQCReactive()
   tmp_data_wide <- DataQC$tmp_data_wide
   MetaData=DataQC$MetaData

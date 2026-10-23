@@ -1594,6 +1594,10 @@ server <- function(input, output, session) {
         attrs <- sort(setdiff(colnames(all_metadata()), c("Order", "ComparePairs")))
         updateSelectInput(session, "sd_cor_label_by", choices = attrs, selected = v)
       }),
+      covar_variates = list(value = restored$covar_variates, apply = function(v) {
+        attrs <- sort(setdiff(colnames(all_metadata()), c("sampleid", "Order", "ComparePairs")))
+        updateSelectizeInput(session, "covar_variates", choices = attrs, selected = v)
+      }),
 
       # Heatmap (heatmap.R) -- same "observe(){...} fires on every
       # all_metadata()/test_order() change, including at restore" pattern.
