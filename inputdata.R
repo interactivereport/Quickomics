@@ -36,7 +36,7 @@ upload_message <- reactiveVal()
 ProteinGeneNameHeader<- reactiveVal()
 exp_unit<-reactiveVal()
 #saved_palette <- reactiveVal()
-ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL, file3=NULL, Path=NULL, source=NULL)
+ProjectInfo<-reactiveValues(ProjectID=NULL, Name=NULL, Species=NULL, ShortName=NULL, file1=NULL, file2=NULL, file3=NULL, Path=NULL, source=NULL, SourceLabel=NULL)
 # Wall-clock bookkeeping for the "[timing]" console messages: `start` is set
 # the moment a project ID is input (URL parameter, project dropdown, or
 # upload) and consumed once when DataReactive() finishes for that project.
@@ -61,7 +61,7 @@ observeEvent(input$exp_unit, {
 # Loads a project from one of the raw URL query-string parameters below.
 # Factored out (rather than left inline in the observe() below) so
 # app.R's onRestored() can also call it directly -- project/unlisted/
-# serverfile/testfile/api_serverfile/api_testfile/datalake select the project straight from
+# serverfile/testfile/api_serverfile/api_testfile/datalake/auto select the project straight from
 # session$clientData$url_search rather than from a Shiny input, so they're
 # never captured by Shiny's bookmarking and are gone from the URL once
 # Save Session's doBookmark() replaces it with "?_state_id_=...". Without
@@ -76,9 +76,13 @@ observeEvent(input$exp_unit, {
 # non-reactive context where an uncaught validate() condition surfaces as a
 # raw error instead of a clean message. showNotification() works correctly
 # in both places.
-load_project_from_query <- function(key, ProjectID) {
-  mark_project_start(ProjectID)
-  log_debug("load_project_from_query: key=", key, " ProjectID=", ProjectID)
+#
+# With auto = TRUE (used only by the ?auto= key) the serverfile/testfile/
+# api_* /datalake loaders stay silent on "not found" and API errors and just
+# return FALSE, so the next source in auto_source_priority can be tried.
+load_project_from_query <- function(key, ProjectID, auto = FALSE) {
+  if (!auto) mark_project_start(ProjectID)
+  log_debug("load_project_from_query: key=", key, " ProjectID=", ProjectID, if (auto) " (auto)")
   if (key == 'project') {
     if (!(ProjectID %in% saved_projects$ProjectID)) {
       log_warn("Project load failed (key=project): '", ProjectID, "' not found in saved_projects.")
@@ -97,6 +101,7 @@ load_project_from_query <- function(key, ProjectID) {
     ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
     ProjectInfo$source=NULL  #local data/ folder project, not API-backed
     project_query_source(list(key = key, value = ProjectID))
+    set_project_source(key)
     log_info("Project loaded: ", ProjectID, " (source=project)")
   } else if (key == 'unlisted') {
     if (!file.exists(str_c("unlisted/",  ProjectID, ".csv"))) {
@@ -119,43 +124,85 @@ load_project_from_query <- function(key, ProjectID) {
     if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
     project_query_source(list(key = key, value = ProjectID))
+    set_project_source(key)
     log_info("Project loaded: ", ProjectID, " (source=unlisted)")
   } else if (key == 'serverfile') {
     # Reads {server_dir}/{ProjectID}.RData directly with base::load().
-    load_project_from_dir(key, ProjectID, server_dir, "server_dir")
+    load_project_from_dir(key, ProjectID, server_dir, "server_dir", auto)
   } else if (key == 'testfile') {
     # Reads {test_dir}/{ProjectID}.RData directly with base::load().
-    load_project_from_dir(key, ProjectID, test_dir, "test_dir")
+    load_project_from_dir(key, ProjectID, test_dir, "test_dir", auto)
   } else if (key == 'api_serverfile') {
     # Same published projects as serverfile, fetched through the Quickomics API.
-    load_project_from_api(key, ProjectID, "published")
+    load_project_from_api(key, ProjectID, "published", auto)
   } else if (key == 'api_testfile') {
     # Same unpublished projects as testfile, fetched through the Quickomics API.
-    load_project_from_api(key, ProjectID, "unpublished")
+    load_project_from_api(key, ProjectID, "unpublished", auto)
   } else if (key == 'datalake') {
     # Datalake projects are only reachable through the Quickomics API.
-    load_project_from_api(key, ProjectID, "datalake")
+    load_project_from_api(key, ProjectID, "datalake", auto)
+  } else if (key == 'auto') {
+    # Tries each source in auto_source_priority and loads from the first one
+    # that has the project. Save Session records the key that worked (via
+    # project_query_source() in the loader), not 'auto', so a restored
+    # session reopens from the same source.
+    for (k in auto_source_priority) {
+      if (isTRUE(load_project_from_query(k, ProjectID, auto = TRUE))) {
+        set_project_source(k, via_auto = TRUE)
+        return(invisible(TRUE))
+      }
+    }
+    log_warn("Project load failed (key=auto): '", ProjectID, "' not found in any source (tried ",
+             paste(auto_source_priority, collapse = ", "), ").")
+    showNotification(
+      paste0("Project '", ProjectID, "' could not be found in any data source (tried ",
+             paste(auto_source_priority, collapse = ", "), "). Please check the project ID in the URL."),
+      type = "error", duration = NULL
+    )
+    return(invisible(FALSE))
   }
+}
+
+# Order the ?auto= key tries sources in, highest priority first.
+auto_source_priority <- c('datalake', 'api_serverfile', 'serverfile', 'api_testfile', 'testfile')
+
+# Where a project's data came from, shown on the Project Overview page
+# (ProjectInfo$SourceLabel) and in a notification when the project loads.
+project_source_labels <- c(
+  project        = "Local data folder (project)",
+  unlisted       = "Unlisted folder (unlisted)",
+  serverfile     = "Server folder, read directly (serverfile)",
+  testfile       = "Test folder, read directly (testfile)",
+  api_serverfile = "QuickOmics API, published projects (api_serverfile)",
+  api_testfile   = "QuickOmics API, unpublished projects (api_testfile)",
+  datalake       = "Data lake, through the QuickOmics API (datalake)"
+)
+
+set_project_source <- function(key, via_auto = FALSE) {
+  label <- unname(project_source_labels[key])
+  if (via_auto) label <- paste0(label, ", chosen automatically")
+  ProjectInfo$SourceLabel <- label
+  showNotification(paste0("Project data source: ", label), type = "message", duration = 10)
 }
 
 # serverfile/testfile: project registered in a server-side folder as
 # {dir}/{ProjectID}.csv, with its data in {dir}/{ProjectID}.RData.
-load_project_from_dir <- function(key, ProjectID, dir, dir_name) {
+load_project_from_dir <- function(key, ProjectID, dir, dir_name, auto = FALSE) {
   if (is.null(dir)) {
     log_warn("Project load failed (key=", key, "): ", dir_name, " is not configured.")
-    showNotification(
+    if (!auto) showNotification(
       paste0("Cannot open '", ProjectID, "': ", dir_name, " is not configured on this server."),
       type = "error", duration = NULL
     )
-    return()
+    return(FALSE)
   }
   if (!file.exists(str_c(dir, "/",  ProjectID, ".csv"))) {
     log_warn("Project load failed (key=", key, "): '", ProjectID, "' -- no ", dir, "/", ProjectID, ".csv")
-    showNotification(
+    if (!auto) showNotification(
       paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
       type = "error", duration = NULL
     )
-    return()
+    return(FALSE)
   }
   unlisted_project=read.csv(str_c(dir, "/",  ProjectID, ".csv"))
   ProjectInfo$ProjectID=ProjectID
@@ -169,33 +216,35 @@ load_project_from_dir <- function(key, ProjectID, dir, dir_name) {
   if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
   if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
   project_query_source(list(key = key, value = ProjectID))
+  if (!auto) set_project_source(key)
   log_info("Project loaded: ", ProjectID, " (source=", key, ")")
+  TRUE
 }
 
 # api_serverfile/api_testfile/datalake: project fetched through the
 # Quickomics API, where `source` is the API's {source} path segment
 # ("published", "unpublished" or "datalake").
-load_project_from_api <- function(key, ProjectID, source) {
+load_project_from_api <- function(key, ProjectID, source, auto = FALSE) {
   api_result <- tryCatch(
     list(ok = TRUE, meta = api_get_project_meta(ProjectID, source)),
     error = function(e) list(ok = FALSE, error = conditionMessage(e))
   )
   if (!api_result$ok) {
     log_warn("Project load failed (key=", key, "): Quickomics API error for '", ProjectID, "': ", api_result$error)
-    showNotification(
+    if (!auto) showNotification(
       paste("Quickomics API is not working:", api_result$error),
       type = "error", duration = NULL
     )
-    return()
+    return(FALSE)
   }
   meta <- api_result$meta
   if (is.null(meta)) {
     log_warn("Project load failed (key=", key, "): '", ProjectID, "' not found in the Quickomics API (source=", source, ").")
-    showNotification(
+    if (!auto) showNotification(
       paste0("Project '", ProjectID, "' could not be found. Please check the project ID in the URL."),
       type = "error", duration = NULL
     )
-    return()
+    return(FALSE)
   }
   ProjectInfo$ProjectID=ProjectID
   ProjectInfo$Name=meta$Name
@@ -213,19 +262,21 @@ load_project_from_api <- function(key, ProjectID, source) {
   if (!is.null(meta$Path)) {ProjectInfo$Path=meta$Path}
   if (!is.null(meta$ExpressionUnit)) {updateTextInput(session, "exp_unit", value=meta$ExpressionUnit)}
   project_query_source(list(key = key, value = ProjectID))
+  if (!auto) set_project_source(key)
   log_info("Project loaded: ", ProjectID, " (source=", key, ")")
+  TRUE
 }
 
 # URL query keys that select a project, in the order the observe() below
 # checks them.
 project_query_keys <- c('project', 'unlisted', 'serverfile', 'testfile',
-                        'api_serverfile', 'api_testfile', 'datalake')
+                        'api_serverfile', 'api_testfile', 'datalake', 'auto')
 
 observe({
   query <- parseQueryString(session$clientData$url_search)
   # No early exit on a match -- matches the original behavior where all
   # blocks ran unconditionally, so if more than one of these parameters
-  # were somehow present at once, the last one in this vector (datalake) wins.
+  # were somehow present at once, the last one in this vector (auto) wins.
   for (key in project_query_keys) {
     if (!is.null(query[[key]])) {
       load_project_from_query(key, query[[key]])
@@ -245,6 +296,7 @@ observe({
     ProjectInfo$file2= paste("networkdata/", ProjectID, "_network.RData", sep = "") #Correlation results
     ProjectInfo$file3= paste("data/wgcna_data/wgcna_", ProjectID, ".RData", sep = "") #wgcna results
     ProjectInfo$source=NULL  #local data/ folder project, not API-backed
+    ProjectInfo$SourceLabel="Local data folder (project list)"
     # updateTabsetPanel(session, "Tables", selected = "Sample Table")
     log_info("Project loaded: ", ProjectID, " (source=sel_project dropdown)")
   }
@@ -322,6 +374,7 @@ observeEvent(input$customData, {
   ProjectInfo$ShortName=input$project_name
   ProjectInfo$file1=input$file1$datapath; ProjectInfo$file2=input$file2$datapath
   ProjectInfo$source=NULL  #user-uploaded file, not API-backed
+  ProjectInfo$SourceLabel="Uploaded file"
   #browser() #debug
 })
 
@@ -776,6 +829,7 @@ project_summary<-reactive({
                   '<ul class="disc"><li>Species: ', ProjectInfo$Species, "</li>",
                   "<li>Description: ", ProjectInfo$Name, "</li>",
                   "<li>Data Path: ", ProjectInfo$Path, "</li>",
+                  "<li>Data Source: ", ProjectInfo$SourceLabel, "</li>",
                   "<li>This is a project only has comparison results</li>",
                   "<li>Number of Comparison Tests: ", length(tests), "</li>",
                   '<ul class="square">', paste(str_c("<li>", tests, "</li>"), collapse=""), "</ul></li></ul><br><hr>")
@@ -798,6 +852,7 @@ project_summary<-reactive({
                   '<ul class="disc"><li>Species: ', ProjectInfo$Species, "</li>",
                   "<li>Description: ", ProjectInfo$Name, "</li>",
                   "<li>Data Path: ", ProjectInfo$Path, "</li>",
+                  "<li>Data Source: ", ProjectInfo$SourceLabel, "</li>",
                   "<li>Number of Samples: ", nrow(DataIn$MetaData), "</li>",
                   "<li>Number of Groups: ", length(groups), " (please see group table below)</li>",  
                   "<li>Number of Genes/Proteins: ", nrow(DataIn$data_wide), "</li>",
