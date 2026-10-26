@@ -378,6 +378,15 @@ intersection_column_width_px <- function(atomic_names) {
 # booting the app. Either way this never blocks startup or changes what the
 # footer shows (live git info wins whenever it's available); a failed write
 # (e.g. read-only checkout) just logs a note and moves on.
+#
+# Two more sources for deployments built from a GitHub release/zip/tarball
+# (e.g. Docker), where neither .git nor BUILD_DATE.txt exists:
+#   - QUICKOMICS_BUILD_DATE env var (YYYY-MM-DD): checked first, overrides all.
+#   - RELEASE_DATE.txt: tracked, and marked export-subst in .gitattributes, so
+#     GitHub's archive replaces its $Format:%cs$ placeholder with the commit
+#     date. The committed file itself never changes (no commit loop). Checked
+#     after live git and before BUILD_DATE.txt; ignored while it still holds
+#     the raw placeholder (i.e. in a plain checkout).
 
 read_build_date_file <- function(path = "BUILD_DATE.txt") {
   if (!file.exists(path)) return(NULL)
@@ -395,9 +404,15 @@ git_repo_root_here <- function() {
   length(toplevel) == 1 && normalizePath(toplevel, mustWork = FALSE) == normalizePath(getwd(), mustWork = FALSE)
 }
 
+is_ymd <- function(x) !is.null(x) && length(x) == 1 && !is.na(x) && grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", x)
+
 quickomics_commit_date <- tryCatch({
   build_info <- read_build_date_file()
-  if (git_repo_root_here()) {
+  release_info <- read_build_date_file("RELEASE_DATE.txt")
+  env_date <- Sys.getenv("QUICKOMICS_BUILD_DATE")
+  if (is_ymd(env_date)) {
+    env_date
+  } else if (git_repo_root_here()) {
     live_date <- suppressWarnings(system2("git", c("log", "-1", "--format=%cd", "--date=format:%Y-%m-%d"), stdout = TRUE, stderr = FALSE))
     live_hash <- suppressWarnings(system2("git", c("log", "-1", "--format=%H"), stdout = TRUE, stderr = FALSE))
     live_date_ok <- length(live_date) == 1 && grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", live_date)
@@ -426,6 +441,8 @@ quickomics_commit_date <- tryCatch({
       }
     }
     if (live_date_ok) live_date else NA_character_
+  } else if (is_ymd(release_info$date)) {
+    release_info$date
   } else if (!is.null(build_info) && !is.null(build_info$date) && grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", build_info$date)) {
     build_info$date
   } else {
