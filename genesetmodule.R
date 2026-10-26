@@ -759,11 +759,15 @@ geneset_server <- function(id) {
                           })
                           names(res_list) <- names(getresults)
                           res_list
-                        }, ignoreInit = TRUE)
+                        })
 
                         # Get pre-filtered GSEA result list as in the output table format, one item per comparison.
                         # Save the pre-filtered combined result table into combined_gsea_res() or combined_gsea_res_filtered() if using collapsed list.
                         gsea_results <- reactive({
+                          # No Compute click yet: stop here, before withProgress, so
+                          # gsea_ready() pulling this in on project load doesn't flash
+                          # the progress message.
+                          req(input$compute_gsea)
                           withProgress(message = 'Running GSEA, please be patient...', value = 0, {
                             res_list_raw <- gsea_raw()
                             log_info("GSEA: running.")
@@ -1061,13 +1065,14 @@ geneset_server <- function(id) {
                           })
                           names(res_list) <- names(getresults)
                           res_list
-                        }, ignoreInit = TRUE)
+                        })
 
                         # Get pre-filtered ORA result list as in the output table format, one item per comparison.
                         # Save the pre-filtered combined result table into combined_ora_res() or combined_ora_res_filtered() if using collapsed list.
                         ora_results <- reactive({
                           req(working_project())
                           req(input$ORA_input_type != "Gene List")
+                          req(input$compute_ora)  # same as gsea_results(): no progress flash before Compute
                           withProgress(message = 'Running ORA...', value = 0, {
                             res_list <- res_list_raw <- ora_raw()
                             log_info("ORA: running.")
@@ -1123,6 +1128,7 @@ geneset_server <- function(id) {
                         })
                         
                         output$MSigDB_ORA <- DT::renderDT(server = FALSE, {
+                          req(combined_ora_res_filtered())  # NULL until the first ORA Compute: show nothing, not "No results"
                           withProgress(message = 'Processing...', value = 0, {
                             res <- combined_ora_res_filtered()
 
