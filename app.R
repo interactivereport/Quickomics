@@ -198,7 +198,7 @@ fluidPage(
                                        wellPanel(
                                          tags$style(mycss),
                                          column(width=12,uiOutput("selectGroupSampleQC")),
-                                         conditionalPanel("input.groupplot_tabset=='PCA Plot' || input.groupplot_tabset=='PCA 3D Interactive' || input.groupplot_tabset=='PCA 3D Plot' || input.sd_tabset=='Distance Heatmap' ",
+                                         conditionalPanel("input.groupplot_tabset=='PCA Plot' || input.groupplot_tabset=='PCA 3D Interactive' || input.groupplot_tabset=='PCA 3D Plot' || (input.groupplot_tabset=='Sample-sample Distance' && input.sd_tabset=='Distance Heatmap')",
                                                           selectInput("PCAcolorby", label="Color By", choices=NULL)),
                                          conditionalPanel("input.groupplot_tabset=='PCA Plot' || input.groupplot_tabset=='PCA 3D Interactive'",
                                                           selectInput("PCAshapeby", label="Shape By", choices=NULL)),
