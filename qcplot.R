@@ -336,6 +336,13 @@ output$plotly3d <- renderPlotly({
                  colors = colorpal,text = sampleid) %>%
       add_markers() %>%
       layout(scene = list(xaxis = list(title = xlabel), yaxis = list(title = ylabel),  zaxis = list(title = zlabel)))
+    # with symbol, plotly sorts traces alphabetically; restore Color By then Shape By factor order
+    p <- plotly_build(p)
+    trace_parts <- strsplit(vapply(p$x$data, function(t) as.character(t$name), ""), "<br />", fixed=TRUE)
+    lvl <- function(v) if (is.factor(scores[[v]])) levels(scores[[v]]) else sort(unique(as.character(scores[[v]])))
+    trace_ord <- order(match(vapply(trace_parts, `[`, "", 1), lvl(input$PCAcolorby)),
+                       match(vapply(trace_parts, `[`, "", 2), lvl(input$PCAshapeby)))
+    p$x$data <- p$x$data[trace_ord]
   }
   p$elementId <- NULL
   p
@@ -566,7 +573,7 @@ output$sd_heatmap_plot_ui <- renderUI({
       style = "color:#555; font-size:13px; margin-bottom:8px;",
       sprintf("This heatmap shows the Euclidean distance between samples, computed from %s ...", exp_unit()),
       "Smaller distances (per the color scale) mean two samples have more similar overall expression profiles, reflecting both the pattern and the magnitude of expression differences. ",
-      "Rows/columns are hierarchically clustered so that similar samples group together. ",
+      if (isTRUE(as.logical(input$sd_dist_cluster))) "Rows/columns are hierarchically clustered so that similar samples group together. ",
       "Note: distance is sensitive to how many genes are included and how variable they are — genes with large expression differences across samples will contribute more to the distance than stably expressed genes."
     ),
     plotOutput("pheatmap", height=h)
@@ -578,7 +585,7 @@ output$sd_cor_plot_ui <- renderUI({
   tagList(
     tags$p(
       style = "color:#555; font-size:13px; margin-bottom:8px;",
-      sprintf("This heatmap shows the Euclidean distance between samples, computed from %s...", exp_unit()),
+      sprintf("This heatmap shows the Pearson correlation between samples, computed from %s. ", exp_unit()),
       "Values range from -1 to 1, with higher correlation indicating samples whose expression rises and falls together across genes, regardless of overall expression magnitude. ",
       "Unlike the Distance plot, correlation is scale-invariant, so it highlights shared expression patterns rather than absolute differences. ",
       "Log-transforming the data before computing both metrics reduces the influence of a small number of very highly expressed genes, which would otherwise dominate raw-TPM-based distance and correlation values."
@@ -689,6 +696,7 @@ histplot_out <- reactive({
       geom_vline(data=mu, aes(xintercept=median, color=group), linetype="dashed") +
       geom_text(data=mu, mapping=aes(x=median, y=0, label=paste(median,"(",group,")", sep="")), size=4, angle=90, vjust=-0.4, hjust=0) +
       scale_x_continuous(breaks = seq(xlimmin, xlimmax, by=5), limits=c(xlimmin,xlimmax)) +
+      labs(x = "CV (%)", y = "Number of Genes") +
       theme_bw(base_size = 20) +
       theme(legend.position = "bottom")
     return(p)

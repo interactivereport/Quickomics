@@ -315,7 +315,7 @@ fluidPage(
                                          conditionalPanel("input.groupplot_tabset=='AlignQC'",
                                                           tags$hr(),
                                                           conditionalPanel("input.AlignQC_tabset=='Plot Other Variables'",
-                                                                           selectizeInput("alignQC_var", label="Select Numerica Variable to Plot", choices=NULL,multiple=FALSE)),
+                                                                           selectizeInput("alignQC_var", label="Select Numeric Variable to Plot", choices=NULL,multiple=FALSE)),
                                                           conditionalPanel("input.AlignQC_tabset!='Top Gene List'",
                                                                            sliderInput("alignQC_height", "Plot Height:", min = 200, max = 3000, step = 50, value = 700),
                                                                            sliderInput("alignQC_width", "Plot Width:", min = 200, max = 3000, step = 50, value = 1000)),
