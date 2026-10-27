@@ -413,11 +413,16 @@ read_build_date_file <- function(path = "BUILD_DATE.txt") {
   as.list(setNames(vals, keys))
 }
 
+# No git installed (e.g. the rocker/shiny Docker image): system2(stdout = TRUE)
+# errors instead of warning, so return FALSE and fall through to RELEASE_DATE.txt.
 git_repo_root_here <- function() {
-  inside <- suppressWarnings(system2("git", c("rev-parse", "--is-inside-work-tree"), stdout = TRUE, stderr = FALSE))
-  if (length(inside) != 1 || inside != "true") return(FALSE)
-  toplevel <- suppressWarnings(system2("git", c("rev-parse", "--show-toplevel"), stdout = TRUE, stderr = FALSE))
-  length(toplevel) == 1 && normalizePath(toplevel, mustWork = FALSE) == normalizePath(getwd(), mustWork = FALSE)
+  if (!nzchar(Sys.which("git"))) return(FALSE)
+  tryCatch({
+    inside <- suppressWarnings(system2("git", c("rev-parse", "--is-inside-work-tree"), stdout = TRUE, stderr = FALSE))
+    if (length(inside) != 1 || inside != "true") return(FALSE)
+    toplevel <- suppressWarnings(system2("git", c("rev-parse", "--show-toplevel"), stdout = TRUE, stderr = FALSE))
+    length(toplevel) == 1 && normalizePath(toplevel, mustWork = FALSE) == normalizePath(getwd(), mustWork = FALSE)
+  }, error = function(e) FALSE)
 }
 
 is_ymd <- function(x) !is.null(x) && length(x) == 1 && !is.na(x) && grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", x)
