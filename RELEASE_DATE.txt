@@ -1,1 +1,2 @@
 date: $Format:%cs$
+version: $Format:%(describe:tags)$

@@ -466,6 +466,19 @@ quickomics_commit_date <- tryCatch({
   }
 }, error = function(e) NA_character_)
 
+# Version shown in the footer. Edit this default when bumping the version; it
+# is what local/RStudio runs show. A release/zip/tarball download overrides it
+# with the git tag GitHub writes into RELEASE_DATE.txt ($Format:%(describe:tags)$),
+# and the QUICKOMICS_VERSION env var overrides both. Only the leading version
+# number is kept, so tags like v4.3a / v4.3b-3-gabc1234 display as v4.3.
+quickomics_version_default <- "v4.3"
+quickomics_version <- tryCatch({
+  ver <- Sys.getenv("QUICKOMICS_VERSION")
+  if (!nzchar(ver)) ver <- read_build_date_file("RELEASE_DATE.txt")$version
+  ver <- regmatches(ver, regexpr("^v?[0-9]+(\\.[0-9]+)*", ver))
+  if (length(ver) == 1) sub("^v?", "v", ver) else quickomics_version_default
+}, error = function(e) quickomics_version_default)
+
 footer_text = '
 <script>
 var GENESET_ACTION_URL = "//bxngs.com/bxomics/api/genesets3.php";
@@ -478,9 +491,10 @@ var MY_SECRET_ID = /PHPSESSID=([^;]+)/i.test(document.cookie) ? RegExp.$1 : fals
 BioInfoRx and Biogen<br><a href="https://github.com/interactivereport/Quickomics/">More information at GitHub</a> | <a href="https://interactivereport.github.io/Quickomics/tutorial/docs/introduction.html">Tutorial</a>
 </div>
 '
-if (!is.na(quickomics_commit_date)) {
-  footer_text <- str_replace_all(footer_text, "QuickOmics ver4.0", str_c("QuickOmics ver4.0 (updated: ", quickomics_commit_date, ")"))
-}
+footer_text <- str_replace_all(footer_text, "QuickOmics ver4.0", str_c(
+  "QuickOmics ", quickomics_version,
+  if (!is.na(quickomics_commit_date)) str_c(" (updated: ", quickomics_commit_date, ")") else ""
+))
 
 config=NULL
 server_dir=NULL
