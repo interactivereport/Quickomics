@@ -165,7 +165,6 @@ DataHeatMapReactive <- reactive({
     tmpdat  <-  tmpdat[ID_order$UniqueID,]
     if (input$heatmap_upload_type=='Annotated Gene File') {
       gene_annot_info=data.frame(UniqueID=ID_order$UniqueID, annot_genes[ID_order$N, ])
-      gene_annot_info=gene_annot_info[sel_rows1 & sel_rows2, ]
     }
     
   }
@@ -194,7 +193,9 @@ DataHeatMapReactive <- reactive({
   sel_rows1=rowSums(is.na(tmpdat))<ncol(tmpdat) #remove data rows with all NAs
   sel_rows2=rownames(tmpdat) %in% rownames(DataIn$data_wide) #remove duplicate rows caused by matching (e.g."ALDH7A1_P49419"   "ALDH7A1_P49419-2")
   tmpdat  <-  tmpdat[sel_rows1 & sel_rows2, ]
-  
+  # keep the annotated-gene-file rows aligned with the filtered data rows
+  if (!is.null(gene_annot_info)) gene_annot_info <- gene_annot_info[sel_rows1 & sel_rows2, , drop = FALSE]
+
   df <- data.matrix(tmpdat)
   #use selected gene label
   sel=match(rownames(df), ProteinGeneName$UniqueID)
@@ -425,18 +426,22 @@ pheatmap2_out <- eventReactive(plot_heatmap_control(),  {
   if (input$heatmap_highlight=="Yes"){
     req(input$file_gene_highlight)
     annot_genes=read_csv(input$file_gene_highlight$datapath)
-    ccl <- which(toupper(rownames(data.in)) %in% toupper(annot_genes$gene_name) )
+    # gene column: "Genes" (as the UI label says) or legacy "gene_name"; else the first column
+    gene_col <- intersect(c("Genes", "gene_name"), names(annot_genes))
+    hl_genes <- if (length(gene_col) > 0) annot_genes[[gene_col[1]]] else annot_genes[[1]]
+    if (!"Color" %in% names(annot_genes)) annot_genes$Color <- "black"
+    ccl <- which(toupper(rownames(data.in)) %in% toupper(hl_genes) )
     if (length(ccl) == 0) log_warn("Heatmap: no genes in the highlight file matched the current heatmap rows.")
     validate(need(length(ccl)>0, message = "Please input at least one valid gene to highlight."))
-    
-    sel_col=match(toupper(rownames(data.in)[ccl]), toupper(annot_genes$gene_name) )
+
+    sel_col=match(toupper(rownames(data.in)[ccl]), toupper(hl_genes) )
     ccl_color <- as.character(annot_genes$Color[sel_col])
     nameZoom = rowAnnotation(link = anno_mark(at = ccl, labels = rownames(data.in)[ccl],
                                   labels_gp = gpar(fontface = "bold",col = ccl_color,fontsize = input$hl_font_size), padding = 0.2))
     p<-p + nameZoom
     #Add pathway legend if no gene annotation
-    hasP<-match("Pathways", names(annot_genes))
-    if (is.null(gene_annot_info) & hasP) {
+    hasP <- "Pathways" %in% names(annot_genes)
+    if (is.null(gene_annot_info) && hasP) {
       Pathways=rep("", nrow(data.in)); Pathways[ccl]=annot_genes$Pathways[sel_col]
       Pathways=str_wrap(Pathways,width=16)
       logjs(Pathways)
