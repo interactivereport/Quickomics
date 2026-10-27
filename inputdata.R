@@ -887,7 +887,7 @@ output$results <- DT::renderDataTable({
   results[,sapply(results,is.numeric)] <- signif(results[,sapply(results,is.numeric)],3)
   DT::datatable(results,  extensions = 'Buttons',
                 options = list(
-                  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
+                  dom = 'lBfrtip', buttons = list(list(extend = "csv", text = "Download Page", filename = "Page_Results", exportOptions = list(modifier = list(page = "current")))),
                   pageLength = 15
                 ),rownames= T)
 })
@@ -943,7 +943,7 @@ output$data_wide <- DT::renderDataTable({
   DT::datatable(data_w, extensions = c('FixedColumns', 'Buttons'),
                 options = list(
                   pageLength = 15,
-                  dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
+                  dom = 'lBfrtip', buttons = list(list(extend = "csv", text = "Download Page", filename = "Page_Data", exportOptions = list(modifier = list(page = "current")))),
                   scrollX = TRUE,
                   fixedColumns = list(leftColumns = 1)
                 ))
@@ -960,7 +960,7 @@ observe({
 output$ProteinGeneName <- DT::renderDataTable({
   if (is.null(DataReactive()$ProteinGeneName)) return()
   DT::datatable(DataReactive()$ProteinGeneName, extensions = 'Buttons', options = list(
-    dom = 'lBfrtip', buttons = c('csv', 'excel', 'print'),
+    dom = 'lBfrtip', buttons = list(list(extend = "csv", text = "Download Page", filename = "Page_ProteinGeneName", exportOptions = list(modifier = list(page = "current")))),
     pageLength = 15),rownames= FALSE)
 })
 
