@@ -404,7 +404,12 @@ boxplot_out <- eventReactive(input$plot_exp,  {
   label_order <- unique(uid_to_label$labelgeneid)
   # Reorder labelgeneid factor by this mapping
   data_long_tmp$labelgeneid <- factor(data_long_tmp$labelgeneid, levels = label_order)
-  
+  # "None" is not a metadata column; map fill/color to one constant level so barcol is used
+  if (Val_colorby == "None") {
+    data_long_tmp$.colorby_none <- "All"
+    colorby <- sym(".colorby_none")
+  }
+
   if (input$SeparateOnePlot == "Separate") {
     p <- ggplot(data_long_tmp,aes(x=!!plotx,y=expr,fill=!!colorby)) +
       facet_wrap(~ labelgeneid, scales = "free", ncol = ncol)
@@ -439,9 +444,9 @@ boxplot_out <- eventReactive(input$plot_exp,  {
       } else {p <- p + scale_fill_manual(values =use_color)}
       
     } else {
-      p <- p + scale_fill_manual(values=barcol) #+scale_color_manual(values=rep(barcol,length(sel_group)))
+      p <- p + scale_fill_manual(values=barcol) + scale_color_manual(values=barcol)
     }
-    
+
     p <- p + theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +guides(fill = guide_legend(override.aes = list(shape = NA) ) )+
       theme (plot.margin = unit(c(1,1,1,1), "cm"),
              text = element_text(size=input$expression_axisfontsize),
@@ -482,7 +487,9 @@ boxplot_out <- eventReactive(input$plot_exp,  {
         geom_errorbar(aes(ymin=mean-se, ymax=mean+se), size=.3, width=.2, position=position_dodge(.9))
     }
     
-    p <- p + theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +scale_fill_discrete(name=input$sel_geneid)+
+    use_color <- get_palette(input$colpalette, nlevels(data_long_tmp1$Gene.Name))
+    p <- p + theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +
+      scale_fill_manual(name=input$sel_geneid, values=use_color) + scale_color_manual(name=input$sel_geneid, values=use_color) +
       theme (plot.margin = unit(c(1,1,1,1), "cm"),
              text = element_text(size=input$expression_axisfontsize),
              axis.text.x = element_text(angle = input$Xangle, hjust=0.5, vjust=0.5),
@@ -597,6 +604,11 @@ browsing_out <- eventReactive(plot_exp_control(),{
   # can't make ggplot2's grouping internals fail with an opaque
   # seq_len()/max() error across multiple faceted genes.
   data_long_tmp <- droplevels(data_long_tmp)
+  # "None" is not a metadata column; map fill/color to one constant level so barcol is used
+  if (Val_colorby == "None") {
+    data_long_tmp$.colorby_none <- "All"
+    colorby <- sym(".colorby_none")
+  }
 
   p <- ggplot(data_long_tmp,aes(x=!!plotx,y=expr,fill=!!colorby)) +
     facet_wrap(~ labelgeneid, scales = "free",nrow = nrow, ncol = ncol)
@@ -631,7 +643,7 @@ browsing_out <- eventReactive(plot_exp_control(),{
     } else {p <- p + scale_fill_manual(values =use_color)}
     
   } else {
-    p <- p + scale_fill_manual(values=barcol) #+scale_color_manual(values=rep(barcol,length(sel_group)))
+    p <- p + scale_fill_manual(values=barcol) + scale_color_manual(values=barcol)
   }
   p <- p +	theme_bw(base_size = 14) + ylab(input$Ylab) + xlab(input$Xlab) +guides(fill = guide_legend(override.aes = list(shape = NA) ) )+
     theme (plot.margin = unit(c(1,1,1,1), "cm"),

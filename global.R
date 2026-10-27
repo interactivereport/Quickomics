@@ -304,6 +304,22 @@ var GENESET_DEFAULT_TABLE = "";
 var GENESET_DEFAULT_SPECIES = "human";
 var GENESET_DEFAULT_MIN = 10;
 var GENESET_DEFAULT_MAX = 500;
+// genesets3.js fills .geneset_genes with .val(), which fires no event, so Shiny never sees it.
+// After a geneset is picked, watch the textareas briefly and trigger change when their value updates.
+if (!window.genesetChangeHooked) {
+  window.genesetChangeHooked = true;
+  $(document).on("click", ".btn_select_current_geneset", function() {
+    var before = $(".geneset_genes").map(function() { return this.value; }).get();
+    var tries = 0;
+    var timer = setInterval(function() {
+      tries++;
+      $(".geneset_genes").each(function(i) {
+        if (this.value !== before[i]) { before[i] = this.value; $(this).trigger("change"); }
+      });
+      if (tries >= 20) clearInterval(timer);
+    }, 250);
+  });
+}
 </script>
 
 <div id="div_geneset3" class="div_geneset">
@@ -315,7 +331,7 @@ var GENESET_DEFAULT_MAX = 500;
 
 <input class="geneset_id" type="hidden" id="Geneset_ID1" name="Geneset_ID1" />
 <label class="control-label" for="geneset_list">List of genes to label (UniqueID, Gene.Name or Protein.ID)</label>
-<textarea id="geneset_list" name="geneset_list" class="form-control shiny-bound-input geneset_genes my-3" rows="6" cols="5"></textarea>
+<textarea id="geneset_list" name="geneset_list" class="form-control geneset_genes my-3" rows="6" cols="5"></textarea>
 </div>
 '
 

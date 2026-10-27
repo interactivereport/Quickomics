@@ -443,7 +443,7 @@ fluidPage(
                                                           conditionalPanel("input.SeparateOnePlot!='OnePlot' | input.expression_tabset=='Browsing'",
                                                                            selectizeInput("colorby", label="Color By:", choices=NULL, multiple = FALSE)),
                                                           conditionalPanel("input.colorby=='None'",
-                                                                           colourInput("barcol", "Select colour", "#1E90FF", palette = "limited")),
+                                                                           colourInput("barcol", "Select colour", "#999999", palette = "limited")),
                                                           conditionalPanel("input.colorby!='None'",
                                                                            selectInput("colpalette", label= "Select palette", choices=c("Accent(8)"="Accent","Dark2(8)"="Dark2","Paired(12)"="Paired","Pastel1(9)"="Pastel1",
                                                                                                                                         "Pastel2(8)"="Pastel2","Set1(9)"="Set1","Set2(8)"="Set2","Set3(12)"="Set3", "NPG(10)"="npg", "AAAS(10)"="aaas", "NEJM(8)"="nejm", 
