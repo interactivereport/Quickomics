@@ -1611,6 +1611,11 @@ server <- function(input, output, session) {
         attrs <- sort(setdiff(colnames(all_metadata()), c("sampleid", "Order", "ComparePairs")))
         updateSelectInput(session, "heatmap_annot", choices = attrs, selected = v)
       }),
+      # Reset to "All" by inputdata.R's observeEvent(ProjectInfo$ProjectID, ...)
+      # whenever a project loads -- including the reload at restore time.
+      heatmap_subset = list(value = restored$heatmap_subset, apply = function(v) {
+        updateRadioButtons(session, "heatmap_subset", selected = v)
+      }),
 
       # Volcano Plot (volcano.R) -- same pattern, keyed off test_order().
       volcano_test = list(value = restored$volcano_test, apply = function(v) {

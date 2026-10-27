@@ -364,6 +364,31 @@ geneset_server <- function(id) {
                             map_genes = list(
                               value = restored$map_genes,
                               apply = function(v) updateSelectizeInput(session, "map_genes", selected = v)
+                            ),
+                            # sel_kegg_set/sel_wikipathways_set get reset to "Type to Search" by
+                            # observeEvent(input$MSigDB_species, ...) below, which fires at restore
+                            # time; re-supply the full choices (server=TRUE) on every apply.
+                            sel_kegg_set = list(
+                              value = restored$sel_kegg_set,
+                              apply = function(v) {
+                                kegg_file <- str_c("db/", isolate(input$MSigDB_species), "/kegg.gmt")
+                                req(file.exists(kegg_file))
+                                updateSelectizeInput(session, "sel_kegg_set", choices = c('Type to Search' = '', names(gmtPathways(kegg_file))), selected = v, server = TRUE)
+                              }
+                            ),
+                            sel_wikipathways_set = list(
+                              value = restored$sel_wikipathways_set,
+                              apply = function(v) {
+                                wiki_file <- str_c("db/", isolate(input$MSigDB_species), "/Wikipathways_Symbol.gmt")
+                                req(file.exists(wiki_file))
+                                updateSelectizeInput(session, "sel_wikipathways_set", choices = c('Type to Search' = '', names(gmtPathways(wiki_file))), selected = v, server = TRUE)
+                              }
+                            ),
+                            # Overwritten from gset_plot() (empty until a dot plot is made) by an
+                            # observe() that also runs at restore time.
+                            geneset_dotplot_geneset_list = list(
+                              value = restored$geneset_dotplot_geneset_list,
+                              apply = function(v) updateTextAreaInput(session, "geneset_dotplot_geneset_list", value = v)
                             )
                           )
                           pending <- Filter(function(p) !is.null(p$value), pending)

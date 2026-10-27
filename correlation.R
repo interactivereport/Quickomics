@@ -364,6 +364,20 @@ correlation_server <- function(id, parent_session) {
                  # on every project load (see below) -- including at restore
                  # time. Reapply unconditionally for a few seconds after
                  # restore, same pattern as app.R.
+                 # Attributes offered for target/restrict/strata (same rule as
+                 # the attribute-choices observer below): more than one
+                 # non-missing value.
+                 ct_restore_attrs <- function() {
+                   req(DataQCReactive())
+                   MetaData <- DataQCReactive()$MetaData
+                   req(MetaData)
+                   attrs <- sort(setdiff(colnames(MetaData), c("sampleid", "Order", "ComparePairs")))
+                   attrs[vapply(attrs, function(a) {
+                     v <- as.character(MetaData[[a]])
+                     length(unique(v[!is.na(v) & !(v %in% c("", "NA"))])) > 1
+                   }, logical(1))]
+                 }
+
                  session$onRestored(function(state) {
                    restored <- state$input
                    pending <- list(
@@ -423,6 +437,53 @@ correlation_server <- function(id, parent_session) {
                      sel_geneset = list(value = restored$sel_geneset, apply = function(v) {
                        genesetnames <- GetGeneSetNames()
                        updateSelectizeInput(session, "sel_geneset", choices = c('Type to Search' = '', genesetnames), selected = v, server = TRUE)
+                     }),
+                     # Gene vs. attribute inputs: target_attr/restrict_attr/
+                     # strata_attr are reset by the attribute-choices observer
+                     # on every project load; target_scale/target_levels and
+                     # restrict_levels are reset whenever their attribute
+                     # changes (including when restored above), so they read
+                     # the current attribute fresh on every reapply.
+                     target_attr = list(value = restored$target_attr, apply = function(v) {
+                       updateSelectInput(session, "target_attr", choices = ct_restore_attrs(), selected = v)
+                     }),
+                     target_scale = list(value = restored$target_scale, apply = function(v) {
+                       updateRadioButtons(session, "target_scale", selected = v)
+                     }),
+                     target_levels = list(value = restored$target_levels, apply = function(v) {
+                       req(DataQCReactive())
+                       attr <- isolate(input$target_attr)
+                       MetaData <- DataQCReactive()$MetaData
+                       req(attr, attr %in% colnames(MetaData))
+                       info <- ct_attr_info(MetaData[[attr]])
+                       updateSelectizeInput(session, "target_levels", choices = info$levels, selected = v)
+                     }),
+                     restrict_attr = list(value = restored$restrict_attr, apply = function(v) {
+                       updateSelectInput(session, "restrict_attr", choices = c("None" = "none", ct_restore_attrs()), selected = v)
+                     }),
+                     restrict_levels = list(value = restored$restrict_levels, apply = function(v) {
+                       req(DataQCReactive())
+                       attr <- isolate(input$restrict_attr)
+                       MetaData <- DataQCReactive()$MetaData
+                       req(attr, attr != "none", attr %in% colnames(MetaData))
+                       x <- MetaData[[attr]]
+                       lv <- if (is.factor(x)) levels(droplevels(x)) else sort(unique(as.character(x)))
+                       lv <- lv[!is.na(lv) & !(lv %in% c("", "NA"))]
+                       updateSelectizeInput(session, "restrict_levels", choices = lv, selected = v)
+                     }),
+                     strata_attr = list(value = restored$strata_attr, apply = function(v) {
+                       updateSelectInput(session, "strata_attr", choices = c("None" = "none", ct_restore_attrs()), selected = v)
+                     }),
+                     # Must re-supply the full choices (server=TRUE), same as sel_gene.
+                     target_gene = list(value = restored$target_gene, apply = function(v) {
+                       req(DataQCReactive())
+                       PGN <- DataQCReactive()$ProteinGeneName
+                       req(PGN, isolate(input$gene_label))
+                       uid <- as.character(PGN$UniqueID)
+                       lab <- if (isolate(input$gene_label) == "UniqueID") uid else as.character(PGN$Gene.Name)
+                       dup <- duplicated(lab) | duplicated(lab, fromLast = TRUE)
+                       lab[dup] <- paste0(lab[dup], " (", uid[dup], ")")
+                       updateSelectizeInput(session, "target_gene", choices = stats::setNames(uid, lab), selected = v, server = TRUE)
                      })
                    )
                    pending <- Filter(function(p) !is.null(p$value), pending)
