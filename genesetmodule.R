@@ -755,6 +755,7 @@ geneset_server <- function(id) {
                           
                           res_list <- lapply(names(getresults), function(comp) {
                             logFC_list <- getresults[[comp]]$gene_list
+                            set.seed(42)  # fgseaMultilevel is stochastic; fixed seed makes reruns reproducible
                             fgseaMultilevel(gsets_GSEA, logFC_list, minSize = gsMin, maxSize = gsMax)
                           })
                           names(res_list) <- names(getresults)
@@ -801,6 +802,7 @@ geneset_server <- function(id) {
                                   res_list <- lapply(names(res_list_raw), function(comp) {
                                     output <- res_list_raw[[comp]]
                                     logFC_list <- DataGenesetReactive_GSEA()[[comp]]$gene_list
+                                    set.seed(42)  # collapsePathways also runs fgsea internally
                                     collapsed_set <- collapsePathways(
                                       output[order(pval)][padj <= input$gsea_FDR],
                                       gsets_Reactive(),
@@ -1050,7 +1052,7 @@ geneset_server <- function(id) {
                           
                           res_list <- lapply(names(getresults), function(comp) {
                             comp_res <- getresults[[comp]]
-                            logFC_list <- comp_res$sig_genes
+                            logFC_list <- comp_res$sig_genes_Dir  # honors the Up/Down/Both direction choice
                             all_genes  <- comp_res$all_genes
                             
                             gsa <- ORAEnrichment(
@@ -1787,7 +1789,8 @@ geneset_server <- function(id) {
                                    exportOptions = list(modifier = list(page = "current"))),
                               list(extend = "csv", text = "Download All", filename = "All_Results",
                                    exportOptions = list(modifier = list(page = "all")))
-                            ))) %>% formatStyle(columns="Gene.Name", target="row",   backgroundColor = styleEqual(genes, "lightgreen", default='white'))
+                            ))) %>% formatStyle(columns="Gene.Name", target="row",   backgroundColor = styleEqual(genes, "lightgreen", default='white')) %>%
+                            formatSignif(columns = intersect(c("logFC", "P.Value", "Adj.P.Value"), names(terminalsdf.set)), digits = 3)
                         })
                         
                         #############################  Dot plot  ######
