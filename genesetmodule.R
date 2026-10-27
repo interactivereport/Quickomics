@@ -2249,8 +2249,10 @@ geneset_server <- function(id) {
                         })
                         
                         observeEvent(input$dotplot, {
+                          req(current_plot())
                           saved.num <- length(saved_plots$dotplot) + 1
-                          saved_plots$boxplot[[saved.num]] <- current_plot()
+                          saved_plots$dotplot[[saved.num]] <- current_plot()
+                          log_info("Gene Set Enrichment: pathway dot plot (", saved.num, ") saved to output.")
                         })
                       })
 }

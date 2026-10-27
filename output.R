@@ -134,12 +134,10 @@ output$downloadPDF <- downloadHandler(
     
     ## Geneset dot plot
     if (!is.null(saved_plots$dotplot)){
-      for (i in 1:length(names(saved_plots$dotplot))) {
-        title_tmp <- paste("KEGG View (", i,")",sep="")
+      for (i in seq_along(saved_plots$dotplot)) {
+        title_tmp <- paste("pathway dot plot (", i,")",sep="")
         if (title_tmp %in% plots_checked) {
-          par(mai=c(0,0,0,0))
-          plot(c(0,1),c(0,1),type="n")
-          rasterImage(saved_plots$dotplot[[i]],0,0,1,1)
+          print(saved_plots$dotplot[[i]])
           Np=Np+1
         }
       }
@@ -366,7 +364,7 @@ observe({
   
   ## Geneset dotplot
   if (!is.null(saved_plots$dotplot)){
-    for (i in 1:length(names(saved_plots$dotplot))) {
+    for (i in seq_along(saved_plots$dotplot)) {
       title_tmp <- paste("pathway dot plot (", i,")",sep="")
       summary=c(summary,  title_tmp)
     }
@@ -570,6 +568,17 @@ output$downloadSVG <- downloadHandler(
           par(mai=c(0,0,0,0))
           plot(c(0,1),c(0,1),type="n")
           rasterImage(saved_plots$keggSave[[i]],0,0,1,1)
+          Np=Np+1
+        }
+      }
+    }
+    
+    ## Geneset dot plot
+    if (Np==0 & !is.null(saved_plots$dotplot)){
+      for (i in seq_along(saved_plots$dotplot)) {
+        title_tmp <- paste("pathway dot plot (", i,")",sep="")
+        if (Np==0 & title_tmp %in% plots_checked) {
+          print(saved_plots$dotplot[[i]])
           Np=Np+1
         }
       }
