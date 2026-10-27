@@ -191,3 +191,25 @@ output$alignQC_OV_plot <- renderUI({
 })
 
 
+
+# Save to output
+observeEvent(input$alignQC_TGR, {
+  saved_plots$alignQC_TGR <- alignQC_TGR_p()
+  log_info("AlignQC Top Gene Ratio saved to output.")
+})
+observeEvent(input$alignQC_TGL, {
+  if (isTRUE(input$alignQC_TG_list)) {
+    showNotification("Top Gene List is showing the table; switch to the plot to save it to output.", type = "warning")
+    return()
+  }
+  saved_plots$alignQC_TGL <- alignQC_TG_p()
+  log_info("AlignQC Top Gene List saved to output.")
+})
+observeEvent(input$alignQC_RA, {
+  saved_plots$alignQC_RA <- alignQC_RA_p()
+  log_info("AlignQC Mapped Read Allocation saved to output.")
+})
+observeEvent(input$alignQC_OV, {
+  saved_plots$alignQC_OV <- alignQC_OV_p()
+  log_info("AlignQC Plot Other Variables saved to output.")
+})

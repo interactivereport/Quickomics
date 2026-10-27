@@ -68,6 +68,24 @@ output$downloadPDF <- downloadHandler(
       print(saved_plots$covar_num)
       Np=Np+1
     }
+
+    #AlignQC
+    if (!is.null(saved_plots$alignQC_TGR) & ("AlignQC Top Gene Ratio" %in% plots_checked)){
+      print(saved_plots$alignQC_TGR)
+      Np=Np+1
+    }
+    if (!is.null(saved_plots$alignQC_TGL) & ("AlignQC Top Gene List" %in% plots_checked)){
+      print(saved_plots$alignQC_TGL)
+      Np=Np+1
+    }
+    if (!is.null(saved_plots$alignQC_RA) & ("AlignQC Mapped Read Allocation" %in% plots_checked)){
+      print(saved_plots$alignQC_RA)
+      Np=Np+1
+    }
+    if (!is.null(saved_plots$alignQC_OV) & ("AlignQC Plot Other Variables" %in% plots_checked)){
+      print(saved_plots$alignQC_OV)
+      Np=Np+1
+    }
     
     
     ### volcano plot
@@ -299,6 +317,19 @@ observe({
   if (!is.null(saved_plots$covar_num)){
     summary=c(summary, 'Numeric Covariates vs PCs')
   }
+  ###AlignQC
+  if (!is.null(saved_plots$alignQC_TGR)){
+    summary=c(summary, 'AlignQC Top Gene Ratio')
+  }
+  if (!is.null(saved_plots$alignQC_TGL)){
+    summary=c(summary, 'AlignQC Top Gene List')
+  }
+  if (!is.null(saved_plots$alignQC_RA)){
+    summary=c(summary, 'AlignQC Mapped Read Allocation')
+  }
+  if (!is.null(saved_plots$alignQC_OV)){
+    summary=c(summary, 'AlignQC Plot Other Variables')
+  }
   
   ### volcano plot
   if (!is.null(saved_plots$volcano)){
@@ -479,6 +510,24 @@ output$downloadSVG <- downloadHandler(
     }
     if (!is.null(saved_plots$covar_num) & ("Numeric Covariates vs PCs" %in% plots_checked)){
       print(saved_plots$covar_num)
+      Np=Np+1
+    }
+
+    #AlignQC
+    if (Np==0 & !is.null(saved_plots$alignQC_TGR) & ("AlignQC Top Gene Ratio" %in% plots_checked)){
+      print(saved_plots$alignQC_TGR)
+      Np=Np+1
+    }
+    if (Np==0 & !is.null(saved_plots$alignQC_TGL) & ("AlignQC Top Gene List" %in% plots_checked)){
+      print(saved_plots$alignQC_TGL)
+      Np=Np+1
+    }
+    if (Np==0 & !is.null(saved_plots$alignQC_RA) & ("AlignQC Mapped Read Allocation" %in% plots_checked)){
+      print(saved_plots$alignQC_RA)
+      Np=Np+1
+    }
+    if (Np==0 & !is.null(saved_plots$alignQC_OV) & ("AlignQC Plot Other Variables" %in% plots_checked)){
+      print(saved_plots$alignQC_OV)
       Np=Np+1
     }
     
