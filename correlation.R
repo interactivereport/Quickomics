@@ -22,7 +22,7 @@ get_regression_stats <- function(x, y, corr_method = "pearson") {
     x_fit <- x
     y_fit <- y
   }
-  fit <- lm(x_fit ~ y_fit)
+  fit <- lm(y_fit ~ x_fit)  # y on x, matching the plot (x = first item, y = second)
   s   <- summary(fit)
   res_corr <- cor.test(x, y, method = corr_method, exact = FALSE)
   data.frame(
@@ -86,6 +86,14 @@ ct_attr_info <- function(v) {
   vc[vc %in% c("", "NA")] <- NA
   lv <- if (is.factor(v)) intersect(levels(v), vc) else unique(vc[!is.na(vc)])
   nums <- ct_parse_numbers(lv)
+  # Labels whose numbers carry different units (e.g. 2mo, 1yr) can't be compared by number:
+  # treat them as ordered levels in the metadata's level order.
+  units <- unique(tolower(trimws(sub("-?[0-9]*\\.?[0-9]+", "", lv))))
+  if (length(lv) > 0 && all(!is.na(nums)) && length(units) > 1) {
+    return(list(kind = "text", levels = lv,
+                msg = paste0("Text labels with mixed units (", paste(units, collapse = ", "),
+                             "): using 'Ordered levels' in the metadata order; reorder below if needed.")))
+  }
   if (length(lv) > 0 && all(!is.na(nums))) {
     o <- order(nums)
     list(kind = "labels", levels = lv[o],
