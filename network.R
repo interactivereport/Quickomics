@@ -58,6 +58,11 @@ edges_UniqueID_GeneName_mapping <- function(edges, ProteinGeneName) {
   return(edges)
 }
 
+# Last "Select Gene Label" value seen by the observer below, so a real
+# label switch (Gene.Name <-> UniqueID) can be told apart from the first
+# run or a recomputation, and reset the selection and results.
+last_network_label <- reactiveVal(NULL)
+
 observeEvent(list(NetworkReactive(), input$network_label, restored_sel_net_gene()), {
   # restored_sel_net_gene() is included as a trigger (not just read via
   # isolate() below) specifically because onRestored() is not guaranteed to
@@ -79,14 +84,23 @@ observeEvent(list(NetworkReactive(), input$network_label, restored_sel_net_gene(
       as.character()
   }
   selected_genes <- intersect(input$sel_net_gene, DataIngenes)
+  prev_label <- isolate(last_network_label())
+  last_network_label(input$network_label)
   # If a Save Session restore is waiting on this tab's choices to exist
   # (see restored_sel_net_gene in app.R), apply it now instead of whatever
-  # input$sel_net_gene currently holds, then consume it so it doesn't
-  # override the user's own later selections on subsequent recomputations.
+  # input$sel_net_gene currently holds. It stays pending (cleared by the
+  # observer below once the browser reports a selection) because this
+  # observer can re-run during restore before input$sel_net_gene has come
+  # back, and consuming it on the first run let that re-run wipe it.
   pending_restore <- isolate(restored_sel_net_gene())
   if (!is.null(pending_restore)) {
     selected_genes <- intersect(pending_restore, DataIngenes)
+  }
+  if (!is.null(prev_label) && !identical(prev_label, input$network_label)) {
+    selected_genes <- character(0)
     restored_sel_net_gene(NULL)
+    output$networkstat <- renderText(NULL)
+    output$myTabUI <- renderUI(NULL)
   }
   updateSelectizeInput(session,'sel_net_gene', choices= DataIngenes, selected = selected_genes, server=TRUE)
   output$visnetwork <- renderVisNetwork({
@@ -100,9 +114,21 @@ observeEvent(list(NetworkReactive(), input$network_label, restored_sel_net_gene(
   # })
 })
 
+# Consume a pending Save Session restore of sel_net_gene once the browser
+# reports a selection (the restored one, or the user's own).
+observeEvent(input$sel_net_gene, {
+  if (!is.null(restored_sel_net_gene())) restored_sel_net_gene(NULL)
+})
+
 NetworkReactive <- reactive({
   req(input$menu == "Correlation_Network")
-  if (!identical(sort(as.character(DataQCReactive()$tmp_sampleid)), current_samples())) {
+  # Evaluate DataQCReactive() outside sort(): sort() is an S4 generic here
+  # (BiocGenerics), and S4 dispatch turns a req() failure inside its argument
+  # into a real error, which ends the session. That happened when restoring a
+  # session saved on this tab, before Groups and Samples was ready.
+  DataQC <- DataQCReactive()
+  req(DataQC)
+  if (!identical(sort(as.character(DataQC$tmp_sampleid)), current_samples())) {
     isolate({
       n_sample_all <- length(all_samples())
       n_sample_current <- length(DataQCReactive()$tmp_sampleid)
