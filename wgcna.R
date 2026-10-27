@@ -1205,7 +1205,9 @@ wgcna_server <- function(id, parent_session) {
                         })
                         
                         # Create Module-Trait correlation heatmap object and reset hub gene results
-                        observeEvent(trait_data(), {
+                        # Also re-plot when the modules change (WGCNA re-run): trait_data() keeps the same
+                        # value when the traits are unchanged, so it alone would not fire.
+                        observeEvent(list(trait_data(), MEs_updated()), {
                           req(MEs_updated(), trait_data(), input$plot_module_trait)
                           p <- compute_module_trait_heatmap(
                             MEs       = MEs_updated(),
