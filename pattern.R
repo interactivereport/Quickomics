@@ -111,6 +111,8 @@ observe({
 	results_long = DataIn$tmp_results_long
 	if (!is.null(results_long)) {
 	  pattern_test = input$pattern_test
+	  # "ALL" uses DEGs from every test; otherwise only the selected test
+	  if (!is.null(pattern_test) && pattern_test != "ALL") results_long = results_long %>% dplyr::filter(test == pattern_test)
 	  pattern_fccut = log2(as.numeric(input$pattern_fccut))
 	  pattern_pvalcut = as.numeric(input$pattern_pvalcut)
 	  
@@ -131,7 +133,11 @@ filteredgeneReactive <- reactive({
   DataIn <- DataQCReactive()
   ProteinGeneName <- DataIn$ProteinGeneName
   results_long <- DataIn$tmp_results_long
-  
+  # "ALL" uses DEGs from every test; otherwise only the selected test
+  if (!is.null(results_long) && !is.null(input$pattern_test) && input$pattern_test != "ALL") {
+    results_long <- results_long %>% dplyr::filter(test == input$pattern_test)
+  }
+
   pattern_fccut <- log2(as.numeric(input$pattern_fccut))
   pattern_pvalcut <- as.numeric(input$pattern_pvalcut)
   
