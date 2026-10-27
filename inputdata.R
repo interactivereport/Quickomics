@@ -77,7 +77,7 @@ observeEvent(input$exp_unit, {
 # raw error instead of a clean message. showNotification() works correctly
 # in both places.
 #
-# With auto = TRUE (used only by the ?auto= key) the serverfile/testfile/
+# With auto = TRUE (used only by the ?auto= key) the unlisted/serverfile/testfile/
 # api_* /datalake loaders stay silent on "not found" and API errors and just
 # return FALSE, so the next source in auto_source_priority can be tried.
 load_project_from_query <- function(key, ProjectID, auto = FALSE) {
@@ -106,11 +106,11 @@ load_project_from_query <- function(key, ProjectID, auto = FALSE) {
   } else if (key == 'unlisted') {
     if (!file.exists(str_c("unlisted/",  ProjectID, ".csv"))) {
       log_warn("Project load failed (key=unlisted): '", ProjectID, "' -- no unlisted/", ProjectID, ".csv")
-      showNotification(
+      if (!auto) showNotification(
         paste0("Project '", ProjectID, "' could not be found in the unlisted folder. Please check the project ID in the URL."),
         type = "error", duration = NULL
       )
-      return()
+      return(FALSE)
     }
     unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
     ProjectInfo$ProjectID=ProjectID
@@ -124,8 +124,9 @@ load_project_from_query <- function(key, ProjectID, auto = FALSE) {
     if ("Path" %in% names(unlisted_project)) {ProjectInfo$Path=unlisted_project$Path}
     if ("ExpressionUnit" %in% names(unlisted_project)) {updateTextInput(session, "exp_unit", value=unlisted_project$ExpressionUnit[1]) }
     project_query_source(list(key = key, value = ProjectID))
-    set_project_source(key)
+    if (!auto) set_project_source(key)
     log_info("Project loaded: ", ProjectID, " (source=unlisted)")
+    return(TRUE)
   } else if (key == 'serverfile') {
     # Reads {server_dir}/{ProjectID}.RData directly with base::load().
     load_project_from_dir(key, ProjectID, server_dir, "server_dir", auto)
@@ -164,7 +165,7 @@ load_project_from_query <- function(key, ProjectID, auto = FALSE) {
 }
 
 # Order the ?auto= key tries sources in, highest priority first.
-auto_source_priority <- c('datalake', 'api_serverfile', 'serverfile', 'api_testfile', 'testfile')
+auto_source_priority <- c('datalake', 'api_serverfile', 'serverfile', 'api_testfile', 'testfile', 'unlisted')
 
 # Where a project's data came from, shown on the Project Overview page
 # (ProjectInfo$SourceLabel) and in a notification when the project loads.
