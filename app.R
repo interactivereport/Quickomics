@@ -677,7 +677,7 @@ fluidPage(
                                                            selectInput("volcano_test", label="Select Comparison Groups for Volcano Plot", choices=NULL)),
                                          conditionalPanel( "input.volcano_tabset=='DEGs in Two Comparisons'",
                                                            selectInput("volcano_test1", label="1st Comparison (X-axis)", choices=NULL),
-                                                           selectInput("volcano_test2", label="2nd Comparison (Y-aixs)", choices=NULL)),
+                                                           selectInput("volcano_test2", label="2nd Comparison (Y-axis)", choices=NULL)),
                                          numericInput("volcano_FCcut", label= "Choose Fold Change Cutoff",  value = 1.2, min=1, step=0.1),
                                          numericInput("volcano_pvalcut", label= "Choose P Value Cutoff", value=0.01, min=0, step=0.001),
                                          radioButtons("volcano_psel", label= "P value or P.adj Value?", choices= c("Pval"="Pval","Padj"="Padj"),inline = TRUE),

@@ -288,7 +288,8 @@ output$volcano_selected_table <- DT::renderDT({
   validate(need(length(volcano_selected_ids()) > 0, 
                 "Use the lasso or box-select tool on the plot above to select a region of genes."))
   DT::datatable(volcano_selected_table_data(), extensions = 'Buttons', rownames = FALSE,
-                options = list(dom = 'lBfrtip', buttons = c('csv', 'excel'), pageLength = 15))
+                options = list(dom = 'lBfrtip', buttons = c('csv', 'excel'), pageLength = 15)) %>%
+    formatSignif(columns = c('logFC', 'P.Value', 'Adj.P.Value'), digits = 3)
 })
 
 # Optional bridge: send the selected genes straight into the highlight-subset feature
@@ -525,8 +526,9 @@ DEG_Compare <- reactive({
   
   p<-p+ scale_color_manual(values=c('X_sig Y_sig'='blue3','X_sig Y_notsig'='green3',
                                     'X_notsig Y_sig'='orange','X_notsig Y_notsig'='#00000022')) + 
-    theme(legend.position=input$vlegendpos, legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1))
-  
+    theme(legend.position=input$vlegendpos, legend.text=element_text(size=input$yfontsize), legend.title=element_text(size=input$yfontsize+1),
+          legend.box="vertical")  # stack the size and color legends so a bottom legend isn't clipped
+
   # ---- independent highlight overlay: works regardless of Label Genes mode, ----
   # ---- only recomputes when "Apply Highlight" is clicked ----
   hs <- highlight_settings()
