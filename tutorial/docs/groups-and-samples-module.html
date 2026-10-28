@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 3 Groups and Samples Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 3 Groups and Samples Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.34 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 3 Groups and Samples Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
@@ -22,7 +22,7 @@
 
 
 
-<meta name="date" content="2023-10-05" />
+<meta name="date" content="2026-10-28" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -99,7 +99,12 @@
 </ul></li>
 <li class="chapter" data-level="3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html"><i class="fa fa-check"></i><b>3</b> Groups and Samples Module</a>
 <ul>
-<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-groups-and-samples"><i class="fa fa-check"></i><b>3.1</b> Select groups and samples</a></li>
+<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#overview-of-the-groups-and-samples-tab"><i class="fa fa-check"></i><b>3.1</b> Overview of the Groups and Samples tab</a></li>
+<li class="chapter" data-level="3.2" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-groups-by-sample-attributes"><i class="fa fa-check"></i><b>3.2</b> Remove groups by sample attributes</a></li>
+<li class="chapter" data-level="3.3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-and-remove-multiple-samples"><i class="fa fa-check"></i><b>3.3</b> Select and remove multiple samples</a></li>
+<li class="chapter" data-level="3.4" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-samples-by-comparisons"><i class="fa fa-check"></i><b>3.4</b> Remove samples by comparisons</a></li>
+<li class="chapter" data-level="3.5" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#reorder-groups-and-samples"><i class="fa fa-check"></i><b>3.5</b> Reorder groups and samples</a></li>
+<li class="chapter" data-level="3.6" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#apply-changes-to-all-modules"><i class="fa fa-check"></i><b>3.6</b> Apply changes to all modules</a></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="qc-plots-module.html"><a href="qc-plots-module.html"><i class="fa fa-check"></i><b>4</b> QC Plots Module</a>
 <ul>
@@ -184,11 +189,44 @@
             <section class="normal" id="section-">
 <div id="groups-and-samples-module" class="section level1 hasAnchor" number="3">
 <h1><span class="header-section-number">Chapter 3</span> Groups and Samples Module<a href="groups-and-samples-module.html#groups-and-samples-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
-<p>The “Groups and Samples” module is a new feature in the version 2.0 of Quickomics. We enhanced sample selection in the new Groups and Samples tab. It provides a wide range of flexibility to select groups and samples by clicking and dragging them in a interactive manner. Users can select samples based on metadata, comparison, subsetting, or manual list. The selected samples are used globally for all plots.</p>
-<div id="select-groups-and-samples" class="section level2 hasAnchor" number="3.1">
-<h2><span class="header-section-number">3.1</span> Select groups and samples<a href="groups-and-samples-module.html#select-groups-and-samples" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>Here, you can define your sample groups and modifying the samples to be included or excluded. It is also flexible to re-order the samples.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS3.1_1.png" /></a></p>
+<p>The “Groups and Samples” module controls which groups, samples and comparisons are used in the rest of Quickomics. It was first introduced in version 2.0 and has been redesigned in the current version. Users can keep or remove samples by any sample attribute (for example group, Age, Genotype or Gender), remove individual samples or comparisons, and re-order groups and samples, all by clicking and dragging buttons in an interactive manner. Changes are made in this tab first, and are passed on to all other modules only after the User clicks “Apply Changes to Project Data”.</p>
+<div id="overview-of-the-groups-and-samples-tab" class="section level2 hasAnchor" number="3.1">
+<h2><span class="header-section-number">3.1</span> Overview of the Groups and Samples tab<a href="groups-and-samples-module.html#overview-of-the-groups-and-samples-tab" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>The tab is organized from top to bottom as shown below, using the Mouse Microglia RNA dataset (Gyoneva et al., 2019) as an example.</p>
+<p>At the top, “Reset All” restores the original selection of the project, and “Apply Changes to Project Data” passes the current selection on to all other tabs. The note next to these buttons shows whether the current selection has been applied. The tip below them is a reminder that several buttons can be picked at once with Ctrl + click (Cmd + click on Mac).</p>
+<p>Next, each categorical sample attribute has its own row. The values that are kept are listed under “Keep (Drag to Order)” and can be dragged to change their order, while values dragged into the “Remove” box on the right are left out. Attributes that are numeric, have only one value, or have a different value for every sample are not shown as rows. In this dataset, the four rows are group, Age, Genotype and Gender.</p>
+<p>Below the attribute rows, “Available Samples” lists every sample currently included, and “Available Comparisons” lists the comparisons currently included. Individual samples or comparisons can be dragged into the “Drag to Remove Samples” or “Drag to Remove Comparisons” boxes. The line at the bottom summarizes the current selection, here <strong>93 / 93</strong> samples and <strong>9 / 9</strong> comparisons.</p>
+<p><a href="Figures/FigureS3.1_1.png"><img src="Figures/FigureS3.1_1.png" /></a></p>
+</div>
+<div id="remove-groups-by-sample-attributes" class="section level2 hasAnchor" number="3.2">
+<h2><span class="header-section-number">3.2</span> Remove groups by sample attributes<a href="groups-and-samples-module.html#remove-groups-by-sample-attributes" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>To remove all samples sharing an attribute value, drag that value from “Keep” to the “Remove” box of the same row. In the example below, we drag <strong>2yr</strong> from the Age row to “Remove” to focus on the 2mo and 1yr microglia. Quickomics updates everything else automatically: the <strong>2yr_Het</strong>, <strong>2yr_KO</strong> and <strong>2yr_WT</strong> groups are moved to “Remove” in the group row, the 2yr samples are moved to “Drag to Remove Samples”, and the four comparisons involving 2yr groups are moved to “Drag to Remove Comparisons”. The summary now shows <strong>64 / 93</strong> samples and <strong>5 / 9</strong> comparisons.</p>
+<p>The selection is made step by step, so each change starts from the samples currently kept. Dragging a value back to “Keep” adds its samples back, except samples carrying a value that is still removed in another row.</p>
+<p>The red note “Changes not applied yet. Other tabs still use the previous selection.” is a reminder that the new selection has not been passed on to the other tabs yet (see Section 3.6).</p>
+<p><a href="Figures/FigureS3.2_1.png"><img src="Figures/FigureS3.2_1.png" /></a></p>
+</div>
+<div id="select-and-remove-multiple-samples" class="section level2 hasAnchor" number="3.3">
+<h2><span class="header-section-number">3.3</span> Select and remove multiple samples<a href="groups-and-samples-module.html#select-and-remove-multiple-samples" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Individual samples, for example outliers identified in the QC Plots module, can be removed by dragging them from “Available Samples” to “Drag to Remove Samples”. To move several samples at once, hold Ctrl (Cmd on Mac) and click each sample; the selected samples are outlined in red.</p>
+<p><a href="Figures/FigureS3.3_1.png"><img src="Figures/FigureS3.3_1.png" /></a></p>
+<p>Then drag any one of the selected samples, and all of them move together. Here, the three samples <strong>1yr-Het-11M</strong>, <strong>1yr-Het-12M</strong> and <strong>1yr-Het-14M</strong> are moved to “Drag to Remove Samples”. Comparisons that relied on the removed samples are removed as well; in this example <strong>1yr_Hetvs1yr_WT</strong> is moved to “Drag to Remove Comparisons”, and the summary shows <strong>61 / 93</strong> samples and <strong>4 / 9</strong> comparisons. Multiple selection works the same way for attribute values and comparisons.</p>
+<p><a href="Figures/FigureS3.3_2.png"><img src="Figures/FigureS3.3_2.png" /></a></p>
+</div>
+<div id="remove-samples-by-comparisons" class="section level2 hasAnchor" number="3.4">
+<h2><span class="header-section-number">3.4</span> Remove samples by comparisons<a href="groups-and-samples-module.html#remove-samples-by-comparisons" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Samples can also be selected through the comparisons. When a comparison is dragged from “Available Comparisons” to “Drag to Remove Comparisons”, its samples are removed as well, but only the samples that no remaining comparison uses. In the example below, we remove <strong>2yr_KOvs2yr_WT</strong>. The eleven 2yr_KO samples are used only by this comparison, so they are moved to “Drag to Remove Samples”, and the <strong>2yr_KO</strong> group is moved to “Remove” in the group row. The 2yr_WT samples are kept, because they are still used by <strong>2yr_Hetvs2yr_WT</strong>, <strong>2yr_WTvs1yr_WT</strong> and <strong>2yr_WTvs2mo_WT</strong>. The summary now shows <strong>82 / 93</strong> samples and <strong>8 / 9</strong> comparisons.</p>
+<p>Dragging a comparison back to “Available Comparisons” adds its samples back.</p>
+<p><a href="Figures/FigureS3.4_1.png"><img src="Figures/FigureS3.4_1.png" /></a></p>
+</div>
+<div id="reorder-groups-and-samples" class="section level2 hasAnchor" number="3.5">
+<h2><span class="header-section-number">3.5</span> Reorder groups and samples<a href="groups-and-samples-module.html#reorder-groups-and-samples" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>The order of the buttons in each “Keep” box sets the order used in plots and tables. In this example, we drag <strong>2mo</strong> in front of <strong>1yr</strong> in the Age row, so that the younger animals come first. The groups are re-ordered to <strong>2mo_Het</strong>, <strong>2mo_KO</strong>, <strong>2mo_WT</strong>, <strong>1yr_Het</strong>, <strong>1yr_KO</strong>, <strong>1yr_WT</strong>, and the samples in “Available Samples” follow the new order. Groups, samples and comparisons can also be re-ordered directly by dragging them within their own boxes. Re-ordering comparisons does not change which samples are kept.</p>
+<p><a href="Figures/FigureS3.5_1.png"><img src="Figures/FigureS3.5_1.png" /></a></p>
+</div>
+<div id="apply-changes-to-all-modules" class="section level2 hasAnchor" number="3.6">
+<h2><span class="header-section-number">3.6</span> Apply changes to all modules<a href="groups-and-samples-module.html#apply-changes-to-all-modules" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>When the selection is final, click “Apply Changes to Project Data”. The note changes to “All changes applied.”, and all other modules (QC Plots, Expression Plot, Heatmap, DEGs and so on) now use the selected groups, samples and comparisons in the selected order. Each of these modules shows the current selection at the top of its left panel, for example “Selected 61 / 93 Samples; 4 / 9 Comparisons. (Update Selection at: Top Menu → Groups and Samples.)”, and adds a red reminder when Groups and Samples has changes that are not applied yet. To start over, click “Reset All”, which restores all groups, samples and comparisons of the project.</p>
+<p><a href="Figures/FigureS3.6_1.png"><img src="Figures/FigureS3.6_1.png" /></a></p>
 
 </div>
 </div>
@@ -212,42 +250,42 @@
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
-"sharing": {
-"github": false,
-"facebook": true,
-"twitter": true,
-"linkedin": false,
-"weibo": false,
-"instapaper": false,
-"vk": false,
-"whatsapp": false,
-"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
-},
-"fontsettings": {
-"theme": "white",
-"family": "sans",
-"size": 2
-},
-"edit": {
-"link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/03-GroupsAndSamplesModule.Rmd",
-"text": "Edit"
-},
-"history": {
-"link": null,
-"text": null
-},
-"view": {
-"link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/03-GroupsAndSamplesModule.Rmd",
-"text": null
-},
-"download": null,
-"search": {
-"engine": "fuse",
-"options": null
-},
-"toc": {
-"collapse": "subsection"
-}
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/03-GroupsAndSamplesModule.Rmd",
+    "text": "Edit"
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/03-GroupsAndSamplesModule.Rmd",
+    "text": null
+  },
+  "download": null,
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  }
 });
 });
 </script>

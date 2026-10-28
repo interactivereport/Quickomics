@@ -14,7 +14,12 @@ data-table
 protein-gene-names
 help
 groups-and-samples-module
-select-groups-and-samples
+overview-of-the-groups-and-samples-tab
+remove-groups-by-sample-attributes
+select-and-remove-multiple-samples
+remove-samples-by-comparisons
+reorder-groups-and-samples
+apply-changes-to-all-modules
 qc-plots-module
 pca-plot
 covariates

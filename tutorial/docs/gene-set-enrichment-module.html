@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 8 Gene Set Enrichment Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 8 Gene Set Enrichment Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.34 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 8 Gene Set Enrichment Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
@@ -22,7 +22,7 @@
 
 
 
-<meta name="date" content="2023-10-05" />
+<meta name="date" content="2026-10-28" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -99,7 +99,12 @@
 </ul></li>
 <li class="chapter" data-level="3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html"><i class="fa fa-check"></i><b>3</b> Groups and Samples Module</a>
 <ul>
-<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-groups-and-samples"><i class="fa fa-check"></i><b>3.1</b> Select groups and samples</a></li>
+<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#overview-of-the-groups-and-samples-tab"><i class="fa fa-check"></i><b>3.1</b> Overview of the Groups and Samples tab</a></li>
+<li class="chapter" data-level="3.2" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-groups-by-sample-attributes"><i class="fa fa-check"></i><b>3.2</b> Remove groups by sample attributes</a></li>
+<li class="chapter" data-level="3.3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-and-remove-multiple-samples"><i class="fa fa-check"></i><b>3.3</b> Select and remove multiple samples</a></li>
+<li class="chapter" data-level="3.4" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-samples-by-comparisons"><i class="fa fa-check"></i><b>3.4</b> Remove samples by comparisons</a></li>
+<li class="chapter" data-level="3.5" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#reorder-groups-and-samples"><i class="fa fa-check"></i><b>3.5</b> Reorder groups and samples</a></li>
+<li class="chapter" data-level="3.6" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#apply-changes-to-all-modules"><i class="fa fa-check"></i><b>3.6</b> Apply changes to all modules</a></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="qc-plots-module.html"><a href="qc-plots-module.html"><i class="fa fa-check"></i><b>4</b> QC Plots Module</a>
 <ul>
@@ -188,25 +193,25 @@
 <div id="gene-set-enrichment" class="section level2 hasAnchor" number="8.1">
 <h2><span class="header-section-number">8.1</span> Gene Set Enrichment<a href="gene-set-enrichment-module.html#gene-set-enrichment" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This first tab lets the users pick a particular comparison, apply different cutoff criteria and select from a list of different databases for enrichment analysis. To demonstrate usage of this functionality, we will use the Mouse Microglia RNA dataset to help answer the question which pathways were altered by Genotype and/or Age. Very similar to the results from <a href="https://www.life-science-alliance.org/content/2/6/e201900453" target="_blank">Gyoneva et al., 2019</a>, this analysis points to immune related terms being enriched in the down-regulated genes for 2mon_KOvs2mon_WT.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.1_1.png" /></a></p>
+<p><a href="Figures/FigureS8.1_1.png"><img src="Figures/FigureS8.1_1.png" /></a></p>
 <p>Similarly, we pull out the GO enrichment for up-regulated genes.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.1_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.1_2.png" /></a></p>
+<p><a href="Figures/FigureS8.1_2.png"><img src="Figures/FigureS8.1_2.png" /></a></p>
 </div>
 <div id="gene-expression" class="section level2 hasAnchor" number="8.2">
 <h2><span class="header-section-number">8.2</span> Gene Expression<a href="gene-set-enrichment-module.html#gene-expression" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>For the enriched terms identified in the previous tab (Gene Set Enrichment, section 8.1), Users have the ability to look at the differential values of the genes present in the set. Here we are probing the GO_IMMUNE_RESPONSE identified in the down-regulated category.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.2_1.png" /></a></p>
+<p><a href="Figures/FigureS8.2_1.png"><img src="Figures/FigureS8.2_1.png" /></a></p>
 </div>
 <div id="gene-set-heat-map" class="section level2 hasAnchor" number="8.3">
 <h2><span class="header-section-number">8.3</span> Gene Set Heat Map<a href="gene-set-enrichment-module.html#gene-set-heat-map" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Like the “Gene Expression” tab, Users have the ability to plot expression of the genes in the pathway term selected as a heatmap. This visualization shows that while the Immune Response genes are enriched in the differentially expressed genes list, not all of them change in the same direction.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.3_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.3_1.png" /></a></p>
+<p><a href="Figures/FigureS8.3_1.png"><img src="Figures/FigureS8.3_1.png" /></a></p>
 </div>
 <div id="kegg-pathway-view" class="section level2 hasAnchor" number="8.4">
 <h2><span class="header-section-number">8.4</span> KEGG Pathway View<a href="gene-set-enrichment-module.html#kegg-pathway-view" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This functionality is available only to KEGG pathway terms. Users have the option to view the Fold Change levels of different genes in the KEGG pathway selected for up to 5 comparisons. In this example we demo the KEGG pathway “hsa04612 Antigen processing and presentation” as identified as a down-regulated term in the 2mon_KOvs2mon_WT and 1yr_KOvs1yr_WT comparisons.</p>
 <p>This figure identifies all the genes that are differentially expressed in this pathway. It is also clear that genes in the MHC I pathway do not change, but many genes in the MHC II pathway are down regulated in both the comparisons. The visualization is also useful to highlight whether or not a large proportion of genes in a pathway are altered by the perturbation.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.4_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS8.4_1.png" /></a></p>
+<p><a href="Figures/FigureS8.4_1.png"><img src="Figures/FigureS8.4_1.png" /></a></p>
 
 </div>
 </div>
@@ -230,42 +235,42 @@
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
-"sharing": {
-"github": false,
-"facebook": true,
-"twitter": true,
-"linkedin": false,
-"weibo": false,
-"instapaper": false,
-"vk": false,
-"whatsapp": false,
-"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
-},
-"fontsettings": {
-"theme": "white",
-"family": "sans",
-"size": 2
-},
-"edit": {
-"link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/08-GeneSetEnrichmentModule.Rmd",
-"text": "Edit"
-},
-"history": {
-"link": null,
-"text": null
-},
-"view": {
-"link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/08-GeneSetEnrichmentModule.Rmd",
-"text": null
-},
-"download": null,
-"search": {
-"engine": "fuse",
-"options": null
-},
-"toc": {
-"collapse": "subsection"
-}
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/08-GeneSetEnrichmentModule.Rmd",
+    "text": "Edit"
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/08-GeneSetEnrichmentModule.Rmd",
+    "text": null
+  },
+  "download": null,
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  }
 });
 });
 </script>

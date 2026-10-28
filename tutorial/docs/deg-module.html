@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 5 DEG Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 5 DEG Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.34 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 5 DEG Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
@@ -22,7 +22,7 @@
 
 
 
-<meta name="date" content="2023-10-05" />
+<meta name="date" content="2026-10-28" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -99,7 +99,12 @@
 </ul></li>
 <li class="chapter" data-level="3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html"><i class="fa fa-check"></i><b>3</b> Groups and Samples Module</a>
 <ul>
-<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-groups-and-samples"><i class="fa fa-check"></i><b>3.1</b> Select groups and samples</a></li>
+<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#overview-of-the-groups-and-samples-tab"><i class="fa fa-check"></i><b>3.1</b> Overview of the Groups and Samples tab</a></li>
+<li class="chapter" data-level="3.2" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-groups-by-sample-attributes"><i class="fa fa-check"></i><b>3.2</b> Remove groups by sample attributes</a></li>
+<li class="chapter" data-level="3.3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-and-remove-multiple-samples"><i class="fa fa-check"></i><b>3.3</b> Select and remove multiple samples</a></li>
+<li class="chapter" data-level="3.4" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-samples-by-comparisons"><i class="fa fa-check"></i><b>3.4</b> Remove samples by comparisons</a></li>
+<li class="chapter" data-level="3.5" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#reorder-groups-and-samples"><i class="fa fa-check"></i><b>3.5</b> Reorder groups and samples</a></li>
+<li class="chapter" data-level="3.6" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#apply-changes-to-all-modules"><i class="fa fa-check"></i><b>3.6</b> Apply changes to all modules</a></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="qc-plots-module.html"><a href="qc-plots-module.html"><i class="fa fa-check"></i><b>4</b> QC Plots Module</a>
 <ul>
@@ -189,36 +194,36 @@
 <div id="deg-counts" class="section level2 hasAnchor" number="5.1">
 <h2><span class="header-section-number">5.1</span> DEG Counts<a href="deg-module.html#deg-counts" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>DEG Counts tab provides a summary of the number of significanly changed genes for each comparison, separating Up- and Down-regulated genes.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.1_1.png" /></a></p>
+<p><a href="Figures/FigureS5.1_1.png"><img src="Figures/FigureS5.1_1.png" /></a></p>
 </div>
 <div id="volcano-plot-static" class="section level2 hasAnchor" number="5.2">
 <h2><span class="header-section-number">5.2</span> Volcano Plot (Static)<a href="deg-module.html#volcano-plot-static" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This plot reveals the differentially expressed genes provided in the input data file. By default, the Fold change Cutoff is set to 1.2 and the P value Cutoff is set to 0.01. Users have the option to change any of these parameters. For more advanced display options, they can set the “Show More Options” to “Yes” to customize other settings.</p>
 <p>The red dots are indicative of all genes that pass the Fold Change and P value cutoff, while the green dots are indicative of genes that only pass the P value cutoff. Fifty random genes are labelled for both the up-regulated and down-regulated genes by default.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_1.png" /></a></p>
+<p><a href="Figures/FigureS5.2_1.png"><img src="Figures/FigureS5.2_1.png" /></a></p>
 <p>For demonstration purposes, we have changed the following attributes to highlight a few genes in this dataset. We have selected the 2mon_KOvs2mon_WT comparison, where <a href="https://www.life-science-alliance.org/content/2/6/e201900453" target="_blank">Gyoneva et al., 2019</a> report immune response genes as the top differentially expressed category. To highlight these genes, in the example below, we select an “Immune Response” dataset from the Molecular Signatures Database (MSigDB) to highlight the genes by adding labels to the volcano plot. As MSigDB contains only human gene lists and the demo dataset is from mouse, Quickomics does a quick conversion of the names of Human genes to Mouse genes by changing the letters after the first one to lowercase. Additionally, in this example we removed some of the genes from the list to reduce size. This visualization was not available in the original publication, but clearly supports the finding that the KO genotypes altered the expression of immune-related genes.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_2.png" /></a></p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_3.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.2_3.png" /></a></p>
+<p><a href="Figures/FigureS5.2_2.png"><img src="Figures/FigureS5.2_2.png" /></a></p>
+<p><a href="Figures/FigureS5.2_3.png"><img src="Figures/FigureS5.2_3.png" /></a></p>
 </div>
 <div id="volcano-plot-interactive" class="section level2 hasAnchor" number="5.3">
 <h2><span class="header-section-number">5.3</span> Volcano Plot (Interactive)<a href="deg-module.html#volcano-plot-interactive" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This next sub-tab is a very similar visualization as the previous one (5.2 Volcano Plot (Static)) with an additional capability where users can hover over a particular dot/gene on the plot to see more details. This plot has a few attributes that can be changed, and in the example below we have used the same cutoffs and values as in section 5.2.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.3_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.3_1.png" /></a></p>
+<p><a href="Figures/FigureS5.3_1.png"><img src="Figures/FigureS5.3_1.png" /></a></p>
 </div>
 <div id="degs-and-deps-in-two-comparisons" class="section level2 hasAnchor" number="5.4">
 <h2><span class="header-section-number">5.4</span> DEGs and DEPs in Two Comparisons<a href="deg-module.html#degs-and-deps-in-two-comparisons" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This next tab helps with identifying DEGs/DEPs that follow a similar trend in two comparisons. <a href="https://www.life-science-alliance.org/content/2/6/e201900453" target="_blank">Gyoneva et al., 2019</a>, the source of this demo dataset, report that the genes differentially expressed in <strong>Cx3cr1 KO</strong> microglia in the <strong>2mon KO</strong> are quite different from WT, while the differences from WT are smaller for the 1yr KO and 2yr KO, and the two older ages are similar to each other. We have plotted out the following comparisons that illustrate this conclusion.</p>
 <p><strong>2mo_KOvs2mo_WT</strong> vs <strong>1yr_KOvs1yr_WT</strong> has a low correlation score. There are many genes that are colored yellow, meaning those genes were significant in <strong>2mo_KOvs2mo_WT (Y axis)</strong> but not in <strong>1yr_KOvs1yr_WT (X axis)</strong>.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.4_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.4_1.png" /></a></p>
+<p><a href="Figures/FigureS5.4_1.png"><img src="Figures/FigureS5.4_1.png" /></a></p>
 <p>Similarly, we changed the X axis to <strong>2yr_KOvs2yr_WT</strong> to compare to <strong>2mo_KOvs2mo_WT</strong>, and it shows a very similar plot with a low correlation score of 0.178</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.4_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.4_2.png" /></a></p>
+<p><a href="Figures/FigureS5.4_2.png"><img src="Figures/FigureS5.4_2.png" /></a></p>
 <p>Next, we changed the Y axis comparison to <strong>1yr_KOvs1yr_WT</strong> comparing it to <strong>2yr_KOvs2yr_WT</strong> on the X axis. This plot has a higher correlation score of 0.371 than the previous one, suggesting that these two comparisons are more similar. These comparisons represent additional insights supported by statistical analyses that were gained from the data and were not available in the original manuscript by Gyoneva et al.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.4_3.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.4_3.png" /></a></p>
+<p><a href="Figures/FigureS5.4_3.png"><img src="Figures/FigureS5.4_3.png" /></a></p>
 </div>
 <div id="data-table-1" class="section level2 hasAnchor" number="5.5">
 <h2><span class="header-section-number">5.5</span> Data Table<a href="deg-module.html#data-table-1" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This tab lets the users view the DEGs/DEPs in a tabular format with a searchable feature. Users also have the ability to download the gene list as a CSV.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.5_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS5.5_1.png" /></a></p>
+<p><a href="Figures/FigureS5.5_1.png"><img src="Figures/FigureS5.5_1.png" /></a></p>
 
 </div>
 </div>
@@ -242,42 +247,42 @@
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
-"sharing": {
-"github": false,
-"facebook": true,
-"twitter": true,
-"linkedin": false,
-"weibo": false,
-"instapaper": false,
-"vk": false,
-"whatsapp": false,
-"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
-},
-"fontsettings": {
-"theme": "white",
-"family": "sans",
-"size": 2
-},
-"edit": {
-"link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/05-DEGModule.Rmd",
-"text": "Edit"
-},
-"history": {
-"link": null,
-"text": null
-},
-"view": {
-"link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/05-DEGModule.Rmd",
-"text": null
-},
-"download": null,
-"search": {
-"engine": "fuse",
-"options": null
-},
-"toc": {
-"collapse": "subsection"
-}
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/05-DEGModule.Rmd",
+    "text": "Edit"
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/05-DEGModule.Rmd",
+    "text": null
+  },
+  "download": null,
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  }
 });
 });
 </script>

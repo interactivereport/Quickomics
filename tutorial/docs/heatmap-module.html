@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 6 Heatmap Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 6 Heatmap Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.34 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 6 Heatmap Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
@@ -22,7 +22,7 @@
 
 
 
-<meta name="date" content="2023-10-05" />
+<meta name="date" content="2026-10-28" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -99,7 +99,12 @@
 </ul></li>
 <li class="chapter" data-level="3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html"><i class="fa fa-check"></i><b>3</b> Groups and Samples Module</a>
 <ul>
-<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-groups-and-samples"><i class="fa fa-check"></i><b>3.1</b> Select groups and samples</a></li>
+<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#overview-of-the-groups-and-samples-tab"><i class="fa fa-check"></i><b>3.1</b> Overview of the Groups and Samples tab</a></li>
+<li class="chapter" data-level="3.2" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-groups-by-sample-attributes"><i class="fa fa-check"></i><b>3.2</b> Remove groups by sample attributes</a></li>
+<li class="chapter" data-level="3.3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-and-remove-multiple-samples"><i class="fa fa-check"></i><b>3.3</b> Select and remove multiple samples</a></li>
+<li class="chapter" data-level="3.4" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-samples-by-comparisons"><i class="fa fa-check"></i><b>3.4</b> Remove samples by comparisons</a></li>
+<li class="chapter" data-level="3.5" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#reorder-groups-and-samples"><i class="fa fa-check"></i><b>3.5</b> Reorder groups and samples</a></li>
+<li class="chapter" data-level="3.6" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#apply-changes-to-all-modules"><i class="fa fa-check"></i><b>3.6</b> Apply changes to all modules</a></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="qc-plots-module.html"><a href="qc-plots-module.html"><i class="fa fa-check"></i><b>4</b> QC Plots Module</a>
 <ul>
@@ -189,14 +194,14 @@
 <h2><span class="header-section-number">6.1</span> Static Heatmap Layout 1<a href="heatmap-module.html#static-heatmap-layout-1" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The “Static Heatmap Layout 1” uses the ComplexHeatmap package (Gu et al., 2016) for generating the plot. For demo purposes, we have selected options that highlight some capabilities to generate informative heatmap. For gene selection the default option is the selection of 100 random genes which can also be changed to variable genes. Here we selected DEGs/DEPs from the <strong>2yr_WTvs2mon_WT</strong> comparison. Users also have the option to change the cutoff criteria for filtering the genes. They can also add/remove annotation categories for the samples on the columns.</p>
 <p>In this heatmap, the top up-regulated genes in <strong>2mon_WT</strong> samples are seen as high in 2mon samples but low in 2yr and 1yr samples, while the top up-regulated genes in the <strong>2yr_WT</strong> samples are high in the 2yr and 1yr samples but low in the 2mon samples. This is another example that age has a major effect on gene expression in microglia, and the 2mon microglia have a different gene expression profile compared to 1yr and 2yr.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_1.png" /></a></p>
+<p><a href="Figures/FigureS6.1_1.png"><img src="Figures/FigureS6.1_1.png" /></a></p>
 <p>In this next example, we customize another Heatmap to highlight immune related genes that were called out in <a href="https://www.life-science-alliance.org/content/2/6/e201900453" target="_blank">Gyoneva et al., 2019</a>. This is done by uploading a csv file consisting of the gene names with pathway information and the color for display. An example of this file is on our GitHub (<a href="https://github.com/interactivereport/Quickomics/blob/master/demo_files/fig5_all_genes.csv" target="_blank">Quickomics/demo_files/fig5_all_genes.csv</a>)</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.1_2.png" /></a></p>
+<p><a href="Figures/FigureS6.1_2.png"><img src="Figures/FigureS6.1_2.png" /></a></p>
 </div>
 <div id="static-heatmap-layout-2" class="section level2 hasAnchor" number="6.2">
 <h2><span class="header-section-number">6.2</span> Static Heatmap Layout 2<a href="heatmap-module.html#static-heatmap-layout-2" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The “Static Heatmap Layout 2” uses the heatmap.2 function from the gplots package for generating the plot. Here is a demo of the same set of genes with dendrograms for both rows and columns.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS6.2_1.png" /></a></p>
+<p><a href="Figures/FigureS6.2_1.png"><img src="Figures/FigureS6.2_1.png" /></a></p>
 
 </div>
 </div>
@@ -220,42 +225,42 @@
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
-"sharing": {
-"github": false,
-"facebook": true,
-"twitter": true,
-"linkedin": false,
-"weibo": false,
-"instapaper": false,
-"vk": false,
-"whatsapp": false,
-"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
-},
-"fontsettings": {
-"theme": "white",
-"family": "sans",
-"size": 2
-},
-"edit": {
-"link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/06-HeatmapModule.Rmd",
-"text": "Edit"
-},
-"history": {
-"link": null,
-"text": null
-},
-"view": {
-"link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/06-HeatmapModule.Rmd",
-"text": null
-},
-"download": null,
-"search": {
-"engine": "fuse",
-"options": null
-},
-"toc": {
-"collapse": "subsection"
-}
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/06-HeatmapModule.Rmd",
+    "text": "Edit"
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/06-HeatmapModule.Rmd",
+    "text": null
+  },
+  "download": null,
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  }
 });
 });
 </script>

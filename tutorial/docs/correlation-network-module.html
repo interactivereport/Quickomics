@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Chapter 10 Correlation Network Module | Supplementary Materials - Quickomics v2.0</title>
   <meta name="description" content="Chapter 10 Correlation Network Module | Supplementary Materials - Quickomics v2.0" />
-  <meta name="generator" content="bookdown 0.34 and GitBook 2.6.7" />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Chapter 10 Correlation Network Module | Supplementary Materials - Quickomics v2.0" />
   <meta property="og:type" content="book" />
@@ -22,7 +22,7 @@
 
 
 
-<meta name="date" content="2023-10-05" />
+<meta name="date" content="2026-10-28" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -99,7 +99,12 @@
 </ul></li>
 <li class="chapter" data-level="3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html"><i class="fa fa-check"></i><b>3</b> Groups and Samples Module</a>
 <ul>
-<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-groups-and-samples"><i class="fa fa-check"></i><b>3.1</b> Select groups and samples</a></li>
+<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#overview-of-the-groups-and-samples-tab"><i class="fa fa-check"></i><b>3.1</b> Overview of the Groups and Samples tab</a></li>
+<li class="chapter" data-level="3.2" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-groups-by-sample-attributes"><i class="fa fa-check"></i><b>3.2</b> Remove groups by sample attributes</a></li>
+<li class="chapter" data-level="3.3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-and-remove-multiple-samples"><i class="fa fa-check"></i><b>3.3</b> Select and remove multiple samples</a></li>
+<li class="chapter" data-level="3.4" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-samples-by-comparisons"><i class="fa fa-check"></i><b>3.4</b> Remove samples by comparisons</a></li>
+<li class="chapter" data-level="3.5" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#reorder-groups-and-samples"><i class="fa fa-check"></i><b>3.5</b> Reorder groups and samples</a></li>
+<li class="chapter" data-level="3.6" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#apply-changes-to-all-modules"><i class="fa fa-check"></i><b>3.6</b> Apply changes to all modules</a></li>
 </ul></li>
 <li class="chapter" data-level="4" data-path="qc-plots-module.html"><a href="qc-plots-module.html"><i class="fa fa-check"></i><b>4</b> QC Plots Module</a>
 <ul>
@@ -188,14 +193,14 @@
 <div id="visnetwork" class="section level2 hasAnchor" number="10.1">
 <h2><span class="header-section-number">10.1</span> visNetwork<a href="correlation-network-module.html#visnetwork" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This uses the R package visNetwork to visualize the expression of correlated genes/proteins. Users have the ability to choose the R and P value cutoff for selecting the correlated genes/proteins. In this example below, we probe 3 genes and identify the expression of other genes that are correlated with them.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.1_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.1_1.png" /></a></p>
+<p><a href="Figures/FigureS10.1_1.png"><img src="Figures/FigureS10.1_1.png" /></a></p>
 <p>The following network plot was produced. Gnai3 is part of a large network with multiple genes correlated with it. On the other hand, Klf6 was correlated with 2 other genes, while Btbd17 was not correlated with any genes.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.1_2.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.1_2.png" /></a></p>
+<p><a href="Figures/FigureS10.1_2.png"><img src="Figures/FigureS10.1_2.png" /></a></p>
 </div>
 <div id="data-table-4" class="section level2 hasAnchor" number="10.2">
 <h2><span class="header-section-number">10.2</span> Data Table<a href="correlation-network-module.html#data-table-4" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The genes identified in the previous tab as part of the network plot are available as a table in this tab. Users can perform searches and sort based on correlation statistics.</p>
-<p><a href="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.2_1.png"><img src="https://interactivereport.github.io/Quickomics/tutorial/Figures/FigureS10.2_1.png" /></a></p>
+<p><a href="Figures/FigureS10.2_1.png"><img src="Figures/FigureS10.2_1.png" /></a></p>
 
 </div>
 </div>
@@ -219,42 +224,42 @@
 <script>
 gitbook.require(["gitbook"], function(gitbook) {
 gitbook.start({
-"sharing": {
-"github": false,
-"facebook": true,
-"twitter": true,
-"linkedin": false,
-"weibo": false,
-"instapaper": false,
-"vk": false,
-"whatsapp": false,
-"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
-},
-"fontsettings": {
-"theme": "white",
-"family": "sans",
-"size": 2
-},
-"edit": {
-"link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/10-CorrelationNetworkModule.Rmd",
-"text": "Edit"
-},
-"history": {
-"link": null,
-"text": null
-},
-"view": {
-"link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/10-CorrelationNetworkModule.Rmd",
-"text": null
-},
-"download": null,
-"search": {
-"engine": "fuse",
-"options": null
-},
-"toc": {
-"collapse": "subsection"
-}
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/10-CorrelationNetworkModule.Rmd",
+    "text": "Edit"
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/10-CorrelationNetworkModule.Rmd",
+    "text": null
+  },
+  "download": null,
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  }
 });
 });
 </script>
