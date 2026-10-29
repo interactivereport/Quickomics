@@ -42,8 +42,18 @@ if (file.exists("db/human/metabase_maps_genesymbols.gmt")) {
   }
 }
 
-ORAEnrichment <- function(deGenes,universe, gsets, logFC, Dir="Both"){
-  deGenes = deGenes[which(deGenes %in% universe)]
+ORAEnrichment <- function(deGenes,universe, gsets, logFC, Dir="Both", minSize=1, maxSize=Inf){
+  # Background = genes in the universe that are annotated in at least one gene set
+  # (as clusterProfiler does with a universe); DE genes outside it are dropped too.
+  if (length(minSize) != 1 || is.na(minSize)) minSize = 1
+  if (length(maxSize) != 1 || is.na(maxSize)) maxSize = Inf
+  universe = intersect(unique(universe), unique(unlist(gsets, use.names = FALSE)))
+  deGenes = unique(deGenes[which(deGenes %in% universe)])
+  logFC = logFC[deGenes]
+  # Gene set size = set genes in the background; only sets within [minSize, maxSize] are tested,
+  # and the BH correction runs over these tested sets.
+  set_sizes = vapply(gsets, function(gset) length(intersect(gset, universe)), integer(1))
+  gsets = gsets[set_sizes >= minSize & set_sizes <= maxSize]
   tmp = rep(NA, length(gsets))
   ora.stats = data.frame(p.value=tmp, p.adj = tmp, DeGeneNum=tmp,DE_UpGene= tmp, DE_DownGene=tmp, SetNum = tmp, N_q=tmp, Fold_Enrich=tmp,
                          SetNumAll=tmp, Total_DEG=tmp, Total_Gene=tmp,  DeGene_in_Set=tmp)
@@ -53,7 +63,7 @@ ORAEnrichment <- function(deGenes,universe, gsets, logFC, Dir="Both"){
   } else if (Dir=="Down") {totalDE = sum(logFC < 0) }
   n = length(universe) - totalDE
   
-  for (j in 1:length(gsets)){
+  for (j in seq_along(gsets)){
     gset = gsets[[j]]
     DEinS = intersect(gset, deGenes)
     logFCinS = logFC[DEinS]
@@ -78,7 +88,7 @@ ORAEnrichment <- function(deGenes,universe, gsets, logFC, Dir="Both"){
     
   }
   ora.stats[, "p.adj"] = p.adjust(ora.stats[, "p.value"], method = "BH")
-  ora.stats[, "DE_Direction"]=Dir
+  ora.stats[, "DE_Direction"]=rep(Dir, nrow(ora.stats))
   ora.stats<-ora.stats%>%mutate(GeneSet= names(gsets))%>%
     arrange(p.value, dplyr::desc(N_q))%>% rownames_to_column('rank')%>%dplyr::select(-N_q)%>%relocate(GeneSet)
   
@@ -135,9 +145,12 @@ geneset_ui <- function(id) {
                                                                              "Change to Title Case (mouse/rat)", "No Change (as it is)"), selected="Homologous Genes"),
              conditionalPanel(ns = ns, "input.geneset_tabset=='Gene Set Enrichment Analysis (GSEA)' || input.geneset_tabset=='Over-Representation Analysis (ORA)' || input.geneset_tabset=='Gene Expression'",
                               conditionalPanel(ns = ns, "input.geneset_tabset=='Gene Set Enrichment Analysis (GSEA)'",
-                                               radioButtons(ns("gene_rank_method"), label= "Rank Genes By",choices=c("logFC","-log(P-Value)"), inline = TRUE, selected = "logFC"),
+                                               radioButtons(ns("gene_rank_method"), label= "Rank Genes By",choices=c("logFC","-log(P-Value)"), inline = TRUE, selected = "logFC")),
+                              # Gene set size range, used by both GSEA and ORA
+                              conditionalPanel(ns = ns, "input.geneset_tabset=='Gene Set Enrichment Analysis (GSEA)' || input.geneset_tabset=='Over-Representation Analysis (ORA)'",
                                                column(width=6,numericInput(ns("gsetMin"), label= "GeneSet Min Size",  value = 15, min=5, step=1)),
-                                               column(width=6,numericInput(ns("gsetMax"), label= "GeneSet Max Size",  value = 1000, min=100, step=1)),
+                                               column(width=6,numericInput(ns("gsetMax"), label= "GeneSet Max Size",  value = 1000, min=100, step=1))),
+                              conditionalPanel(ns = ns, "input.geneset_tabset=='Gene Set Enrichment Analysis (GSEA)'",
                                                sliderInput(ns("gsea_FDR"), "GSEA Adjusted P-Value Cutoff", min = 0, max = 1, step = 0.01, value = 0.25),
                                                checkboxInput(ns("gsea_collapase"), "Collapse Gene Sets",  FALSE, width="90%"),
                               ),
@@ -946,11 +959,12 @@ geneset_server <- function(id) {
                               dplyr::pull(Gene.Name) %>%
                               unique()
                             
+                            # All rows of this comparison; reduced to one row per symbol only after the
+                            # DEG cutoffs below, so a symbol counts as a DEG when any of its IDs passes.
                             terminals.df <- results_long %>%
                               dplyr::filter(test == comp, !is.na(Gene.Name), Gene.Name != "") %>%
                               dplyr::select(Gene.Name, logFC, P.Value, Adj.P.Value, UniqueID, test) %>%
-                              dplyr::arrange(P.Value) %>%
-                              dplyr::distinct(Gene.Name, .keep_all = TRUE)
+                              dplyr::arrange(P.Value)
                             
                             # gene mapping logic
                             if (input$map_genes != "No Change (as it is)" &&
@@ -977,7 +991,6 @@ geneset_server <- function(id) {
                               terminals.df <- terminals.df %>%
                                 dplyr::mutate(Gene.Name.Ori = Gene.Name,
                                               Gene.Name = mapped_symbols) %>%
-                                dplyr::distinct(Gene.Name, .keep_all = TRUE) %>%
                                 dplyr::filter(!is.na(Gene.Name), Gene.Name != "")
                             }
                             
@@ -985,7 +998,11 @@ geneset_server <- function(id) {
                               dplyr::mutate(psel = input$geneset_psel,
                                             P.stat = ifelse(psel == "Padj", Adj.P.Value, P.Value)) %>%
                               dplyr::filter(abs(logFC) > absFCcut, P.stat < pvalcut) %>%
+                              dplyr::arrange(P.Value) %>%
+                              dplyr::distinct(Gene.Name, .keep_all = TRUE) %>%   # most significant passing row per symbol
                               dplyr::select(Gene.Name, logFC, P.Value, Adj.P.Value, UniqueID, test)
+                            # one row per symbol (lowest P) for the other uses of terminals.df
+                            terminals.df <- terminals.df %>% dplyr::distinct(Gene.Name, .keep_all = TRUE)
                             
                             sig_genes <- filteredgene$logFC
                             names(sig_genes) <- filteredgene$Gene.Name
@@ -1085,7 +1102,9 @@ geneset_server <- function(id) {
                               universe = all_genes,
                               gsets_ORA,
                               logFC = logFC_list,
-                              Dir = "Both"
+                              Dir = "Both",
+                              minSize = input$gsetMin,
+                              maxSize = input$gsetMax
                             ) %>%
                               dplyr::select(-DE_UpGene, -DE_DownGene, -DE_Direction)
                             gsa
@@ -1114,7 +1133,7 @@ geneset_server <- function(id) {
                                 res_list <- lapply(names(res_list_raw), function(comp) {
                                   gsa <- res_list_raw[[comp]]
                                   comp_res <- DataGenesetReactive_ORA()[[comp]]
-                                  logFC_list <- comp_res$sig_genes
+                                  logFC_list <- comp_res$sig_genes_Dir  # same DEGs as the test (Up/Down/Both)
                                   all_genes  <- comp_res$all_genes
 
                                   collapsed_set <- collapsePathwaysORA(
@@ -1215,7 +1234,8 @@ geneset_server <- function(id) {
                             logFC_list <- 	getresults$sig_genes
                             all_genes <- 	getresults$all_genes
                             
-                            gsa <- ORAEnrichment (deGenes=names(logFC_list),universe=all_genes, gsets_ORA, logFC =logFC_list, Dir="Both")%>%
+                            gsa <- ORAEnrichment (deGenes=names(logFC_list),universe=all_genes, gsets_ORA, logFC =logFC_list, Dir="Both",
+                                                 minSize = input$gsetMin, maxSize = input$gsetMax)%>%
                               dplyr::select(-DE_UpGene, -DE_DownGene, -DE_Direction)
                             if (input$ora_collapase) {
                               collapsed_set <- collapsePathwaysORA(foraRes=gsa%>%mutate(pathway=GeneSet)%>%filter(p.adj<= input$ora_pvalue),
