@@ -999,11 +999,16 @@ TimeSeries_server <- function(id, parent_session) {
                      df_wide <- df_wide[genes_ordered, c('cluster', group_meta$merge)]
                      df_cluster_normalized_wide(df_wide)
                      
-                     df_counts_unique <- df_counts_unique[genes_ordered, sample_order()]
+                     # Sample columns: the DE run's samples, grouped by condition (Groups and
+                     # Samples order), then numeric time; ties keep the Groups and Samples sample order.
+                     sample_meta <- as.data.frame(res_cluster$sample_meta)
+                     sample_meta <- sample_meta[order(match(as.character(sample_meta[[cond_col()]]), cond_levels),
+                                                      as.integer(sample_meta$Unified_Time)), , drop = FALSE]
+                     df_counts_unique <- df_counts_unique[genes_ordered, sample_meta$sampleid]
                      df_normalized_log2TPM(df_counts_unique)
                      
                      cluster_genes_ordered(genes_ordered)
-                     df_cluster_sample_meta(res_cluster$sample_meta)
+                     df_cluster_sample_meta(sample_meta)
                      df_cluster_group_meta(group_meta)
                      res_cluster
                    })
