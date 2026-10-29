@@ -491,6 +491,8 @@ var MY_SECRET_ID = /PHPSESSID=([^;]+)/i.test(document.cookie) ? RegExp.$1 : fals
 </script>
 <link href="//bxngs.com/bxomics/api/genesets3.css" rel="stylesheet">
 <script src="//bxngs.com/bxomics/api/genesets3.js"></script>
+<link rel="stylesheet" type="text/css" href="//bxngs.com/bxomics/api/datatables/datatables.min.css"/>
+<script type="text/javascript" src="//bxngs.com/bxomics/api/datatables/datatables.min.js"></script>
 <hr>
 <div align="center" style="font-size:11px">QuickOmics ver4.0 Developed by:
 BioInfoRx and Biogen<br><a href="https://github.com/interactivereport/Quickomics/">More information at GitHub</a> | <a href="https://interactivereport.github.io/Quickomics/tutorial/docs/introduction.html">Tutorial</a>
