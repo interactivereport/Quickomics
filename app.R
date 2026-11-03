@@ -837,7 +837,7 @@ fluidPage(
                                                             uiOutput('ui_sel_order_group'),
                                                             uiOutput('reset_group'),
                                                             tags$br(),
-                                                            actionButton("pattern_plot", "Plot", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
+                                                            actionButton("pattern_plot", "Plot/Refresh", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
                                                             span(textOutput("pattern_msg", inline = TRUE), style = "color:blue; font-size:15px; font-style:italic; margin-left:10px"),
                                                             tags$br(),tags$hr(),
                                                             actionButton("pattern", "Save to output"),
