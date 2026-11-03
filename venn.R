@@ -119,17 +119,40 @@ vennDiagram_out <- reactive({
 		paste(chunks, collapse = "\n")
 	}
 	cat_names <- vapply(names(vennlist), wrap_hard, character(1), width = input$catwrap)
+	# Legend option: leave the circles unlabelled and list the set names below.
+	use_legend <- isTRUE(input$venn_legend)
 	venn.plot <- venn.diagram(x = vennlist,
-		category.names = cat_names,
+		category.names = if (use_legend) rep("", SetNum) else cat_names,
 		fill=fillcor, margin=input$margin,
 		lty=input$lty, lwd=input$lwd, alpha=input$alpha,
 		cex=input$cex, cat.cex=input$catcex,
 		fontface = input$fontface, cat.fontface=input$catfontface,
 		main = input$title, main.cex = input$maincex, main.pos = c(0.5, 1.1), main.fontface = "bold",
 	filename = NULL)
-
+	if (use_legend) {
+		venn.plot <- venn_add_legend(venn.plot, labels = names(vennlist), fill = fillcor,
+			alpha = input$alpha, cex = input$catcex, fontface = input$catfontface)
+	}
 	return(venn.plot)
 })
+
+# Puts a colour-key legend of the set names under a VennDiagram plot, so the
+# names can't overlap the circles or each other. The diagram is shrunk to the
+# space above the legend. Returns one grob, so Save to output keeps the legend.
+# Also used by vennprojects.R.
+venn_add_legend <- function(venn.plot, labels, fill, alpha = 0.5, cex = 1.5, fontface = "plain") {
+	leg <- grid::legendGrob(labels, pch = 22, ncol = 1,
+		vgap = unit(0.6, "lines"), hgap = unit(0.6, "lines"),
+		gp = gpar(fill = adjustcolor(fill, alpha.f = alpha), col = "black",
+			cex = cex, fontface = fontface))
+	leg_h <- grobHeight(leg) + unit(1, "lines")
+	grobTree(
+		gTree(children = gList(venn.plot),
+			vp = viewport(y = unit(1, "npc"), height = unit(1, "npc") - leg_h, just = "top")),
+		gTree(children = gList(leg),
+			vp = viewport(y = unit(0, "npc"), height = leg_h, just = "bottom"))
+	)
+}
 
 output$vennDiagram <- renderPlot({
 	grid.newpage()
@@ -195,8 +218,43 @@ output$SvennDiagram <- renderPlot({
 	log_debug("Venn Diagram: drawing simple (SvennDiagram) variant.")
 	venndata <- DataVennReactive()
 	vennlist <- venndata$vennlist
-	venn(vennlist, show.plot = TRUE, intersections = FALSE)
+	venn_bw_plot(vennlist)
 })
+
+# Draws the black & white gplots::venn() diagram without cropping set names.
+# gplots centres each set name (cex 1.5) at a fixed x position on a 0-400
+# grid, and for 4-5 sets some of those positions are close to the left/right
+# edge, so long names ran past the plot area and were clipped. Here text may
+# draw into the margins (xpd = NA), and the left/right margins are widened
+# just enough for the longest names. Also used by vennprojects.R.
+venn_bw_plot <- function(vennlist) {
+	op <- par(xpd = NA)
+	on.exit(par(op), add = TRUE)
+	n <- length(vennlist)
+	if (n >= 4) {
+		# x positions of the set names in gplots' 4- and 5-set layouts
+		pos_x <- if (n == 5) c(20, 140, 350, 350, 50) else c(35, 138, 262, 365)
+		half_w <- tryCatch(strwidth(names(vennlist), units = "inches", cex = 1.5) / 2,
+			error = function(e) nchar(names(vennlist)) * 0.07)
+		half_w <- half_w * 1.05 + 0.05  # small safety gap
+		din_w <- par("din")[1]
+		mai <- par("mai")
+		left <- mai[2]
+		right <- mai[4]
+		# plot.window(c(0, 400)) spans -16..416 user units (4% padding each side);
+		# the plot width depends on the margins, so settle them in a few passes.
+		for (k in 1:4) {
+			per_unit <- (din_w - left - right) / 432
+			left <- max(mai[2], max(half_w - (pos_x + 16) * per_unit))
+			right <- max(mai[4], max(half_w - (416 - pos_x) * per_unit))
+			# keep at least ~40% of the width for the diagram itself
+			left <- min(left, 0.3 * din_w)
+			right <- min(right, 0.3 * din_w)
+		}
+		par(mai = c(mai[1], left, mai[3], right))
+	}
+	venn(vennlist, show.plot = TRUE, intersections = FALSE)
+}
 
 #' Intersection Output as a data.table: one row per non-empty Venn subset,
 #' with a comma-joined gene list (respecting the Gene.Name/AC/UniqueID

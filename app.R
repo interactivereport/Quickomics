@@ -970,7 +970,8 @@ fluidPage(
                                                                                         radioButtons("catfontface","Label Font face",list("plain", "bold", "italic"),	selected = "plain", inline = TRUE),
                                                                                         sliderInput("catcex", "Font size", min = 1, max = 2, step=0.1, value = 1.8, width = "100%"),
                                                                                         sliderInput("catwrap", "Wrap Labels At (characters)", min = 5, max = 40, step = 1, value = 18, width = "100%"),
-                                                                                        sliderInput("margin", "Margin", min = 0, max = 1, step=0.05, value = 0.1, width = "100%")
+                                                                                        sliderInput("margin", "Margin", min = 0, max = 1, step=0.05, value = 0.1, width = "100%"),
+                                                                                        checkboxInput("venn_legend", "Show set names as a legend below the diagram", value = FALSE)
                                                                                  )
                                                                         ),
                                                                         tabPanel(title="Venn Diagram (black & white)", plotOutput("SvennDiagram",height = 800, width = 800)),
@@ -1003,7 +1004,8 @@ fluidPage(
                                                                                         radioButtons("vennPcatfontface", "Label Font face", list("plain", "bold", "italic"),	selected = "plain",	inline = TRUE),
                                                                                         sliderInput("vennPcatcex", "Font size", min = 1, max = 2, step=0.1, value = 1.8, width = "100%"),
                                                                                         sliderInput("vennPcatwrap", "Wrap Labels At (characters)", min = 5, max = 40, step = 1, value = 18, width = "100%"),
-                                                                                        sliderInput("vennPmargin", "Margin", min = 0, max = 1, step=0.05, value = 0.2, width = "100%")
+                                                                                        sliderInput("vennPmargin", "Margin", min = 0, max = 1, step=0.05, value = 0.2, width = "100%"),
+                                                                                        checkboxInput("vennP_legend", "Show set names as a legend below the diagram", value = FALSE)
                                                                                  )
                                                                         ),
                                                                         tabPanel(title="Venn Diagram (black & white)", plotOutput("SvennPDiagram",height = 800,width = 800)),

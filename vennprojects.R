@@ -261,14 +261,22 @@ output$vennPDiagram <- renderPlot({
 		paste(vapply(parts, wrap_hard, character(1)), collapse = "\n")
 	}
 	cat_names <- vapply(names(vennlist), wrap_label, character(1), width = input$vennPcatwrap)
+	# Legend option: leave the circles unlabelled and list the set names below.
+	use_legend <- isTRUE(input$vennP_legend)
 	venn.plot <- venn.diagram(x = vennlist,
-		category.names = cat_names,
+		category.names = if (use_legend) rep("", SetNum) else cat_names,
 		fill=fillcor,
 		lty=input$vennPlty, lwd=input$vennPlwd, alpha=input$vennPalpha,
 		cex=input$vennPcex, cat.cex=input$vennPcatcex, margin=input$vennPmargin,
 		fontface = input$vennPfontface, cat.fontface=input$vennPcatfontface,
 		main = input$vennPtitle, main.cex = input$vennPmaincex, main.pos = c(0.5, 1.1), main.fontface = "bold",
 	filename = NULL);
+	if (use_legend) {
+		# Legend shows "<dataset>: <comparison>" on one line per set.
+		venn.plot <- venn_add_legend(venn.plot, labels = gsub("\n", ": ", names(vennlist)),
+			fill = fillcor, alpha = input$vennPalpha, cex = input$vennPcatcex,
+			fontface = input$vennPcatfontface)
+	}
 	grid.newpage()
 	# Reserve ~12% of height at the bottom so wrapped category labels
 	# that extend below the diagram aren't cropped by the image boundary.
@@ -283,7 +291,7 @@ output$SvennPDiagram <- renderPlot({
 	vennlist <- venndata$vennlist
 	if (length(vennlist) < 1) log_warn("Venn Diagram (projects): no projects/comparisons selected.")
 	validate(need(length(vennlist)>=1, message = "Select projects."))
-	venn(vennlist, show.plot = TRUE, intersections = FALSE)
+	venn_bw_plot(vennlist)  # defined in venn.R; keeps long set names from being cropped
 })
 
 #' Intersection Output as a data.table -- see VennIntersectReactive() in
