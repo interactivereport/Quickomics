@@ -321,7 +321,7 @@ observeEvent(ProjectInfo$ProjectID, {
 })
 
 output$project <- renderText({
-  if (is.null(ProjectInfo$Name)){"Please select or upload a date set"} else {ProjectInfo$Name}
+  if (is.null(ProjectInfo$Name)){"Please select or upload a data set"} else {ProjectInfo$Name}
 })
 
 html_geneset<-reactive({
