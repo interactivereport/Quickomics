@@ -327,14 +327,18 @@ run_timecourse_limma <- function(MetaData, expr_mtx, time_variable, Condition, t
               full_formula = deparse(d$full_formula), reduced_formula = deparse(d$reduced_formula)))
 }
 
-run_DEG_cluster <- function(expr_mat, sample_meta, sig_gene, condition_var) {
-  cluster_rlog <- expr_mat[sig_gene, ]
+# min_genes: smallest cluster size kept. degPatterns() keeps clusters with
+# more than `minc` genes, so minc = min_genes - 1.
+run_DEG_cluster <- function(expr_mat, sample_meta, sig_gene, condition_var, min_genes = 16) {
+  # drop = FALSE keeps a one-gene selection as a matrix
+  cluster_rlog <- expr_mat[sig_gene, , drop = FALSE]
   
   clusters <- degPatterns(
     cluster_rlog,
     metadata = sample_meta,
     time     = "Unified_Time",
     col      = condition_var,
+    minc     = min_genes - 1,
     plot     = FALSE
   )
   
@@ -485,6 +489,7 @@ TimeSeries_ui <- function(id) {
                               actionButton(ns("compute_similar"), "Find Similar Genes", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4")
              ),
              conditionalPanel(ns = ns, "input.TimeSeries_tabset =='DEG Clustering Analysis'",
+                              sliderInput(ns("min_cluster_genes"), label="Minimum Genes per Cluster", min = 1, max = 50, step = 1, value = 16),
                               actionButton(ns("compute_cluster"), "Run Clustering", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
                               conditionalPanel(ns = ns, "input.ts_cluster_tabset =='Time Series Cluster Plot'",
                                                tags$hr(),
@@ -597,6 +602,9 @@ TimeSeries_ui <- function(id) {
                                                          tags$p(tags$strong("The degPatterns() R function in DEGreport library is used to do the DEG clustering.")),
                                                          tags$p(
                                                            "It can work with one or more groups with 2 or more several time points. Before calculating the genes similarity among samples, all samples inside the same time point (time parameter) and group (col parameter) are collapsed together, and the mean value is the representation of the group for the gene abundance. Then, all pair-wise gene expression is calculated using cor.test R function using kendall as the statistical method. A distance matrix is created from those values. After that, cluster::diana() is used for the clustering of gene-gene distance matrix and cut the tree using the divisive coefficient of the clustering, giving as well by diana."
+                                                         ),
+                                                         tags$p(
+                                                           "Clusters with fewer genes than Minimum Genes per Cluster (default 16) are left out of the plot and tables, so their genes do not appear in the results. With few DEGs, lower this setting."
                                                          ),
                                                          tags$p(tags$strong("How cluster::diana() Calculates Clusters")),
                                                          tags$p(
@@ -972,7 +980,22 @@ TimeSeries_server <- function(id, parent_session) {
                      }
                      time_col(res$time_var)
                      cond_col(res$cond_var)
-                     res_cluster <- run_DEG_cluster(res$expr, res$sample_meta, sig_gene, cond_col())
+                     validate(need(length(sig_gene) >= 2,
+                                   sprintf("Clustering needs at least 2 DEGs, found %d. Try a larger adjusted p-value cutoff.", length(sig_gene))))
+                     min_genes <- ts_pos_int(input$min_cluster_genes, 16)
+                     no_cluster_msg <- sprintf("No cluster has %d or more genes (%d DEGs in total). Lower Minimum Genes per Cluster and run clustering again.",
+                                               min_genes, length(sig_gene))
+                     # degPatterns() fails while plotting when every cluster is below the minimum size.
+                     res_cluster <- tryCatch(
+                       run_DEG_cluster(res$expr, res$sample_meta, sig_gene, cond_col(), min_genes),
+                       error = function(e) e)
+                     if (inherits(res_cluster, "error")) {
+                       err <- conditionMessage(res_cluster)
+                       log_info(paste("Time Course Analysis: clustering failed:", err))
+                       validate(need(!grepl("object 'p' not found|No clusters with min_genes", err), no_cluster_msg))
+                       validate(need(FALSE, paste("Clustering failed:", err)))
+                     }
+                     validate(need(nrow(res_cluster$clusters$df) > 0, no_cluster_msg))
                      
                      df_cluster_normalized <- res_cluster$clusters$normalized
                      df_counts <- res_cluster$clusters$counts
