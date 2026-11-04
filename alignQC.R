@@ -10,6 +10,8 @@ observe({
   if (length(num_col)>0) {
     if ("RIN" %in% num_col) {sel_col="RIN"} else {sel_col=num_col[1]}
     updateSelectizeInput(session,'alignQC_var',choices=num_col, selected=sel_col)
+  } else {
+    updateSelectizeInput(session,'alignQC_var',choices=character(0), selected=character(0))
   }
 })
 
@@ -171,9 +173,13 @@ output$alignQC_TG_plot <- renderUI({
 
 #Plot Other Variables
 alignQC_OV_p <- reactive({
-  req(input$alignQC_var)
   DataIn = DataQCReactive()
   MetaData=DataIn$MetaData
+  req(MetaData)
+  num_col=colnames(select_if(MetaData, is.numeric))
+  if (length(num_col)==0) log_warn("Plot Other Variables: MetaData has no numeric columns.")
+  validate(need(length(num_col)>0, message = "Sample MetaData must have at least one numeric column (for example RIN or read counts) in order to plot other variables."))
+  req(input$alignQC_var, input$alignQC_var %in% num_col)
   MetaData$sampleid=factor(MetaData$sampleid, levels=MetaData$sampleid)
   i=input$alignQC_var
   p<-ggplot(MetaData,aes_string(x="sampleid",y=i))+
