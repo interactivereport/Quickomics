@@ -41,6 +41,7 @@ data-table-1
 heatmap-module
 static-heatmap-layout-1
 static-heatmap-layout-2
+interactive-heatmap
 expression-plot-module
 browsing
 searched-expression-data

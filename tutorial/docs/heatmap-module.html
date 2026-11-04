@@ -22,7 +22,7 @@
 
 
 
-<meta name="date" content="2026-10-28" />
+<meta name="date" content="2026-11-04" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -132,6 +132,7 @@
 <ul>
 <li class="chapter" data-level="6.1" data-path="heatmap-module.html"><a href="heatmap-module.html#static-heatmap-layout-1"><i class="fa fa-check"></i><b>6.1</b> Static Heatmap Layout 1</a></li>
 <li class="chapter" data-level="6.2" data-path="heatmap-module.html"><a href="heatmap-module.html#static-heatmap-layout-2"><i class="fa fa-check"></i><b>6.2</b> Static Heatmap Layout 2</a></li>
+<li class="chapter" data-level="6.3" data-path="heatmap-module.html"><a href="heatmap-module.html#interactive-heatmap"><i class="fa fa-check"></i><b>6.3</b> Interactive Heatmap</a></li>
 </ul></li>
 <li class="chapter" data-level="7" data-path="expression-plot-module.html"><a href="expression-plot-module.html"><i class="fa fa-check"></i><b>7</b> Expression Plot Module</a>
 <ul>
@@ -192,16 +193,22 @@
 <p>This module generates highly customized publication-quality heatmaps with the ComplexHeatmap package in R. Users can enter automated list of differentially expressed genes or enter a custom list of genes to highlight on the heatmap. This module differs from other modules in that each time Users change the attributes; they need to click on the “Plot/Refresh” button to generate the plot. This is to avoid changing the output before all the attribute are added.</p>
 <div id="static-heatmap-layout-1" class="section level2 hasAnchor" number="6.1">
 <h2><span class="header-section-number">6.1</span> Static Heatmap Layout 1<a href="heatmap-module.html#static-heatmap-layout-1" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>The “Static Heatmap Layout 1” uses the ComplexHeatmap package (Gu et al., 2016) for generating the plot. For demo purposes, we have selected options that highlight some capabilities to generate informative heatmap. For gene selection the default option is the selection of 100 random genes which can also be changed to variable genes. Here we selected DEGs/DEPs from the <strong>2yr_WTvs2mon_WT</strong> comparison. Users also have the option to change the cutoff criteria for filtering the genes. They can also add/remove annotation categories for the samples on the columns.</p>
-<p>In this heatmap, the top up-regulated genes in <strong>2mon_WT</strong> samples are seen as high in 2mon samples but low in 2yr and 1yr samples, while the top up-regulated genes in the <strong>2yr_WT</strong> samples are high in the 2yr and 1yr samples but low in the 2mon samples. This is another example that age has a major effect on gene expression in microglia, and the 2mon microglia have a different gene expression profile compared to 1yr and 2yr.</p>
+<p>The “Static Heatmap Layout 1” uses the ComplexHeatmap package (Gu et al., 2016) for generating the plot. For demo purposes, we have selected options that highlight some capabilities to generate informative heatmap. For gene selection the default option is the selection of 100 random genes which can also be changed to variable genes. Here we selected DEGs/DEPs from the <strong>2yr_WTvs2mo_WT</strong> comparison. Users also have the option to change the cutoff criteria for filtering the genes. They can also add/remove annotation categories for the samples on the columns.</p>
+<p>In this heatmap, the top up-regulated genes in <strong>2mo_WT</strong> samples are seen as high in 2mo samples but low in 2yr and 1yr samples, while the top up-regulated genes in the <strong>2yr_WT</strong> samples are high in the 2yr and 1yr samples but low in the 2mo samples. This is another example that age has a major effect on gene expression in microglia, and the 2mo microglia have a different gene expression profile compared to 1yr and 2yr.</p>
 <p><a href="Figures/FigureS6.1_1.png"><img src="Figures/FigureS6.1_1.png" /></a></p>
-<p>In this next example, we customize another Heatmap to highlight immune related genes that were called out in <a href="https://www.life-science-alliance.org/content/2/6/e201900453" target="_blank">Gyoneva et al., 2019</a>. This is done by uploading a csv file consisting of the gene names with pathway information and the color for display. An example of this file is on our GitHub (<a href="https://github.com/interactivereport/Quickomics/blob/master/demo_files/fig5_all_genes.csv" target="_blank">Quickomics/demo_files/fig5_all_genes.csv</a>)</p>
+<p>In this next example, we customize another heatmap. We selected genes from the 2mo_KOvs2mo_WT comparison and raised the Fold Change Cutoff to 1.43, which gives 236 genes. We limited the sample annotations to Age and Genotype and changed the font sizes. Under “Show More Options”, we changed the Low, Mid and High colors and set “cutree_rows” to 4, so the genes are cut into 4 parts.</p>
 <p><a href="Figures/FigureS6.1_2.png"><img src="Figures/FigureS6.1_2.png" /></a></p>
 </div>
 <div id="static-heatmap-layout-2" class="section level2 hasAnchor" number="6.2">
 <h2><span class="header-section-number">6.2</span> Static Heatmap Layout 2<a href="heatmap-module.html#static-heatmap-layout-2" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>The “Static Heatmap Layout 2” uses the heatmap.2 function from the gplots package for generating the plot. Here is a demo of the same set of genes with dendrograms for both rows and columns.</p>
+<p>The “Static Heatmap Layout 2” uses the heatmap.2 function from the gplots package for generating the plot. Here is a demo with 100 random genes with dendrograms for both rows and columns.</p>
 <p><a href="Figures/FigureS6.2_1.png"><img src="Figures/FigureS6.2_1.png" /></a></p>
+</div>
+<div id="interactive-heatmap" class="section level2 hasAnchor" number="6.3">
+<h2><span class="header-section-number">6.3</span> Interactive Heatmap<a href="heatmap-module.html#interactive-heatmap" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>The “Interactive Heatmap” tab shows the selected genes in Morpheus, a heatmap viewer that runs in the browser and has no limit on the number of genes. Click “Plot/Refresh” to draw the heatmap. In the example below, we used the same 464 genes from 2yr_WTvs2mo_WT as in Section 6.1, and the line above the heatmap shows “464 rows by 93 columns”. The menus above the heatmap (File, Edit, View, Tools and Help) and the toolbar offer many functions; for example, “View → Fit To Window” shows all genes and samples at once, the search box finds genes (with “Rows” selected) or samples (with “Columns” selected), and the “Tools” menu offers clustering, sorting, filtering and other analyses.</p>
+<p>“Click to view Interactive Heatmap Guide” opens a short guide with a link to the <a href="https://software.broadinstitute.org/morpheus/tutorial.html" target="_blank">Morpheus tutorial</a>, which describes these functions in detail. The tutorial uses its own example data, so its steps for opening data files can be skipped; in Quickomics the data are loaded automatically.</p>
+<p><a href="Figures/FigureS6.3_1.png"><img src="Figures/FigureS6.3_1.png" /></a></p>
 
 </div>
 </div>
