@@ -49,10 +49,13 @@ data-table-2
 result-table-1
 rank-abundance-curve
 gene-set-enrichment-module
-gene-set-enrichment
+over-representation-analysis-ora
+gene-set-enrichment-analysis-gsea
 gene-expression
 gene-set-heat-map
 kegg-pathway-view
+wikipathways-view
+dot-plot
 pattern-clustering-module
 clustering-of-centroid-profiles
 data-table-3
