@@ -1,34 +1,51 @@
 # Gene Set Enrichment Module
 
-This functionality in Quickomics is an extension to the differential gene identification. Users are able to use different cutoffs to filter out DEGs/DEPs in different comparisons and probe enriched pathways. This is a useful way to make biological sense of the data. We also improved the robustness of Gene Set Enrichment Module in Quickomics v2.0, using human gene set enrichment for unknown species instead of giving error. The updated system performs more error checking and data cleanup in the backend.
+This functionality in Quickomics is an extension to the differential gene identification. Users are able to use different cutoffs to filter out DEGs/DEPs in different comparisons and probe enriched pathways. This is a useful way to make biological sense of the data. We also improved the robustness of Gene Set Enrichment Module in Quickomics v2.0, using human gene set enrichment for unknown species instead of giving error. The updated system performs more error checking and data cleanup in the backend. In the current version, the module offers two enrichment methods, Over-Representation Analysis (ORA, Section 8.1) and Gene Set Enrichment Analysis (GSEA, Section 8.2), and several views of the results: Gene Expression (8.3), Gene Set Heatmap (8.4), KEGG Pathway View (8.5), WikiPathways View (8.6) and Dot Plot (8.7).
 
-## Gene Set Enrichment
+## Over-Representation Analysis (ORA)
 
-This first tab lets the users pick a particular comparison, apply different cutoff criteria and select from a list of different databases for enrichment analysis. To demonstrate usage of this functionality, we will use the Mouse Microglia RNA dataset to help answer the question which pathways were altered by Genotype and/or Age. Very similar to the results from [Gyoneva et al., 2019](https://www.life-science-alliance.org/content/2/6/e201900453){target="_blank"}, this analysis points to immune related terms being enriched in the down-regulated genes for 2mon_KOvs2mon_WT.
+The “Over-Representation Analysis (ORA)” tab tests whether the DEGs/DEPs of a comparison are over-represented in gene sets. Users pick one or more comparisons, apply cutoff criteria, choose up-, down- or both-regulated genes, and select the gene set collections; then click “Compute/Refresh” to run the analysis. Gene sets are available for human, mouse and rat. When the gene sets come from another species than the project, “Gene Symbol Mapping” converts the gene symbols, for example by homologous genes. To demonstrate usage of this functionality, we will use the Mouse Microglia RNA dataset to help answer the question which pathways were altered by Genotype and/or Age. Very similar to the results from [Gyoneva et al., 2019](https://www.life-science-alliance.org/content/2/6/e201900453){target="_blank"}, this analysis points to immune related terms being enriched in the down-regulated genes for 2mo_KOvs2mo_WT. In the example below, we used human KEGG pathways with homologous gene mapping, a Fold Change Cutoff of 1.43 and a P value cutoff of 0.01; the top down-regulated pathways include cytokine-cytokine receptor interaction, viral protein interaction with cytokine and cytokine receptor, complement and coagulation cascades, and hematopoietic cell lineage.
 
 [![](Figures/FigureS8.1_1.png)](Figures/FigureS8.1_1.png)
 
-Similarly, we pull out the GO enrichment for up-regulated genes.
+Similarly, we select the up-regulated genes. Four KEGG pathways are enriched: rheumatoid arthritis, antigen processing and presentation, fluid shear stress and atherosclerosis, and leishmaniasis.
 
 [![](Figures/FigureS8.1_2.png)](Figures/FigureS8.1_2.png)
 
-## Gene Expression
+## Gene Set Enrichment Analysis (GSEA)
 
-For the enriched terms identified in the previous tab (Gene Set Enrichment, section 8.1), Users have the ability to look at the differential values of the genes present in the set. Here we are probing the GO_IMMUNE_RESPONSE identified in the down-regulated category.
+Unlike ORA, which uses only the genes passing the cutoffs, GSEA ranks all genes of a comparison by logFC or by -log(P-Value) and tests whether the genes of a gene set are found at the top or bottom of the ranked list. Select the comparison(s), the ranking method, the gene set size range, the adjusted P-value cutoff and the gene set collections, then click “Compute/Refresh”. In the results table, a positive normalized enrichment score (NES) means that the gene set is up-regulated, and a negative NES means that it is down-regulated. The “Copy Leading Edge Genes” button copies the genes that drive the enrichment, so that they can be pasted into other modules. Clicking a gene set name in the GSEA or ORA results table selects it for the Gene Expression, Gene Set Heatmap, KEGG Pathway View and WikiPathways View tabs. In the example below for 2mo_KOvs2mo_WT, complement and coagulation cascades and viral protein interaction with cytokine and cytokine receptor have negative NES values, in agreement with the ORA results for the down-regulated genes.
 
 [![](Figures/FigureS8.2_1.png)](Figures/FigureS8.2_1.png)
 
-## Gene Set Heat Map
+## Gene Expression
 
-Like the “Gene Expression” tab, Users have the ability to plot expression of the genes in the pathway term selected as a heatmap. This visualization shows that while the Immune Response genes are enriched in the differentially expressed genes list, not all of them change in the same direction.
+For the enriched terms identified in the ORA (Section 8.1) or GSEA (Section 8.2) tab, Users have the ability to look at the differential values of the genes present in the set. Click a gene set name in the ORA or GSEA results table, then open the “Gene Expression” tab. It shows the statistics of the gene set and lists all genes in the set with their logFC, P value and adjusted P value; the DE genes used in the ORA are shown in green. Here we are probing hsa04061 Viral protein interaction with cytokine and cytokine receptor, identified in the down-regulated category; 7 of its 42 genes, such as CX3CR1, CCR2 and CCR5, are down-regulated DE genes.
 
 [![](Figures/FigureS8.3_1.png)](Figures/FigureS8.3_1.png)
 
-## KEGG Pathway View
+## Gene Set Heat Map
 
-This functionality is available only to KEGG pathway terms. Users have the option to view the Fold Change levels of different genes in the KEGG pathway selected for up to 5 comparisons. In this example we demo the KEGG pathway “hsa04612 Antigen processing and presentation” as identified as a down-regulated term in the 2mon_KOvs2mon_WT and 1yr_KOvs1yr_WT comparisons.
-
-This figure identifies all the genes that are differentially expressed in this pathway. It is also clear that genes in the MHC I pathway do not change, but many genes in the MHC II pathway are down regulated in both the comparisons. The visualization is also useful to highlight whether or not a large proportion of genes in a pathway are altered by the perturbation.
+Like the “Gene Expression” tab, Users have the ability to plot expression of the genes in the pathway term selected as a heatmap. This visualization shows that while the genes of the cytokine-cytokine receptor interaction pathway are enriched in the down-regulated genes, not all of them change in the same direction across the groups.
 
 [![](Figures/FigureS8.4_1.png)](Figures/FigureS8.4_1.png)
 
+## KEGG Pathway View
+
+This functionality is available only to KEGG pathway terms. Users have the option to view the Fold Change levels of different genes in the KEGG pathway selected for one or more comparisons. In this example we demo the KEGG pathway “hsa04612 Antigen processing and presentation” for the 2mo_KOvs2mo_WT and 1yr_KOvs1yr_WT comparisons. Each gene box shows one color per comparison.
+
+This figure identifies all the genes that are differentially expressed in this pathway. Most genes in the MHC I pathway change little, while CD74 in the MHC II pathway is down-regulated in both comparisons. The visualization is also useful to highlight whether or not a large proportion of genes in a pathway are altered by the perturbation.
+
+[![](Figures/FigureS8.5_1.png)](Figures/FigureS8.5_1.png)
+
+## WikiPathways View
+
+This tab shows the logFC values of the selected comparison on a WikiPathways diagram. Select a pathway by clicking its name in the ORA or GSEA results table, or choose it from the “Wikipathways for Visualization” list. The colors for low, middle and high logFC values and the log2FC range can be changed in the left panel. In the example below, we show the Microglia pathogen phagocytosis pathway (WP3937) for 2mo_KOvs2mo_WT; up-regulated genes are shown in red and down-regulated genes in green.
+
+[![](Figures/FigureS8.6_1.png)](Figures/FigureS8.6_1.png)
+
+## Dot Plot
+
+The Dot Plot compares the enrichment results of several comparisons in one figure. First run GSEA or ORA for the comparisons of interest and choose the same “Analysis Type” in the left panel. The comparisons to plot can be re-ordered or removed by dragging them. Choose how the top gene sets are selected (from each comparison separately, from all comparisons together, or from a customized list) and the total number of gene sets, then click “Plot/Refresh”. The table above the plot lists how many of the plotted gene sets come from each comparison. The dot color shows the NES (GSEA) and the dot size shows -log10 of the adjusted P value. In the example below, we ran GSEA for 2mo_KOvs2mo_WT, 1yr_KOvs1yr_WT and 2yr_KOvs2yr_WT and plotted the top 30 KEGG pathways.
+
+[![](Figures/FigureS8.7_1.png)](Figures/FigureS8.7_1.png)
