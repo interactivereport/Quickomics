@@ -67,6 +67,12 @@ venn-diagram
 venn-diagram-black-white
 intersection-output
 deg-table
+wgcna-module
+wgcna-qc
+wgcna-result
+module-eigengenes
+module-trait-relationships
 output-module
+save-session
 faq
 references
