@@ -18,7 +18,7 @@ In the resulting PCA plot, the 2mo groups separate from the 1yr and 2yr groups, 
 
 [![](Figures/FigureS4.1_3.png)](Figures/FigureS4.1_3.png)
 
-Furthermore, the plot can be saved in high resolution by clicking on “Save to Output”. Section 12 of this document describes the next steps of downloading and obtaining the saved plots.
+Furthermore, the plot can be saved in high resolution by clicking on “Save to Output”. Chapter 13 of this document describes the next steps of downloading and obtaining the saved plots.
 
 ## Covariates
 
