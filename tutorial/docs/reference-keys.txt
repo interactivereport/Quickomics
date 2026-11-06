@@ -76,6 +76,9 @@ time-course-analysis-module
 time-series-de-analysis
 deg-clustering-analysis
 similar-pattern-search
+correlation-analysis-module
+gene-gene-sample-sample-and-group-group
+gene-target
 output-module
 save-session
 faq

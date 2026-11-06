@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 14 Correlation Analysis Module | Supplementary Materials - Quickomics v2.0</title>
+  <meta name="description" content="Chapter 14 Correlation Analysis Module | Supplementary Materials - Quickomics v2.0" />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 14 Correlation Analysis Module | Supplementary Materials - Quickomics v2.0" />
+  <meta property="og:type" content="book" />
+  
+  
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 14 Correlation Analysis Module | Supplementary Materials - Quickomics v2.0" />
+  
+  
+  
+
+
+
+<meta name="date" content="2026-11-06" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="time-course-analysis-module.html"/>
+<link rel="next" href="output-module.html"/>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+
+
+
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Quickomics</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Preface</a></li>
+<li class="chapter" data-level="1" data-path="introduction.html"><a href="introduction.html"><i class="fa fa-check"></i><b>1</b> Introduction</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="introduction.html"><a href="introduction.html#integrated-gene-set-query"><i class="fa fa-check"></i><b>1.1</b> Integrated Gene Set Query</a></li>
+<li class="chapter" data-level="1.2" data-path="introduction.html"><a href="introduction.html#launch-project-saved-on-server"><i class="fa fa-check"></i><b>1.2</b> Launch project saved on server</a></li>
+<li class="chapter" data-level="1.3" data-path="introduction.html"><a href="introduction.html#shinyone"><i class="fa fa-check"></i><b>1.3</b> ShinyOne</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="dataset-module.html"><a href="dataset-module.html"><i class="fa fa-check"></i><b>2</b> Dataset Module</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="dataset-module.html"><a href="dataset-module.html#upload-files"><i class="fa fa-check"></i><b>2.1</b> Upload Files</a></li>
+<li class="chapter" data-level="2.2" data-path="dataset-module.html"><a href="dataset-module.html#prepare-r-data-files-by-computational-biologists"><i class="fa fa-check"></i><b>2.2</b> Prepare R Data Files by Computational Biologists</a>
+<ul>
+<li class="chapter" data-level="2.2.1" data-path="dataset-module.html"><a href="dataset-module.html#example-r-script-to-prepare-r-data-files-from-rna-seq-results"><i class="fa fa-check"></i><b>2.2.1</b> Example R script to prepare R data files from RNA-Seq results</a></li>
+<li class="chapter" data-level="2.2.2" data-path="dataset-module.html"><a href="dataset-module.html#example-r-script-to-prepare-r-data-files-from-proteomics-results"><i class="fa fa-check"></i><b>2.2.2</b> Example R script to prepare R data files from proteomics results</a></li>
+</ul></li>
+<li class="chapter" data-level="2.3" data-path="dataset-module.html"><a href="dataset-module.html#sample-table"><i class="fa fa-check"></i><b>2.3</b> Sample Table</a></li>
+<li class="chapter" data-level="2.4" data-path="dataset-module.html"><a href="dataset-module.html#project-overview"><i class="fa fa-check"></i><b>2.4</b> Project Overview</a></li>
+<li class="chapter" data-level="2.5" data-path="dataset-module.html"><a href="dataset-module.html#result-table"><i class="fa fa-check"></i><b>2.5</b> Result Table</a></li>
+<li class="chapter" data-level="2.6" data-path="dataset-module.html"><a href="dataset-module.html#data-table"><i class="fa fa-check"></i><b>2.6</b> Data Table</a></li>
+<li class="chapter" data-level="2.7" data-path="dataset-module.html"><a href="dataset-module.html#protein-gene-names"><i class="fa fa-check"></i><b>2.7</b> Protein Gene Names</a></li>
+<li class="chapter" data-level="2.8" data-path="dataset-module.html"><a href="dataset-module.html#help"><i class="fa fa-check"></i><b>2.8</b> Help</a></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html"><i class="fa fa-check"></i><b>3</b> Groups and Samples Module</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#overview-of-the-groups-and-samples-tab"><i class="fa fa-check"></i><b>3.1</b> Overview of the Groups and Samples tab</a></li>
+<li class="chapter" data-level="3.2" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-groups-by-sample-attributes"><i class="fa fa-check"></i><b>3.2</b> Remove groups by sample attributes</a></li>
+<li class="chapter" data-level="3.3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-and-remove-multiple-samples"><i class="fa fa-check"></i><b>3.3</b> Select and remove multiple samples</a></li>
+<li class="chapter" data-level="3.4" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-samples-by-comparisons"><i class="fa fa-check"></i><b>3.4</b> Remove samples by comparisons</a></li>
+<li class="chapter" data-level="3.5" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#reorder-groups-and-samples"><i class="fa fa-check"></i><b>3.5</b> Reorder groups and samples</a></li>
+<li class="chapter" data-level="3.6" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#apply-changes-to-all-modules"><i class="fa fa-check"></i><b>3.6</b> Apply changes to all modules</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="qc-plots-module.html"><a href="qc-plots-module.html"><i class="fa fa-check"></i><b>4</b> QC Plots Module</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="qc-plots-module.html"><a href="qc-plots-module.html#pca-plot"><i class="fa fa-check"></i><b>4.1</b> PCA Plot</a></li>
+<li class="chapter" data-level="4.2" data-path="qc-plots-module.html"><a href="qc-plots-module.html#covariates"><i class="fa fa-check"></i><b>4.2</b> Covariates</a></li>
+<li class="chapter" data-level="4.3" data-path="qc-plots-module.html"><a href="qc-plots-module.html#alignqc"><i class="fa fa-check"></i><b>4.3</b> AlignQC</a></li>
+<li class="chapter" data-level="4.4" data-path="qc-plots-module.html"><a href="qc-plots-module.html#eigenvalues"><i class="fa fa-check"></i><b>4.4</b> Eigenvalues</a></li>
+<li class="chapter" data-level="4.5" data-path="qc-plots-module.html"><a href="qc-plots-module.html#pca-3d-plot"><i class="fa fa-check"></i><b>4.5</b> PCA 3D Plot</a></li>
+<li class="chapter" data-level="4.6" data-path="qc-plots-module.html"><a href="qc-plots-module.html#pca-3d-interactive"><i class="fa fa-check"></i><b>4.6</b> PCA 3D Interactive</a></li>
+<li class="chapter" data-level="4.7" data-path="qc-plots-module.html"><a href="qc-plots-module.html#sample-sample-distance"><i class="fa fa-check"></i><b>4.7</b> Sample-sample Distance</a></li>
+<li class="chapter" data-level="4.8" data-path="qc-plots-module.html"><a href="qc-plots-module.html#dendrograms"><i class="fa fa-check"></i><b>4.8</b> Dendrograms</a></li>
+<li class="chapter" data-level="4.9" data-path="qc-plots-module.html"><a href="qc-plots-module.html#box-plot"><i class="fa fa-check"></i><b>4.9</b> Box Plot</a></li>
+<li class="chapter" data-level="4.10" data-path="qc-plots-module.html"><a href="qc-plots-module.html#cv-distribution"><i class="fa fa-check"></i><b>4.10</b> CV Distribution</a></li>
+<li class="chapter" data-level="4.11" data-path="qc-plots-module.html"><a href="qc-plots-module.html#help-1"><i class="fa fa-check"></i><b>4.11</b> Help</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="deg-module.html"><a href="deg-module.html"><i class="fa fa-check"></i><b>5</b> DEG Module</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="deg-module.html"><a href="deg-module.html#deg-counts"><i class="fa fa-check"></i><b>5.1</b> DEG Counts</a></li>
+<li class="chapter" data-level="5.2" data-path="deg-module.html"><a href="deg-module.html#volcano-plot-static"><i class="fa fa-check"></i><b>5.2</b> Volcano Plot (Static)</a></li>
+<li class="chapter" data-level="5.3" data-path="deg-module.html"><a href="deg-module.html#volcano-plot-interactive"><i class="fa fa-check"></i><b>5.3</b> Volcano Plot (Interactive)</a></li>
+<li class="chapter" data-level="5.4" data-path="deg-module.html"><a href="deg-module.html#degs-and-deps-in-two-comparisons"><i class="fa fa-check"></i><b>5.4</b> DEGs and DEPs in Two Comparisons</a></li>
+<li class="chapter" data-level="5.5" data-path="deg-module.html"><a href="deg-module.html#data-table-1"><i class="fa fa-check"></i><b>5.5</b> Data Table</a></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="heatmap-module.html"><a href="heatmap-module.html"><i class="fa fa-check"></i><b>6</b> Heatmap Module</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="heatmap-module.html"><a href="heatmap-module.html#static-heatmap-layout-1"><i class="fa fa-check"></i><b>6.1</b> Static Heatmap Layout 1</a></li>
+<li class="chapter" data-level="6.2" data-path="heatmap-module.html"><a href="heatmap-module.html#static-heatmap-layout-2"><i class="fa fa-check"></i><b>6.2</b> Static Heatmap Layout 2</a></li>
+<li class="chapter" data-level="6.3" data-path="heatmap-module.html"><a href="heatmap-module.html#interactive-heatmap"><i class="fa fa-check"></i><b>6.3</b> Interactive Heatmap</a></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="expression-plot-module.html"><a href="expression-plot-module.html"><i class="fa fa-check"></i><b>7</b> Expression Plot Module</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="expression-plot-module.html"><a href="expression-plot-module.html#browsing"><i class="fa fa-check"></i><b>7.1</b> Browsing</a></li>
+<li class="chapter" data-level="7.2" data-path="expression-plot-module.html"><a href="expression-plot-module.html#searched-expression-data"><i class="fa fa-check"></i><b>7.2</b> Searched Expression Data</a></li>
+<li class="chapter" data-level="7.3" data-path="expression-plot-module.html"><a href="expression-plot-module.html#data-table-2"><i class="fa fa-check"></i><b>7.3</b> Data Table</a></li>
+<li class="chapter" data-level="7.4" data-path="expression-plot-module.html"><a href="expression-plot-module.html#result-table-1"><i class="fa fa-check"></i><b>7.4</b> Result Table</a></li>
+<li class="chapter" data-level="7.5" data-path="expression-plot-module.html"><a href="expression-plot-module.html#rank-abundance-curve"><i class="fa fa-check"></i><b>7.5</b> Rank Abundance Curve</a></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html"><i class="fa fa-check"></i><b>8</b> Gene Set Enrichment Module</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#over-representation-analysis-ora"><i class="fa fa-check"></i><b>8.1</b> Over-Representation Analysis (ORA)</a></li>
+<li class="chapter" data-level="8.2" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-set-enrichment-analysis-gsea"><i class="fa fa-check"></i><b>8.2</b> Gene Set Enrichment Analysis (GSEA)</a></li>
+<li class="chapter" data-level="8.3" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-expression"><i class="fa fa-check"></i><b>8.3</b> Gene Expression</a></li>
+<li class="chapter" data-level="8.4" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-set-heat-map"><i class="fa fa-check"></i><b>8.4</b> Gene Set Heat Map</a></li>
+<li class="chapter" data-level="8.5" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#kegg-pathway-view"><i class="fa fa-check"></i><b>8.5</b> KEGG Pathway View</a></li>
+<li class="chapter" data-level="8.6" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#wikipathways-view"><i class="fa fa-check"></i><b>8.6</b> WikiPathways View</a></li>
+<li class="chapter" data-level="8.7" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#dot-plot"><i class="fa fa-check"></i><b>8.7</b> Dot Plot</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="pattern-clustering-module.html"><a href="pattern-clustering-module.html"><i class="fa fa-check"></i><b>9</b> Pattern Clustering Module</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="pattern-clustering-module.html"><a href="pattern-clustering-module.html#clustering-of-centroid-profiles"><i class="fa fa-check"></i><b>9.1</b> Clustering of Centroid Profiles</a></li>
+<li class="chapter" data-level="9.2" data-path="pattern-clustering-module.html"><a href="pattern-clustering-module.html#data-table-3"><i class="fa fa-check"></i><b>9.2</b> Data Table</a></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="correlation-network-module.html"><a href="correlation-network-module.html"><i class="fa fa-check"></i><b>10</b> Correlation Network Module</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="correlation-network-module.html"><a href="correlation-network-module.html#visnetwork"><i class="fa fa-check"></i><b>10.1</b> visNetwork</a></li>
+<li class="chapter" data-level="10.2" data-path="correlation-network-module.html"><a href="correlation-network-module.html#data-table-4"><i class="fa fa-check"></i><b>10.2</b> Data Table</a></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="venn-diagram-module.html"><a href="venn-diagram-module.html"><i class="fa fa-check"></i><b>11</b> Venn Diagram Module</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="venn-diagram-module.html"><a href="venn-diagram-module.html#venn-diagram"><i class="fa fa-check"></i><b>11.1</b> Venn Diagram</a></li>
+<li class="chapter" data-level="11.2" data-path="venn-diagram-module.html"><a href="venn-diagram-module.html#venn-diagram-black-white"><i class="fa fa-check"></i><b>11.2</b> Venn Diagram (black &amp; white)</a></li>
+<li class="chapter" data-level="11.3" data-path="venn-diagram-module.html"><a href="venn-diagram-module.html#intersection-output"><i class="fa fa-check"></i><b>11.3</b> Intersection Output</a></li>
+<li class="chapter" data-level="11.4" data-path="venn-diagram-module.html"><a href="venn-diagram-module.html#deg-table"><i class="fa fa-check"></i><b>11.4</b> DEG Table</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="wgcna-module.html"><a href="wgcna-module.html"><i class="fa fa-check"></i><b>12</b> WGCNA Module</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="wgcna-module.html"><a href="wgcna-module.html#wgcna-qc"><i class="fa fa-check"></i><b>12.1</b> WGCNA QC</a></li>
+<li class="chapter" data-level="12.2" data-path="wgcna-module.html"><a href="wgcna-module.html#wgcna-result"><i class="fa fa-check"></i><b>12.2</b> WGCNA Result</a></li>
+<li class="chapter" data-level="12.3" data-path="wgcna-module.html"><a href="wgcna-module.html#module-eigengenes"><i class="fa fa-check"></i><b>12.3</b> Module Eigengenes</a></li>
+<li class="chapter" data-level="12.4" data-path="wgcna-module.html"><a href="wgcna-module.html#module-trait-relationships"><i class="fa fa-check"></i><b>12.4</b> Module-Trait Relationships</a></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html"><i class="fa fa-check"></i><b>13</b> Time Course Analysis Module</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html#time-series-de-analysis"><i class="fa fa-check"></i><b>13.1</b> Time-Series DE Analysis</a></li>
+<li class="chapter" data-level="13.2" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html#deg-clustering-analysis"><i class="fa fa-check"></i><b>13.2</b> DEG Clustering Analysis</a></li>
+<li class="chapter" data-level="13.3" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html#similar-pattern-search"><i class="fa fa-check"></i><b>13.3</b> Similar Pattern Search</a></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="correlation-analysis-module.html"><a href="correlation-analysis-module.html"><i class="fa fa-check"></i><b>14</b> Correlation Analysis Module</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="correlation-analysis-module.html"><a href="correlation-analysis-module.html#gene-gene-sample-sample-and-group-group"><i class="fa fa-check"></i><b>14.1</b> Gene-Gene, Sample-Sample and Group-Group</a></li>
+<li class="chapter" data-level="14.2" data-path="correlation-analysis-module.html"><a href="correlation-analysis-module.html#gene-target"><i class="fa fa-check"></i><b>14.2</b> Gene-Target</a></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="output-module.html"><a href="output-module.html"><i class="fa fa-check"></i><b>15</b> Output Module</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="output-module.html"><a href="output-module.html#save-session"><i class="fa fa-check"></i><b>15.1</b> Save Session</a></li>
+</ul></li>
+<li class="chapter" data-level="16" data-path="faq.html"><a href="faq.html"><i class="fa fa-check"></i><b>16</b> FAQ</a></li>
+<li class="chapter" data-level="17" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>17</b> References</a></li>
+<li class="divider"></li>
+<li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Supplementary Materials - Quickomics v2.0</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="correlation-analysis-module" class="section level1 hasAnchor" number="14">
+<h1><span class="header-section-number">Chapter 14</span> Correlation Analysis Module<a href="correlation-analysis-module.html#correlation-analysis-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>This module measures how closely two things change together across the samples. Four types of correlation are offered under “Correlation Type”. Gene-Gene, Sample-Sample and Group-Group correlate each pair of the selected genes, samples or groups (Section 14.1). Gene-Target correlates every gene with one target, which can be a gene or a sample attribute such as Age (Section 14.2). To see the correlation of all samples at once, use the sample correlation heatmap in the QC Plots module (Chapter 4). Each tab has a green link that opens a short guide.</p>
+<div id="gene-gene-sample-sample-and-group-group" class="section level2 hasAnchor" number="14.1">
+<h2><span class="header-section-number">14.1</span> Gene-Gene, Sample-Sample and Group-Group<a href="correlation-analysis-module.html#gene-gene-sample-sample-and-group-group" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Select the correlation type and the genes, samples or groups to compare, choose Pearson for linear relationships or Spearman for relationships that go in one direction but need not be linear, and click “Compute/Refresh”. Genes can be selected by name, browsed, entered as a list with “Upload Genes”, or taken from a gene set. The “Result Table” lists every pair with its correlation, R squared and P value, ranked from the strongest correlation. In the example below, we entered the MHC class II genes H2-Aa, H2-Ab1, H2-Eb1 and Cd74 together with Cx3cr1. The MHC class II genes are highly correlated with each other, with correlations from 0.91 to 0.98, while their correlations with Cx3cr1 are lower, between 0.55 and 0.66.</p>
+<p><a href="Figures/FigureS14.1_1.png"><img src="Figures/FigureS14.1_1.png" /></a></p>
+<p>Clicking “View Correlation Plot” in a row opens the “Correlation Plot” tab with the scatter plot of that pair. Each dot is a sample, and the plot shows the correlation, the regression line and its equation, and the P value. Below is the plot for H2-Aa and H2-Ab1, with a correlation of 0.980. The “Data Table” tab lists the values used. Sample-Sample and Group-Group correlations are set up in the same way, by selecting at least two samples, or an attribute and at least two of its groups.</p>
+<p><a href="Figures/FigureS14.1_2.png"><img src="Figures/FigureS14.1_2.png" /></a></p>
+</div>
+<div id="gene-target" class="section level2 hasAnchor" number="14.2">
+<h2><span class="header-section-number">14.2</span> Gene-Target<a href="correlation-analysis-module.html#gene-target" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Gene-Target correlates every gene with one target across the individual samples, to find the genes that go up and down with it. The target can be a gene or a sample attribute. Numeric attributes, such as a dose or a score, are used as they are. For text levels with an order, choose “Ordered levels” and list the levels from lowest to highest; Spearman correlation is then used. Because the ages of the demo dataset are given in different units (2mo, 1yr and 2yr), the app uses “Ordered levels” for Age, and we put the levels in the order 2mo, 1yr, 2yr. After clicking “Compute/Refresh”, the table lists all 15,402 genes sorted by their correlation with Age. Crlf2, St14, Mageh1 and H2-Q6 have the highest correlations, above 0.93, while genes such as Gm10616 and Ctf2 have negative correlations, so they decrease with age. The samples can also be limited to some levels of an attribute with “Restrict samples to”. The table can be saved with “Save table to output”.</p>
+<p><a href="Figures/FigureS14.2_1.png"><img src="Figures/FigureS14.2_1.png" /></a></p>
+<p>Clicking a row in the table shows the gene in the “Gene-Target Plot” tab. Each dot is a sample, and the line shows the trend. Crlf2 increases steadily from 2mo to 1yr to 2yr, with a Spearman correlation of 0.94.</p>
+<p><a href="Figures/FigureS14.2_2.png"><img src="Figures/FigureS14.2_2.png" /></a></p>
+<p>With “Compute separately for each level of”, the correlation is computed separately within each level of another attribute, and the table gets one set of columns per level. The “Correlation Heatmap” tab then shows the correlations of the top genes, one column per level, with red for positive and blue for negative correlations; the number of genes is set with “Top genes to show”. In the example below, we computed the correlation with Age separately for each genotype. The top 30 genes have the same direction in Het, KO and WT, so their change with age does not depend on the genotype.</p>
+<p><a href="Figures/FigureS14.2_3.png"><img src="Figures/FigureS14.2_3.png" /></a></p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="time-course-analysis-module.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="output-module.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/14-CorrelationAnalysisModule.Rmd",
+    "text": "Edit"
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/14-CorrelationAnalysisModule.Rmd",
+    "text": null
+  },
+  "download": null,
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  }
+});
+});
+</script>
+
+</body>
+
+</html>

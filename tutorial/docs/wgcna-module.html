@@ -22,7 +22,7 @@
 
 
 
-<meta name="date" content="2026-11-05" />
+<meta name="date" content="2026-11-06" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -182,12 +182,17 @@
 <li class="chapter" data-level="13.2" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html#deg-clustering-analysis"><i class="fa fa-check"></i><b>13.2</b> DEG Clustering Analysis</a></li>
 <li class="chapter" data-level="13.3" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html#similar-pattern-search"><i class="fa fa-check"></i><b>13.3</b> Similar Pattern Search</a></li>
 </ul></li>
-<li class="chapter" data-level="14" data-path="output-module.html"><a href="output-module.html"><i class="fa fa-check"></i><b>14</b> Output Module</a>
+<li class="chapter" data-level="14" data-path="correlation-analysis-module.html"><a href="correlation-analysis-module.html"><i class="fa fa-check"></i><b>14</b> Correlation Analysis Module</a>
 <ul>
-<li class="chapter" data-level="14.1" data-path="output-module.html"><a href="output-module.html#save-session"><i class="fa fa-check"></i><b>14.1</b> Save Session</a></li>
+<li class="chapter" data-level="14.1" data-path="correlation-analysis-module.html"><a href="correlation-analysis-module.html#gene-gene-sample-sample-and-group-group"><i class="fa fa-check"></i><b>14.1</b> Gene-Gene, Sample-Sample and Group-Group</a></li>
+<li class="chapter" data-level="14.2" data-path="correlation-analysis-module.html"><a href="correlation-analysis-module.html#gene-target"><i class="fa fa-check"></i><b>14.2</b> Gene-Target</a></li>
 </ul></li>
-<li class="chapter" data-level="15" data-path="faq.html"><a href="faq.html"><i class="fa fa-check"></i><b>15</b> FAQ</a></li>
-<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
+<li class="chapter" data-level="15" data-path="output-module.html"><a href="output-module.html"><i class="fa fa-check"></i><b>15</b> Output Module</a>
+<ul>
+<li class="chapter" data-level="15.1" data-path="output-module.html"><a href="output-module.html#save-session"><i class="fa fa-check"></i><b>15.1</b> Save Session</a></li>
+</ul></li>
+<li class="chapter" data-level="16" data-path="faq.html"><a href="faq.html"><i class="fa fa-check"></i><b>16</b> FAQ</a></li>
+<li class="chapter" data-level="17" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>17</b> References</a></li>
 <li class="divider"></li>
 <li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
 </ul>
@@ -220,7 +225,7 @@
 <h2><span class="header-section-number">12.2</span> WGCNA Result<a href="wgcna-module.html#wgcna-result" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The “Dendrogram Plot” sub-tab shows how the genes are clustered by their co-expression. The colored bar below the tree shows the module of each gene: genes of the same module share a color, and grey genes are not assigned to any module. Modules whose eigengenes are very similar are merged; a lower “Dendrogram Cut Height for Merging” keeps more, smaller modules.</p>
 <p><a href="Figures/FigureS12.2_1.png"><img src="Figures/FigureS12.2_1.png" /></a></p>
-<p>The “Gene Cluster Summary Table” sub-tab lists each module with its number of genes and the genes it contains. In the demo dataset there are six modules plus 4,238 grey genes, with sizes from 79 genes in the red module to 2,569 genes in the turquoise module. For each module, “Copy all genes” copies its genes so that they can be pasted into other modules of Quickomics, and “Run ORA” runs Over-Representation Analysis on its genes (see Section 8.1). For example, the yellow module includes Xist and Tsix. “Save GCT data file to output” saves the expression data with the module of each gene, which can be downloaded from the Output module (Chapter 14).</p>
+<p>The “Gene Cluster Summary Table” sub-tab lists each module with its number of genes and the genes it contains. In the demo dataset there are six modules plus 4,238 grey genes, with sizes from 79 genes in the red module to 2,569 genes in the turquoise module. For each module, “Copy all genes” copies its genes so that they can be pasted into other modules of Quickomics, and “Run ORA” runs Over-Representation Analysis on its genes (see Section 8.1). For example, the yellow module includes Xist and Tsix. “Save GCT data file to output” saves the expression data with the module of each gene, which can be downloaded from the Output module (Chapter 15).</p>
 <p><a href="Figures/FigureS12.2_2.png"><img src="Figures/FigureS12.2_2.png" /></a></p>
 </div>
 <div id="module-eigengenes" class="section level2 hasAnchor" number="12.3">
