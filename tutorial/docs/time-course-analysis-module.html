@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Chapter 13 Time Course Analysis Module | Supplementary Materials - Quickomics v2.0</title>
+  <meta name="description" content="Chapter 13 Time Course Analysis Module | Supplementary Materials - Quickomics v2.0" />
+  <meta name="generator" content="bookdown 0.48 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Chapter 13 Time Course Analysis Module | Supplementary Materials - Quickomics v2.0" />
+  <meta property="og:type" content="book" />
+  
+  
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Chapter 13 Time Course Analysis Module | Supplementary Materials - Quickomics v2.0" />
+  
+  
+  
+
+
+
+<meta name="date" content="2026-11-05" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="wgcna-module.html"/>
+<link rel="next" href="output-module.html"/>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+
+
+
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Quickomics</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Preface</a></li>
+<li class="chapter" data-level="1" data-path="introduction.html"><a href="introduction.html"><i class="fa fa-check"></i><b>1</b> Introduction</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="introduction.html"><a href="introduction.html#integrated-gene-set-query"><i class="fa fa-check"></i><b>1.1</b> Integrated Gene Set Query</a></li>
+<li class="chapter" data-level="1.2" data-path="introduction.html"><a href="introduction.html#launch-project-saved-on-server"><i class="fa fa-check"></i><b>1.2</b> Launch project saved on server</a></li>
+<li class="chapter" data-level="1.3" data-path="introduction.html"><a href="introduction.html#shinyone"><i class="fa fa-check"></i><b>1.3</b> ShinyOne</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="dataset-module.html"><a href="dataset-module.html"><i class="fa fa-check"></i><b>2</b> Dataset Module</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="dataset-module.html"><a href="dataset-module.html#upload-files"><i class="fa fa-check"></i><b>2.1</b> Upload Files</a></li>
+<li class="chapter" data-level="2.2" data-path="dataset-module.html"><a href="dataset-module.html#prepare-r-data-files-by-computational-biologists"><i class="fa fa-check"></i><b>2.2</b> Prepare R Data Files by Computational Biologists</a>
+<ul>
+<li class="chapter" data-level="2.2.1" data-path="dataset-module.html"><a href="dataset-module.html#example-r-script-to-prepare-r-data-files-from-rna-seq-results"><i class="fa fa-check"></i><b>2.2.1</b> Example R script to prepare R data files from RNA-Seq results</a></li>
+<li class="chapter" data-level="2.2.2" data-path="dataset-module.html"><a href="dataset-module.html#example-r-script-to-prepare-r-data-files-from-proteomics-results"><i class="fa fa-check"></i><b>2.2.2</b> Example R script to prepare R data files from proteomics results</a></li>
+</ul></li>
+<li class="chapter" data-level="2.3" data-path="dataset-module.html"><a href="dataset-module.html#sample-table"><i class="fa fa-check"></i><b>2.3</b> Sample Table</a></li>
+<li class="chapter" data-level="2.4" data-path="dataset-module.html"><a href="dataset-module.html#project-overview"><i class="fa fa-check"></i><b>2.4</b> Project Overview</a></li>
+<li class="chapter" data-level="2.5" data-path="dataset-module.html"><a href="dataset-module.html#result-table"><i class="fa fa-check"></i><b>2.5</b> Result Table</a></li>
+<li class="chapter" data-level="2.6" data-path="dataset-module.html"><a href="dataset-module.html#data-table"><i class="fa fa-check"></i><b>2.6</b> Data Table</a></li>
+<li class="chapter" data-level="2.7" data-path="dataset-module.html"><a href="dataset-module.html#protein-gene-names"><i class="fa fa-check"></i><b>2.7</b> Protein Gene Names</a></li>
+<li class="chapter" data-level="2.8" data-path="dataset-module.html"><a href="dataset-module.html#help"><i class="fa fa-check"></i><b>2.8</b> Help</a></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html"><i class="fa fa-check"></i><b>3</b> Groups and Samples Module</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#overview-of-the-groups-and-samples-tab"><i class="fa fa-check"></i><b>3.1</b> Overview of the Groups and Samples tab</a></li>
+<li class="chapter" data-level="3.2" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-groups-by-sample-attributes"><i class="fa fa-check"></i><b>3.2</b> Remove groups by sample attributes</a></li>
+<li class="chapter" data-level="3.3" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#select-and-remove-multiple-samples"><i class="fa fa-check"></i><b>3.3</b> Select and remove multiple samples</a></li>
+<li class="chapter" data-level="3.4" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#remove-samples-by-comparisons"><i class="fa fa-check"></i><b>3.4</b> Remove samples by comparisons</a></li>
+<li class="chapter" data-level="3.5" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#reorder-groups-and-samples"><i class="fa fa-check"></i><b>3.5</b> Reorder groups and samples</a></li>
+<li class="chapter" data-level="3.6" data-path="groups-and-samples-module.html"><a href="groups-and-samples-module.html#apply-changes-to-all-modules"><i class="fa fa-check"></i><b>3.6</b> Apply changes to all modules</a></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="qc-plots-module.html"><a href="qc-plots-module.html"><i class="fa fa-check"></i><b>4</b> QC Plots Module</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="qc-plots-module.html"><a href="qc-plots-module.html#pca-plot"><i class="fa fa-check"></i><b>4.1</b> PCA Plot</a></li>
+<li class="chapter" data-level="4.2" data-path="qc-plots-module.html"><a href="qc-plots-module.html#covariates"><i class="fa fa-check"></i><b>4.2</b> Covariates</a></li>
+<li class="chapter" data-level="4.3" data-path="qc-plots-module.html"><a href="qc-plots-module.html#alignqc"><i class="fa fa-check"></i><b>4.3</b> AlignQC</a></li>
+<li class="chapter" data-level="4.4" data-path="qc-plots-module.html"><a href="qc-plots-module.html#eigenvalues"><i class="fa fa-check"></i><b>4.4</b> Eigenvalues</a></li>
+<li class="chapter" data-level="4.5" data-path="qc-plots-module.html"><a href="qc-plots-module.html#pca-3d-plot"><i class="fa fa-check"></i><b>4.5</b> PCA 3D Plot</a></li>
+<li class="chapter" data-level="4.6" data-path="qc-plots-module.html"><a href="qc-plots-module.html#pca-3d-interactive"><i class="fa fa-check"></i><b>4.6</b> PCA 3D Interactive</a></li>
+<li class="chapter" data-level="4.7" data-path="qc-plots-module.html"><a href="qc-plots-module.html#sample-sample-distance"><i class="fa fa-check"></i><b>4.7</b> Sample-sample Distance</a></li>
+<li class="chapter" data-level="4.8" data-path="qc-plots-module.html"><a href="qc-plots-module.html#dendrograms"><i class="fa fa-check"></i><b>4.8</b> Dendrograms</a></li>
+<li class="chapter" data-level="4.9" data-path="qc-plots-module.html"><a href="qc-plots-module.html#box-plot"><i class="fa fa-check"></i><b>4.9</b> Box Plot</a></li>
+<li class="chapter" data-level="4.10" data-path="qc-plots-module.html"><a href="qc-plots-module.html#cv-distribution"><i class="fa fa-check"></i><b>4.10</b> CV Distribution</a></li>
+<li class="chapter" data-level="4.11" data-path="qc-plots-module.html"><a href="qc-plots-module.html#help-1"><i class="fa fa-check"></i><b>4.11</b> Help</a></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="deg-module.html"><a href="deg-module.html"><i class="fa fa-check"></i><b>5</b> DEG Module</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="deg-module.html"><a href="deg-module.html#deg-counts"><i class="fa fa-check"></i><b>5.1</b> DEG Counts</a></li>
+<li class="chapter" data-level="5.2" data-path="deg-module.html"><a href="deg-module.html#volcano-plot-static"><i class="fa fa-check"></i><b>5.2</b> Volcano Plot (Static)</a></li>
+<li class="chapter" data-level="5.3" data-path="deg-module.html"><a href="deg-module.html#volcano-plot-interactive"><i class="fa fa-check"></i><b>5.3</b> Volcano Plot (Interactive)</a></li>
+<li class="chapter" data-level="5.4" data-path="deg-module.html"><a href="deg-module.html#degs-and-deps-in-two-comparisons"><i class="fa fa-check"></i><b>5.4</b> DEGs and DEPs in Two Comparisons</a></li>
+<li class="chapter" data-level="5.5" data-path="deg-module.html"><a href="deg-module.html#data-table-1"><i class="fa fa-check"></i><b>5.5</b> Data Table</a></li>
+</ul></li>
+<li class="chapter" data-level="6" data-path="heatmap-module.html"><a href="heatmap-module.html"><i class="fa fa-check"></i><b>6</b> Heatmap Module</a>
+<ul>
+<li class="chapter" data-level="6.1" data-path="heatmap-module.html"><a href="heatmap-module.html#static-heatmap-layout-1"><i class="fa fa-check"></i><b>6.1</b> Static Heatmap Layout 1</a></li>
+<li class="chapter" data-level="6.2" data-path="heatmap-module.html"><a href="heatmap-module.html#static-heatmap-layout-2"><i class="fa fa-check"></i><b>6.2</b> Static Heatmap Layout 2</a></li>
+<li class="chapter" data-level="6.3" data-path="heatmap-module.html"><a href="heatmap-module.html#interactive-heatmap"><i class="fa fa-check"></i><b>6.3</b> Interactive Heatmap</a></li>
+</ul></li>
+<li class="chapter" data-level="7" data-path="expression-plot-module.html"><a href="expression-plot-module.html"><i class="fa fa-check"></i><b>7</b> Expression Plot Module</a>
+<ul>
+<li class="chapter" data-level="7.1" data-path="expression-plot-module.html"><a href="expression-plot-module.html#browsing"><i class="fa fa-check"></i><b>7.1</b> Browsing</a></li>
+<li class="chapter" data-level="7.2" data-path="expression-plot-module.html"><a href="expression-plot-module.html#searched-expression-data"><i class="fa fa-check"></i><b>7.2</b> Searched Expression Data</a></li>
+<li class="chapter" data-level="7.3" data-path="expression-plot-module.html"><a href="expression-plot-module.html#data-table-2"><i class="fa fa-check"></i><b>7.3</b> Data Table</a></li>
+<li class="chapter" data-level="7.4" data-path="expression-plot-module.html"><a href="expression-plot-module.html#result-table-1"><i class="fa fa-check"></i><b>7.4</b> Result Table</a></li>
+<li class="chapter" data-level="7.5" data-path="expression-plot-module.html"><a href="expression-plot-module.html#rank-abundance-curve"><i class="fa fa-check"></i><b>7.5</b> Rank Abundance Curve</a></li>
+</ul></li>
+<li class="chapter" data-level="8" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html"><i class="fa fa-check"></i><b>8</b> Gene Set Enrichment Module</a>
+<ul>
+<li class="chapter" data-level="8.1" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#over-representation-analysis-ora"><i class="fa fa-check"></i><b>8.1</b> Over-Representation Analysis (ORA)</a></li>
+<li class="chapter" data-level="8.2" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-set-enrichment-analysis-gsea"><i class="fa fa-check"></i><b>8.2</b> Gene Set Enrichment Analysis (GSEA)</a></li>
+<li class="chapter" data-level="8.3" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-expression"><i class="fa fa-check"></i><b>8.3</b> Gene Expression</a></li>
+<li class="chapter" data-level="8.4" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-set-heat-map"><i class="fa fa-check"></i><b>8.4</b> Gene Set Heat Map</a></li>
+<li class="chapter" data-level="8.5" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#kegg-pathway-view"><i class="fa fa-check"></i><b>8.5</b> KEGG Pathway View</a></li>
+<li class="chapter" data-level="8.6" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#wikipathways-view"><i class="fa fa-check"></i><b>8.6</b> WikiPathways View</a></li>
+<li class="chapter" data-level="8.7" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#dot-plot"><i class="fa fa-check"></i><b>8.7</b> Dot Plot</a></li>
+</ul></li>
+<li class="chapter" data-level="9" data-path="pattern-clustering-module.html"><a href="pattern-clustering-module.html"><i class="fa fa-check"></i><b>9</b> Pattern Clustering Module</a>
+<ul>
+<li class="chapter" data-level="9.1" data-path="pattern-clustering-module.html"><a href="pattern-clustering-module.html#clustering-of-centroid-profiles"><i class="fa fa-check"></i><b>9.1</b> Clustering of Centroid Profiles</a></li>
+<li class="chapter" data-level="9.2" data-path="pattern-clustering-module.html"><a href="pattern-clustering-module.html#data-table-3"><i class="fa fa-check"></i><b>9.2</b> Data Table</a></li>
+</ul></li>
+<li class="chapter" data-level="10" data-path="correlation-network-module.html"><a href="correlation-network-module.html"><i class="fa fa-check"></i><b>10</b> Correlation Network Module</a>
+<ul>
+<li class="chapter" data-level="10.1" data-path="correlation-network-module.html"><a href="correlation-network-module.html#visnetwork"><i class="fa fa-check"></i><b>10.1</b> visNetwork</a></li>
+<li class="chapter" data-level="10.2" data-path="correlation-network-module.html"><a href="correlation-network-module.html#data-table-4"><i class="fa fa-check"></i><b>10.2</b> Data Table</a></li>
+</ul></li>
+<li class="chapter" data-level="11" data-path="venn-diagram-module.html"><a href="venn-diagram-module.html"><i class="fa fa-check"></i><b>11</b> Venn Diagram Module</a>
+<ul>
+<li class="chapter" data-level="11.1" data-path="venn-diagram-module.html"><a href="venn-diagram-module.html#venn-diagram"><i class="fa fa-check"></i><b>11.1</b> Venn Diagram</a></li>
+<li class="chapter" data-level="11.2" data-path="venn-diagram-module.html"><a href="venn-diagram-module.html#venn-diagram-black-white"><i class="fa fa-check"></i><b>11.2</b> Venn Diagram (black &amp; white)</a></li>
+<li class="chapter" data-level="11.3" data-path="venn-diagram-module.html"><a href="venn-diagram-module.html#intersection-output"><i class="fa fa-check"></i><b>11.3</b> Intersection Output</a></li>
+<li class="chapter" data-level="11.4" data-path="venn-diagram-module.html"><a href="venn-diagram-module.html#deg-table"><i class="fa fa-check"></i><b>11.4</b> DEG Table</a></li>
+</ul></li>
+<li class="chapter" data-level="12" data-path="wgcna-module.html"><a href="wgcna-module.html"><i class="fa fa-check"></i><b>12</b> WGCNA Module</a>
+<ul>
+<li class="chapter" data-level="12.1" data-path="wgcna-module.html"><a href="wgcna-module.html#wgcna-qc"><i class="fa fa-check"></i><b>12.1</b> WGCNA QC</a></li>
+<li class="chapter" data-level="12.2" data-path="wgcna-module.html"><a href="wgcna-module.html#wgcna-result"><i class="fa fa-check"></i><b>12.2</b> WGCNA Result</a></li>
+<li class="chapter" data-level="12.3" data-path="wgcna-module.html"><a href="wgcna-module.html#module-eigengenes"><i class="fa fa-check"></i><b>12.3</b> Module Eigengenes</a></li>
+<li class="chapter" data-level="12.4" data-path="wgcna-module.html"><a href="wgcna-module.html#module-trait-relationships"><i class="fa fa-check"></i><b>12.4</b> Module-Trait Relationships</a></li>
+</ul></li>
+<li class="chapter" data-level="13" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html"><i class="fa fa-check"></i><b>13</b> Time Course Analysis Module</a>
+<ul>
+<li class="chapter" data-level="13.1" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html#time-series-de-analysis"><i class="fa fa-check"></i><b>13.1</b> Time-Series DE Analysis</a></li>
+<li class="chapter" data-level="13.2" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html#deg-clustering-analysis"><i class="fa fa-check"></i><b>13.2</b> DEG Clustering Analysis</a></li>
+<li class="chapter" data-level="13.3" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html#similar-pattern-search"><i class="fa fa-check"></i><b>13.3</b> Similar Pattern Search</a></li>
+</ul></li>
+<li class="chapter" data-level="14" data-path="output-module.html"><a href="output-module.html"><i class="fa fa-check"></i><b>14</b> Output Module</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="output-module.html"><a href="output-module.html#save-session"><i class="fa fa-check"></i><b>14.1</b> Save Session</a></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="faq.html"><a href="faq.html"><i class="fa fa-check"></i><b>15</b> FAQ</a></li>
+<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
+<li class="divider"></li>
+<li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Supplementary Materials - Quickomics v2.0</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="time-course-analysis-module" class="section level1 hasAnchor" number="13">
+<h1><span class="header-section-number">Chapter 13</span> Time Course Analysis Module<a href="time-course-analysis-module.html#time-course-analysis-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>This module finds genes whose expression changes over time, groups them by the shape of their time pattern, and finds genes that follow the same pattern as a gene of interest. Any sample attribute with ordered levels can be used as the time variable. The Mouse Microglia demo dataset has no real time series, but its three ages (2mo, 1yr and 2yr) can be used as time points, with Genotype as the condition. The module has three tabs, described below: Time-Series DE Analysis (Section 13.1), DEG Clustering Analysis (13.2) and Similar Pattern Search (13.3). Each tab has a green link that opens a short guide to its method.</p>
+<div id="time-series-de-analysis" class="section level2 hasAnchor" number="13.1">
+<h2><span class="header-section-number">13.1</span> Time-Series DE Analysis<a href="time-course-analysis-module.html#time-series-de-analysis" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Select the time variable and, optionally, one or more condition variables, then choose the method and the test and click “Run Time-Series DE Analysis”. Two methods are offered: DESeq2 for RNA-seq data and limma for continuous log values such as proteomics data; the default is chosen from the expression unit of the project. Two tests are offered. “Time x Condition” finds genes whose trend over time is different between the conditions, and “Time only” finds genes that change over time. Unlike the DEG module, the P values describe the whole trend of a gene, not a single fold change between two groups.</p>
+<p>In the example below, we used Age as the time variable, Genotype as the condition and the Time x Condition test, so the analysis asks which genes change with age differently in Het, KO and WT microglia. 169 genes pass the adjusted P value cutoff of 0.05. The max_time_log2FC columns give, for each genotype, the log2 fold change between the time points with the highest and the lowest mean expression. For the top gene, Mmp8, this value is 3.75 in WT but only 0.26 in Het and 0.25 in KO, so Mmp8 changes strongly over time in WT but hardly at all in the other two genotypes. The table can be saved with “Save to output”.</p>
+<p><a href="Figures/FigureS13.1_1.png"><img src="Figures/FigureS13.1_1.png" /></a></p>
+</div>
+<div id="deg-clustering-analysis" class="section level2 hasAnchor" number="13.2">
+<h2><span class="header-section-number">13.2</span> DEG Clustering Analysis<a href="time-course-analysis-module.html#deg-clustering-analysis" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>This tab groups the significant genes from Section 13.1 into clusters of genes with the same time pattern. Set the “Minimum Genes per Cluster” and click “Run Clustering”; smaller clusters are left out, so this number may need to be lowered when there are few significant genes. The “Time Series Cluster Plot” sub-tab shows one panel per cluster, with the number of genes in its title. For each genotype, the box plots show the expression of the genes in the cluster at each age, scaled as z-scores, and the line shows the trend. Note that the plot gives the ages in years, so 2mo is shown as 0.164yr. In the example below, 102 of the 169 genes fall into three clusters of 35, 19 and 48 genes. In all three clusters, the genes are much higher in 2mo WT samples than at the later ages, while Het and KO show smaller changes.</p>
+<p><a href="Figures/FigureS13.2_1.png"><img src="Figures/FigureS13.2_1.png" /></a></p>
+<p>The “DEG Cluster Result” sub-tab lists the genes of each cluster. “Copy all genes” copies them so they can be pasted into other modules, and “Create Expression Plot” shows their expression in the Expression Plot module (Chapter 7).</p>
+<p><a href="Figures/FigureS13.2_2.png"><img src="Figures/FigureS13.2_2.png" /></a></p>
+<p>The “Time-series Sample Heatmap” and “Time-series Group Heatmap” sub-tabs show the genes of the clusters as heatmaps, one column per sample or one column per group. Click “Plot/Refresh” to draw the heatmap after changing the settings. In the group heatmap below, the columns are the three ages within each genotype, and the rows are the genes, split by cluster. The high values in the 2mo column of WT stand out in all three clusters. The data behind each heatmap can be saved as a GCT file with the buttons above it.</p>
+<p><a href="Figures/FigureS13.2_3.png"><img src="Figures/FigureS13.2_3.png" /></a></p>
+</div>
+<div id="similar-pattern-search" class="section level2 hasAnchor" number="13.3">
+<h2><span class="header-section-number">13.3</span> Similar Pattern Search<a href="time-course-analysis-module.html#similar-pattern-search" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>This tab finds genes whose expression changes over time in the same way as a chosen gene, or in the opposite way. Run the Time-Series DE Analysis first, then type a gene in “Gene to Match”, choose whether to search among all tested genes or only among the significant genes, and click “Find Similar Genes”. The plot shows the mean expression of the chosen gene, the seed gene, as a red dashed line, together with the most similar genes, for each condition and time point. The table ranks the genes by how well their pattern matches the seed gene (kendall_r and pearson_r, where 1 is a perfect match); change_distance shows how close the size of the changes is, with smaller values meaning closer to the seed gene, and DE_padj gives the adjusted P value of the gene from Section 13.1.</p>
+<p>In the example below, we searched all tested genes for genes similar to Mmp8. The top genes, such as 1500015O10Rik, Kcnj13, Sell and Chil3, are also high in 2mo WT samples and change little in Het and KO. “Copy seed + selected genes” and “Create Expression Plot” pass the genes to other modules, and the plot and table can be saved to the output.</p>
+<p><a href="Figures/FigureS13.3_1.png"><img src="Figures/FigureS13.3_1.png" /></a></p>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="wgcna-module.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="output-module.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": "https://github.com/interactivereport/Quickomics/edit/gh-pages/13-TimeCourseModule.Rmd",
+    "text": "Edit"
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": "https://github.com/interactivereport/Quickomics/blob/gh-pages/13-TimeCourseModule.Rmd",
+    "text": null
+  },
+  "download": null,
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  }
+});
+});
+</script>
+
+</body>
+
+</html>

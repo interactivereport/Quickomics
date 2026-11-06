@@ -72,6 +72,10 @@ wgcna-qc
 wgcna-result
 module-eigengenes
 module-trait-relationships
+time-course-analysis-module
+time-series-de-analysis
+deg-clustering-analysis
+similar-pattern-search
 output-module
 save-session
 faq

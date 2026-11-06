@@ -30,7 +30,7 @@
   
   
 <link rel="prev" href="venn-diagram-module.html"/>
-<link rel="next" href="output-module.html"/>
+<link rel="next" href="time-course-analysis-module.html"/>
 <script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -176,12 +176,18 @@
 <li class="chapter" data-level="12.3" data-path="wgcna-module.html"><a href="wgcna-module.html#module-eigengenes"><i class="fa fa-check"></i><b>12.3</b> Module Eigengenes</a></li>
 <li class="chapter" data-level="12.4" data-path="wgcna-module.html"><a href="wgcna-module.html#module-trait-relationships"><i class="fa fa-check"></i><b>12.4</b> Module-Trait Relationships</a></li>
 </ul></li>
-<li class="chapter" data-level="13" data-path="output-module.html"><a href="output-module.html"><i class="fa fa-check"></i><b>13</b> Output Module</a>
+<li class="chapter" data-level="13" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html"><i class="fa fa-check"></i><b>13</b> Time Course Analysis Module</a>
 <ul>
-<li class="chapter" data-level="13.1" data-path="output-module.html"><a href="output-module.html#save-session"><i class="fa fa-check"></i><b>13.1</b> Save Session</a></li>
+<li class="chapter" data-level="13.1" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html#time-series-de-analysis"><i class="fa fa-check"></i><b>13.1</b> Time-Series DE Analysis</a></li>
+<li class="chapter" data-level="13.2" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html#deg-clustering-analysis"><i class="fa fa-check"></i><b>13.2</b> DEG Clustering Analysis</a></li>
+<li class="chapter" data-level="13.3" data-path="time-course-analysis-module.html"><a href="time-course-analysis-module.html#similar-pattern-search"><i class="fa fa-check"></i><b>13.3</b> Similar Pattern Search</a></li>
 </ul></li>
-<li class="chapter" data-level="14" data-path="faq.html"><a href="faq.html"><i class="fa fa-check"></i><b>14</b> FAQ</a></li>
-<li class="chapter" data-level="15" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>15</b> References</a></li>
+<li class="chapter" data-level="14" data-path="output-module.html"><a href="output-module.html"><i class="fa fa-check"></i><b>14</b> Output Module</a>
+<ul>
+<li class="chapter" data-level="14.1" data-path="output-module.html"><a href="output-module.html#save-session"><i class="fa fa-check"></i><b>14.1</b> Save Session</a></li>
+</ul></li>
+<li class="chapter" data-level="15" data-path="faq.html"><a href="faq.html"><i class="fa fa-check"></i><b>15</b> FAQ</a></li>
+<li class="chapter" data-level="16" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>16</b> References</a></li>
 <li class="divider"></li>
 <li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
 </ul>
@@ -214,7 +220,7 @@
 <h2><span class="header-section-number">12.2</span> WGCNA Result<a href="wgcna-module.html#wgcna-result" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>The “Dendrogram Plot” sub-tab shows how the genes are clustered by their co-expression. The colored bar below the tree shows the module of each gene: genes of the same module share a color, and grey genes are not assigned to any module. Modules whose eigengenes are very similar are merged; a lower “Dendrogram Cut Height for Merging” keeps more, smaller modules.</p>
 <p><a href="Figures/FigureS12.2_1.png"><img src="Figures/FigureS12.2_1.png" /></a></p>
-<p>The “Gene Cluster Summary Table” sub-tab lists each module with its number of genes and the genes it contains. In the demo dataset there are six modules plus 4,238 grey genes, with sizes from 79 genes in the red module to 2,569 genes in the turquoise module. For each module, “Copy all genes” copies its genes so that they can be pasted into other modules of Quickomics, and “Run ORA” runs Over-Representation Analysis on its genes (see Section 8.1). For example, the yellow module includes Xist and Tsix. “Save GCT data file to output” saves the expression data with the module of each gene, which can be downloaded from the Output module (Chapter 13).</p>
+<p>The “Gene Cluster Summary Table” sub-tab lists each module with its number of genes and the genes it contains. In the demo dataset there are six modules plus 4,238 grey genes, with sizes from 79 genes in the red module to 2,569 genes in the turquoise module. For each module, “Copy all genes” copies its genes so that they can be pasted into other modules of Quickomics, and “Run ORA” runs Over-Representation Analysis on its genes (see Section 8.1). For example, the yellow module includes Xist and Tsix. “Save GCT data file to output” saves the expression data with the module of each gene, which can be downloaded from the Output module (Chapter 14).</p>
 <p><a href="Figures/FigureS12.2_2.png"><img src="Figures/FigureS12.2_2.png" /></a></p>
 </div>
 <div id="module-eigengenes" class="section level2 hasAnchor" number="12.3">
@@ -239,7 +245,7 @@
         </div>
       </div>
 <a href="venn-diagram-module.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="output-module.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="time-course-analysis-module.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>
