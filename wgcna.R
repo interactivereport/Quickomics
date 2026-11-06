@@ -282,7 +282,7 @@ wgcna_ui <- function(id) {
                               numericInput(ns("mergeCutHeight"), label= "Dendrogram Cut Height for Merging:",  value=0.25, min= 0, max = 1.0, step = 0.01),
              ),
              conditionalPanel(ns = ns, "input.WGCNA_tabset=='WGCNA Result'",
-                              actionButton(ns("plotwgcna"),"Run"),
+                              actionButton(ns("plotwgcna"),"Run", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4"),
                               br(),
                               strong("Running the data could take 3-10 minutes",style="color:red"), span("depending on data size and complexity; once Run starts, please refrain from clicking the button repeatedly.",style="color:red", inline = TRUE)
              ),
@@ -290,12 +290,12 @@ wgcna_ui <- function(id) {
                               conditionalPanel(ns = ns, "input.Module_Trait=='Module Trait Heatmap'",
                                                selectizeInput(ns("WGCNA_trait_var"),label="Select attributes", choices = NULL,multiple = TRUE,options = list(placeholder = "Choose one or more attributes")),
                                                uiOutput(ns("attribute_settings_ui")),
-                                               actionButton(ns("plot_module_trait"),"Plot Module Trait Correlation")
+                                               actionButton(ns("plot_module_trait"),"Plot Module Trait Correlation", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4")
                               ),
                               conditionalPanel(ns = ns, "input.Module_Trait=='Hub Gene Identification Table' || input.Module_Trait == 'Hub Gene Identification Plot'",
                                                selectInput(ns("WGCNA_trait"),label="Select a trait", choices = NULL ,multiple = FALSE),
                                                selectInput(ns("WGCNA_module"),label="Select a module (optional)", choices = NULL ,multiple = FALSE),
-                                               actionButton(ns("plot_module_hub"),"Run")
+                                               actionButton(ns("plot_module_hub"),"Run", style="color: #0961E3; background-color: #F6E98C ; border-color: #2e6da4")
                               )
              )
            )
