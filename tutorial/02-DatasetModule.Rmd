@@ -101,7 +101,7 @@ This tab contains statistical analysis results like Ensemble ID (for RNAseq data
 
 ## Data Table
 
-The Data table contains normalized expression values (TPM for RNAseq, intensity for label free proteomic quantification, or ratio for isobaric label proteomics quantification) per sample for each gene. This table has a “Download Page” button to download the rows on the current page; to keep the whole table, use “Save to output” (see Chapter 13).
+The Data table contains normalized expression values (TPM for RNAseq, intensity for label free proteomic quantification, or ratio for isobaric label proteomics quantification) per sample for each gene. This table has a “Download Page” button to download the rows on the current page; to keep the whole table, use “Save to output” (see Chapter 14).
 
 [![](Figures/FigureS2.6_1.png)](Figures/FigureS2.6_1.png)
 
