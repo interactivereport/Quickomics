@@ -16,7 +16,7 @@ The “Dendrogram Plot” sub-tab shows how the genes are clustered by their co-
 
 [![](Figures/FigureS12.2_1.png)](Figures/FigureS12.2_1.png)
 
-The “Gene Cluster Summary Table” sub-tab lists each module with its number of genes and the genes it contains. In the demo dataset there are six modules plus 4,238 grey genes, with sizes from 79 genes in the red module to 2,569 genes in the turquoise module. For each module, “Copy all genes” copies its genes so that they can be pasted into other modules of Quickomics, and “Run ORA” runs Over-Representation Analysis on its genes (see Section 8.1). For example, the yellow module includes Xist and Tsix. “Save GCT data file to output” saves the expression data with the module of each gene, which can be downloaded from the Output module (Chapter 14).
+The “Gene Cluster Summary Table” sub-tab lists each module with its number of genes and the genes it contains. In the demo dataset there are six modules plus 4,238 grey genes, with sizes from 79 genes in the red module to 2,569 genes in the turquoise module. For each module, “Copy all genes” copies its genes so that they can be pasted into other modules of Quickomics, and “Run ORA” runs Over-Representation Analysis on its genes (see Section 8.1). For example, the yellow module includes Xist and Tsix. “Save GCT data file to output” saves the expression data with the module of each gene, which can be downloaded from the Output module (Chapter 15).
 
 [![](Figures/FigureS12.2_2.png)](Figures/FigureS12.2_2.png)
 

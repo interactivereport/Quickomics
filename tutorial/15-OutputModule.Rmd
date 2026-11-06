@@ -4,10 +4,10 @@ This final tab in Quickomics is available for Users to download plots in high re
 
 Tables and heatmap data can be saved in the same way. Tables saved with “Save to output”, for example the DEG data table, are listed under “Tables to Save” and are downloaded together as one Excel (.xlsx) file. Heatmap data saved with “Save GCT data file to output” in the Heatmap module (Chapter 6) are listed under “GCT tables to Save” and are downloaded as GCT files, which can be opened in other tools such as Morpheus. In the example below, we saved the PCA plot, a volcano plot and a heatmap, the DEG data table, and the heatmap data.
 
-[![](Figures/FigureS14_1.png)](Figures/FigureS14_1.png)
+[![](Figures/FigureS15_1.png)](Figures/FigureS15_1.png)
 
 ## Save Session
 
 “Save Session” saves the current settings of all tabs, such as the selected groups and samples, comparisons, cutoffs and plot options, so that the same analysis can be continued later. Click “Save Session”, then click “Download Session File” to download the settings as a file; the file name starts with the project name, for example Mouse_microglia_RNA-Seq_20261105_124611.rds. To continue later, open the same project and upload the file under “Restore Session from File”; Quickomics then restores the settings of all tabs. A session file can only be restored in the project it was saved from. Only the settings are saved: plots and tables saved to the Output tab are not included in the session file, so they have to be saved again after the session is restored.
 
-[![](Figures/FigureS14_2.png)](Figures/FigureS14_2.png)
+[![](Figures/FigureS15_2.png)](Figures/FigureS15_2.png)
