@@ -50,6 +50,6 @@ The order of the buttons in each “Keep” box sets the order used in plots and
 
 ## Apply changes to all modules
 
-When the selection is final, click “Apply Changes to Project Data”. The note changes to “All changes applied.”, and all other modules (QC Plots, Expression Plot, Heatmap, DEGs and so on) now use the selected groups, samples and comparisons in the selected order. Each of these modules shows the current selection at the top of its left panel, for example “Selected 61 / 93 Samples; 4 / 9 Comparisons. (Update Selection at: Top Menu → Groups and Samples.)”, and adds a red reminder when Groups and Samples has changes that are not applied yet. To start over, click “Reset All”, which restores all groups, samples and comparisons of the project.
+When the selection is final, click “Apply Changes to Project Data”. The note changes to “All changes applied.”, and all other modules (QC Plots, Expression Plot, Heatmap, DEGs and so on) now use the selected groups, samples and comparisons in the selected order.
 
 [![](Figures/FigureS3.6_1.png)](Figures/FigureS3.6_1.png)
