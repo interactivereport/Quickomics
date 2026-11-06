@@ -69,6 +69,116 @@ output$upload.message <- renderText({upload_message()})
 
 showAlert("None")
 
+#query the BioMart martservice of one Ensembl site directly (no Ensembl REST lookups as in biomaRt::useEnsembl),
+#filter values are sent in chunks of 500 like biomaRt::getBM; returns a data.frame
+martQuery <- function(host, dataset, attributes, filters=NULL, values=NULL) {
+  url <- paste0(host, "/biomart/martservice")
+  queryXML <- function(one) {
+    flt <- if (is.null(one)) "" else sprintf('<Filter name="%s" value="%s"/>', filters, paste(one, collapse=","))
+    sprintf('<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE Query><Query virtualSchemaName="default" formatter="TSV" header="1" uniqueRows="1" completionStamp="1" datasetConfigVersion="0.6"><Dataset name="%s" interface="default">%s%s</Dataset></Query>',
+            dataset, flt, paste(sprintf('<Attribute name="%s"/>', attributes), collapse=""))
+  }
+  readResp <- function(resp) {
+    httr::stop_for_status(resp)
+    lines <- strsplit(httr::content(resp, as="text", encoding="UTF-8"), "\n", fixed=TRUE)[[1]]
+    if (length(lines)==0 || lines[length(lines)]!="[success]") stop("incomplete BioMart response: ", substr(paste(lines, collapse=" "), 1, 200))
+    read.delim(text=paste(lines[-length(lines)], collapse="\n"), header=TRUE, sep="\t", quote="", comment.char="",
+               colClasses="character", na.strings="", check.names=FALSE, col.names=attributes)
+  }
+  #some archive sites lose a POSTed query behind a redirect (HTTP 405, or the martview page comes back),
+  #so the query is sent again as GET ?query=..., with fewer filter values per request to keep the URL short
+  getQuery <- function(one) {
+    sub <- if (is.null(one)) list(NULL) else split(one, ceiling(seq_along(one)/100))
+    do.call(rbind, lapply(sub, function(s) readResp(httr::GET(url, query=list(query=queryXML(s)), httr::timeout(600)))))
+  }
+  chunks <- if (is.null(filters)) list(NULL) else split(unique(values), ceiling(seq_along(unique(values))/500))
+  usePost <- TRUE
+  res <- lapply(chunks, function(one) {
+    if (usePost) {
+      out <- tryCatch(readResp(httr::POST(url, body=list(query=queryXML(one)), encode="form", httr::timeout(600))),
+                      error=function(e) {log_warn("BioMart POST query failed on ", host, ": ", conditionMessage(e), " - trying GET"); NULL})
+      if (!is.null(out)) return(out)
+      usePost <<- FALSE
+    }
+    getQuery(one)
+  })
+  res <- do.call(rbind, res)
+  if ("entrezgene_id" %in% names(res)) res$entrezgene_id <- as.integer(res$entrezgene_id)
+  return(res)
+}
+#BioMart query, retried on the Ensembl archive sites; returns NULL when the service cannot be reached
+getBM_mirrors <- function(dataset, attributes, filters, values) {
+  #www.ensembl.org moved to the new Ensembl platform (Aug 2026) without BioMart; BioMart is frozen at release 116 on the archive sites (e116, also served as the jun2026 archive); the useast/asia mirrors are retired
+  for (host in c("https://e116.ensembl.org", "https://jun2026.archive.ensembl.org")) {
+    res <- tryCatch(martQuery(host, dataset, attributes, filters, values), error=function(e) {
+      log_warn("BioMart query failed on ", host, ": ", conditionMessage(e))
+      NULL
+    })
+    if (!is.null(res)) {return(res)}
+  }
+  return(NULL)
+}
+#local backup annotation (db/GeneAnnotation_<species>.rds, built by gene_annotation_prep.R from a BioMart export)
+getBM_local <- function(species, attributes, filters, values) {
+  annot_file=str_c("db/GeneAnnotation_", species, ".rds")
+  if (!file.exists(annot_file)) {return(NULL)}
+  annot=readRDS(annot_file)
+  res=annot[annot[[filters]] %in% values, intersect(attributes, names(annot)), drop=FALSE]
+  attr(res, "ensembl_release")=attr(annot, "ensembl_release")
+  return(res)
+}
+#Gene names for the uploaded IDs: BioMart (Ensembl 116 archive), then the local backup annotation, then g:Profiler (gconvert, no gene type)
+#returns list(ProteinGeneName, note); note is "" when BioMart was used
+annotate_genes <- function(IDall, species, org, ID_type, add_description, fill_name) {
+  annot_species=ifelse(species %in% c("mouse", "rat"), species, "human")
+  dataset=c(human="hsapiens_gene_ensembl", mouse="mmusculus_gene_ensembl", rat="rnorvegicus_gene_ensembl")[annot_species]
+  EID=NULL
+  if (ID_type=="Ensembl Gene ID" ) {
+    filter_type="ensembl_gene_id"
+    IDall_old = IDall
+    IDall = stringr::str_replace(IDall, "\\.\\d+$", "")
+    EID = data.frame(IDall_old, IDall)
+  } else if (ID_type=="NCBI GeneID" ) { filter_type="entrezgene_id"
+  } else { filter_type="external_gene_name"}
+  E_attributes<-c( 'ensembl_gene_id', "external_gene_name", "gene_biotype","entrezgene_id", "chromosome_name")
+  if (add_description==1) {E_attributes<-c(E_attributes, "description") }
+  note=""
+  output<-getBM_mirrors(dataset, attributes = E_attributes, filters = filter_type, values = unique(IDall))
+  if (is.null(output)) {
+    output<-getBM_local(annot_species, attributes = E_attributes, filters = filter_type, values = unique(IDall))
+    if (!is.null(output)) {
+      note=str_c(" Note: BioMart service is unavailable, local backup annotation (Ensembl release ", attr(output, "ensembl_release"), ") was used.")
+    }
+  }
+  if (!is.null(output) && nrow(output)>0) {
+    #Favor genes on the primary assembly (not patch/haplotype scaffolds), then protein coding genes, then IDs with smaller numbers
+    if (!"chromosome_name" %in% names(output)) {output$chromosome_name=NA}
+    if (!"description" %in% names(output)) {output$description=NA}
+    output<-output%>%arrange(!grepl("^([0-9]+|X|Y|MT)$", chromosome_name), gene_biotype!="protein_coding", entrezgene_id, ensembl_gene_id)
+    output$UniqueID=as.character(output[[filter_type]])
+    ProteinGeneName<-data.frame(id=1:length(IDall), UniqueID=as.character(IDall))%>%left_join(output%>%
+                        transmute(UniqueID, Gene.Name=external_gene_name, GeneType=gene_biotype, Description=sub(" \\[.*$", "", description))%>%
+                        dplyr::filter(!duplicated(UniqueID)), by="UniqueID" )
+  } else {
+    #BioMart and the local backup gave nothing: fall back to g:Profiler, which has no gene type
+    note=str_c(" Note: BioMart and the local backup annotation are unavailable, gene names are from g:Profiler (no gene type).")
+    ProteinGeneName <- gconvert(query = unique(IDall), organism = org, target="ENSG", mthreshold = Inf, filter_na = TRUE) %>%
+      data.frame() %>%
+      transmute(UniqueID= input, Gene.Name = name, Description=sub(" \\[.*$", "", description)) %>%
+      dplyr::filter(!duplicated(UniqueID))
+    ProteinGeneName<-data.frame(id=1:length(IDall), UniqueID=as.character(IDall))%>%left_join(ProteinGeneName, by="UniqueID")
+  }
+  if (!is.null(EID)) { #map version-stripped Ensembl IDs back to the IDs in the data files
+    ProteinGeneName$UniqueID=EID$IDall_old
+  }
+  ProteinGeneName$Protein.ID=NA
+  ProteinGeneName<-ProteinGeneName%>%dplyr::select(id, UniqueID, Gene.Name, Protein.ID, dplyr::any_of("GeneType"), Description)
+  if (add_description==0) {ProteinGeneName<-ProteinGeneName%>%dplyr::select(-Description)}
+  if (fill_name==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) }
+  if (note!="") {log_warn("Upload Data:", note)}
+  return(list(ProteinGeneName=ProteinGeneName, note=note))
+}
+
 observeEvent(input$uploadData, {
   upload_message(up_message1) 
   URL_host <-(session$clientData$url_hostname)
@@ -96,6 +206,7 @@ observeEvent(input$uploadData, {
   if (length(ProjectID>45) ) {ProjectID=substr(ProjectID, 1, 45)}
   ProjectID=str_c(ProjectID,"_", stri_rand_strings(1,6) )
   log_info("Upload Data: processing submission '", Project_name, "' as project ", ProjectID)
+  annot_note=""
   #get expression data
   withProgress(message = 'Processing...', value = 0, {
     species=input$Fspecies
@@ -157,33 +268,11 @@ observeEvent(input$uploadData, {
         setProgress(0.2, detail = "Loaded Protein Names"); Sys.sleep(0.1)
       } else { #gene
         log_debug("Upload Data: converting IDs to ", species, " gene names for project ", ProjectID)
-        setProgress(0.1, detail = "Converting IDs to gene names..."); Sys.sleep(0.1)
-
-        if (input$F_ID_type=="Ensembl Gene ID" ) {
-          IDall_old = IDall
-          IDall = stringr::str_replace(IDall, "\\.\\d+$", "")
-          EID = data.frame(IDall_old, IDall)
-          
-          ProteinGeneName <- gconvert(query = EID$IDall, organism = org, target="ENSG", mthreshold = Inf, filter_na = TRUE) %>%
-            data.frame() %>% 
-            transmute(id = input_number, UniqueID= input, EnsemblID=target, Gene.Name = name, Description=sub(" \\[.*$", "", description)) %>%
-            dplyr::filter(!duplicated(UniqueID)) %>%
-            dplyr:: right_join(EID, by=c('EnsemblID' = 'IDall')) %>% 
-            dplyr::select(-c('UniqueID', 'EnsemblID')) %>% 
-            dplyr::rename(UniqueID=IDall_old) 
-        } else {
-          ProteinGeneName <- gconvert(query = IDall, organism = org, target="ENSG", mthreshold = Inf, filter_na = TRUE) %>%
-            data.frame() %>% 
-            transmute(id = input_number, UniqueID= input, EnsemblID=target, Gene.Name = name, Description=sub(" \\[.*$", "", description)) %>%
-            dplyr::filter(!duplicated(UniqueID))
-        }
-        
-        ProteinGeneName$Protein.ID=NA
-        ProteinGeneName <- ProteinGeneName %>% 
-          dplyr::select(id,UniqueID, Gene.Name, Protein.ID, Description)
-        if (input$F_description==0) {ProteinGeneName<-ProteinGeneName%>%dplyr::select(-Description)}  
-        if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
-        # browser() #bebug
+        setProgress(0.1, detail = "Connecting to BioMart, converting IDs to gene names..."); Sys.sleep(0.1)
+        annot_res <- annotate_genes(IDall, species, org, input$F_ID_type, input$F_description, input$F_fillName)
+        ProteinGeneName <- annot_res$ProteinGeneName
+        annot_note <- annot_res$note
+        if (annot_note!="") {showNotification(str_trim(annot_note), type="warning", duration=NULL)}
         setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
       }
       
@@ -262,32 +351,11 @@ observeEvent(input$uploadData, {
           setProgress(0.2, detail = "Loaded Protein Names"); Sys.sleep(0.1)
         } else { #gene
           log_debug("Upload Data: converting IDs to ", species, " gene names for project ", ProjectID)
-          setProgress(0.1, detail = "Converting IDs to gene names..."); Sys.sleep(0.1)
-          if (input$F_ID_type=="Ensembl Gene ID" ) {
-            IDall_old = IDall
-            IDall = stringr::str_replace(IDall, "\\.\\d+$", "")
-            EID = data.frame(IDall_old, IDall)
-            
-            ProteinGeneName <- gconvert(query = EID$IDall, organism = org, target="ENSG", mthreshold = Inf, filter_na = TRUE) %>%
-              data.frame() %>% 
-              transmute(id = input_number, UniqueID= input, EnsemblID=target, Gene.Name = name, Description=sub(" \\[.*$", "", description)) %>%
-              dplyr::filter(!duplicated(UniqueID)) %>%
-              dplyr:: right_join(EID, by=c('EnsemblID' = 'IDall')) %>% 
-              dplyr::select(-c('UniqueID', 'EnsemblID')) %>% 
-              dplyr::rename(UniqueID=IDall_old) 
-          } else {
-            ProteinGeneName <- gconvert(query = IDall, organism = org, target="ENSG", mthreshold = Inf, filter_na = TRUE) %>%
-              data.frame() %>% 
-              transmute(id = input_number, UniqueID= input, EnsemblID=target, Gene.Name = name, Description=sub(" \\[.*$", "", description)) %>%
-              dplyr::filter(!duplicated(UniqueID))
-          }
-          
-          ProteinGeneName$Protein.ID=NA
-          ProteinGeneName <- ProteinGeneName %>% 
-            dplyr::select(id,UniqueID, Gene.Name, Protein.ID, Description)
-          if (input$F_description==0) {ProteinGeneName<-ProteinGeneName%>%dplyr::select(-Description)}  
-          if (input$F_fillName==1) {ProteinGeneName<-ProteinGeneName%>%mutate(Gene.Name=ifelse(is.na(Gene.Name), UniqueID, Gene.Name) ) } 
-          # browser() #bebug
+          setProgress(0.1, detail = "Connecting to BioMart, converting IDs to gene names..."); Sys.sleep(0.1)
+          annot_res <- annotate_genes(IDall, species, org, input$F_ID_type, input$F_description, input$F_fillName)
+          ProteinGeneName <- annot_res$ProteinGeneName
+          annot_note <- annot_res$note
+          if (annot_note!="") {showNotification(str_trim(annot_note), type="warning", duration=NULL)}
           setProgress(0.3, detail = "Loaded Gene Names. Generate RData file..."); Sys.sleep(0.1)
         }
       }
@@ -379,7 +447,7 @@ observeEvent(input$uploadData, {
     }
     
     log_info("Upload Data: finished processing data files for project ", ProjectID)
-    up_message2=str_c("The direct URL for the uploaded dataset is: ", URL, "/?unlisted=", ProjectID)
+    up_message2=str_c("The direct URL for the uploaded dataset is: ", URL, "/?unlisted=", ProjectID, annot_note)
     upload_message(up_message2) 
     showAlert(str_c(URL, "/?unlisted=", ProjectID))
   })
