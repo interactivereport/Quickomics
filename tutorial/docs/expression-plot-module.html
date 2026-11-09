@@ -231,15 +231,19 @@
 <h2><span class="header-section-number">7.3</span> Data Table<a href="expression-plot-module.html#data-table-2" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This sub-tab lists the normalized data of the genes/proteins selected in “Searched Expression Data” (Section 7.2) as a searchable table. For a demo of this feature, we select a proteome dataset from published paper (<a href="https://www.sciencedirect.com/science/article/pii/S0969996119300968?via%3Dihub" target="_blank">Connor-Robson et al., 2019</a>).</p>
 <p><a href="Figures/FigureS7.3_1.png"><img src="Figures/FigureS7.3_1.png" /></a></p>
-<p>Once the dataset is selected, we go into the “Searched Expression Data” sub-tab to select a gene set.</p>
+<p>Once the dataset is selected, we go into the “Searched Expression Data” sub-tab to select a gene set. We chose “Geneset” and clicked “Select Geneset”; in the dialog, we set the species to Homo sapiens, searched for “kinase”, sorted the gene sets by Count in ascending order, and selected the first one, phosphatidylinositol bisphosphate kinase activity (<a href="GO:0052813" class="uri">GO:0052813</a>, 10 genes). Six of its genes are found in the dataset, and after clicking “Plot/Refresh” their expression is shown for each group. Several of these kinase genes, such as PIK3CA, PIK3CD and PIP5K1C, are lower in the disease samples than in the controls.</p>
 <p><a href="Figures/FigureS7.3_2.png"><img src="Figures/FigureS7.3_2.png" /></a></p>
-<p>Finally, we click the “Data Table” tab to look at the expression of the protein selected for a searchable table of values.</p>
+<p>Finally, we click the “Data Table” tab to look at the expression of the protein selected for a searchable table of values. The “Table Format” option in the left panel shows the table in wide or long format. In the default wide format, each row is one gene/protein and each sample is a column, so the table has 6 rows, followed by one column for each of the 76 samples; scroll to the right to see all of them.</p>
 <p><a href="Figures/FigureS7.3_3.png"><img src="Figures/FigureS7.3_3.png" /></a></p>
+<p>In the long format, each row is one gene/protein in one sample, so the 6 proteins and 76 samples give 456 rows. Each row also lists the sample information, such as Sex and TimePoint, the expression value (expr) and the group of the sample. This format is convenient for filtering and plotting the values in other software.</p>
+<p><a href="Figures/FigureS7.3_4.png"><img src="Figures/FigureS7.3_4.png" /></a></p>
 </div>
 <div id="result-table-1" class="section level2 hasAnchor" number="7.4">
 <h2><span class="header-section-number">7.4</span> Result Table<a href="expression-plot-module.html#result-table-1" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>This tab lists the statistics results of the genes/proteins selected in “Searched Expression Data” as a searchable table. Each comparison defined is probed for the genes in the list and the P value and Fold changes are listed. This is specifically designed for the gene values, unlike “Data Table” in the previous section (7.3) that is designed for protein values.</p>
+<p>This tab lists the statistics results of the genes/proteins selected in “Searched Expression Data” as a searchable table. Each comparison defined is probed for the genes in the list and the P value and Fold changes are listed. While the “Data Table” (Section 7.3) lists the expression value of each sample, this table lists the comparison results. The same “Table Format” option applies. In the wide format, each row is one gene/protein, and each comparison has three columns, for logFC, P value and adjusted P value. In the example below, the two comparisons of the dataset, DiseaseD35vsCtlD35 and DiseaseD56vsCtlD56, give six columns. PIP5K1A has no comparison results, so its cells are empty.</p>
 <p><a href="Figures/FigureS7.4_1.png"><img src="Figures/FigureS7.4_1.png" /></a></p>
+<p>In the long format, each row is one gene/protein in one comparison, and the “test” column gives the comparison name. The 6 proteins and 2 comparisons give 12 rows.</p>
+<p><a href="Figures/FigureS7.4_2.png"><img src="Figures/FigureS7.4_2.png" /></a></p>
 </div>
 <div id="rank-abundance-curve" class="section level2 hasAnchor" number="7.5">
 <h2><span class="header-section-number">7.5</span> Rank Abundance Curve<a href="expression-plot-module.html#rank-abundance-curve" class="anchor-section" aria-label="Anchor link to header"></a></h2>
