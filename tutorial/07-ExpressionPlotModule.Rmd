@@ -38,7 +38,7 @@ In the long format, each row is one gene/protein in one sample, so the 6 protein
 
 ## Result Table
 
-This tab lists the statistics results of the genes/proteins selected in “Searched Expression Data” as a searchable table. Each comparison defined is probed for the genes in the list and the P value and Fold changes are listed. While the “Data Table” (Section 7.3) lists the expression value of each sample, this table lists the comparison results. The same “Table Format” option applies. In the wide format, each row is one gene/protein, and each comparison has three columns, for logFC, P value and adjusted P value. In the example below, the two comparisons of the dataset, DiseaseD35vsCtlD35 and DiseaseD56vsCtlD56, give six columns. PIP5K1A has no comparison results, so its cells are empty.
+This tab lists the statistics results of the genes/proteins selected in “Searched Expression Data” as a searchable table. Each comparison defined is probed for the genes in the list and the P value and Fold changes are listed. While the “Data Table” (Section 7.3) lists the expression value of each sample, this table lists the comparison results. The same “Table Format” option applies. In the wide format, each row is one gene/protein, and each comparison has three columns, for logFC, P value and adjusted P value. In the example below, the two comparisons of the dataset, DiseaseD35vsCtlD35 and DiseaseD56vsCtlD56, give six columns. PIP5K1A has no comparison results in this dataset, so its cells are empty.
 
 [![](Figures/FigureS7.4_1.png)](Figures/FigureS7.4_1.png)
 
