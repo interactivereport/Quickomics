@@ -58,6 +58,14 @@ observeEvent(input$exp_unit, {
   Eu=input$exp_unit; exp_unit(Eu)
 })
 
+# Put the "Expression Data Units" box back to its start-up value whenever a new
+# project starts loading, so a unit from the previous project (e.g. +0.25) is not
+# reused by a project that has no unit of its own (e.g. the demo projects).
+# Loaders that know the project's unit set it right after this.
+reset_exp_unit <- function() {
+  updateTextInput(session, "exp_unit", value = "Expression Level")
+}
+
 # Loads a project from one of the raw URL query-string parameters below.
 # Factored out (rather than left inline in the observe() below) so
 # app.R's onRestored() can also call it directly -- project/unlisted/
@@ -82,6 +90,7 @@ observeEvent(input$exp_unit, {
 # return FALSE, so the next source in auto_source_priority can be tried.
 load_project_from_query <- function(key, ProjectID, auto = FALSE) {
   if (!auto) mark_project_start(ProjectID)
+  reset_exp_unit()
   log_debug("load_project_from_query: key=", key, " ProjectID=", ProjectID, if (auto) " (auto)")
   if (key == 'project') {
     if (!(ProjectID %in% saved_projects$ProjectID)) {
@@ -289,6 +298,7 @@ observe({
   if (input$sel_project!="") {
     ProjectID=input$sel_project
     mark_project_start(ProjectID)
+    reset_exp_unit()
     ProjectInfo$ProjectID=ProjectID
     ProjectInfo$Name=saved_projects$Name[saved_projects$ProjectID==ProjectID]
     ProjectInfo$Species=saved_projects$Species[saved_projects$ProjectID==ProjectID]
@@ -370,6 +380,7 @@ output$ui.action <- renderUI({
 observeEvent(input$customData, {  
   ProjectInfo$ProjectID=str_replace(input$file1$name,  regex(".RData", ignore_case = TRUE), "")
   mark_project_start(ProjectInfo$ProjectID)
+  reset_exp_unit()
   ProjectInfo$Name=input$project_name
   ProjectInfo$Species=input$species
   ProjectInfo$ShortName=input$project_name

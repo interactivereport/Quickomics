@@ -288,6 +288,7 @@ observeEvent(input$uploadData, {
                                    ProjectID, Species=species)
       write.csv(unlisted_project, str_c("unlisted/", ProjectID, ".csv") )
       unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
+      reset_exp_unit()
       ProjectInfo$ProjectID=ProjectID
       ProjectInfo$Name=unlisted_project$Name
       ProjectInfo$Species=unlisted_project$Species
@@ -437,6 +438,7 @@ observeEvent(input$uploadData, {
                                    ProjectID, Species=species)
       write.csv(unlisted_project, str_c("unlisted/", ProjectID, ".csv") )
       unlisted_project=read.csv(str_c("unlisted/", ProjectID, ".csv"))
+      reset_exp_unit()
       ProjectInfo$ProjectID=ProjectID
       ProjectInfo$Name=unlisted_project$Name
       ProjectInfo$Species=unlisted_project$Species
