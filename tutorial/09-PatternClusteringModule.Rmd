@@ -1,6 +1,6 @@
 # Pattern Clustering Module
 
-This functional module in Quickomics helps cluster genes/proteins based on their expression profiles across different groups. Three different algorithms, soft (fuzzy) clustering, k-means and partitioning around medoids (PAM), are implemented.
+This functional module in Quickomics helps cluster genes/proteins based on their expression profiles across different groups. Two different algorithms, soft (fuzzy) clustering and k-means, are implemented.
 
 ## Clustering of Centroid Profiles
 
