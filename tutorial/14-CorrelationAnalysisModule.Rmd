@@ -22,6 +22,10 @@ Clicking a row in the table shows the gene in the “Gene-Target Plot” tab. Ea
 
 [![](Figures/FigureS14.2_2.png)](Figures/FigureS14.2_2.png)
 
-With “Compute separately for each level of”, the correlation is computed separately within each level of another attribute, and the table gets one set of columns per level. The “Correlation Heatmap” tab then shows the correlations of the top genes, one column per level, with red for positive and blue for negative correlations; the number of genes is set with “Top genes to show”. In the example below, we computed the correlation with Age separately for each genotype. The top 30 genes have the same direction in Het, KO and WT, so their change with age does not depend on the genotype.
+With “Compute separately for each level of”, the correlation is computed separately within each level of another attribute, and the table gets one set of columns per level. In the example below, we computed the correlation with Age separately for each genotype. For each genotype, Het, KO and WT, the table gives the correlation of each gene with Age (r), its P value, adjusted P value and number of samples (n). max_abs_r is the largest absolute correlation of the three, and the table is sorted by it. For example, the top gene, Rxrg, has correlations of 0.921 in Het, 0.943 in KO and 0.892 in WT.
 
 [![](Figures/FigureS14.2_3.png)](Figures/FigureS14.2_3.png)
+
+The “Correlation Heatmap” tab then shows the correlations of the top genes in the table, one column per level, with red for positive and blue for negative correlations; the number of genes is set with “Top genes to show”. The heatmap follows the order of the table, so sorting the table by the column of one genotype, such as WT_r, shows the top genes of that genotype instead. Below are the 30 genes with the highest max_abs_r. The top 30 genes have the same direction in Het, KO and WT, so their change with age does not depend on the genotype.
+
+[![](Figures/FigureS14.2_4.png)](Figures/FigureS14.2_4.png)
