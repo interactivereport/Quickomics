@@ -80,6 +80,7 @@ correlation-analysis-module
 gene-gene-sample-sample-and-group-group
 gene-target
 output-module
+download-plots-and-tables
 save-session
 faq
 references
