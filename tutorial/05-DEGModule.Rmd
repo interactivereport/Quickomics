@@ -24,7 +24,7 @@ For demonstration purposes, we have changed the following attributes to highligh
 
 [![](Figures/FigureS5.2_3.png)](Figures/FigureS5.2_3.png)
 
-A set of genes can also be shown in a different color. Select “Yes” under “Highlight a Set of Genes in a Different Color?”, enter the genes to highlight, choose their color, and enter the genes from this list that should be labeled; genes entered in the label box are always labeled. Then click “Apply Highlight”. The highlight list and labels work separately from “Label Genes”, so in the example below we set “Label Genes” to “None” and highlighted five genes that are significantly changed in the 1yr_Hetvs1yr_WT comparison: Prkcq, Unc13b, Galnt6, Phldb1 and Gm32591. In 2mo_Hetvs2mo_WT, none of them pass the cutoffs, so they are among the grey dots. Genes can also be sent to this list from the interactive volcano plot (Section 5.3).
+A set of genes can also be shown in a different color, in addition to the labeled DEGs. In the example below, we kept the default settings, so the top DEGs of 2mo_Hetvs2mo_WT are labeled in blue. We then set “Highlight a Set of Genes in a Different Color?” to “Yes” and pasted genes that are significantly changed in the 2yr_Hetvs2yr_WT comparison into “Enter Gene List to Highlight”, chose black as their color, and, for demonstration purposes, entered seven of them in the box below to label them: Cp, Acsf3, Birc5, Cdkl3, Mapk8, Lmnb1 and Gbgt1. Genes entered in this label box are always labeled. After clicking “Apply Highlight”, the highlighted genes are shown as black dots and the seven genes are labeled in black. None of them pass the cutoffs in 2mo_Hetvs2mo_WT, so the black dots are among the grey dots near the bottom of the plot. Genes can also be sent to the highlight list from the interactive volcano plot (Section 5.3).
 
 [![](Figures/FigureS5.2_4.png)](Figures/FigureS5.2_4.png)
 
@@ -32,7 +32,7 @@ Under “Show More Options”, “Rasterize plot” draws the dots as a bitmap i
 
 ## Volcano Plot (Interactive)
 
-This next sub-tab is a very similar visualization as the previous one (5.2 Volcano Plot (Static)) with an additional capability where users can hover over a particular dot/gene on the plot to see more details. This plot has a few attributes that can be changed, and in the example below we have used the same cutoffs as in Section 5.2.
+This next sub-tab is a very similar visualization as the previous one (5.2 Volcano Plot (Static)) with an additional capability where users can hover over a particular dot/gene on the plot to see the gene name and ID. This plot has a few attributes that can be changed, and in the example below we have used the same cutoffs as in Section 5.2.
 
 [![](Figures/FigureS5.3_1.png)](Figures/FigureS5.3_1.png)
 
@@ -42,17 +42,17 @@ Genes can also be selected directly on the plot. Choose the lasso or box-select 
 
 ## DEGs and DEPs in Two Comparisons
 
-This next tab helps with identifying DEGs/DEPs that follow a similar trend in two comparisons. [Gyoneva et al., 2019](https://www.life-science-alliance.org/content/2/6/e201900453){target="_blank"}, the source of this demo dataset, report that the genes differentially expressed in **Cx3cr1 KO** microglia in the **2mo KO** are quite different from WT, while the differences from WT are smaller for the 1yr KO and 2yr KO, and the two older ages are similar to each other. We have plotted out the following comparisons that illustrate this conclusion.
+This next tab helps with identifying DEGs/DEPs that follow a similar trend in two comparisons. [Gyoneva et al., 2019](https://www.life-science-alliance.org/content/2/6/e201900453){target="_blank"}, the source of this demo dataset, report that the genes differentially expressed in Cx3cr1 KO microglia in the 2mo KO are quite different from WT, while the differences from WT are smaller for the 1yr KO and 2yr KO, and the two older ages are similar to each other. We have plotted out the following comparisons that illustrate this conclusion.
 
-**2mo_KOvs2mo_WT** vs **1yr_KOvs1yr_WT** has a low correlation score of 0.211. There are many genes that are colored orange, meaning those genes were significant in **2mo_KOvs2mo_WT (Y axis)** but not in **1yr_KOvs1yr_WT (X axis)**.
+2mo_KOvs2mo_WT vs 1yr_KOvs1yr_WT has a low correlation score of 0.211. There are many genes that are colored orange, meaning those genes were significant in 2mo_KOvs2mo_WT (Y axis) but not in 1yr_KOvs1yr_WT (X axis).
 
 [![](Figures/FigureS5.4_1.png)](Figures/FigureS5.4_1.png)
 
-Similarly, we changed the X axis to **2yr_KOvs2yr_WT** to compare to **2mo_KOvs2mo_WT**, and it shows a very similar plot with a low correlation score of 0.178.
+Similarly, we changed the X axis to 2yr_KOvs2yr_WT to compare to 2mo_KOvs2mo_WT, and it shows a very similar plot with a low correlation score of 0.178.
 
 [![](Figures/FigureS5.4_2.png)](Figures/FigureS5.4_2.png)
 
-Next, we changed the Y axis comparison to **1yr_KOvs1yr_WT** comparing it to **2yr_KOvs2yr_WT** on the X axis. This plot has a higher correlation score of 0.348 than the previous one, suggesting that these two comparisons are more similar. These comparisons represent additional insights supported by statistical analyses that were gained from the data and were not available in the original manuscript by Gyoneva et al.
+Next, we changed the Y axis comparison to 1yr_KOvs1yr_WT comparing it to 2yr_KOvs2yr_WT on the X axis. This plot has a higher correlation score of 0.348 than the previous one, suggesting that these two comparisons are more similar. These comparisons represent additional insights supported by statistical analyses that were gained from the data and were not available in the original manuscript by Gyoneva et al.
 
 [![](Figures/FigureS5.4_3.png)](Figures/FigureS5.4_3.png)
 
@@ -60,7 +60,7 @@ Under “Show More Options”, “Color DEGs using dot color?” sets whether th
 
 ## Data Table
 
-This tab lets the users view the DEGs/DEPs in a tabular format with a searchable feature. Users also have the ability to download the gene list as a CSV.
+This tab lets the users view the DEGs/DEPs in a tabular format with a searchable feature. Users can sort and search the table, download the current page as CSV or Excel, print it, or save the whole table with “Save to output”.
 
 [![](Figures/FigureS5.5_1.png)](Figures/FigureS5.5_1.png)
 
