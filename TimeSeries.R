@@ -468,7 +468,7 @@ TimeSeries_ui <- function(id) {
                               tags$hr()
              ),
              conditionalPanel(ns = ns, "input.TimeSeries_tabset =='Time-Series DE Analysis' || input.TimeSeries_tabset =='DEG Clustering Analysis' || input.TimeSeries_tabset =='Similar Pattern Search'",
-                              sliderInput(ns("padjCutoff"), label="Set the Adjusted p-value Cutoff:", min = 0, max = 1, step = 0.01, value = 0.05),
+                              sliderInput(ns("padjCutoff"), label="Set the Adjusted p-value Cutoff:", min = 0, max = 1, step = 0.01, value = 0.1),
                               sliderInput(ns("top_n"), label="Select Number of Top DEGs for Clustering", min = 300, max = 1500, step = 100, value = 1000),
                               span(textOutput(ns("filtered_DEG")), style = "color:blue; font-size:15px; font-family:arial; font-style:italic")
              ),
@@ -477,11 +477,11 @@ TimeSeries_ui <- function(id) {
                               selectizeInput(ns("sim_gene"), label="Gene to Match", choices=NULL, multiple=FALSE,
                                              options = list(placeholder = "Type to search")),
                               radioButtons(ns("sim_pool"), label="Search Among", inline = TRUE,
-                                           choices = c("All tested genes" = "all", "Time-series DEGs above" = "deg"), selected = "all"),
+                                           choices = c("All tested genes" = "all", "Time-series DEGs above" = "deg"), selected = "deg"),
                               radioButtons(ns("sim_direction"), label="Find", inline = TRUE,
                                            choices = c("Similar pattern" = "similar", "Opposite pattern" = "opposite"), selected = "similar"),
                               radioButtons(ns("sim_method"), label="Similarity", inline = TRUE,
-                                           choices = c("Kendall" = "kendall", "Pearson" = "pearson", "Spearman" = "spearman"), selected = "kendall"),
+                                           choices = c("Kendall" = "kendall", "Pearson" = "pearson", "Spearman" = "spearman"), selected = "pearson"),
                               sliderInput(ns("sim_top_n"), label="Number of Similar Genes to List", min = 10, max = 500, step = 10, value = 50),
                               sliderInput(ns("sim_plot_n"), label="Number of Top Similar Genes to Plot", min = 1, max = 100, step = 1, value = 10),
                               radioButtons(ns("sim_plot_scale"), label="Plot Scale", inline = TRUE,
@@ -562,7 +562,7 @@ TimeSeries_ui <- function(id) {
                                            tags$strong("The p-values describe the gene's whole trend, not a single fold change.")),
                                     tags$p(tags$strong("1. Data Type / Method (option on the left):")),
                                     tags$ul(
-                                      tags$li(tags$strong("RNA-seq counts (DESeq2 LRT):"), " the project's log values (e.g. log2 TPM) are converted back to the linear scale (e.g. TPM), rounded to whole numbers and treated as counts, since raw counts are not available in the project; DESeq2's likelihood ratio test (LRT) then compares the two models. For RNA-seq data; because the input is TPM rather than real counts, p-values are approximate. Columns: baseMean (mean of the normalized values), stat (LRT chi-square), pvalue, padj."),
+                                      tags$li(tags$strong("RNA-seq counts (DESeq2 LRT):"), " the project's log values (e.g. log2 TPM) are converted back to the linear scale (e.g. TPM), rounded to whole numbers and treated as counts, since raw counts are not available in the project; DESeq2's likelihood ratio test (LRT) then compares the two models. For RNA-seq data; because the input is TPM rather than real counts, p-values are approximate. Columns: baseMean (mean of the normalized values), stat (LRT chi-square), pvalue, padj. padj uses DESeq2 independent filtering with alpha set to the Adjusted p-value Cutoff, as DESeq2 recommends; low-count genes it filters out get padj = NA. Moving the slider recomputes padj without rerunning the test."),
                                       tags$li(tags$strong("Continuous log values (limma F-test):"), " the same two models are compared with limma's moderated F-test (eBayes with intensity trend) on the project's log values. For proteomics, microarray, metabolomics or other normalized log-scale data; it can also be used on RNA-seq log values (limma-trend). Columns: AveExpr (mean log expression), F, pvalue, padj. ",
                                               "Missing values are kept as missing; genes/proteins with fewer than the set number of values in any condition x time group (or missing in any sample of a smaller group) are left out, so every group mean exists for clustering and Similar Pattern Search.")
                                     ),
@@ -678,8 +678,8 @@ TimeSeries_ui <- function(id) {
                                     style = "padding: 15px; background-color: #f4faf6; border-left: 5px solid #28a745; margin-top: 10px;",
                                     tags$p("Finds genes whose expression changes over time the same way (or the opposite way) as the seed gene (the gene chosen in Gene to Match). Run the Time-Series DE Analysis first; this uses its samples, time variable and last Condition Variable."),
                                     tags$p("Each gene's expression (VST or log values) is averaged per time point, or per condition and time point when a Condition Variable is selected (the same profile DEG Clustering uses), then every gene's profile is correlated with the seed gene's profile. ",
-                                           tags$strong("Kendall"), " (default) only looks at the up/down ordering, the same similarity DEG Clustering uses, so expression level and fold-change size do not matter. ",
-                                           tags$strong("Pearson"), " also rewards similar relative step sizes. With few time points Kendall has many ties; ties are broken by Pearson r."),
+                                           tags$strong("Pearson"), " (default) also rewards similar relative step sizes, so a nearly flat, low-expression gene cannot match well just by chance ordering. ",
+                                           tags$strong("Kendall"), " only looks at the up/down ordering, the same similarity DEG Clustering uses, so expression level and fold-change size do not matter; with only a few group means, flat noisy genes can reach r = 1 by chance. With few time points Kendall has many ties; ties are broken by Pearson r."),
                                     tags$p("Without a Condition Variable (Time only test), the profile is the time-point means T1..Tn. With a condition selected, the profile covers every condition (e.g. Ctrl T1..Tn then Treated T1..Tn), so a match must follow the seed gene in each condition; this also applies to a Time only test run with a condition selected."),
                                     tags$p(tags$strong("change_distance"), " measures how close the size of the gene's changes is to the seed gene's (log2 scale, lower = closer). Both profiles are centred on their own mean, which removes expression level; change_distance is the root mean square of the differences between the two centred profiles:"),
                                     tags$ul(
@@ -692,11 +692,13 @@ TimeSeries_ui <- function(id) {
                                     tags$ol(
                                       tags$li("Shape: keep genes with r close to 1 (e.g. 0.9 or higher; close to -1 for an Opposite search)."),
                                       tags$li("Size of change: among those, prefer a small change_distance. change_distance is how far the gene's centred profile is from the seed gene's, so a larger value means it is further from the seed gene."),
-                                      tags$li("Evidence: check DE_padj. A gene with a small DE_padj really changes over time; a large DE_padj means its profile may be noise even if it matches well."),
+                                      tags$li("Evidence: check DE_padj. A gene with a small DE_padj really changes over time; a large DE_padj means its profile may be noise even if it matches well. ",
+                                              "A blank DE_padj (DESeq2 only) means the gene was tested but DESeq2's independent filtering set it aside for its low mean count at the current Adjusted p-value Cutoff, so it has no adjusted p-value; check DE_pvalue (the raw p-value) instead."),
                                       tags$li("Abundance: check baseMean (DESeq2) or AveExpr (limma). Very low values are noisier."),
                                       tags$li("Search Among Time-series DEGs only to apply the DE filter automatically, then use the table's column sorting and search box, Copy seed + selected genes, or Create Expression Plot.")
                                     ),
-                                    tags$p(tags$strong("Search Among:"), " all genes tested in the DE run, or only the Time-series DEGs passing the cutoffs above. Each gene's DE padj is shown for reference."),
+                                    tags$p(tags$strong("Search Among:"), " the Time-series DEGs passing the cutoffs above (default), or all genes tested in the DE run. All tested genes is for exploring; its top matches can include genes that are not DEGs. Each gene's DE padj and raw p-value (DE_pvalue) are shown for reference."),
+                                    tags$p(tags$strong("Similarity vs. the DE test:"), " the match compares the whole condition x time profile, which is usually dominated by the time trend that all conditions share. With the Time x Condition test, a DEG is a gene whose time trend differs between conditions. So a gene can match a seed DEG very closely because it follows the same time course, yet not be a DEG itself if its trend is the same in every condition. To find genes with the same condition-specific difference, search among the Time-series DEGs; to match only the time course, use the Time only test."),
                                     tags$p(tags$strong("Expression used:"), " VST for the DESeq2 method, the project's own log values for the limma method."),
                                     tags$p(tags$strong("VST"), " (variance stabilizing transformation, DESeq2::vst) puts count-like values on a log2-like scale: the app's log values (e.g. log2 TPM) are converted back to the linear scale (e.g. TPM), rounded and treated as counts (raw counts are not available), normalized with DESeq2 size factors, and transformed with vst(blind = TRUE). For moderate and high values VST is close to log2 of the normalized values; for low values it shrinks values together so noisy low-expression genes do not swing widely. Differences of 1 are therefore about a 2-fold change, and changes of low-expression genes are slightly compressed. The group means in the plot and in change_distance are VST means.")
                                   )
@@ -881,12 +883,34 @@ TimeSeries_server <- function(id, parent_session) {
                    })
                  })
                  
+                 # DE results table at the current Adjusted p-value Cutoff. For
+                 # DESeq2, padj is recomputed from the stored fit with alpha set
+                 # to the cutoff, as DESeq2 recommends (?results: "If the adjusted
+                 # p-value cutoff (FDR) will be a value other than 0.1, alpha
+                 # should be set to that value"); alpha tunes independent
+                 # filtering, so padj and the NA-filtered genes depend on it.
+                 # Only results() is rerun, not the LRT fit. limma has no alpha.
+                 ts_results <- reactive({
+                   req(DEGReactive())
+                   res <- DEGReactive()
+                   req(identical(res$status, "success"))
+                   if (identical(res$method, "deseq2") && !is.null(res$dds)) {
+                     alpha <- suppressWarnings(as.numeric(input$padjCutoff))
+                     if (is.na(alpha)) alpha <- 0.1
+                     # results() needs 0 < alpha < 1.
+                     alpha <- min(max(alpha, 0.001), 0.999)
+                     as.data.frame(results(res$dds, alpha = alpha))
+                   } else {
+                     res$results
+                   }
+                 })
+
                  filtered_DE <- reactive({
                    req(DEGReactive())
                    res <- DEGReactive()
                    
                    if (res$status == "success") {
-                     df<- res$results %>%
+                     df<- ts_results() %>%
                        data.frame() %>%
                        rownames_to_column("gene") %>%
                        as_tibble() %>%
@@ -1212,13 +1236,14 @@ TimeSeries_server <- function(id, parent_session) {
                      }
                      sim <- find_similar_genes(prof$profiles, anchor, method = input$sim_method,
                                                direction = input$sim_direction, candidates = candidates)
-                     lrt <- res$results
+                     lrt <- ts_results()
                      ProteinGeneName <- DataQCReactive()$ProteinGeneName
                      sim <- sim %>%
                        dplyr::mutate(Gene.Name = ProteinGeneName$Gene.Name[match(UniqueID, ProteinGeneName$UniqueID)],
                                      DE_padj = lrt[UniqueID, "padj"],
+                                     DE_pvalue = lrt[UniqueID, "pvalue"],
                                      mean_expr = lrt[UniqueID, res$mean_col]) %>%
-                       dplyr::select(rank, UniqueID, Gene.Name, r, pearson_r, change_distance, DE_padj, mean_expr) %>%
+                       dplyr::select(rank, UniqueID, Gene.Name, r, pearson_r, change_distance, DE_padj, DE_pvalue, mean_expr) %>%
                        dplyr::left_join(res$time_range, by = "UniqueID") %>%
                        head(ts_pos_int(input$sim_top_n, 50))
                      # With Pearson as the method, r already is the Pearson r;
