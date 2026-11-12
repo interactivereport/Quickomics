@@ -22,7 +22,7 @@
 
 
 
-<meta name="date" content="2026-11-06" />
+<meta name="date" content="2026-11-11" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -144,8 +144,8 @@
 </ul></li>
 <li class="chapter" data-level="8" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html"><i class="fa fa-check"></i><b>8</b> Gene Set Enrichment Module</a>
 <ul>
-<li class="chapter" data-level="8.1" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#over-representation-analysis-ora"><i class="fa fa-check"></i><b>8.1</b> Over-Representation Analysis (ORA)</a></li>
-<li class="chapter" data-level="8.2" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-set-enrichment-analysis-gsea"><i class="fa fa-check"></i><b>8.2</b> Gene Set Enrichment Analysis (GSEA)</a></li>
+<li class="chapter" data-level="8.1" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-set-enrichment-analysis-gsea"><i class="fa fa-check"></i><b>8.1</b> Gene Set Enrichment Analysis (GSEA)</a></li>
+<li class="chapter" data-level="8.2" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#over-representation-analysis-ora"><i class="fa fa-check"></i><b>8.2</b> Over-Representation Analysis (ORA)</a></li>
 <li class="chapter" data-level="8.3" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-expression"><i class="fa fa-check"></i><b>8.3</b> Gene Expression</a></li>
 <li class="chapter" data-level="8.4" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-set-heat-map"><i class="fa fa-check"></i><b>8.4</b> Gene Set Heat Map</a></li>
 <li class="chapter" data-level="8.5" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#kegg-pathway-view"><i class="fa fa-check"></i><b>8.5</b> KEGG Pathway View</a></li>
@@ -189,7 +189,8 @@
 </ul></li>
 <li class="chapter" data-level="15" data-path="output-module.html"><a href="output-module.html"><i class="fa fa-check"></i><b>15</b> Output Module</a>
 <ul>
-<li class="chapter" data-level="15.1" data-path="output-module.html"><a href="output-module.html#save-session"><i class="fa fa-check"></i><b>15.1</b> Save Session</a></li>
+<li class="chapter" data-level="15.1" data-path="output-module.html"><a href="output-module.html#download-plots-and-tables"><i class="fa fa-check"></i><b>15.1</b> Download Plots and Tables</a></li>
+<li class="chapter" data-level="15.2" data-path="output-module.html"><a href="output-module.html#save-session"><i class="fa fa-check"></i><b>15.2</b> Save Session</a></li>
 </ul></li>
 <li class="chapter" data-level="16" data-path="faq.html"><a href="faq.html"><i class="fa fa-check"></i><b>16</b> FAQ</a></li>
 <li class="chapter" data-level="17" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>17</b> References</a></li>
@@ -214,7 +215,7 @@
             <section class="normal" id="section-">
 <div id="pattern-clustering-module" class="section level1 hasAnchor" number="9">
 <h1><span class="header-section-number">Chapter 9</span> Pattern Clustering Module<a href="pattern-clustering-module.html#pattern-clustering-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
-<p>This functional module in Quickomics helps cluster genes/proteins based on their expression profiles across different groups. Three different algorithms, soft (fuzzy) clustering, k-means and partitioning around medoids (PAM), are implemented.</p>
+<p>This functional module in Quickomics helps cluster genes/proteins based on their expression profiles across different groups. Two different algorithms, soft (fuzzy) clustering and k-means, are implemented.</p>
 <div id="clustering-of-centroid-profiles" class="section level2 hasAnchor" number="9.1">
 <h2><span class="header-section-number">9.1</span> Clustering of Centroid Profiles<a href="pattern-clustering-module.html#clustering-of-centroid-profiles" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Users have the option to either select the DEGs/DEPS as the list of genes/proteins to cluster based off on or upload a custom gene list. DEGs/DEPs can be selected from one comparison or from all comparisons, and cutoffs can be applied to limit the number of genes. Users also choose the sample attribute to plot, how the expression values are transformed before clustering (“Cluster On”, described in the guide above the plot), and the order of the groups; then click “Plot/Refresh”. In this example below, we select the DEGs/DEPs from all comparisons with a Fold Change cutoff of 3 and a P value cutoff of 0.01, which gives 177 genes, and identify 6 clusters of genes.</p>

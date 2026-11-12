@@ -22,7 +22,7 @@
 
 
 
-<meta name="date" content="2026-11-06" />
+<meta name="date" content="2026-11-11" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -144,8 +144,8 @@
 </ul></li>
 <li class="chapter" data-level="8" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html"><i class="fa fa-check"></i><b>8</b> Gene Set Enrichment Module</a>
 <ul>
-<li class="chapter" data-level="8.1" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#over-representation-analysis-ora"><i class="fa fa-check"></i><b>8.1</b> Over-Representation Analysis (ORA)</a></li>
-<li class="chapter" data-level="8.2" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-set-enrichment-analysis-gsea"><i class="fa fa-check"></i><b>8.2</b> Gene Set Enrichment Analysis (GSEA)</a></li>
+<li class="chapter" data-level="8.1" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-set-enrichment-analysis-gsea"><i class="fa fa-check"></i><b>8.1</b> Gene Set Enrichment Analysis (GSEA)</a></li>
+<li class="chapter" data-level="8.2" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#over-representation-analysis-ora"><i class="fa fa-check"></i><b>8.2</b> Over-Representation Analysis (ORA)</a></li>
 <li class="chapter" data-level="8.3" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-expression"><i class="fa fa-check"></i><b>8.3</b> Gene Expression</a></li>
 <li class="chapter" data-level="8.4" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#gene-set-heat-map"><i class="fa fa-check"></i><b>8.4</b> Gene Set Heat Map</a></li>
 <li class="chapter" data-level="8.5" data-path="gene-set-enrichment-module.html"><a href="gene-set-enrichment-module.html#kegg-pathway-view"><i class="fa fa-check"></i><b>8.5</b> KEGG Pathway View</a></li>
@@ -189,7 +189,8 @@
 </ul></li>
 <li class="chapter" data-level="15" data-path="output-module.html"><a href="output-module.html"><i class="fa fa-check"></i><b>15</b> Output Module</a>
 <ul>
-<li class="chapter" data-level="15.1" data-path="output-module.html"><a href="output-module.html#save-session"><i class="fa fa-check"></i><b>15.1</b> Save Session</a></li>
+<li class="chapter" data-level="15.1" data-path="output-module.html"><a href="output-module.html#download-plots-and-tables"><i class="fa fa-check"></i><b>15.1</b> Download Plots and Tables</a></li>
+<li class="chapter" data-level="15.2" data-path="output-module.html"><a href="output-module.html#save-session"><i class="fa fa-check"></i><b>15.2</b> Save Session</a></li>
 </ul></li>
 <li class="chapter" data-level="16" data-path="faq.html"><a href="faq.html"><i class="fa fa-check"></i><b>16</b> FAQ</a></li>
 <li class="chapter" data-level="17" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i><b>17</b> References</a></li>
@@ -228,8 +229,10 @@
 <p><a href="Figures/FigureS14.2_1.png"><img src="Figures/FigureS14.2_1.png" /></a></p>
 <p>Clicking a row in the table shows the gene in the “Gene-Target Plot” tab. Each dot is a sample, and the line shows the trend. Crlf2 increases steadily from 2mo to 1yr to 2yr, with a Spearman correlation of 0.94.</p>
 <p><a href="Figures/FigureS14.2_2.png"><img src="Figures/FigureS14.2_2.png" /></a></p>
-<p>With “Compute separately for each level of”, the correlation is computed separately within each level of another attribute, and the table gets one set of columns per level. The “Correlation Heatmap” tab then shows the correlations of the top genes, one column per level, with red for positive and blue for negative correlations; the number of genes is set with “Top genes to show”. In the example below, we computed the correlation with Age separately for each genotype. The top 30 genes have the same direction in Het, KO and WT, so their change with age does not depend on the genotype.</p>
+<p>With “Compute separately for each level of”, the correlation is computed separately within each level of another attribute, and the table gets one set of columns per level. In the example below, we computed the correlation with Age separately for each genotype. For each genotype, Het, KO and WT, the table gives the correlation of each gene with Age (r), its P value, adjusted P value and number of samples (n). max_abs_r is the largest absolute correlation of the three, and the table is sorted by it. For example, the top gene, Rxrg, has correlations of 0.921 in Het, 0.943 in KO and 0.892 in WT.</p>
 <p><a href="Figures/FigureS14.2_3.png"><img src="Figures/FigureS14.2_3.png" /></a></p>
+<p>The “Correlation Heatmap” tab then shows the correlations of the top genes in the table, one column per level, with red for positive and blue for negative correlations; the number of genes is set with “Top genes to show”. The heatmap follows the order of the table, so sorting the table by the column of one genotype, such as WT_r, shows the top genes of that genotype instead. Below are the 30 genes with the highest max_abs_r. The top 30 genes have the same direction in Het, KO and WT, so their change with age does not depend on the genotype.</p>
+<p><a href="Figures/FigureS14.2_4.png"><img src="Figures/FigureS14.2_4.png" /></a></p>
 
 </div>
 </div>

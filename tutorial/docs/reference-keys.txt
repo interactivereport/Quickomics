@@ -49,8 +49,8 @@ data-table-2
 result-table-1
 rank-abundance-curve
 gene-set-enrichment-module
-over-representation-analysis-ora
 gene-set-enrichment-analysis-gsea
+over-representation-analysis-ora
 gene-expression
 gene-set-heat-map
 kegg-pathway-view
@@ -80,6 +80,7 @@ correlation-analysis-module
 gene-gene-sample-sample-and-group-group
 gene-target
 output-module
+download-plots-and-tables
 save-session
 faq
 references
