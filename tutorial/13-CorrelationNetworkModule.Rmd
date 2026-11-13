@@ -2,9 +2,11 @@
 
 This module helps build co-expression networks based on gene-gene or protein-protein correlations. This is especially useful during co-immunoprecipitation or pulldown proteomics experiments to identify protein partners. Users have the ability to enter 1 or more genes/proteins to identify if their expression is correlated.
 
+The network is built from the Pearson correlations between all pairs of genes/proteins across the samples; when a project has more than 10,000 genes/proteins, the 10,000 most variable ones are used. Only pairs with an absolute correlation above 0.7 and a P value below 0.05 are kept (stricter cutoffs are used when there are too many pairs). Pre-computed networks are used when all samples are selected. When samples are removed in the “Groups and Samples” module (Chapter 3), the network is computed again for the selected samples, which can take a few minutes.
+
 ## visNetwork
 
-This uses the R package visNetwork to visualize the expression of correlated genes/proteins. Users have the ability to choose the R and P value cutoff for selecting the correlated genes/proteins. In this example below, we probe 3 genes and identify the expression of other genes that are correlated with them.
+This uses the R package visNetwork to visualize the expression of correlated genes/proteins. Users have the ability to choose the r and P value cutoffs for selecting the correlated genes/proteins. “Choose r Cutoff” (0.9 by default) is applied to the absolute correlation, so negative correlations are included too, and “Choose P Value Cutoff” offers 0.0001 to 0.05 (0.01 by default). The left panel shows the number of nodes (genes/proteins) and edges (correlated pairs) for the current settings. The “Generate” button, which draws the network, appears when the network has 1 to 200 nodes; otherwise a message asks Users to change the cutoffs or the selected genes. In this example below, we probe 3 genes and identify the expression of other genes that are correlated with them.
 
 [![](Figures/FigureS13.1_1.png)](Figures/FigureS13.1_1.png)
 
@@ -12,8 +14,12 @@ The following network plot was produced. Gnai3 is part of a large network with m
 
 [![](Figures/FigureS13.1_2.png)](Figures/FigureS13.1_2.png)
 
+## networkD3
+
+The “networkD3” tab draws the same network with the networkD3 R package, as a force-directed network: the nodes and edges are the same as in the visNetwork tab, and the layout is formed by the nodes pushing each other apart while the edges pull correlated nodes together. Nodes can be dragged with the mouse, and the network can be zoomed in and out. This tab is also drawn when “Generate” is clicked.
+
 ## Data Table
 
-The genes identified in the previous tab as part of the network plot are available as a table in this tab. Users can perform searches and sort based on correlation statistics.
+The edges of the network are listed in this tab. Each row is one pair of correlated genes/proteins, with the correlation (cor), its P value (p) and the direction of the correlation (1 for positive and -1 for negative). “Select Gene Label” shows the genes by gene name or by UniqueID. Users can perform searches and sort based on correlation statistics, and the table can be downloaded by page or as a whole.
 
-[![](Figures/FigureS13.2_1.png)](Figures/FigureS13.2_1.png)
+[![](Figures/FigureS13.3_1.png)](Figures/FigureS13.3_1.png)

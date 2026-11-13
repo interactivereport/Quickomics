@@ -73,6 +73,7 @@ deg-clustering-analysis
 similar-pattern-search
 correlation-network-module
 visnetwork
+networkd3
 data-table-4
 venn-diagram-module
 venn-diagram
