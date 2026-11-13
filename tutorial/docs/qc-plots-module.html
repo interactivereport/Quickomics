@@ -22,7 +22,7 @@
 
 
 
-<meta name="date" content="2026-11-12" />
+<meta name="date" content="2026-11-13" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -215,10 +215,10 @@
             <section class="normal" id="section-">
 <div id="qc-plots-module" class="section level1 hasAnchor" number="4">
 <h1><span class="header-section-number">Chapter 4</span> QC Plots Module<a href="qc-plots-module.html#qc-plots-module" class="anchor-section" aria-label="Anchor link to header"></a></h1>
-<p>The “QC Plots” module performs basic QC analyses, as described in following paragraphs, on an uploaded dataset to evaluate integrity and quality of the data. The plots were generated using ggplot, plotly, ComplexHeatmap and pheatmap R packages. All QC plots use the groups, samples and comparisons selected in the “Groups and Samples” module (Chapter 3), and the current selection is shown at the top of the left panel. The width of the left panel can be adjusted with the “Set the Side Menu Width” slider in the upper right corner of the page (15–50% of the page width; the small icon next to it shows or hides the slider). This setting applies to all modules.</p>
+<p>The “QC Plots” module performs basic QC analyses, as described in following paragraphs, on an uploaded dataset to evaluate integrity and quality of the data. The plots were generated using the ggplot2, ggpubr, plotly, rgl, ComplexHeatmap and factoextra R packages. All QC plots use the groups and samples selected in the “Groups and Samples” module (Chapter 3), and the current selection is shown at the top of the left panel. The width of the left panel can be adjusted with the “Set the Side Menu Width” slider in the upper right corner of the page (15–50% of the page width; the small icon next to it shows or hides the slider). This setting applies to all modules.</p>
 <div id="pca-plot" class="section level2 hasAnchor" number="4.1">
 <h2><span class="header-section-number">4.1</span> PCA Plot<a href="qc-plots-module.html#pca-plot" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>The principle component analysis (PCA) plot displays, by default, the first 2 PC’s in the dataset and colors study groups with “none” selected in shape and size settings. This plot is highly customizable. Users can change the display by annotating the plot with different colors, shapes, size scheme, as well as label selected subsets data points. The PCA settings are shared by the other PCA-based tabs in this module, such as “Eigenvalues”, “PCA 3D Plot” and “PCA 3D Interactive”.</p>
+<p>The principle component analysis (PCA) plot displays, by default, the first 2 PC’s in the dataset and colors study groups with “none” selected in shape and size settings. This plot is highly customizable. Users can change the display by annotating the plot with different colors, shapes, size scheme, as well as label selected subsets data points. Any two of the first ten principal components can be selected for the plot. The “Color By” setting is shared with the “PCA 3D Plot”, “PCA 3D Interactive” and “Distance Heatmap” tabs, and “Shape By” is shared with “PCA 3D Interactive”; the other settings apply only to the PCA plot.</p>
 <p><a href="Figures/FigureS4.1_1.png"><img src="Figures/FigureS4.1_1.png" /></a></p>
 <p>To illustrate the strengths of customization, we changed a few display elements as shown below, to visualize the influence of Age and Genotype on sample clustering:</p>
 <p>We added the Plot/Refresh button to graphs that take time to generate. We also enhanced user interface to show plot progress and display initial plot.</p>
@@ -234,12 +234,12 @@
 </div>
 <div id="alignqc" class="section level2 hasAnchor" number="4.3">
 <h2><span class="header-section-number">4.3</span> AlignQC<a href="qc-plots-module.html#alignqc" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>The AlignQC tab contains several sub-tabs to visualize the QC metrics of the alignment step. Here, we can check the ‘Top Gene Ratio’, ‘Top Gene List’, ‘Mapped Read Allocation’, or ‘Plot Other Variables’ across samples. More details can be adjusted on the left panel, such as the height, width, and font size of the plot. The ‘Save to output’ function can add the current plot in the output list.</p>
+<p>The AlignQC tab contains several sub-tabs to visualize the QC metrics of the alignment step. Here, we can check the ‘Top Gene Ratio’, ‘Top Gene List’, ‘Mapped Read Allocation’, or ‘Plot Other Variables’ across samples. More details can be adjusted on the left panel, such as the height, width, and font size of the plot. The ‘Save to output’ function can add the current plot in the output list. The “Mapped Read Allocation” sub-tab needs the columns Exonic_Rate, Intronic_Rate and Intergenic_Rate in the sample table, and “Plot Other Variables” needs at least one numeric column, such as RIN or read counts.</p>
 <p><a href="Figures/FigureS4.3_1.png"><img src="Figures/FigureS4.3_1.png" /></a></p>
 </div>
 <div id="eigenvalues" class="section level2 hasAnchor" number="4.4">
 <h2><span class="header-section-number">4.4</span> Eigenvalues<a href="qc-plots-module.html#eigenvalues" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>By default, the PCA plot displays PC1 and PC2 as described in Section 4.1. However, in many cases other PC’s may be important in explaining additional variance in the dataset. This sub-tab generates a plot of the variances versus the first 10 PCs in the dataset, enabling Users to make educated decisions of which PCs to plot in 2D scatter plot. In this dataset PC1 and PC2 together explain around 27% of the variance.</p>
+<p>By default, the PCA plot displays PC1 and PC2 as described in Section 4.1. However, in many cases other PC’s may be important in explaining additional variance in the dataset. This sub-tab generates a plot of the variances versus the first 10 PCs in the dataset, with bars for the percentage of variance explained by each PC and a red line for the cumulative variance, enabling Users to make educated decisions of which PCs to plot in 2D scatter plot. In this dataset PC1 and PC2 together explain around 27% of the variance.</p>
 <p><a href="Figures/FigureS4.4_1.png"><img src="Figures/FigureS4.4_1.png" /></a></p>
 <p>PC2 and PC3 were used to redo the PCA plot, but here the factors driving the separation of the samples is not as clear.</p>
 <p><a href="Figures/FigureS4.4_2.png"><img src="Figures/FigureS4.4_2.png" /></a></p>
@@ -261,7 +261,7 @@
 <div id="sample-sample-distance" class="section level2 hasAnchor" number="4.7">
 <h2><span class="header-section-number">4.7</span> Sample-sample Distance<a href="qc-plots-module.html#sample-sample-distance" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>This tab helps identify pair-wise similarity between all samples. It has three sub-tabs: “Distance Heatmap”, “Correlation Heatmap” and “Correlation Data Table”. A short description above each heatmap explains how it is computed. Here again, Users have the option to save the heatmaps to output.</p>
-<p>The “Distance Heatmap” shows the Euclidean distance between every sample pair, computed from the expression values. Smaller distances mean that two samples have more similar overall expression profiles. By default, the rows and columns are clustered based on similarity; this can be turned off with “Apply Clustering”. It is clear from this plot that samples of the same Age have the smaller distances, that is, they have closer gene expression patterns.</p>
+<p>The “Distance Heatmap” shows the Euclidean distance between every sample pair, computed from the expression values. Smaller distances mean that two samples have more similar overall expression profiles. By default, the rows and columns are clustered based on similarity; this can be turned off with “Apply Clustering”. The annotation bar shows the samples colored by the “Color By” attribute, which is shared with the PCA plots, and “Show More Options” gives control over the font sizes and the plot height. It is clear from this plot that samples of the same Age have the smaller distances, that is, they have closer gene expression patterns.</p>
 <p><a href="Figures/FigureS4.7_1.png"><img src="Figures/FigureS4.7_1.png" /></a></p>
 <p>The “Correlation Heatmap” shows the correlation between every sample pair. Unlike the distance, the correlation is scale-invariant, so it highlights shared expression patterns rather than absolute differences in expression. Users can choose how the samples are annotated (“Annotate By”) and labeled (“Axis Label By”), and whether to apply clustering. Selecting “Yes” under “Show More Options” gives further control over the heatmap colors, the colors of the annotations (set automatically by a random seed, selected from palettes, or uploaded as a csv file), font sizes and plot height. In this example, the samples are annotated by Age, and samples of the same Age are highly correlated with each other.</p>
 <p><a href="Figures/FigureS4.7_2.png"><img src="Figures/FigureS4.7_2.png" /></a></p>
@@ -277,12 +277,12 @@
 </div>
 <div id="box-plot" class="section level2 hasAnchor" number="4.9">
 <h2><span class="header-section-number">4.9</span> Box Plot<a href="qc-plots-module.html#box-plot" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>The Boxplot is a visualization to understand the distribution of the normalized expression levels in all samples. This identifies the minimum, first quartile, median, third quartile, and maximum values in the dataset. In this demo dataset, most of the samples have the same range of expression, indicating that there are no outliers.</p>
+<p>The Boxplot is a visualization to understand the distribution of the normalized expression levels in all samples. To keep the plot fast, it uses up to 2,000 randomly picked genes/proteins per sample. This identifies the minimum, first quartile, median, third quartile, and maximum values in the dataset. In this demo dataset, most of the samples have the same range of expression, indicating that there are no outliers.</p>
 <p><a href="Figures/FigureS4.9_1.png"><img src="Figures/FigureS4.9_1.png" /></a></p>
 </div>
 <div id="cv-distribution" class="section level2 hasAnchor" number="4.10">
 <h2><span class="header-section-number">4.10</span> CV Distribution<a href="qc-plots-module.html#cv-distribution" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>This plot shows the histogram of CVs (coefficient of variation) and a dotted line for each group indicates the median CV. In this dataset, the 2mo_KO samples have the highest CV while the 2yr_Het samples have the lowest variability, which corresponds to what is visually seen on the PCA plot for these samples in Section 4.1.</p>
+<p>This plot shows the histogram of CVs (coefficient of variation) and a dashed line for each group indicates the median CV, labeled with its value and the group name. In this dataset, the 2mo_KO samples have the highest CV while the 2yr_Het samples have the lowest variability, which corresponds to what is visually seen on the PCA plot for these samples in Section 4.1.</p>
 <p><a href="Figures/FigureS4.10_1.png"><img src="Figures/FigureS4.10_1.png" /></a></p>
 </div>
 <div id="help-1" class="section level2 hasAnchor" number="4.11">

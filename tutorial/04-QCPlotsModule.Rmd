@@ -1,10 +1,10 @@
 # QC Plots Module
 
-The “QC Plots” module performs basic QC analyses, as described in following paragraphs, on an uploaded dataset to evaluate integrity and quality of the data. The plots were generated using ggplot, plotly, ComplexHeatmap and pheatmap R packages. All QC plots use the groups, samples and comparisons selected in the “Groups and Samples” module (Chapter 3), and the current selection is shown at the top of the left panel. The width of the left panel can be adjusted with the “Set the Side Menu Width” slider in the upper right corner of the page (15–50% of the page width; the small icon next to it shows or hides the slider). This setting applies to all modules.
+The “QC Plots” module performs basic QC analyses, as described in following paragraphs, on an uploaded dataset to evaluate integrity and quality of the data. The plots were generated using the ggplot2, ggpubr, plotly, rgl, ComplexHeatmap and factoextra R packages. All QC plots use the groups and samples selected in the “Groups and Samples” module (Chapter 3), and the current selection is shown at the top of the left panel. The width of the left panel can be adjusted with the “Set the Side Menu Width” slider in the upper right corner of the page (15–50% of the page width; the small icon next to it shows or hides the slider). This setting applies to all modules.
 
 ## PCA Plot
 
-The principle component analysis (PCA) plot displays, by default, the first 2 PC’s in the dataset and colors study groups with “none” selected in shape and size settings. This plot is highly customizable. Users can change the display by annotating the plot with different colors, shapes, size scheme, as well as label selected subsets data points. The PCA settings are shared by the other PCA-based tabs in this module, such as “Eigenvalues”, “PCA 3D Plot” and “PCA 3D Interactive”.
+The principle component analysis (PCA) plot displays, by default, the first 2 PC’s in the dataset and colors study groups with “none” selected in shape and size settings. This plot is highly customizable. Users can change the display by annotating the plot with different colors, shapes, size scheme, as well as label selected subsets data points. Any two of the first ten principal components can be selected for the plot. The “Color By” setting is shared with the “PCA 3D Plot”, “PCA 3D Interactive” and “Distance Heatmap” tabs, and “Shape By” is shared with “PCA 3D Interactive”; the other settings apply only to the PCA plot.
 
 [![](Figures/FigureS4.1_1.png)](Figures/FigureS4.1_1.png)
 
@@ -28,13 +28,13 @@ The Covariates tab provides flexibility to visualize the covariates, such as Age
 
 ## AlignQC
 
-The AlignQC tab contains several sub-tabs to visualize the QC metrics of the alignment step. Here, we can check the 'Top Gene Ratio', 'Top Gene List', 'Mapped Read Allocation', or 'Plot Other Variables' across samples. More details can be adjusted on the left panel, such as the height, width, and font size of the plot. The 'Save to output' function can add the current plot in the output list.
+The AlignQC tab contains several sub-tabs to visualize the QC metrics of the alignment step. Here, we can check the 'Top Gene Ratio', 'Top Gene List', 'Mapped Read Allocation', or 'Plot Other Variables' across samples. More details can be adjusted on the left panel, such as the height, width, and font size of the plot. The 'Save to output' function can add the current plot in the output list. The “Mapped Read Allocation” sub-tab needs the columns Exonic_Rate, Intronic_Rate and Intergenic_Rate in the sample table, and “Plot Other Variables” needs at least one numeric column, such as RIN or read counts.
 
 [![](Figures/FigureS4.3_1.png)](Figures/FigureS4.3_1.png)
 
 ## Eigenvalues
 
-By default, the PCA plot displays PC1 and PC2 as described in Section 4.1. However, in many cases other PC’s may be important in explaining additional variance in the dataset. This sub-tab generates a plot of the variances versus the first 10 PCs in the dataset, enabling Users to make educated decisions of which PCs to plot in 2D scatter plot. In this dataset PC1 and PC2 together explain around 27% of the variance.
+By default, the PCA plot displays PC1 and PC2 as described in Section 4.1. However, in many cases other PC’s may be important in explaining additional variance in the dataset. This sub-tab generates a plot of the variances versus the first 10 PCs in the dataset, with bars for the percentage of variance explained by each PC and a red line for the cumulative variance, enabling Users to make educated decisions of which PCs to plot in 2D scatter plot. In this dataset PC1 and PC2 together explain around 27% of the variance.
 
 [![](Figures/FigureS4.4_1.png)](Figures/FigureS4.4_1.png)
 
@@ -66,7 +66,7 @@ In the plot below, the “Color By” and “Shape By” attributes have been ch
 
 This tab helps identify pair-wise similarity between all samples. It has three sub-tabs: “Distance Heatmap”, “Correlation Heatmap” and “Correlation Data Table”. A short description above each heatmap explains how it is computed. Here again, Users have the option to save the heatmaps to output.
 
-The “Distance Heatmap” shows the Euclidean distance between every sample pair, computed from the expression values. Smaller distances mean that two samples have more similar overall expression profiles. By default, the rows and columns are clustered based on similarity; this can be turned off with “Apply Clustering”. It is clear from this plot that samples of the same Age have the smaller distances, that is, they have closer gene expression patterns.
+The “Distance Heatmap” shows the Euclidean distance between every sample pair, computed from the expression values. Smaller distances mean that two samples have more similar overall expression profiles. By default, the rows and columns are clustered based on similarity; this can be turned off with “Apply Clustering”. The annotation bar shows the samples colored by the “Color By” attribute, which is shared with the PCA plots, and “Show More Options” gives control over the font sizes and the plot height. It is clear from this plot that samples of the same Age have the smaller distances, that is, they have closer gene expression patterns.
 
 [![](Figures/FigureS4.7_1.png)](Figures/FigureS4.7_1.png)
 
@@ -90,13 +90,13 @@ In the plot below, we have selected to visualize as a tree and cut into eight pa
 
 ## Box Plot
 
-The Boxplot is a visualization to understand the distribution of the normalized expression levels in all samples. This identifies the minimum, first quartile, median, third quartile, and maximum values in the dataset. In this demo dataset, most of the samples have the same range of expression, indicating that there are no outliers.
+The Boxplot is a visualization to understand the distribution of the normalized expression levels in all samples. To keep the plot fast, it uses up to 2,000 randomly picked genes/proteins per sample. This identifies the minimum, first quartile, median, third quartile, and maximum values in the dataset. In this demo dataset, most of the samples have the same range of expression, indicating that there are no outliers.
 
 [![](Figures/FigureS4.9_1.png)](Figures/FigureS4.9_1.png)
 
 ## CV Distribution
 
-This plot shows the histogram of CVs (coefficient of variation) and a dotted line for each group indicates the median CV. In this dataset, the 2mo_KO samples have the highest CV while the 2yr_Het samples have the lowest variability, which corresponds to what is visually seen on the PCA plot for these samples in Section 4.1.
+This plot shows the histogram of CVs (coefficient of variation) and a dashed line for each group indicates the median CV, labeled with its value and the group name. In this dataset, the 2mo_KO samples have the highest CV while the 2yr_Het samples have the lowest variability, which corresponds to what is visually seen on the PCA plot for these samples in Section 4.1.
 
 [![](Figures/FigureS4.10_1.png)](Figures/FigureS4.10_1.png)
 
