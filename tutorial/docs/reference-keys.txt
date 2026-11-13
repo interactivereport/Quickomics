@@ -46,7 +46,7 @@ deg-module
 deg-counts
 volcano-plot-static
 volcano-plot-interactive
-degs-and-deps-in-two-comparisons
+degs-in-two-comparisons
 data-table-2
 gene-set-enrichment-module
 gene-set-enrichment-analysis-gsea

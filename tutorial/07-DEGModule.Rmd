@@ -2,11 +2,11 @@
 
 This section is designed to explore the differentially expressed genes (DEGs) and differentially expressed proteins (DEPs) in the dataset. The comparisons are defined by the User when they input the dataset. Please refer to our GitHub for more details on uploading datasets.
 
-The “Volcano Plot (Static)” described in Section 7.2 and “Volcano Plot (Interactive)” described in Section 7.3 are ways to visualize each pair-wise comparison one by one. “DEGs/DEPs in Two Comparisons” described in Section 7.4 is a novel way to visualize the similarities and differences in two comparisons. Finally, “Data Table” described in Section 7.5 displays a searchable table containing all genes and their fold changes and P values in each comparison.
+“DEG Counts” (Section 7.1) summarizes the number of DEGs/DEPs in each comparison. The “Volcano Plot (Static)” described in Section 7.2 and “Volcano Plot (Interactive)” described in Section 7.3 are ways to visualize each pair-wise comparison one by one. “DEGs in Two Comparisons” described in Section 7.4 is a novel way to visualize the similarities and differences in two comparisons. Finally, “Data Table” described in Section 7.5 displays a searchable table containing all genes and their fold changes and P values in each comparison.
 
 ## DEG Counts
 
-The DEG Counts tab provides a summary of the number of significantly changed genes for each comparison, separating Up- and Down-regulated genes.
+The DEG Counts tab provides a summary of the number of significantly changed genes for each comparison, separating Up- and Down-regulated genes. The genes are counted with the fold change and P value (or adjusted P value) cutoffs set in the left panel, and only the comparisons selected in the “Groups and Samples” module (Chapter 3) are listed. Clicking a comparison name opens its volcano plot, and the table can be downloaded by page or as a whole.
 
 [![](Figures/FigureS7.1_1.png)](Figures/FigureS7.1_1.png)
 
@@ -18,7 +18,9 @@ The red dots are indicative of all genes that pass the Fold Change and P value c
 
 [![](Figures/FigureS7.2_1.png)](Figures/FigureS7.2_1.png)
 
-For demonstration purposes, we have changed the following attributes to highlight a few genes in this dataset. We kept the 2mo_Hetvs2mo_WT comparison and the default cutoffs. In the example below, we select an “Immune Response” dataset from the Molecular Signatures Database (MSigDB) to highlight the genes by adding labels to the volcano plot. As MSigDB contains only human gene lists and the demo dataset is from mouse, Quickomics does a quick conversion of the names of Human genes to Mouse genes by changing the letters after the first one to lowercase. The genes of the selected gene set are listed in the box below the “Select Geneset” button, where genes can be added or removed. If the list contains more genes than the number set by “# of Genes to Label” (50 by default), only that many are labeled. The label color can be changed with “Gene Label Color”. Of the labeled immune genes, Cfp is among the most strongly down-regulated genes, while most of the others are not significantly changed in 2mo Het microglia.
+“Label Genes” offers four choices: “DEGs” labels the top DEGs/DEPs, “None” shows no labels, “Upload” labels the genes entered in a list (as UniqueID, Gene.Name or Protein.ID), and “Geneset” labels the genes of a gene set chosen with the gene set search described in Section 1.1.
+
+For demonstration purposes, we have changed the following attributes to highlight a few genes in this dataset. We kept the 2mo_Hetvs2mo_WT comparison and the default cutoffs. In the example below, we select an “Immune Response” dataset from the Molecular Signatures Database (MSigDB) to highlight the genes by adding labels to the volcano plot. As MSigDB contains only human gene lists and the demo dataset is from mouse, Quickomics matches the gene names without regard to upper or lower case, so that a human gene such as CFP matches the mouse gene Cfp. The genes of the selected gene set are listed in the box below the “Select Geneset” button, where genes can be added or removed. If the list contains more genes than the number set by “# of Genes to Label” (50 by default), only that many are labeled. The label color can be changed with “Gene Label Color”. Of the labeled immune genes, Cfp is among the most strongly down-regulated genes, while most of the others are not significantly changed in 2mo Het microglia.
 
 [![](Figures/FigureS7.2_2.png)](Figures/FigureS7.2_2.png)
 
@@ -28,7 +30,7 @@ A set of genes can also be shown in a different color, in addition to the labele
 
 [![](Figures/FigureS7.2_4.png)](Figures/FigureS7.2_4.png)
 
-Under “Show More Options”, “Rasterize plot” draws the dots as a bitmap image while keeping the text and axes sharp, which makes saved plots smaller when there are many genes.
+Under “Show More Options”, “Max abs(log2FC) in plot” and “Max -log10(Stat Value) in plot” limit the range of the axes (0 shows the full range), and the label font size, legend font size and legend position can be changed. “Rasterize plot” draws the dots as a bitmap image while keeping the text and axes sharp, which makes saved plots smaller when there are many genes.
 
 ## Volcano Plot (Interactive)
 
@@ -40,11 +42,11 @@ Genes can also be selected directly on the plot. Choose the lasso or box-select 
 
 [![](Figures/FigureS7.3_2.png)](Figures/FigureS7.3_2.png)
 
-## DEGs and DEPs in Two Comparisons
+## DEGs in Two Comparisons
 
 This next tab helps with identifying DEGs/DEPs that follow a similar trend in two comparisons. [Gyoneva et al., 2019](https://www.life-science-alliance.org/content/2/6/e201900453){target="_blank"}, the source of this demo dataset, report that the genes differentially expressed in Cx3cr1 KO microglia in the 2mo KO are quite different from WT, while the differences from WT are smaller for the 1yr KO and 2yr KO, and the two older ages are similar to each other. We have plotted out the following comparisons that illustrate this conclusion.
 
-2mo_KOvs2mo_WT vs 1yr_KOvs1yr_WT has a low correlation score of 0.211. There are many genes that are colored orange, meaning those genes were significant in 2mo_KOvs2mo_WT (Y axis) but not in 1yr_KOvs1yr_WT (X axis).
+2mo_KOvs2mo_WT vs 1yr_KOvs1yr_WT has a low correlation score of 0.211. There are many genes that are colored orange, meaning those genes were significant in 2mo_KOvs2mo_WT (Y axis) but not in 1yr_KOvs1yr_WT (X axis). Genes significant in both comparisons are blue, genes significant only in the X axis comparison are green, and the other genes are grey. The dot size shows the smaller of the two P values, and the correlation score in the title is the Pearson correlation of the log2 fold changes, shown with its P value.
 
 [![](Figures/FigureS7.4_1.png)](Figures/FigureS7.4_1.png)
 
@@ -56,7 +58,7 @@ Next, we changed the Y axis comparison to 1yr_KOvs1yr_WT comparing it to 2yr_KOv
 
 [![](Figures/FigureS7.4_3.png)](Figures/FigureS7.4_3.png)
 
-Under “Show More Options”, “Color DEGs using dot color?” sets whether the gene labels take the color of their dots (“Yes”) or are all drawn in one color (“No”).
+Under “Show More Options”, “Color DEGs using dot color?” sets whether the gene labels take the color of their dots (“Yes”) or are all drawn in one color (“No”). “Make X and Y scale the same?” (“Yes” by default) gives both axes the same log2 fold change range, so that points on the diagonal have equal changes in the two comparisons; with “No”, each axis fits its own comparison.
 
 ## Data Table
 
