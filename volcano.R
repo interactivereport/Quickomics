@@ -263,12 +263,33 @@ observeEvent(input$volcano_test, {
     plotly::plotlyProxyInvoke("restyle", "selectedpoints", list(NULL))
 })
 
+# Rows clicked in the selected-gene table below. The table holds only the lasso genes;
+# rows_selected are row numbers in volcano_selected_table_data() (DT keeps them tied to
+# the data, so sorting, searching and paging don't change which genes they point to).
+# A new lasso selection or comparison re-renders the table, which clears the clicks.
+volcano_table_clicked_ids <- reactive({
+  rows <- input$volcano_selected_table_rows_selected
+  if (length(rows) == 0 || length(volcano_selected_ids()) == 0) return(character(0))
+  tab <- volcano_selected_table_data()
+  rows <- rows[rows >= 1 & rows <= nrow(tab)]
+  as.character(tab$UniqueID[rows])
+})
+
+# Genes the "Send Selected Genes" button uses: clicked table rows if any, otherwise all lasso genes.
+volcano_genes_to_send <- reactive({
+  clicked <- volcano_table_clicked_ids()
+  if (length(clicked) > 0) clicked else volcano_selected_ids()
+})
+
 output$volcano_selected_count <- renderText({
   n <- length(volcano_selected_ids())
+  n_clicked <- length(volcano_table_clicked_ids())
   if (n == 0) {
     "No genes selected yet -- use the lasso or box-select tool on the plot above."
+  } else if (n_clicked > 0) {
+    paste0(n_clicked, " of ", n, " lasso-selected gene(s) chosen in the table. Click rows again to unselect them.")
   } else {
-    paste0(n, " gene(s) selected.")
+    paste0(n, " gene(s) selected. Click rows in the table to send only those genes.")
   }
 })
 
@@ -288,15 +309,18 @@ output$volcano_selected_table <- DT::renderDT({
   validate(need(length(volcano_selected_ids()) > 0, 
                 "Use the lasso or box-select tool on the plot above to select a region of genes."))
   DT::datatable(volcano_selected_table_data(), extensions = 'Buttons', rownames = FALSE,
+                selection = 'multiple',
                 options = list(dom = 'lBfrtip', buttons = c('csv', 'excel'), pageLength = 15)) %>%
     formatSignif(columns = c('logFC', 'P.Value', 'Adj.P.Value'), digits = 3)
 })
 
 # Optional bridge: send the selected genes straight into the highlight-subset feature
 observeEvent(input$volcano_selected_to_highlight, {
-  sel_ids <- volcano_selected_ids()
+  sel_ids <- volcano_genes_to_send()
   req(length(sel_ids) > 0)
-  log_info("Volcano Plot: sent ", length(sel_ids), " lasso-selected genes to Highlight Gene List.")
+  log_info("Volcano Plot: sent ", length(sel_ids),
+           if (length(volcano_table_clicked_ids()) > 0) " table-selected" else " lasso-selected",
+           " genes to Highlight Gene List.")
   updateTextAreaInput(session, "volcano_subset_gene_list", value = paste(sel_ids, collapse = "\n"))
   updateTextAreaInput(session, "volcano_subset_label_list", value = "")  # clear stale force-label list -- it belonged to a different highlight set
   updateRadioButtons(session, "volcano_subset_highlight", selected = "Yes")
