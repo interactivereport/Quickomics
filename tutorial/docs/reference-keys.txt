@@ -83,5 +83,6 @@ deg-table
 output-module
 download-plots-and-tables
 save-session
+diagnostics
 faq
 references
