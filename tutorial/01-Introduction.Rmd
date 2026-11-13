@@ -14,40 +14,47 @@ To supply genes in pre-defined gene sets to plotting functions in Quickomics, we
 
 For developers of web-based applications (general user can skip this paragraph), xGenesets can be easily embedded in any modern websites and online applications, e.g., R Shiny web apps, by leveraging jQuery, DataTables, and bootstrap (either v3 or v4) JavaScript libraries. xGenesets API is freely available for all usages. Examples of using xGenesets API and guidance on setting up the API in your own applications can be found at [https://bxaf.net/genesets](https://bxaf.net/genesets){target="_blank"}.
 
-## Launch project saved on server
+## Load projects from different data sources
 
-In this updated version 2.0 of Quickomics, we added this new function to launch projects saved on the server directly using URL.
+Besides selecting a project in the Dataset module or uploading files, a project can be opened directly with a URL. The part of the URL after `?` tells Quickomics where to find the project. Quickomics can read project files from folders on the server, or fetch the same projects through the QuickOmics API, a separate service that serves project data. When the project loads, a message names the data source, and the source is also shown on the “Project Overview” page of the Dataset module.
 
-To view your own datasets, you can upload RData files using browser, but a better way is to put the RData files on your server where you host QuickOmics and access them directly using a URL. We suggest the following:
+| URL | Where the project is loaded from |
+|---|---|
+| `?datalake=ProjectID` | The data lake, through the QuickOmics API |
+| `?api_serverfile=ProjectID` | Published projects, through the QuickOmics API |
+| `?serverfile=ProjectID` | Files in server_dir, read directly |
+| `?api_testfile=ProjectID` | Unpublished projects, through the QuickOmics API |
+| `?testfile=ProjectID` | Files in test_dir, read directly |
+| `?unlisted=ProjectID` | Files in the unlisted/ folder of the Quickomics folder |
+| `?auto=ProjectID` | Tries the sources above in this order and opens the first one that has the project |
 
-**1. Prepare three files for each project**, `projectID.RData` and `projectID_network.RData` file, as well as a `projectID.csv` file.
+For example, [https://quickomics.bxgenomics.com/?auto=ProjectID](https://quickomics.bxgenomics.com/?auto=ProjectID){target="_blank"} (replace quickomics.bxgenomics.com with your own instance URL). `?auto=` is the easiest choice when you do not know where a project is stored: the data lake has the highest priority, then published projects (through the API, then read directly), then unpublished projects (through the API, then read directly), and finally the unlisted folder. If the project is found nowhere, a message lists the sources that were tried. When a session is saved with “Save Session” (Section 15.2), Quickomics records the source the project actually came from, so the restored session opens the same data.
 
-The csv file should have four columns: 
+**Projects stored as files on the server**
+
+**1. Prepare the files for each project**: `projectID.RData`, `projectID_network.RData` and `projectID.csv`. A `wgcna_projectID.RData` file with pre-computed WGCNA results can be added as well.
+
+The csv file should have four columns:
 
 ```
 Name,ShortName,ProjectID,Species
 ```
 
-Two optional columns for the csv file include:  `ExpressionUnit` (you can enter something like log2(TPM+0.1)),  and `Path` (optional path for raw or analyzed data, e.g. Z:/share/GSE158470/).
+Two optional columns for the csv file include: `ExpressionUnit` (you can enter something like log2(TPM+0.1)), and `Path` (optional path for raw or analyzed data, e.g. Z:/share/GSE158470/).
 
-**2. Put the three files you prepared in a special folder**, and use URL to access them.
-
-The simplest way is to put the three files in the unlisted/ folder under Quickomics folder. Then use a URL like [https://quickomics.bxgenomics.com/?unlisted=ProjectID](https://quickomics.bxgenomics.com/?unlisted=ProjectID){target="_blank"} (replace quickomics.bxgenomics.com with your own instance URL).
-
-You can also create a config.csv file under Quickomics folder, for example:
+**2. Put the files in a folder that Quickomics reads.** The simplest way is the unlisted/ folder under the Quickomics folder (`?unlisted=ProjectID`). A better way is to keep the data outside the Quickomics folder: create a config.csv file under the Quickomics folder, for example:
 
 ```
 category,value
-server_dir, /hpc/data/server_files
-test_dir,/hpc/data/test_fiels
+server_dir,/hpc/data/server_files
+test_dir,/hpc/data/test_files
 ```
 
-Just make sure the two folders in server_dir and test_dir can be read by the Shiny App.
+Make sure the two folders can be read by the Shiny App. Files in server_dir are opened with `?serverfile=ProjectID` and files in test_dir with `?testfile=ProjectID`.
 
-Then you can copy the three files prepared in step 1) into the server_dir, and use URL like [https://quickomics.bxgenomics.com/?serverfile=ProjectID](https://quickomics.bxgenomics.com/?serverfile=ProjectID){target="_blank"}
-Or you can copy the three files prepared in step 1) into the test_dir, and use URL like [https://quickomics.bxgenomics.com/?testfile=ProjectID](https://quickomics.bxgenomics.com/?testfile=ProjectID){target="_blank"}
-Using `config.csv` is preferred as the data are separated from the QuickOmics Shiny App folder.
+**Projects served by the QuickOmics API**
 
+The `datalake`, `api_serverfile` and `api_testfile` sources need a running QuickOmics API. Its address and login are set on the server in the `.Renviron` file of the Quickomics folder (`QUICKOMICS_API_URL`, `QUICKOMICS_API_USERNAME` and `QUICKOMICS_API_PASSWORD`). If the API cannot be reached, opening a project from one of these sources shows an error, while `?auto=` skips them and continues with the next source.
 
 ## ShinyOne
 

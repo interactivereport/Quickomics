@@ -79,7 +79,7 @@
 <li class="chapter" data-level="1" data-path="introduction.html"><a href="introduction.html"><i class="fa fa-check"></i><b>1</b> Introduction</a>
 <ul>
 <li class="chapter" data-level="1.1" data-path="introduction.html"><a href="introduction.html#integrated-gene-set-query"><i class="fa fa-check"></i><b>1.1</b> Integrated Gene Set Query</a></li>
-<li class="chapter" data-level="1.2" data-path="introduction.html"><a href="introduction.html#launch-project-saved-on-server"><i class="fa fa-check"></i><b>1.2</b> Launch project saved on server</a></li>
+<li class="chapter" data-level="1.2" data-path="introduction.html"><a href="introduction.html#load-projects-from-different-data-sources"><i class="fa fa-check"></i><b>1.2</b> Load projects from different data sources</a></li>
 <li class="chapter" data-level="1.3" data-path="introduction.html"><a href="introduction.html#shinyone"><i class="fa fa-check"></i><b>1.3</b> ShinyOne</a></li>
 </ul></li>
 <li class="chapter" data-level="2" data-path="dataset-module.html"><a href="dataset-module.html"><i class="fa fa-check"></i><b>2</b> Dataset Module</a>
@@ -224,24 +224,64 @@
 <p><a href="Figures/FigureS1.1_1.png"><img src="Figures/FigureS1.1_1.png" /></a></p>
 <p>For developers of web-based applications (general user can skip this paragraph), xGenesets can be easily embedded in any modern websites and online applications, e.g., R Shiny web apps, by leveraging jQuery, DataTables, and bootstrap (either v3 or v4) JavaScript libraries. xGenesets API is freely available for all usages. Examples of using xGenesets API and guidance on setting up the API in your own applications can be found at <a href="https://bxaf.net/genesets" target="_blank">https://bxaf.net/genesets</a>.</p>
 </div>
-<div id="launch-project-saved-on-server" class="section level2 hasAnchor" number="1.2">
-<h2><span class="header-section-number">1.2</span> Launch project saved on server<a href="introduction.html#launch-project-saved-on-server" class="anchor-section" aria-label="Anchor link to header"></a></h2>
-<p>In this updated version 2.0 of Quickomics, we added this new function to launch projects saved on the server directly using URL.</p>
-<p>To view your own datasets, you can upload RData files using browser, but a better way is to put the RData files on your server where you host QuickOmics and access them directly using a URL. We suggest the following:</p>
-<p><strong>1. Prepare three files for each project</strong>, <code>projectID.RData</code> and <code>projectID_network.RData</code> file, as well as a <code>projectID.csv</code> file.</p>
+<div id="load-projects-from-different-data-sources" class="section level2 hasAnchor" number="1.2">
+<h2><span class="header-section-number">1.2</span> Load projects from different data sources<a href="introduction.html#load-projects-from-different-data-sources" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>Besides selecting a project in the Dataset module or uploading files, a project can be opened directly with a URL. The part of the URL after <code>?</code> tells Quickomics where to find the project. Quickomics can read project files from folders on the server, or fetch the same projects through the QuickOmics API, a separate service that serves project data. When the project loads, a message names the data source, and the source is also shown on the “Project Overview” page of the Dataset module.</p>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>URL</th>
+<th>Where the project is loaded from</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>?datalake=ProjectID</code></td>
+<td>The data lake, through the QuickOmics API</td>
+</tr>
+<tr class="even">
+<td><code>?api_serverfile=ProjectID</code></td>
+<td>Published projects, through the QuickOmics API</td>
+</tr>
+<tr class="odd">
+<td><code>?serverfile=ProjectID</code></td>
+<td>Files in server_dir, read directly</td>
+</tr>
+<tr class="even">
+<td><code>?api_testfile=ProjectID</code></td>
+<td>Unpublished projects, through the QuickOmics API</td>
+</tr>
+<tr class="odd">
+<td><code>?testfile=ProjectID</code></td>
+<td>Files in test_dir, read directly</td>
+</tr>
+<tr class="even">
+<td><code>?unlisted=ProjectID</code></td>
+<td>Files in the unlisted/ folder of the Quickomics folder</td>
+</tr>
+<tr class="odd">
+<td><code>?auto=ProjectID</code></td>
+<td>Tries the sources above in this order and opens the first one that has the project</td>
+</tr>
+</tbody>
+</table>
+<p>For example, <a href="https://quickomics.bxgenomics.com/?auto=ProjectID" target="_blank">https://quickomics.bxgenomics.com/?auto=ProjectID</a> (replace quickomics.bxgenomics.com with your own instance URL). <code>?auto=</code> is the easiest choice when you do not know where a project is stored: the data lake has the highest priority, then published projects (through the API, then read directly), then unpublished projects (through the API, then read directly), and finally the unlisted folder. If the project is found nowhere, a message lists the sources that were tried. When a session is saved with “Save Session” (Section 15.2), Quickomics records the source the project actually came from, so the restored session opens the same data.</p>
+<p><strong>Projects stored as files on the server</strong></p>
+<p><strong>1. Prepare the files for each project</strong>: <code>projectID.RData</code>, <code>projectID_network.RData</code> and <code>projectID.csv</code>. A <code>wgcna_projectID.RData</code> file with pre-computed WGCNA results can be added as well.</p>
 <p>The csv file should have four columns:</p>
 <pre><code>Name,ShortName,ProjectID,Species</code></pre>
 <p>Two optional columns for the csv file include: <code>ExpressionUnit</code> (you can enter something like log2(TPM+0.1)), and <code>Path</code> (optional path for raw or analyzed data, e.g. Z:/share/GSE158470/).</p>
-<p><strong>2. Put the three files you prepared in a special folder</strong>, and use URL to access them.</p>
-<p>The simplest way is to put the three files in the unlisted/ folder under Quickomics folder. Then use a URL like <a href="https://quickomics.bxgenomics.com/?unlisted=ProjectID" target="_blank">https://quickomics.bxgenomics.com/?unlisted=ProjectID</a> (replace quickomics.bxgenomics.com with your own instance URL).</p>
-<p>You can also create a config.csv file under Quickomics folder, for example:</p>
+<p><strong>2. Put the files in a folder that Quickomics reads.</strong> The simplest way is the unlisted/ folder under the Quickomics folder (<code>?unlisted=ProjectID</code>). A better way is to keep the data outside the Quickomics folder: create a config.csv file under the Quickomics folder, for example:</p>
 <pre><code>category,value
-server_dir, /hpc/data/server_files
-test_dir,/hpc/data/test_fiels</code></pre>
-<p>Just make sure the two folders in server_dir and test_dir can be read by the Shiny App.</p>
-<p>Then you can copy the three files prepared in step 1) into the server_dir, and use URL like <a href="https://quickomics.bxgenomics.com/?serverfile=ProjectID" target="_blank">https://quickomics.bxgenomics.com/?serverfile=ProjectID</a>
-Or you can copy the three files prepared in step 1) into the test_dir, and use URL like <a href="https://quickomics.bxgenomics.com/?testfile=ProjectID" target="_blank">https://quickomics.bxgenomics.com/?testfile=ProjectID</a>
-Using <code>config.csv</code> is preferred as the data are separated from the QuickOmics Shiny App folder.</p>
+server_dir,/hpc/data/server_files
+test_dir,/hpc/data/test_files</code></pre>
+<p>Make sure the two folders can be read by the Shiny App. Files in server_dir are opened with <code>?serverfile=ProjectID</code> and files in test_dir with <code>?testfile=ProjectID</code>.</p>
+<p><strong>Projects served by the QuickOmics API</strong></p>
+<p>The <code>datalake</code>, <code>api_serverfile</code> and <code>api_testfile</code> sources need a running QuickOmics API. Its address and login are set on the server in the <code>.Renviron</code> file of the Quickomics folder (<code>QUICKOMICS_API_URL</code>, <code>QUICKOMICS_API_USERNAME</code> and <code>QUICKOMICS_API_PASSWORD</code>). If the API cannot be reached, opening a project from one of these sources shows an error, while <code>?auto=</code> skips them and continues with the next source.</p>
 </div>
 <div id="shinyone" class="section level2 hasAnchor" number="1.3">
 <h2><span class="header-section-number">1.3</span> ShinyOne<a href="introduction.html#shinyone" class="anchor-section" aria-label="Anchor link to header"></a></h2>
