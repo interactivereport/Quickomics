@@ -58,7 +58,7 @@ The `datalake`, `api_serverfile` and `api_testfile` sources need a running Quick
 
 ## ShinyOne
 
-In Quickomics v2.0, we also introduce ShinyOne, a web-based table listing existing projects loaded into Quickomics.
+Starting from Quickomics v2.0, we also introduce ShinyOne, a web-based table listing existing projects loaded into Quickomics.
 
 We have pre-loaded several demo data to Quickomics, and the ShinyOne demo site is:
 

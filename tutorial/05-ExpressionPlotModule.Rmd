@@ -1,6 +1,6 @@
 # Expression Plot Module
 
-This functional module allows Users to browse through a subset of genes/proteins. It also offers an option to plot expression of individually selected genes. Four different displays: Box Plot, Bar Plot, Violin Plot and Line Plot are made available to fit the Users’ preference. In Quickomics v2.0, we enhanced the Expression Plot module: genes in the Browsing tab can be ordered by fold change or P value, and the number of columns in the graph can be changed.
+This functional module allows Users to browse through a subset of genes/proteins. It also offers an option to plot expression of individually selected genes. Four different displays: Box Plot, Bar Plot, Violin Plot and Line Plot are made available to fit the Users’ preference.
 
 ## Browsing
 
