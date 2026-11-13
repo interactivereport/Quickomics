@@ -2,9 +2,17 @@
 
 This functional module in Quickomics helps cluster genes/proteins based on their expression profiles across different groups. Two different algorithms, soft (fuzzy) clustering and k-means, are implemented.
 
+The current version adds three major updates. First, the genes can be clustered by any sample attribute, not only by group: “Select Pattern Variable” chooses the attribute, such as Age or Genotype, and each gene is summarized by its mean expression in each level of that attribute. Second, “Cluster On” decides what the clusters are based on: the trend only (z-score, the default), the trend together with the size of the change (centred values), or the mean expression without any transformation. Third, the levels of the attribute can be easily re-ordered or removed by dragging them above the plot, which sets the order of the levels in the plot and leaves the removed levels out of the clustering.
+
+The means are computed from the samples selected in the “Groups and Samples” module (Chapter 3); if the pattern differs between conditions, the samples can first be limited to one condition there.
+
 ## Clustering of Centroid Profiles
 
-Users have the option to either select the DEGs/DEPS as the list of genes/proteins to cluster based off on or upload a custom gene list. DEGs/DEPs can be selected from one comparison or from all comparisons, and cutoffs can be applied to limit the number of genes. Users also choose the sample attribute to plot, how the expression values are transformed before clustering (“Cluster On”, described in the guide above the plot), and the order of the groups; then click “Plot/Refresh”. In this example below, we select the DEGs/DEPs from all comparisons with a Fold Change cutoff of 3 and a P value cutoff of 0.01, which gives 177 genes, and identify 6 clusters of genes.
+Users have the option to either select the DEGs/DEPS as the list of genes/proteins to cluster based off on or upload a custom gene list. DEGs/DEPs can be selected from one of the comparisons selected in “Groups and Samples” or from all of them (“ALL”), and cutoffs can be applied to limit the number of genes.
+
+Users also choose the sample attribute to plot, how the expression values are transformed before clustering (“Cluster On”, described in the guide above the plot), and the order of the groups; then click “Plot/Refresh”. “Cluster Method” chooses between the two algorithms, and “Cluster Number” sets the number of clusters (2 to 12, 6 by default). K-means assigns each gene to one cluster and draws the cluster mean as a thick line. Soft clustering (Mfuzz fuzzy c-means) gives each gene a membership between 0 and 1 in every cluster, and draws the genes with a membership of at least 0.4, colored by membership from red (strong member) to yellow (weak member).
+
+In this example below, we select the DEGs/DEPs from all comparisons with a Fold Change cutoff of 3 and a P value cutoff of 0.01, which gives 177 genes, and identify 6 clusters of genes.
 
 [![](Figures/FigureS11.1_1.png)](Figures/FigureS11.1_1.png)
 
