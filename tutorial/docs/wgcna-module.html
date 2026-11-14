@@ -22,7 +22,7 @@
 
 
 
-<meta name="date" content="2026-11-13" />
+<meta name="date" content="2026-11-14" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -225,7 +225,8 @@
 <h2><span class="header-section-number">9.1</span> WGCNA QC<a href="wgcna-module.html#wgcna-qc" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <p>Before the network is built, WGCNA raises the correlations between genes to a power, called the soft-thresholding power. A higher power keeps the strong correlations and pushes the weak ones toward zero. The “Soft-Thresholding Power” sub-tab shows how well the network fits a scale-free topology (SFT.R.sq) and the mean connectivity of the genes for each power. The usual choice is the lowest power with an R² above 0.8, which is marked by the red line in the Scale Independence plot. For the demo dataset, power 6 is the first power above this line, with an R² of 0.906 and a mean connectivity of 301, and it is highlighted in the table as the power used.</p>
 <p><a href="Figures/FigureS9.1_1.png"><img src="Figures/FigureS9.1_1.png" /></a></p>
-<p>The “WGCNA Network” sub-tab helps check the data before the network is built. The histogram shows the distribution of the gene variance across the samples; WGCNA uses only the most variable genes, set by “Select Top N Genes”, to reduce noise and computing time. The dendrogram below clusters the samples by their overall expression profiles. Samples of the same group are expected to cluster together, and a sample that joins the others only at a much greater height may be an outlier; such a sample can be removed in the “Groups and Samples” module before clicking “Run” again.</p>
+<p>The “WGCNA Network” sub-tab helps check the data before the network is built. The histogram shows the distribution of the gene variance across the samples; WGCNA uses only the most variable genes, set by “Select Top N Genes”, to reduce noise and computing time. The dendrogram below clusters the samples by their overall expression profiles. Samples of the same group are expected to cluster together, and a sample that joins the others only at a much greater height may be an outlier; such a sample can be removed in the “Groups and Samples” module before clicking “Run” again. In the demo dataset, the samples cluster mainly by age, and the sample 2yr-WT-2F joins the others at the greatest height.</p>
+<p><a href="Figures/FigureS9.1_2.png"><img src="Figures/FigureS9.1_2.png" /></a></p>
 </div>
 <div id="wgcna-result" class="section level2 hasAnchor" number="9.2">
 <h2><span class="header-section-number">9.2</span> WGCNA Result<a href="wgcna-module.html#wgcna-result" class="anchor-section" aria-label="Anchor link to header"></a></h2>

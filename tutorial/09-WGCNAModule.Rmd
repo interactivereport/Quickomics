@@ -14,7 +14,9 @@ Before the network is built, WGCNA raises the correlations between genes to a po
 
 [![](Figures/FigureS9.1_1.png)](Figures/FigureS9.1_1.png)
 
-The “WGCNA Network” sub-tab helps check the data before the network is built. The histogram shows the distribution of the gene variance across the samples; WGCNA uses only the most variable genes, set by “Select Top N Genes”, to reduce noise and computing time. The dendrogram below clusters the samples by their overall expression profiles. Samples of the same group are expected to cluster together, and a sample that joins the others only at a much greater height may be an outlier; such a sample can be removed in the “Groups and Samples” module before clicking “Run” again.
+The “WGCNA Network” sub-tab helps check the data before the network is built. The histogram shows the distribution of the gene variance across the samples; WGCNA uses only the most variable genes, set by “Select Top N Genes”, to reduce noise and computing time. The dendrogram below clusters the samples by their overall expression profiles. Samples of the same group are expected to cluster together, and a sample that joins the others only at a much greater height may be an outlier; such a sample can be removed in the “Groups and Samples” module before clicking “Run” again. In the demo dataset, the samples cluster mainly by age, and the sample 2yr-WT-2F joins the others at the greatest height.
+
+[![](Figures/FigureS9.1_2.png)](Figures/FigureS9.1_2.png)
 
 ## WGCNA Result
 
