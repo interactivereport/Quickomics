@@ -6,17 +6,19 @@ The network is built from the Pearson correlations between all pairs of genes/pr
 
 ## visNetwork
 
-This uses the R package visNetwork to visualize the expression of correlated genes/proteins. Users have the ability to choose the r and P value cutoffs for selecting the correlated genes/proteins. “Choose r Cutoff” (0.9 by default) is applied to the absolute correlation, so negative correlations are included too, and “Choose P Value Cutoff” offers 0.0001 to 0.05 (0.01 by default). The left panel shows the number of nodes (genes/proteins) and edges (correlated pairs) for the current settings. The “Generate” button, which draws the network, appears when the network has 1 to 200 nodes; otherwise a message asks Users to change the cutoffs or the selected genes. In this example below, we probe 3 genes and identify the expression of other genes that are correlated with them.
+This uses the R package visNetwork to visualize the expression of correlated genes/proteins. Users have the ability to choose the r and P value cutoffs for selecting the correlated genes/proteins. “Choose r Cutoff” (0.9 by default) is applied to the absolute correlation, so negative correlations are included too, and “Choose P Value Cutoff” offers 0.0001 to 0.05 (0.01 by default). The left panel shows the number of nodes (genes/proteins) and edges (correlated pairs) for the current settings. The “Generate” button, which draws the network, appears when the network has 1 to 200 nodes; otherwise a message asks Users to change the cutoffs or the selected genes. In this example below, we probe 3 genes, Gnai3, Klf6 and Btbd9, with the r cutoff lowered to 0.78, and identify the expression of other genes that are correlated with them.
 
 [![](Figures/FigureS13.1_1.png)](Figures/FigureS13.1_1.png)
 
-The following network plot was produced. Gnai3 is part of a large network with multiple genes correlated with it. On the other hand, Klf6 was correlated with 2 other genes, while Btbd17 was not correlated with any genes.
+The following network plot was produced. Gnai3 is part of a large network with 66 genes correlated with it. On the other hand, Klf6 was correlated with 2 other genes, Phyhd1 and Tmem189, while Btbd9 was not correlated with any genes at these cutoffs, so it is not shown.
 
 [![](Figures/FigureS13.1_2.png)](Figures/FigureS13.1_2.png)
 
 ## networkD3
 
 The “networkD3” tab draws the same network with the networkD3 R package, as a force-directed network: the nodes and edges are the same as in the visNetwork tab, and the layout is formed by the nodes pushing each other apart while the edges pull correlated nodes together. Nodes can be dragged with the mouse, and the network can be zoomed in and out. This tab is also drawn when “Generate” is clicked.
+
+[![](Figures/FigureS13.2_1.png)](Figures/FigureS13.2_1.png)
 
 ## Data Table
 
