@@ -19,3 +19,5 @@ Tables and heatmap data can be saved in the same way. Tables saved with “Save 
 ## Diagnostics
 
 The “Diagnostics” section at the bottom of the Output page helps to troubleshoot problems when running the application. “Log Level” (DEBUG, INFO, WARN or ERROR) sets how much detail the session writes to the server log; the change takes effect immediately and affects only the current session. “Session Location” shows which server container is serving the session; please quote it when reporting a problem, as it identifies the log file to look at.
+
+[![](Figures/FigureS15.3_1.png)](Figures/FigureS15.3_1.png)
