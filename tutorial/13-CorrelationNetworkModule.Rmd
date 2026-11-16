@@ -4,6 +4,8 @@ This module helps build co-expression networks based on gene-gene or protein-pro
 
 The network is built from the Pearson correlations between all pairs of genes/proteins across the samples; when a project has more than 10,000 genes/proteins, the 10,000 most variable ones are used. Only pairs with an absolute correlation above 0.7 and a P value below 0.05 are kept (stricter cutoffs are used when there are too many pairs). Pre-computed networks are used when all samples are selected. When samples are removed in the “Groups and Samples” module (Chapter 3), the network is computed again for the selected samples, which can take a few minutes.
 
+Both tabs show the same network. visNetwork keeps the same layout each time and has zoom buttons, so it suits close viewing and figures. networkD3 rearranges itself as you drag nodes, which helps show clusters.
+
 ## visNetwork
 
 This uses the R package visNetwork to visualize the expression of correlated genes/proteins. Users have the ability to choose the r and P value cutoffs for selecting the correlated genes/proteins. “Choose r Cutoff” (0.9 by default) is applied to the absolute correlation, so negative correlations are included too, and “Choose P Value Cutoff” offers 0.0001 to 0.05 (0.01 by default). The left panel shows the number of nodes (genes/proteins) and edges (correlated pairs) for the current settings. The “Generate” button, which draws the network, appears when the network has 1 to 200 nodes; otherwise a message asks Users to change the cutoffs or the selected genes. In this example below, we probe 3 genes, Gnai3, Klf6 and Btbd9, with the r cutoff lowered to 0.78, and identify the expression of other genes that are correlated with them.
