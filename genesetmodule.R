@@ -1510,39 +1510,67 @@ geneset_server <- function(id) {
                         })
                         
                         #############################  Wiki  ######      
+                        # Frame takes the full panel width; its height follows the pathway's
+                        # width/height (from the SVG viewBox), capped at 85% of the window.
+                        # The diagram is re-fitted when the frame changes size.
                         output$wikipathways_tab_ui <- renderUI({
                           req(input$geneset_tabset == "Wikipathways View")
-                          svgPanZoomOutput(ns("wikipathways_plot"), width = "100%", height = "100%")
+                          ratio <- wp_svg_aspect(wiki_svg()$svg)
+                          if (is.na(ratio)) ratio <- 4/3
+                          frame_id <- ns("wiki_frame")
+                          tagList(
+                            tags$div(id = frame_id,
+                                     style = sprintf("position:relative; width:100%%; aspect-ratio:%.4f; max-height:85vh; min-height:400px;", ratio),
+                                     tags$div(style = "position:absolute; top:0; left:0; right:0; bottom:0;",
+                                              svgPanZoomOutput(ns("wikipathways_plot"), width = "100%", height = "100%"))),
+                            tags$script(HTML(sprintf(
+                              "(function(){var box=document.getElementById('%s'); if(!box||!window.ResizeObserver) return; var t;
+                               new ResizeObserver(function(){clearTimeout(t); t=setTimeout(function(){
+                                 var w=box.querySelector('.html-widget'); var z=w&&w.zoomWidget;
+                                 if(z && box.offsetWidth>0){z.resize(); z.fit(); z.center();}}, 150);}).observe(box);})();",
+                              frame_id)))
+                          )
                         })
                         
-                        wiki_plot_results<-reactive({
+                        # Pathway SVG, read once per pathway (not again on color/comparison changes)
+                        wiki_svg <- reactive({
                           ID=input$sel_wikipathways_set
                           if (is.null(ID) || ID == "") log_warn("Wikipathways View: no pathway selected.")
                           shiny::validate(need(ID!="", message = "Please select a Wikipathway to map logFC data to it."))
                           if (!str_detect(ID, "WP\\d+$")) log_warn("Wikipathways View: '", ID, "' is not a human/mouse/rat pathway.")
                           shiny::validate(need(str_detect(ID, "WP\\d+$"), message = "Only works on human/mouse/rat Wiki pathways."))
                           wiki_ID=str_extract(ID, "WP\\d+$")
-                          species=input$MSigDB_species
+                          p1 <- wpplot(wiki_ID)
+                          p1$svg <- wp_svg_fill_container(p1$svg)
+                          p1
+                        })
+                        
+                        wiki_plot_results<-reactive({
+                          p1 <- wiki_svg()
                           dataIn=DataReactive()
                           results_long=dataIn$results_long
-                          ProteinGeneName = dataIn$ProteinGeneName
                           comp_sel = input$geneset_test
+                          shiny::validate(need(length(comp_sel) > 0, message = "Please select at least one comparison."))
                           
-                          ##Make FCdata  from results_long
-                          FC_df<-results_long%>%dplyr::filter(test==comp_sel)%>%arrange(P.Value) %>% filter(!duplicated(Gene.Name)) %>% 
-                            dplyr::select(UniqueID, logFC, Gene.Name) 
-                          if (input$map_genes!="No Change (as it is)" && !(ProjectInfo$Species==input$MSigDB_species && input$map_genes=="Homologous Genes") ) {
-                            if ( input$map_genes=="Change to UPPER case (human)" )  mapped_symbols<-toupper(FC_df$Gene.Name)
-                            if ( input$map_genes=="Change to Title Case (mouse/rat)" )  mapped_symbols<-str_to_title(FC_df$Gene.Name)
-                            if (ProjectInfo$Species!=input$MSigDB_species && input$map_genes=="Homologous Genes" ) {
-                              mapped_symbols<-homolog_mapping(FC_df$Gene.Name, ProjectInfo$Species, input$MSigDB_species, homologs) }	  
-                            FC_df<-FC_df%>%mutate(Gene.Name.Ori=Gene.Name, Gene.Name=mapped_symbols)%>%dplyr::filter(!is.na(Gene.Name), Gene.Name!="")
+                          ##Make FCdata from results_long, one named logFC vector per comparison
+                          make_FCdata <- function(comp) {
+                            FC_df<-results_long%>%dplyr::filter(test==comp)%>%arrange(P.Value) %>% filter(!duplicated(Gene.Name)) %>% 
+                              dplyr::select(UniqueID, logFC, Gene.Name) 
+                            if (input$map_genes!="No Change (as it is)" && !(ProjectInfo$Species==input$MSigDB_species && input$map_genes=="Homologous Genes") ) {
+                              if ( input$map_genes=="Change to UPPER case (human)" )  mapped_symbols<-toupper(FC_df$Gene.Name)
+                              if ( input$map_genes=="Change to Title Case (mouse/rat)" )  mapped_symbols<-str_to_title(FC_df$Gene.Name)
+                              if (ProjectInfo$Species!=input$MSigDB_species && input$map_genes=="Homologous Genes" ) {
+                                mapped_symbols<-homolog_mapping(FC_df$Gene.Name, ProjectInfo$Species, input$MSigDB_species, homologs) }	  
+                              FC_df<-FC_df%>%mutate(Gene.Name.Ori=Gene.Name, Gene.Name=mapped_symbols)%>%dplyr::filter(!is.na(Gene.Name), Gene.Name!="")
+                            }
+                            FC_df <- FC_df %>% filter(!duplicated(Gene.Name))
+                            FCdata=FC_df$logFC; names(FCdata)=FC_df$Gene.Name
+                            FCdata
                           }
-                          FCdata=FC_df$logFC; names(FCdata)=FC_df$Gene.Name
+                          FC_list <- lapply(comp_sel, make_FCdata); names(FC_list) <- comp_sel
                           
-                          log_debug("Wikipathways View: comparison=", comp_sel, " wiki_ID=", wiki_ID, " n_genes=", length(FCdata))
-                          p1 <- wpplot(wiki_ID)
-                          p2 <- wp_bgfill_2025(p=p1, value=FCdata, logFC_max=input$wiki_logFC, high=input$wiki_high, mid=input$wiki_mid, low=input$wiki_low) 
+                          log_debug("Wikipathways View: comparisons=", paste(comp_sel, collapse=","), " wiki_ID=", p1$ID, " n_genes=", paste(lengths(FC_list), collapse=","))
+                          p2 <- wp_bgfill_2025(p=p1, value=FC_list, logFC_max=input$wiki_logFC, high=input$wiki_high, mid=input$wiki_mid, low=input$wiki_low) 
                           return(p2)
                         })
                         

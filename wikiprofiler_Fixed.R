@@ -37,47 +37,76 @@ wpplot <- function(ID) {
 }
 
 #' @title Fill the background of gene with color according to amount of gene expression.
-#' @description Generate a color array.Fill the gene then generate the legend.
-#' @param p p is
-#' @param value value is the amount of expression.
+#' @description Generate a color array. Fill the gene then generate the legend.
+#'   With more than one comparison, each gene box is split into side-by-side
+#'   color segments, one per comparison (left to right, in the order given).
+#' @param p p is a wpplot object
+#' @param value named numeric vector (one comparison), or a named list of them
+#'   (one per comparison). Names of each vector are gene symbols.
 #' @param logFC_max, logFC range for coloring
 #' @param low The color of lowest gene.
 #' @param high The color of highest gene.
-#' @return A 'wpplot' object
-# @import org.Hs.eg.db
-# @import BiocGenerics
+#' @return list(p = wpplot object, lgd = legend)
 #' @export
 wp_bgfill_2025 <- function(p, value, logFC_max, high="red", mid="gray90", low="green") {
   logFC_max=as.numeric(logFC_max)
-  SYMBOLS <- sub('\\s+', '', sub('.+>', '', sub('</tspan>', '', p$svg[grep('<tspan', p$svg)])))
-  SYMBOLS <- SYMBOLS[is.na(suppressWarnings(as.numeric(SYMBOLS)))]
-  SYMBOLS <- SYMBOLS[SYMBOLS!=""]
-  if(!any(names(value) %in% SYMBOLS)){
-    message("Please make sure the input gene ID type is 'SYMBOL'")
-    return(p)
-  }
-  value <- value[names(value) %in% SYMBOLS]
   col_fun <- colorRamp2(
     breaks = c(0-logFC_max, 0, logFC_max),
     colors = c(low, mid, high))
-  color=col_fun(value)
-  genes <- names(value)
+  lgd <- Legend(
+    col_fun = col_fun,
+    title = "log2FC value",
+    at = c(0-logFC_max, 0, logFC_max),
+    labels = c(str_c("-", logFC_max), "0", as.character(logFC_max)),
+    direction = "horizontal",
+    legend_width = unit(3, "cm") )
+
+  if (!is.list(value)) value <- list(value)
+  SYMBOLS <- sub('\\s+', '', sub('.+>', '', sub('</tspan>', '', p$svg[grep('<tspan', p$svg)])))
+  SYMBOLS <- SYMBOLS[is.na(suppressWarnings(as.numeric(SYMBOLS)))]
+  SYMBOLS <- SYMBOLS[SYMBOLS!=""]
+  genes <- intersect(unique(unlist(lapply(value, names))), SYMBOLS)
+  if (length(genes) == 0) {
+    message("Please make sure the input gene ID type is 'SYMBOL'")
+    return(list(p=p, lgd=lgd))
+  }
+  # one row per gene, one column per comparison; NA = gene not in that comparison
+  color_mat <- sapply(value, function(v) {
+    x <- v[match(genes, names(v))]
+    out <- rep(NA_character_, length(x))
+    out[!is.na(x)] <- col_fun(x[!is.na(x)])
+    out
+  })
+  color_mat <- matrix(color_mat, nrow = length(genes))
   for (i in seq_along(genes)) {
-    #pos <- grep(genes[i], p$svg)
     pos <- grep(str_c("tspan.+>", genes[i], "</tspan>"), p$svg)
-    p$svg <- replace_bg2(p$svg, pos, color[i])
+    p$svg <- replace_bg2(p$svg, pos, color_mat[i, ])
   }
 
-  lgd <- Legend(
-  col_fun = col_fun,
-  title = "log2FC value",
-  at = c(0-logFC_max, 0, logFC_max),
-  labels = c(str_c("-", logFC_max), "0", as.character(logFC_max)),
-   direction = "horizontal",
-  legend_width = unit(3, "cm") )
-  
   p$geneExpr <- value
   return(list(p=p, lgd=lgd))
+}
+
+#' Remove the fixed width/height on the <svg> tag so it fills its container.
+wp_svg_fill_container <- function(svg) {
+  i <- grep("<svg", svg)[1]
+  if (is.na(i)) return(svg)
+  tag_end <- regexpr(">", svg[i])
+  if (tag_end < 0) tag_end <- nchar(svg[i])
+  tag <- substr(svg[i], 1, tag_end)
+  tag <- gsub('\\swidth="[^"]*"', ' width="100%"', tag)
+  tag <- gsub('\\sheight="[^"]*"', ' height="100%"', tag)
+  svg[i] <- paste0(tag, substr(svg[i], tag_end + 1, nchar(svg[i])))
+  svg
+}
+
+#' Width / height of the pathway, read from the SVG viewBox (NA if missing).
+wp_svg_aspect <- function(svg) {
+  vb <- str_match(paste(head(svg, 20), collapse = " "), 'viewBox="([^"]+)"')[, 2]
+  if (is.na(vb)) return(NA_real_)
+  v <- suppressWarnings(as.numeric(strsplit(trimws(vb), "[ ,]+")[[1]]))
+  if (length(v) != 4 || any(is.na(v)) || v[3] <= 0 || v[4] <= 0) return(NA_real_)
+  v[3] / v[4]
 }
 
 
@@ -123,6 +152,17 @@ svg2tempfile <- function(svg) {
 
 replace_bg <- function(svg, position, color) {
   j <- rev(grep("<rect", svg[1:position]))[1]
+  if (is.na(j)) return(svg)
+  color <- as.character(color)
+  if (all(is.na(color))) return(svg)
+  if (length(color) > 1) {
+    split <- split_rect(svg[j], color)
+    if (!is.null(split)) {
+      svg[j] <- split
+      return(svg)
+    }
+    color <- color[!is.na(color)][1]   # rect could not be split: use first comparison
+  }
 
   replace <- sub(
     "fill=.+stroke=", paste('fill="', color, '" stroke=', sep = ""),
@@ -131,6 +171,48 @@ replace_bg <- function(svg, position, color) {
 
   svg[j] <- replace
   return(svg)
+}
+
+# Get / set one attribute of a single-line SVG tag
+svg_get_attr <- function(tag, attr) {
+  str_match(tag, str_c('\\s', attr, '="([^"]*)"'))[, 2]
+}
+svg_set_attr <- function(tag, attr, value) {
+  if (is.na(svg_get_attr(tag, attr))) {
+    sub("<rect", str_c('<rect ', attr, '="', value, '"'), tag, fixed = TRUE)
+  } else {
+    sub(str_c('(\\s', attr, '=")[^"]*(")'), str_c('\\1', value, '\\2'), tag)
+  }
+}
+
+# Replace one gene box <rect .../> with side-by-side color segments (one per
+# comparison) plus an unfilled outline on top. NA colors keep the original fill.
+# Returns NULL if the rect cannot be split (not on one line, or no numeric width).
+split_rect <- function(rect, colors) {
+  m <- regexpr("<rect[^>]*/>", rect)
+  if (m < 0) return(NULL)
+  tag <- regmatches(rect, m)
+  w <- svg_get_attr(tag, "width")
+  wn <- suppressWarnings(as.numeric(sub("px$", "", w)))
+  if (is.na(wn) || wn <= 0) return(NULL)
+  unit <- ifelse(grepl("px$", w), "px", "")
+  xa <- svg_get_attr(tag, "x")
+  xn <- suppressWarnings(as.numeric(sub("px$", "", xa)))
+  if (is.na(xn)) xn <- 0
+  unit_x <- ifelse(!is.na(xa) && grepl("px$", xa), "px", "")
+  orig_fill <- svg_get_attr(tag, "fill")
+  if (is.na(orig_fill) || orig_fill == "none") orig_fill <- "#ffffff"
+  base <- sub('\\sid="[^"]*"', "", tag)   # keep ids unique
+  n <- length(colors); sw <- wn / n
+  segs <- vapply(seq_len(n), function(k) {
+    s <- svg_set_attr(base, "fill", ifelse(is.na(colors[k]), orig_fill, colors[k]))
+    s <- svg_set_attr(s, "stroke", "none")
+    s <- svg_set_attr(s, "width", str_c(sw, unit))
+    svg_set_attr(s, "x", str_c(xn + (k - 1) * sw, unit_x))
+  }, character(1))
+  outline <- svg_set_attr(tag, "fill", "none")
+  str_c(substr(rect, 1, m - 1), paste(segs, collapse = ""), outline,
+        substr(rect, m + attr(m, "match.length"), nchar(rect)))
 }
 
 replace_bg2 <- function(svg, positions, color) {
