@@ -1,5 +1,5 @@
 --- 
-title: "Supplementary Materials - Quickomics v4.4"
+title: "Supplementary Materials - Quickomics v4.3"
 author:
   - name: Using the author list from RNASequest manuscript
   - name: Jing Zhu
@@ -52,4 +52,4 @@ site: bookdown::bookdown_site
 ---
 
 # Preface {-}
-This is a *supplementary materials* written using Bookdown, which provides a detailed guide for Quickomics v4.4.
+This is a *supplementary materials* written using Bookdown, which provides a detailed guide for Quickomics v4.3.
