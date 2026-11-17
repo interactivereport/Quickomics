@@ -717,7 +717,8 @@ TimeSeries_ui <- function(id) {
                                 uiOutput(ns("sim_actions")),
                                 br(),
                                 DT::DTOutput(ns("sim_table"))
-                       )
+                       ),
+                       tabPanel(title="Help", htmlOutput('help_timecourse'))
            )         
     )
 )}

@@ -283,7 +283,8 @@ correlation_ui <- function(id) {
                                   column(width = 4, br(), actionButton(ns("save_target_heatmap"), "Save to output"))
                                 ),
                                 tags$hr(),
-                                morpheus::morpheusOutput(ns("target_heatmap"), width = "800px", height = "900px"))
+                                morpheus::morpheusOutput(ns("target_heatmap"), width = "800px", height = "900px")),
+                       tabPanel(title = "Help", htmlOutput('help_correlation_target'))
            )),
            conditionalPanel(ns = ns, "input.correlation_type!='target'",
            tabsetPanel(id = ns("correlation_tabset"),
@@ -335,7 +336,8 @@ correlation_ui <- function(id) {
                                 tags$hr(),
                                 plotOutput(ns("corr_plot"), width = '800px', height = "800px")),
                        tabPanel(title = "Data Table", 
-                                DT::dataTableOutput(ns("data_table")))
+                                DT::dataTableOutput(ns("data_table"))),
+                       tabPanel(title = "Help", htmlOutput('help_correlation'))
            ))
     )
   )}
